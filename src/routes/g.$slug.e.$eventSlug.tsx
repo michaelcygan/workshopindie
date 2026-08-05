@@ -133,13 +133,13 @@ function EventPage() {
   const navigate = Route.useNavigate();
   const { user } = useAuth();
 
-  const { isPlus } = usePlus();
   const qc = useQueryClient();
   const getMyRsvpFn = useServerFn(getMyRsvp);
-  const listAttendeesFn = useServerFn(listAttendees);
+  const getAccessFn = useServerFn(getMyEventAccess);
   const listUpdatesFn = useServerFn(listEventUpdates);
   const listEventGroupsFn = useServerFn(listEventGroups);
-
+  const joinLinkFn = useServerFn(getEventJoinLink);
+  const countsFn = useServerFn(getEventCounts);
 
   const { data: myRsvp } = useQuery({
     queryKey: ["event-rsvp", ev.id, user?.id ?? null],
@@ -147,11 +147,24 @@ function EventPage() {
     queryFn: () => getMyRsvpFn({ data: { event_id: ev.id } }),
   });
 
-  const { data: attendees } = useQuery({
-    queryKey: ["event-attendees", ev.id, user?.id ?? null],
+  const { data: access } = useQuery({
+    queryKey: ["event-access", ev.id, user?.id ?? null],
     enabled: !!user,
-    queryFn: () => listAttendeesFn({ data: { event_id: ev.id } }),
+    queryFn: () => getAccessFn({ data: { event_id: ev.id } }),
     staleTime: 30_000,
+  });
+
+  const { data: counts } = useQuery({
+    queryKey: ["event-counts", ev.id],
+    queryFn: () => countsFn({ data: { event_id: ev.id } }),
+    staleTime: 30_000,
+  });
+
+  const { data: joinLink } = useQuery({
+    queryKey: ["event-join-link", ev.id, user?.id ?? null],
+    enabled: !!user && !!access?.canSeeOnlineUrl && ev.has_online_url,
+    queryFn: () => joinLinkFn({ data: { event_id: ev.id } }),
+    staleTime: 60_000,
   });
 
   const { data: updates } = useQuery({
@@ -166,54 +179,35 @@ function EventPage() {
     staleTime: 60_000,
   });
 
-
-  // realtime: refresh on rsvp changes
+  // realtime: refresh on rsvp / check-in changes
   useEffect(() => {
     const ch = supabase
       .channel(`event-${ev.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "group_event_rsvps", filter: `event_id=eq.${ev.id}` }, () => {
-        qc.invalidateQueries({ queryKey: ["event-attendees", ev.id] });
+        qc.invalidateQueries({ queryKey: ["event-counts", ev.id] });
+        qc.invalidateQueries({ queryKey: ["event-roster", ev.id] });
         qc.invalidateQueries({ queryKey: ["event-rsvp", ev.id] });
+        qc.invalidateQueries({ queryKey: ["event-access", ev.id] });
       })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [ev.id, qc]);
 
   const starts = new Date(ev.starts_at);
-  const ends = new Date(ev.ends_at);
-  const past = ends < new Date();
+  const lifecycle = getEventLifecycle(ev);
+  const moment = getEventMoment(ev);
+  const isDraft = lifecycle === "draft";
+  const statusLabel = eventStatusLabel(ev);
   const isFull = ev.capacity !== null && ev.going_count >= ev.capacity;
-
-  // Pure phase helper — pre / live / post (60min pad on each side).
-  const phase = getEventPhase({ starts_at: ev.starts_at, ends_at: ev.ends_at });
-
-  const statusLabel =
-    ev.status === "canceled" ? "Canceled" :
-    past ? "Past" :
-    isFull ? "Almost full" :
-    phase === "live" ? "Happening now" : "Upcoming";
-
-  const going = (attendees ?? []).filter((a) => a.status === "going");
 
   const canonicalUrl = typeof window !== "undefined"
     ? `${window.location.origin}/g/${ev.group.slug}/e/${ev.slug}`
     : `/g/${ev.group.slug}/e/${ev.slug}`;
-  const isAttending = myRsvp?.status === "going" || myRsvp?.status === "maybe";
-  const canBring = isAttending;
-  const wallSealed = ends.getTime() + 3 * 24 * 60 * 60 * 1000 < Date.now();
-  const wallParticipants = (attendees ?? [])
-    .map((a) => {
-      type R = { user_id: string; profile: { display_name: string | null; username: string | null; avatar_url: string | null } | null };
-      const r = a as unknown as R;
-      if (!r.profile) return null;
-      return {
-        user_id: r.user_id,
-        display_name: r.profile.display_name,
-        username: r.profile.username,
-        avatar_url: r.profile.avatar_url,
-      };
-    })
-    .filter((p): p is { user_id: string; display_name: string | null; username: string | null; avatar_url: string | null } => p !== null);
+
+  const refreshAccess = () => {
+    qc.invalidateQueries({ queryKey: ["event-access", ev.id] });
+    qc.invalidateQueries({ queryKey: ["event-counts", ev.id] });
+  };
 
   return (
     <main className="pb-28 md:pb-20">
@@ -236,8 +230,9 @@ function EventPage() {
           <span
             className={cn(
               "rounded-full px-3 py-1 text-xs font-medium shadow-soft backdrop-blur",
-              ev.status === "canceled" ? "bg-destructive/90 text-destructive-foreground" :
-              past ? "bg-muted text-ink-muted" :
+              lifecycle === "canceled" ? "bg-destructive/90 text-destructive-foreground" :
+              lifecycle === "archived" ? "bg-muted text-ink-muted" :
+              moment === "live" ? "bg-primary text-primary-foreground" :
               isFull ? "bg-amber-500/90 text-white" :
               "bg-background/90 text-ink",
             )}
@@ -248,6 +243,12 @@ function EventPage() {
       </div>
 
       <div className="mx-auto mt-6 max-w-2xl px-4 md:px-6">
+        {isDraft && (
+          <div className="mb-4 rounded-xl border border-dashed border-primary/50 bg-primary/5 p-3 text-sm text-ink">
+            <span className="font-medium">Draft.</span> Only you and admins can see this flyer. Publish it to open RSVPs.
+          </div>
+        )}
+
         <div className="rounded-xl border border-border bg-surface p-6 shadow-lift">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-soft">
@@ -267,10 +268,7 @@ function EventPage() {
               {" · "}
               {starts.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
             </span>
-            <a
-              href={`/api/public/events/${ev.id}/ics`}
-              className="text-xs text-primary hover:underline"
-            >
+            <a href={`/api/public/events/${ev.id}/ics`} className="text-xs text-primary hover:underline">
               Add to calendar
             </a>
           </div>
@@ -343,8 +341,6 @@ function EventPage() {
             </div>
           )}
 
-
-
           <div className="mt-5 border-t border-border pt-4">
             <EventLocationCard
               format={ev.format}
@@ -352,17 +348,20 @@ function EventPage() {
               venueAddress={ev.venue_address}
               venueLat={ev.venue_lat}
               venueLng={ev.venue_lng}
-              onlineUrl={ev.online_url}
+              onlineUrl={joinLink?.online_url ?? null}
               city={ev.venue_name ?? null}
               variant="embedded"
             />
+            {ev.has_online_url && !joinLink?.online_url && (
+              <p className="mt-2 text-xs text-ink-muted">RSVP to get the join link.</p>
+            )}
           </div>
         </div>
+
         {/* Series admin strip */}
         {ev.series_key && <SeriesAdminStrip eventId={ev.id} seriesKey={ev.series_key} />}
 
-
-        {/* RSVP + Who's going (consolidated) */}
+        {/* RSVP — the one door into participation */}
         <div className="mt-5">
           <EventRsvpBlock
             eventId={ev.id}
@@ -370,7 +369,7 @@ function EventPage() {
             eventSlug={ev.slug}
             myRsvp={(myRsvp as MyRsvp) ?? null}
             capacity={ev.capacity}
-            goingCount={ev.going_count}
+            goingCount={counts?.going ?? ev.going_count}
             waitlistEnabled={ev.waitlist_enabled}
             startsAt={ev.starts_at}
             timezone={ev.timezone}
@@ -378,128 +377,32 @@ function EventPage() {
             footerSlot={
               !user ? (
                 <p className="text-sm text-ink-muted">
-                  <Link to="/login" className="text-primary underline">Sign in</Link> to see who's going.
+                  <Link to="/login" className="text-primary underline">Sign in</Link> to RSVP and see who's here.
                 </p>
               ) : (
-                <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Who's going</span>
-                    <EventAttendeesSheet
-                      eventId={ev.id}
-                      goingCount={ev.going_count}
-                      maybeCount={ev.maybe_count}
-                      waitlistCount={ev.waitlist_count}
-                      capacity={ev.capacity}
-                    >
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-1 text-xs text-ink-muted hover:text-ink underline-offset-2 hover:underline"
-                      >
-                        <Users className="h-3.5 w-3.5" /> {ev.going_count}{ev.capacity ? ` / ${ev.capacity}` : ""} going
-                        {ev.waitlist_count > 0 && ` · ${ev.waitlist_count} waitlist`}
-                      </button>
-                    </EventAttendeesSheet>
-                  </div>
-                  {going.length === 0 ? (
-                    <p className="text-sm text-ink-muted">No one's RSVP'd yet — be first.</p>
-                  ) : (
-                    <div className="flex items-center">
-                      <div className="flex -space-x-2">
-                        {going.slice(0, 10).map((a) => {
-                          type R = { user_id: string; profile: { id: string; username: string | null; display_name: string | null; avatar_url: string | null } | null };
-                          const p = (a as unknown as R).profile;
-                          if (!p) return null;
-                          return (
-                            <ProfilePeek key={a.user_id} userId={a.user_id}>
-                              <button
-                                type="button"
-                                className="h-8 w-8 rounded-full border-2 border-surface p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-                                title={p.display_name ?? p.username ?? ""}
-                              >
-                                <Avatar className="h-full w-full">
-                                  <AvatarImage src={p.avatar_url ?? undefined} />
-                                  <AvatarFallback>{(p.display_name ?? p.username ?? "?").slice(0, 1)}</AvatarFallback>
-                                </Avatar>
-                              </button>
-                            </ProfilePeek>
-                          );
-                        })}
-                      </div>
-                      {going.length > 10 && (
-                        <span className="ml-3 text-xs text-ink-muted">+{going.length - 10} more</span>
-                      )}
-                    </div>
-                  )}
-                </div>
+                <p className="inline-flex items-center gap-1.5 text-xs text-ink-muted">
+                  <Users className="h-3.5 w-3.5" />
+                  {counts?.going ?? ev.going_count} going
+                  {counts?.here ? ` · ${counts.here} here` : ""}
+                </p>
               )
             }
           />
-
         </div>
 
-
-        {/* Live companion panel — only for RSVP'd viewers, only during live window */}
-        {phase === "live" && isAttending && (
-          <EventCompanionPanel
-            eventId={ev.id}
-            eventTitle={ev.title}
-            canBring={canBring}
-            attending={isAttending}
-          />
-        )}
-
-        {/* Post-event recap: who checked in */}
-        {user && phase === "post" && (
-          <div className="mt-6 space-y-6">
-            <EventWhoStrip eventId={ev.id} phase="post" />
-          </div>
-        )}
-
-
-
-        {/* What attendees bring to the table — signed-in only for privacy */}
-        {user ? (
-          <div className="mt-6">
-            <EventAttendeeWork eventId={ev.id} />
-          </div>
-        ) : (
-          <div className="mt-6 rounded-xl border border-dashed border-border bg-surface p-6 text-center">
-            <Sparkles className="mx-auto mb-2 h-5 w-5 text-ink-muted" />
-            <p className="text-sm text-ink-soft">
-              <Link to="/login" className="font-medium text-primary underline">Sign in</Link> to see what people are bringing.
-            </p>
-          </div>
-        )}
-
-        {/* Tabs */}
+        {/* Four tabs. Nothing else. */}
         <div className="mt-6">
-          <Tabs defaultValue="wall">
-            <TabsList className={`sticky top-2 z-10 grid w-full ${ev.lineup_capacity != null ? "grid-cols-3" : "grid-cols-2"} rounded-full bg-muted p-1 backdrop-blur`}>
-              <TabsTrigger value="wall" className="rounded-full"><MessageSquare className="mr-1.5 h-3.5 w-3.5" /> Wall</TabsTrigger>
-              <TabsTrigger value="about" className="rounded-full"><Info className="mr-1.5 h-3.5 w-3.5" /> About</TabsTrigger>
-              {ev.lineup_capacity != null && (
-                <TabsTrigger value="lineup" className="rounded-full"><ListMusic className="mr-1.5 h-3.5 w-3.5" /> Lineup</TabsTrigger>
-              )}
+          <Tabs defaultValue={moment === "upcoming" ? "about" : "wall"}>
+            <TabsList className="sticky top-2 z-10 grid w-full grid-cols-4 rounded-full bg-muted p-1 backdrop-blur">
+              <TabsTrigger value="about" className="rounded-full text-xs"><Info className="mr-1 h-3.5 w-3.5" /> About</TabsTrigger>
+              <TabsTrigger value="here" className="rounded-full text-xs"><Users className="mr-1 h-3.5 w-3.5" /> Who's here</TabsTrigger>
+              <TabsTrigger value="wall" className="rounded-full text-xs"><MessageSquare className="mr-1 h-3.5 w-3.5" /> Wall</TabsTrigger>
+              <TabsTrigger value="gallery" className="rounded-full text-xs"><ImageIcon className="mr-1 h-3.5 w-3.5" /> Gallery</TabsTrigger>
             </TabsList>
-
-            <TabsContent value="wall" className="mt-5 space-y-5">
-              <div className="rounded-xl border border-border bg-surface p-5 shadow-soft">
-                <EventWall
-                  eventId={ev.id}
-                  canPost={myRsvp?.status === "going"}
-                  sealed={wallSealed}
-                  participants={wallParticipants}
-                />
-              </div>
-              {(phase === "live" || phase === "post") && !wallSealed && (
-                <EventPhotosSection eventId={ev.id} canUpload={isAttending && !wallSealed} />
-              )}
-            </TabsContent>
 
             <TabsContent value="about" className="mt-5 space-y-6">
               {ev.description ? (
                 <div className="rounded-xl border border-border bg-surface p-5 shadow-soft">
-                  <h3 className="mb-2 font-display text-lg text-ink">About</h3>
                   <p className="whitespace-pre-wrap text-sm text-ink-soft">{ev.description}</p>
                 </div>
               ) : (
@@ -522,18 +425,27 @@ function EventPage() {
                   </ul>
                 </div>
               )}
-            </TabsContent>
-
-            {ev.lineup_capacity != null && (
-              <TabsContent value="lineup" className="mt-5">
+              {ev.lineup_capacity != null && (
                 <LineupPanel
                   eventId={ev.id}
                   groupSlug={ev.group.slug}
                   eventSlug={ev.slug}
-                  isHostOrAdmin={!!user && user.id === ev.created_by}
+                  isHostOrAdmin={Boolean(access?.canEdit)}
                 />
-              </TabsContent>
-            )}
+              )}
+            </TabsContent>
+
+            <TabsContent value="here" className="mt-5">
+              <EventWhosHere eventId={ev.id} access={access ?? null} onChanged={refreshAccess} />
+            </TabsContent>
+
+            <TabsContent value="wall" className="mt-5">
+              <EventWallFeed eventId={ev.id} view="wall" />
+            </TabsContent>
+
+            <TabsContent value="gallery" className="mt-5">
+              <EventWallFeed eventId={ev.id} view="gallery" />
+            </TabsContent>
           </Tabs>
         </div>
 
@@ -542,7 +454,7 @@ function EventPage() {
           entityId={ev.id}
           heading="Stories from this Event"
           trustedOnly
-          canWrite={!!user && user.id === ev.created_by}
+          canWrite={Boolean(access?.canEdit)}
           writeLabel="Write about this Event"
           emptyLabel="No stories yet. Write the first one from this Event."
           className="mt-10"
