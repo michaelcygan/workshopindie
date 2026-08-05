@@ -318,21 +318,8 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
               className="mt-1 w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-ink focus:border-primary focus:outline-none"
             />
           </div>
-          <div>
-            <label className="block text-xs font-medium uppercase tracking-wider text-ink-muted" htmlFor="blog-category">
-              Category
-            </label>
-            <select
-              id="blog-category"
-              value={categorySlug}
-              onChange={(e) => { setCategorySlug(toBlogCategorySlug(e.target.value)); setDirty(true); }}
-              className="mt-1 w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-ink focus:border-primary focus:outline-none"
-            >
-              {BLOG_CATEGORIES.map((c) => (
-                <option key={c.slug} value={c.slug}>{c.label}</option>
-              ))}
-            </select>
-          </div>
+          {/* Category lives in the "About this post" panel below. */}
+
         </div>
 
         <div className="mt-4 rounded-2xl border border-border bg-surface p-4">
