@@ -151,9 +151,9 @@ function RootComponent() {
           <Outlet />
           <SiteFooter />
           <MobileNav />
-          <FirstRunHint />
-          
+
           <OAuthErrorToast />
+
           <RefCapture />
           <PresenceHeartbeat />
           <SignOutCacheReset />
