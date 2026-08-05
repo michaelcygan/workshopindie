@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GoogleSignIn } from "@/components/google-sign-in";
+import { AppleSignIn } from "@/components/apple-sign-in";
 import { KickerChip } from "@/components/kicker-chip";
 import { sanitizeInstagramHandle } from "@/lib/display-name";
 import { attributeReferral, setReferredBy } from "@/lib/share.functions";
@@ -185,6 +186,7 @@ function Signup() {
       <div className="mt-6 rounded-xl border border-border bg-surface p-8 shadow-soft">
         <div className="mt-6 space-y-3">
           <GoogleSignIn label="Sign up with Google" redirectTo={search.redirect && search.redirect.startsWith("/") ? search.redirect : undefined} />
+          <AppleSignIn label="Sign up with Apple" redirectTo={search.redirect && search.redirect.startsWith("/") ? search.redirect : undefined} />
           <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-ink-muted">
             <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
           </div>

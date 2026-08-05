@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { GoogleSignIn } from "@/components/google-sign-in";
+import { AppleSignIn } from "@/components/apple-sign-in";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -67,8 +68,9 @@ export function EventRsvpAuthSheet({
           </SheetDescription>
         </SheetHeader>
         <div className="mt-5 flex flex-col gap-3">
-          <div onClick={persist}>
+          <div onClick={persist} className="flex flex-col gap-2">
             <GoogleSignIn />
+            <AppleSignIn />
           </div>
           <p className="-mt-1 text-center text-[11px] text-ink-muted">
             We'll bring you back here right after.
