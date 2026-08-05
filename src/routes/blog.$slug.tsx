@@ -194,6 +194,26 @@ function BlogPostPage() {
           ) : (
             post.author_name || "Workshop"
           )}
+          {publishedAt && (
+            <>
+              {" · "}
+              {publishedAt.toLocaleDateString(undefined, {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </>
+          )}
+          {meaningfullyUpdated && (
+            <>
+              {" · Updated "}
+              {updatedAt!.toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </>
+          )}
         </div>
       </header>
 
@@ -207,13 +227,12 @@ function BlogPostPage() {
         />
       )}
 
-      <BlogWorkContext tags={entityTags} className="mt-8" />
-
       <div className="mt-8">
         <BlogPostBody markdown={post.body_markdown} />
       </div>
 
-      <BlogEntityTags tags={otherTags} className="mt-10" />
+      <BlogPostContext context={context} className="mt-12 md:mt-14" />
+
 
       <ShareRow slug={post.slug} title={post.title} postId={post.id} />
 
