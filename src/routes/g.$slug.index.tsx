@@ -106,7 +106,7 @@ const TAB_VALUES = [
 type TabValue = (typeof TAB_VALUES)[number];
 
 export const Route = createFileRoute("/g/$slug/")({
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: Record<string, unknown>): { j?: string; t?: TabValue } => ({
     j: typeof s.j === "string" ? s.j : undefined,
     t:
       typeof s.t === "string" && (TAB_VALUES as readonly string[]).includes(s.t)

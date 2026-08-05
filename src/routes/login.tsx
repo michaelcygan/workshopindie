@@ -2,6 +2,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
+import { resolvePostAuthPath, safePath, goToPostAuth } from "@/lib/post-auth-destination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +15,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
   component: Login,
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: Record<string, unknown>): { claim?: string; join?: string; group?: string; redirect?: string } => ({
     claim: typeof s.claim === "string" ? s.claim : undefined,
     join: typeof s.join === "string" ? s.join : undefined,
     group: typeof s.group === "string" ? s.group : undefined,
@@ -29,6 +31,26 @@ function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const { user, loading: authLoading } = useAuth();
+
+  // Already signed in? Never sit on the auth form — go where this person belongs.
+  useEffect(() => {
+    if (authLoading || !user) return;
+    if (search.claim) {
+      navigate({ to: "/collab/claim/$token", params: { token: search.claim } });
+      return;
+    }
+    if (search.join && search.group) return; // handled by the seed-link flow
+    let cancelled = false;
+    resolvePostAuthPath(safePath(search.redirect)).then((path) => {
+      if (!cancelled) goToPostAuth(path);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user, authLoading, search.claim, search.join, search.group, search.redirect, navigate]);
+
+
 
   // Stash seed-link for OAuth round-trips.
   useEffect(() => {

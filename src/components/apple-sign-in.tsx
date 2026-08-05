@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { lovable } from "@/integrations/lovable/index";
+import { resolvePostAuthPath, goToPostAuth } from "@/lib/post-auth-destination";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -28,7 +29,7 @@ export function AppleSignIn({
         return;
       }
       if (result.redirected) return; // browser will redirect
-      window.location.assign(safeRedirect ?? "/");
+      goToPostAuth(await resolvePostAuthPath(safeRedirect));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Apple sign-in failed");
       setLoading(false);

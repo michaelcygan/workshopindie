@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { getMyAgeFields, setMyBirthdate } from "@/lib/profile-age.functions";
 import { requestAccountDeletion } from "@/lib/account-deletion.functions";
+import { needsOnboarding } from "@/lib/post-auth-destination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,18 +41,22 @@ export function AgeGate() {
     return d.toISOString().slice(0, 10);
   }, []);
 
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const onOnboarding = pathname.startsWith("/onboarding");
+
   useEffect(() => {
-    if (loading || !user) {
+    if (loading || !user || onOnboarding) {
       setChecking(false);
       setNeedsDob(false);
       return;
     }
     let cancelled = false;
     setChecking(true);
-    fetchAge()
-      .then((r) => {
+    Promise.all([fetchAge(), needsOnboarding()])
+      .then(([r, pending]) => {
         if (cancelled) return;
-        setNeedsDob(!r.birthdate);
+        // Onboarding collects the birthdate itself — don't double-prompt.
+        setNeedsDob(!r.birthdate && !pending);
       })
       .catch(() => {
         // If the lookup fails we don't block the app — better to fail open than
@@ -63,9 +68,10 @@ export function AgeGate() {
     return () => {
       cancelled = true;
     };
-  }, [user, loading, fetchAge]);
+  }, [user, loading, fetchAge, onOnboarding]);
 
   if (!user || loading || checking || !needsDob) return null;
+
 
   async function onConfirm(e: React.FormEvent) {
     e.preventDefault();
