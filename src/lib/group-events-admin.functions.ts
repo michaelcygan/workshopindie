@@ -127,6 +127,56 @@ async function resolveEventCity(
   return inherited;
 }
 
+/**
+ * Publish gate. A published Event is a public promise, so it must be complete:
+ * real title, kind, format, a start, an end after the start, a sane timezone,
+ * a venue for anything in person, and a way in for anything online.
+ */
+export function assertPublishable(ev: {
+  title?: string | null;
+  kind?: string | null;
+  format?: string | null;
+  starts_at?: string | null;
+  ends_at?: string | null;
+  timezone?: string | null;
+  venue_name?: string | null;
+  venue_address?: string | null;
+  online_url?: string | null;
+  external_url?: string | null;
+}) {
+  const problems: string[] = [];
+  if (!ev.title || ev.title.trim().length < 2) problems.push("a title");
+  if (!ev.kind) problems.push("an event type");
+  if (!ev.format) problems.push("a format");
+  const start = ev.starts_at ? new Date(ev.starts_at).getTime() : NaN;
+  const end = ev.ends_at ? new Date(ev.ends_at).getTime() : NaN;
+  if (!Number.isFinite(start)) problems.push("a start time");
+  if (!Number.isFinite(end)) problems.push("an end time");
+  if (Number.isFinite(start) && Number.isFinite(end) && end <= start) {
+    problems.push("an end time after the start");
+  }
+  const tz = ev.timezone ?? "";
+  if (!tz) problems.push("a timezone");
+  else {
+    try {
+      new Intl.DateTimeFormat("en-US", { timeZone: tz });
+    } catch {
+      problems.push("a valid timezone");
+    }
+  }
+  if (ev.format === "in_person" || ev.format === "hybrid") {
+    if (!ev.venue_name && !ev.venue_address) problems.push("a venue");
+  }
+  if (ev.format === "online" || ev.format === "hybrid") {
+    if (!ev.online_url && !ev.external_url) {
+      problems.push("an online link (or save it as a draft until you have one)");
+    }
+  }
+  if (problems.length > 0) {
+    throw new Error(`This Event still needs ${problems.join(", ")}.`);
+  }
+}
+
 export const createEvent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => baseSchema.parse(i))
