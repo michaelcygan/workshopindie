@@ -125,10 +125,19 @@ function BlogPostPage() {
   const { post } = Route.useLoaderData();
 
   const entityTags = (post.entity_tags ?? []) as BlogEntityTag[];
-  const richWorkIds = new Set(
-    entityTags.filter((t) => t.kind === "work" && !!t.work).map((t) => t.id),
-  );
-  const otherTags = entityTags.filter((t) => !(t.kind === "work" && richWorkIds.has(t.id)));
+  const authors = (post.authors ?? []) as Array<{
+    id: string;
+    username: string | null;
+    display_name: string | null;
+    role_label: string | null;
+  }>;
+  const context = deriveBlogPostContext({
+    categorySlug: post.category_slug,
+    tags: entityTags,
+    authorProfileIds: authors.map((a) => a.id),
+    authorUsernames: [...authors.map((a) => a.username), post.author_profile?.username ?? null],
+  });
+  const category = getBlogCategory(post.category_slug);
 
   const publishedAt = post.published_at ? new Date(post.published_at) : null;
   const updatedAt = post.updated_at ? new Date(post.updated_at) : null;
@@ -142,13 +151,14 @@ function BlogPostPage() {
       </Link>
 
       <header className="mt-6">
-        <div className="text-xs uppercase tracking-wider text-ink-muted">
-          {publishedAt?.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}
-          {meaningfullyUpdated && (
-            <> · Updated {updatedAt!.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</>
-          )}
-        </div>
-        <h1 className="mt-3 font-display text-4xl leading-tight text-ink md:text-5xl">{post.title}</h1>
+        <Link
+          to="/blog/c/$category"
+          params={{ category: category.slug }}
+          className="text-[11px] uppercase tracking-[0.18em] text-ink-soft hover:text-ink"
+        >
+          {category.label}
+        </Link>
+        <h1 className="mt-2 font-display text-4xl leading-tight text-ink md:text-5xl">{post.title}</h1>
         {post.excerpt && (
           <p className="mt-4 text-lg text-ink-soft">{post.excerpt}</p>
         )}
