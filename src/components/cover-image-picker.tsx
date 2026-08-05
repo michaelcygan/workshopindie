@@ -16,6 +16,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 
 const MAX_BYTES = 3 * 1024 * 1024;
 const MAX_EDGE = 2048;
+// GIFs can't be re-encoded client-side without losing the animation, so they
+// upload as-is under their own cap.
+const MAX_GIF_BYTES = 8 * 1024 * 1024;
+
 
 export type CoverWorkOption = {
   id: string;
