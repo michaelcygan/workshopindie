@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { lovable } from "@/integrations/lovable/index";
+import { resolvePostAuthPath, goToPostAuth } from "@/lib/post-auth-destination";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
