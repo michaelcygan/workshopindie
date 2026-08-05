@@ -103,9 +103,10 @@ export function EventCard({ event, className }: { event: EventCardData; classNam
         <div className="flex items-center gap-1.5 pt-1 text-[11px] text-ink-muted">
           <span>{isExternal ? "External event ·" : "by"}</span>
           <span className="font-medium text-ink-soft">
-            {isExternal ? event.external_organizer || event.group.name : event.group.name}
+            {resolveEventHost(event).label}
           </span>
         </div>
+
       </div>
     </>
   );
