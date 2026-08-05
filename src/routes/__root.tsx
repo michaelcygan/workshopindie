@@ -19,6 +19,7 @@ import { usePendingRsvpFlush } from "@/hooks/use-pending-rsvp";
 import { useTitleBadge } from "@/hooks/use-title-badge";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteFooter } from "@/components/site-footer";
+import { OAuthErrorToast } from "@/components/oauth-error-toast";
 
 
 import { Toaster } from "@/components/ui/sonner";
@@ -152,6 +153,7 @@ function RootComponent() {
           <WelcomeTour />
           <FirstRunHint />
           
+          <OAuthErrorToast />
           <RefCapture />
           <PendingRsvpFlush />
           <PresenceHeartbeat />
