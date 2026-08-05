@@ -18,7 +18,7 @@ import { BlogBodyEditor } from "@/components/blog-body-editor";
 import { BlogAboutEditor } from "@/components/blog-about-editor";
 import { BlogEntityTagPicker } from "@/components/blog-entity-tag-picker";
 import { entityMarkdown, tagKey, invalidateEntityTagCaches, type BlogEntityTag } from "@/lib/blog-entity-tags";
-import { BLOG_CATEGORIES, blogCategoryLabel, toBlogCategorySlug, type BlogCategorySlug } from "@/lib/blog-categories";
+import { blogCategoryLabel, toBlogCategorySlug, type BlogCategorySlug } from "@/lib/blog-categories";
 import { BlogPostContext } from "@/components/blog-post-context";
 import { deriveBlogPostContext } from "@/lib/blog-post-context";
 
