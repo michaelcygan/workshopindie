@@ -20,7 +20,7 @@ export type EventCardData = {
   capacity: number | null;
   featured_at: string | null;
 
-  group: { slug: string; name: string; avatar_url: string | null };
+  group: { slug: string; name: string; avatar_url: string | null; kind?: string | null };
   source?: "workshop" | "external" | null;
   external_url?: string | null;
   external_organizer?: string | null;
