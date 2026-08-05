@@ -6,6 +6,8 @@ import { applicationRejectionReason, type CollabReviewStatus } from "@/lib/colla
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { findHateSlur } from "./profanity.server";
+import { normalizeUrlOrKeep } from "@/lib/url-normalize";
+import { parseFriendly } from "@/lib/zod-message";
 
 const httpsUrl = z.preprocess(
   (v) => (typeof v === "string" ? normalizeUrlOrKeep(v) : v),
@@ -63,7 +65,7 @@ function clientIpHash(): string | null {
 }
 
 export const submitGuestApplication = createServerFn({ method: "POST" })
-  .inputValidator((input) => guestSchema.parse(input))
+  .inputValidator((input) => parseFriendly(guestSchema, input, GUEST_LABELS))
   .handler(async ({ data }) => {
     // 1. Hate-speech filter (multilingual). Runs on every free-text field.
     const fields = [data.name, data.message, data.instagramHandle ?? ""];
