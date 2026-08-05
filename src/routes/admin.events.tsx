@@ -211,8 +211,10 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
         creative_category: form.creative_category || null,
         format: form.format,
         cover_url: form.cover_url || null,
-        starts_at: new Date(form.starts_at).toISOString(),
-        ends_at: new Date(form.ends_at).toISOString(),
+        starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : new Date().toISOString(),
+        ends_at: form.ends_at
+          ? new Date(form.ends_at).toISOString()
+          : new Date(Date.now() + 2 * 3600 * 1000).toISOString(),
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
         venue_name: form.venue_name || null,
         venue_address: form.venue_address || null,
