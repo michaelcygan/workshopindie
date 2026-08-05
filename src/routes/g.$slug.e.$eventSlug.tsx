@@ -199,6 +199,8 @@ function EventPage() {
   const isDraft = lifecycle === "draft";
   const statusLabel = eventStatusLabel(ev);
   const isFull = ev.capacity !== null && ev.going_count >= ev.capacity;
+  const host = resolveEventHost(ev);
+
 
   const canonicalUrl = typeof window !== "undefined"
     ? `${window.location.origin}/g/${ev.group.slug}/e/${ev.slug}`
