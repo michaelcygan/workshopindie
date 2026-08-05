@@ -7,6 +7,7 @@ import { GoogleSignIn } from "@/components/google-sign-in";
 import { AppleSignIn } from "@/components/apple-sign-in";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { AUTH_CALLBACK_PATH } from "@/lib/auth-launcher";
 
 type Props = {
   open: boolean;
@@ -32,7 +33,8 @@ export function SignupGateModal({ open, onOpenChange, title, subtitle, onAuthed 
     setLoading(true);
     try {
       if (mode === "signup") {
-        const redirect = typeof window !== "undefined" ? window.location.href : undefined;
+        const redirect =
+          typeof window !== "undefined" ? `${window.location.origin}${AUTH_CALLBACK_PATH}` : undefined;
         const { error, data } = await supabase.auth.signUp({
           email,
           password,
@@ -68,8 +70,14 @@ export function SignupGateModal({ open, onOpenChange, title, subtitle, onAuthed 
           {subtitle && <DialogDescription>{subtitle}</DialogDescription>}
         </DialogHeader>
         <div className="space-y-3">
-          <GoogleSignIn label={mode === "signup" ? "Sign up with Google" : "Continue with Google"} />
-          <AppleSignIn label={mode === "signup" ? "Sign up with Apple" : "Continue with Apple"} />
+          <GoogleSignIn
+            label={mode === "signup" ? "Sign up with Google" : "Continue with Google"}
+            redirectTo={typeof window !== "undefined" ? window.location.pathname + window.location.search : undefined}
+          />
+          <AppleSignIn
+            label={mode === "signup" ? "Sign up with Apple" : "Continue with Apple"}
+            redirectTo={typeof window !== "undefined" ? window.location.pathname + window.location.search : undefined}
+          />
           <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-ink-muted">
             <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
           </div>

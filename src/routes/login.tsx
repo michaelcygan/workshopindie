@@ -3,7 +3,9 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { resolvePostAuthPath, safePath, goToPostAuth } from "@/lib/post-auth-destination";
+import { safeDestination } from "@/lib/safe-destination";
+import { setPostAuthIntent } from "@/lib/post-auth-intent";
+import { AUTH_CALLBACK_PATH } from "@/lib/auth-launcher";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,13 +43,10 @@ function Login() {
       return;
     }
     if (search.join && search.group) return; // handled by the seed-link flow
-    let cancelled = false;
-    resolvePostAuthPath(safePath(search.redirect)).then((path) => {
-      if (!cancelled) goToPostAuth(path);
-    });
-    return () => {
-      cancelled = true;
-    };
+    const dest = safeDestination(search.redirect);
+    if (dest) setPostAuthIntent({ kind: "return_to", returnTo: dest });
+    // The callback route hands off to the lifecycle coordinator.
+    window.location.assign(AUTH_CALLBACK_PATH);
   }, [user, authLoading, search.claim, search.join, search.group, search.redirect, navigate]);
 
 
@@ -83,11 +82,9 @@ function Login() {
       navigate({ to: "/g/$slug", params: { slug: search.group } });
       return;
     }
-    if (search.redirect && search.redirect.startsWith("/")) {
-      window.location.assign(search.redirect);
-      return;
-    }
-    navigate({ to: "/" });
+    const dest = safeDestination(search.redirect);
+    if (dest) setPostAuthIntent({ kind: "return_to", returnTo: dest });
+    window.location.assign(AUTH_CALLBACK_PATH);
   };
 
 

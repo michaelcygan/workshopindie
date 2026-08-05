@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { setPendingRsvp } from "@/hooks/use-pending-rsvp";
+import { setPostAuthIntent } from "@/lib/post-auth-intent";
+import { AUTH_CALLBACK_PATH } from "@/lib/auth-launcher";
 
 export function EventRsvpAuthSheet({
   open,
@@ -28,8 +29,14 @@ export function EventRsvpAuthSheet({
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
 
+  const intent = {
+    kind: "event_rsvp" as const,
+    payload: { event_id: eventId, status },
+    returnTo: redirectTo,
+  };
+
   function persist() {
-    setPendingRsvp({ event_id: eventId, status, redirect_to: redirectTo });
+    setPostAuthIntent(intent);
   }
 
   async function handleEmail(e: React.FormEvent) {
@@ -41,7 +48,7 @@ export function EventRsvpAuthSheet({
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: `${window.location.origin}${redirectTo}` },
+          options: { emailRedirectTo: `${window.location.origin}${AUTH_CALLBACK_PATH}` },
         });
         if (error) throw error;
         toast.success("Check your email to confirm.");
@@ -49,7 +56,7 @@ export function EventRsvpAuthSheet({
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate({ to: redirectTo });
+        window.location.assign(AUTH_CALLBACK_PATH);
       }
     } catch (err) {
       toast.error((err as Error).message);
@@ -69,8 +76,8 @@ export function EventRsvpAuthSheet({
         </SheetHeader>
         <div className="mt-5 flex flex-col gap-3">
           <div onClick={persist} className="flex flex-col gap-2">
-            <GoogleSignIn />
-            <AppleSignIn />
+            <GoogleSignIn intent={intent} />
+            <AppleSignIn intent={intent} />
           </div>
           <p className="-mt-1 text-center text-[11px] text-ink-muted">
             We'll bring you back here right after.

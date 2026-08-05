@@ -3,7 +3,9 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { resolvePostAuthPath, safePath, goToPostAuth } from "@/lib/post-auth-destination";
+import { safeDestination } from "@/lib/safe-destination";
+import { setPostAuthIntent } from "@/lib/post-auth-intent";
+import { AUTH_CALLBACK_PATH } from "@/lib/auth-launcher";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,13 +52,10 @@ function Signup() {
       return;
     }
     if (search.join && search.group) return; // seed-link flow owns this
-    let cancelled = false;
-    resolvePostAuthPath(safePath(search.redirect)).then((path) => {
-      if (!cancelled) goToPostAuth(path);
-    });
-    return () => {
-      cancelled = true;
-    };
+    const dest = safeDestination(search.redirect);
+    if (dest) setPostAuthIntent({ kind: "return_to", returnTo: dest });
+    // The callback route hands off to the lifecycle coordinator.
+    window.location.assign(AUTH_CALLBACK_PATH);
   }, [signedInUser, authLoading, search.claim, search.join, search.group, search.redirect, navigate]);
 
   const [firstName, setFirstName] = useState(search.first ?? "");
@@ -130,6 +129,9 @@ function Signup() {
     }
     setLoading(true);
     const ig = sanitizeInstagramHandle(instagram);
+    // Preserve the destination across email confirmation.
+    const wanted = safeDestination(search.redirect);
+    if (wanted) setPostAuthIntent({ kind: "return_to", returnTo: wanted });
     const safeRedirect =
       search.redirect && search.redirect.startsWith("/") && !search.redirect.startsWith("//")
         ? search.redirect
@@ -138,7 +140,7 @@ function Signup() {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}${safeRedirect ?? "/"}`,
+        emailRedirectTo: `${window.location.origin}${AUTH_CALLBACK_PATH}`,
         data: {
           first_name: first,
           last_name: last,
