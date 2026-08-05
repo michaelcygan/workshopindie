@@ -1904,6 +1904,7 @@ export type Database = {
       group_events: {
         Row: {
           accent_color: string | null
+          archived_at: string | null
           capacity: number | null
           cover_url: string | null
           created_at: string
@@ -1932,6 +1933,7 @@ export type Database = {
           online_url: string | null
           pinned_at: string | null
           promo_pass_months: number
+          published_at: string | null
           recurrence_label: string | null
           rsvp_mode: Database["public"]["Enums"]["group_event_rsvp_mode"]
           series_key: string | null
@@ -1955,6 +1957,7 @@ export type Database = {
         }
         Insert: {
           accent_color?: string | null
+          archived_at?: string | null
           capacity?: number | null
           cover_url?: string | null
           created_at?: string
@@ -1983,6 +1986,7 @@ export type Database = {
           online_url?: string | null
           pinned_at?: string | null
           promo_pass_months?: number
+          published_at?: string | null
           recurrence_label?: string | null
           rsvp_mode?: Database["public"]["Enums"]["group_event_rsvp_mode"]
           series_key?: string | null
@@ -2006,6 +2010,7 @@ export type Database = {
         }
         Update: {
           accent_color?: string | null
+          archived_at?: string | null
           capacity?: number | null
           cover_url?: string | null
           created_at?: string
@@ -2034,6 +2039,7 @@ export type Database = {
           online_url?: string | null
           pinned_at?: string | null
           promo_pass_months?: number
+          published_at?: string | null
           recurrence_label?: string | null
           rsvp_mode?: Database["public"]["Enums"]["group_event_rsvp_mode"]
           series_key?: string | null
