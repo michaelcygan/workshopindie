@@ -9,13 +9,14 @@ import { TopNav } from "@/components/top-nav";
 import { MobileBrandHeader } from "@/components/mobile-brand-header";
 import { MobileNav } from "@/components/mobile-nav";
 import { PaymentTestModeBanner } from "@/components/payment-test-mode-banner";
-import { WelcomeTour } from "@/components/welcome-tour";
 import { FirstRunHint } from "@/components/first-run-hint";
 
 import { RefCapture } from "@/components/ref-capture";
 import { PresenceHeartbeat } from "@/components/presence-heartbeat";
-import { AgeGate } from "@/components/age-gate";
-import { usePendingRsvpFlush } from "@/hooks/use-pending-rsvp";
+import { AccountLifecycleProvider } from "@/components/account-lifecycle/provider";
+import { AccountLifecycleGate } from "@/components/account-lifecycle/gate";
+import { PostAuthRunner } from "@/components/account-lifecycle/post-auth-runner";
+import { clearPendingAuthState } from "@/components/account-lifecycle/post-auth-runner";
 import { useTitleBadge } from "@/hooks/use-title-badge";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteFooter } from "@/components/site-footer";
@@ -143,6 +144,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <AccountLifecycleProvider>
         <div className="min-h-screen bg-background pb-28 md:pb-0">
           <PaymentTestModeBanner />
           <MobileBrandHeader />
@@ -150,30 +152,25 @@ function RootComponent() {
           <Outlet />
           <SiteFooter />
           <MobileNav />
-          <WelcomeTour />
           <FirstRunHint />
           
           <OAuthErrorToast />
           <RefCapture />
-          <PendingRsvpFlush />
           <PresenceHeartbeat />
           <SignOutCacheReset />
           <TitleBadge />
-          <AgeGate />
+          <AccountLifecycleGate />
+          <PostAuthRunner />
 
 
 
 
         </div>
+        </AccountLifecycleProvider>
         <Toaster />
       </AuthProvider>
     </QueryClientProvider>
   );
-}
-
-function PendingRsvpFlush() {
-  usePendingRsvpFlush();
-  return null;
 }
 
 function TitleBadge() {
