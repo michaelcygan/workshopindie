@@ -13,7 +13,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as CitiesRouteImport } from './routes/cities'
 import { Route as CollabRouteImport } from './routes/collab'
-import { Route as CtxPreviewRouteImport } from './routes/ctx-preview'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as GRouteImport } from './routes/g'
 import { Route as GalleryRouteImport } from './routes/gallery'
@@ -129,11 +128,6 @@ const CitiesRoute = CitiesRouteImport.update({
 const CollabRoute = CollabRouteImport.update({
   id: '/collab',
   path: '/collab',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CtxPreviewRoute = CtxPreviewRouteImport.update({
-  id: '/ctx-preview',
-  path: '/ctx-preview',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
@@ -628,7 +622,6 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/cities': typeof CitiesRouteWithChildren
   '/collab': typeof CollabRouteWithChildren
-  '/ctx-preview': typeof CtxPreviewRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/g': typeof GRouteWithChildren
   '/gallery': typeof GalleryRoute
@@ -728,7 +721,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/ctx-preview': typeof CtxPreviewRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/g': typeof GRouteWithChildren
   '/gallery': typeof GalleryRoute
@@ -829,7 +821,6 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/cities': typeof CitiesRouteWithChildren
   '/collab': typeof CollabRouteWithChildren
-  '/ctx-preview': typeof CtxPreviewRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/g': typeof GRouteWithChildren
   '/gallery': typeof GalleryRoute
@@ -934,7 +925,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/cities'
     | '/collab'
-    | '/ctx-preview'
     | '/forgot-password'
     | '/g'
     | '/gallery'
@@ -1034,7 +1024,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/ctx-preview'
     | '/forgot-password'
     | '/g'
     | '/gallery'
@@ -1134,7 +1123,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/cities'
     | '/collab'
-    | '/ctx-preview'
     | '/forgot-password'
     | '/g'
     | '/gallery'
@@ -1238,7 +1226,6 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   CitiesRoute: typeof CitiesRouteWithChildren
   CollabRoute: typeof CollabRouteWithChildren
-  CtxPreviewRoute: typeof CtxPreviewRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   GRoute: typeof GRouteWithChildren
   GalleryRoute: typeof GalleryRoute
@@ -1325,13 +1312,6 @@ declare module '@tanstack/react-router' {
       path: '/collab'
       fullPath: '/collab'
       preLoaderRoute: typeof CollabRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/ctx-preview': {
-      id: '/ctx-preview'
-      path: '/ctx-preview'
-      fullPath: '/ctx-preview'
-      preLoaderRoute: typeof CtxPreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forgot-password': {
@@ -2205,7 +2185,6 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   CitiesRoute: CitiesRouteWithChildren,
   CollabRoute: CollabRouteWithChildren,
-  CtxPreviewRoute: CtxPreviewRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   GRoute: GRouteWithChildren,
   GalleryRoute: GalleryRoute,
