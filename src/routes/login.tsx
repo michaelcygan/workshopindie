@@ -1,6 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { safeDestination } from "@/lib/safe-destination";
@@ -12,8 +11,10 @@ import { Label } from "@/components/ui/label";
 import { GoogleSignIn } from "@/components/google-sign-in";
 import { AppleSignIn } from "@/components/apple-sign-in";
 import { KickerChip } from "@/components/kicker-chip";
-import { redeemGroupSeedLink } from "@/lib/group-seed-links.functions";
+import { sanitizeInstagramHandle } from "@/lib/display-name";
 import { toast } from "sonner";
+
+const REF_KEY = "signup-ref";
 
 export const Route = createFileRoute("/login")({
   component: Login,
@@ -25,43 +26,35 @@ export const Route = createFileRoute("/login")({
   }),
 });
 
-
 function Login() {
   const navigate = useNavigate();
   const search = Route.useSearch();
-  const redeemSeed = useServerFn(redeemGroupSeedLink);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const { user, loading: authLoading } = useAuth();
 
-  // Already signed in? Never sit on the auth form — go where this person belongs.
+  // Already signed in? Never sit on the auth form — go to the lifecycle coordinator.
   useEffect(() => {
     if (authLoading || !user) return;
-    if (search.claim) {
-      navigate({ to: "/collab/claim/$token", params: { token: search.claim } });
-      return;
-    }
-    if (search.join && search.group) return; // handled by the seed-link flow
-    const dest = safeDestination(search.redirect);
-    if (dest) setPostAuthIntent({ kind: "return_to", returnTo: dest });
-    // The callback route hands off to the lifecycle coordinator.
+    setPostAuthIntentFromSearch(search);
     window.location.assign(AUTH_CALLBACK_PATH);
-  }, [user, authLoading, search.claim, search.join, search.group, search.redirect, navigate]);
+  }, [user, authLoading, search.claim, search.join, search.group, search.redirect]);
 
-
-
-  // Stash seed-link for OAuth round-trips.
-  useEffect(() => {
-    if (search.join && search.group && typeof window !== "undefined") {
-      try {
-        sessionStorage.setItem(
-          "ws.pendingGroupJoin",
-          JSON.stringify({ token: search.join, slug: search.group }),
-        );
-      } catch { /* ignore */ }
+  function setPostAuthIntentFromSearch(s: typeof search) {
+    if (s.claim) {
+      setPostAuthIntent({ kind: "return_to", returnTo: `/collab/claim/${s.claim}` });
+    } else if (s.join && s.group) {
+      setPostAuthIntent({
+        kind: "group_seed_join",
+        payload: { token: s.join, slug: s.group },
+        returnTo: `/g/${s.group}`,
+      });
+    } else {
+      const dest = safeDestination(s.redirect);
+      if (dest) setPostAuthIntent({ kind: "return_to", returnTo: dest });
     }
-  }, [search.join, search.group]);
+  }
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,24 +62,9 @@ function Login() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) return toast.error(error.message);
-    if (search.claim) {
-      navigate({ to: "/collab/claim/$token", params: { token: search.claim } });
-      return;
-    }
-    if (search.join && search.group) {
-      try {
-        const r = await redeemSeed({ data: { token: search.join } });
-        if (typeof window !== "undefined") sessionStorage.removeItem("ws.pendingGroupJoin");
-        if (r.joined) toast.success("Joined");
-      } catch { /* listener will retry */ }
-      navigate({ to: "/g/$slug", params: { slug: search.group } });
-      return;
-    }
-    const dest = safeDestination(search.redirect);
-    if (dest) setPostAuthIntent({ kind: "return_to", returnTo: dest });
+    setPostAuthIntentFromSearch(search);
     window.location.assign(AUTH_CALLBACK_PATH);
   };
-
 
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center px-4 py-10">
