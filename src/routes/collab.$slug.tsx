@@ -171,7 +171,7 @@ function CollabDetail() {
   const [publishOpen, setPublishOpen] = useState(false);
   const [plusGate, setPlusGate] = useState(false);
 
-  const { data: post, isLoading } = useQuery({
+  const { data: post, isLoading, isError, error: postError, refetch: refetchPost } = useQuery({
     queryKey: ["collab", slug],
     queryFn: async () => {
       const { data, error } = await supabase
