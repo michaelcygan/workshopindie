@@ -13,7 +13,14 @@ function publicClient() {
 }
 
 const EVENT_FIELDS =
-  "id,group_id,slug,title,tagline,description,kind,format,cover_url,accent_color,starts_at,ends_at,timezone,venue_name,venue_address,venue_city_id,venue_lat,venue_lng,online_url,capacity,waitlist_enabled,visibility,rsvp_mode,status,is_official,featured_at,going_count,maybe_count,waitlist_count,created_by,created_at,series_key,short_code,lineup_capacity,source,external_url,external_organizer,is_recurring,recurrence_label,pinned_at";
+  "id,group_id,slug,title,tagline,description,kind,format,cover_url,accent_color,starts_at,ends_at,timezone,venue_name,venue_address,venue_city_id,venue_lat,venue_lng,online_url,capacity,waitlist_enabled,visibility,rsvp_mode,status,published_at,archived_at,is_official,featured_at,going_count,maybe_count,waitlist_count,created_by,created_at,series_key,short_code,lineup_capacity,source,external_url,external_organizer,is_recurring,recurrence_label,pinned_at";
+
+/** The flyer everyone can see. The join link is stripped — it is fetched
+ *  separately by confirmed participants via `getEventJoinLink`. */
+function toPublicFlyer<T extends Record<string, unknown>>(row: T): Omit<T, "online_url"> & { online_url: null; has_online_url: boolean } {
+  const { online_url, ...rest } = row as T & { online_url: string | null };
+  return { ...(rest as Omit<T, "online_url">), online_url: null, has_online_url: Boolean(online_url) };
+}
 
 export const getEventBySlug = createServerFn({ method: "GET" })
   .inputValidator((i) => z.object({ groupSlug: z.string(), eventSlug: z.string() }).parse(i))
@@ -29,8 +36,32 @@ export const getEventBySlug = createServerFn({ method: "GET" })
     if (!row) throw new Error("Event not found");
     const g = (row as { group: { slug: string } }).group;
     if (g.slug !== data.groupSlug) throw new Error("Event not found");
-    return row;
+    return toPublicFlyer(row as Record<string, unknown>);
   });
+
+/**
+ * Same flyer, read as the signed-in viewer. Drafts are only readable by
+ * hosts and admins (enforced by RLS), so this is the path a host uses to
+ * preview an unpublished Event.
+ */
+export const getEventBySlugAsViewer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ groupSlug: z.string(), eventSlug: z.string() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { data: row, error } = await context.supabase
+      .from("group_events")
+      .select(`${EVENT_FIELDS},group:groups!group_events_group_id_fkey!inner(id,slug,name,avatar_url,kind,accent_color,visibility,deleted_at)`)
+      .eq("slug", data.eventSlug)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!row) throw new Error("Event not found");
+    const g = (row as { group: { slug: string } }).group;
+    if (g.slug !== data.groupSlug) throw new Error("Event not found");
+    return toPublicFlyer(row as Record<string, unknown>);
+  });
+
+
 
 /** Public: upcoming public events that are tied to a city, for the homepage IRL strip. */
 export const listCityEventsStrip = createServerFn({ method: "GET" }).handler(async () => {
