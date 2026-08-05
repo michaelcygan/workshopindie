@@ -1,0 +1,2 @@
+ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_dm_policy_check;
+ALTER TABLE public.profiles ADD CONSTRAINT profiles_dm_policy_check CHECK (dm_policy IN ('mutuals','everyone','nobody'));
