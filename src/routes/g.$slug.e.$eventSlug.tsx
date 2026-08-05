@@ -13,6 +13,8 @@ import { getEventBySlug, getMyRsvp, listEventUpdates, listEventGroups, getEventJ
 import { getMyEventAccess } from "@/lib/events/access.functions";
 import { getEventCounts } from "@/lib/events/participation.functions";
 import { eventStatusLabel, getEventLifecycle, getEventMoment } from "@/lib/events/lifecycle";
+import { resolveEventHost } from "@/lib/events/host-label";
+
 import { EventWallFeed } from "@/components/events/event-wall-feed";
 import { EventWhosHere } from "@/components/events/event-whos-here";
 import { updateEventSeriesFuture, cancelEventSeriesFuture } from "@/lib/group-events-admin.functions";
