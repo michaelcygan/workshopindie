@@ -130,7 +130,7 @@ export function PostAuthRunner() {
               return;
             }
             case "group_join": {
-              await joinGroupFn({ data: { groupId: intent.payload.groupId! } });
+              await joinGroupFn({ data: { group_id: intent.payload.groupId! } });
               qc.invalidateQueries({ queryKey: ["my-group-ids"] });
               return;
             }
