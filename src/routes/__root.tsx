@@ -9,7 +9,7 @@ import { TopNav } from "@/components/top-nav";
 import { MobileBrandHeader } from "@/components/mobile-brand-header";
 import { MobileNav } from "@/components/mobile-nav";
 import { PaymentTestModeBanner } from "@/components/payment-test-mode-banner";
-import { FirstRunHint } from "@/components/first-run-hint";
+
 
 import { RefCapture } from "@/components/ref-capture";
 import { PresenceHeartbeat } from "@/components/presence-heartbeat";
