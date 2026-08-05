@@ -1,40 +1,33 @@
 import { useState } from "react";
-import { lovable } from "@/integrations/lovable/index";
-import { resolvePostAuthPath, goToPostAuth } from "@/lib/post-auth-destination";
+import { startOAuth } from "@/lib/auth-launcher";
+import type { NewPostAuthIntent } from "@/lib/post-auth-intent";
+import { goToAuthCallback } from "@/lib/auth-launcher";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 export function GoogleSignIn({
   label = "Continue with Google",
   redirectTo,
+  intent,
 }: {
   label?: string;
-  /** Same-origin path (must start with "/") to return to after Google sign-in. */
+  /** Same-origin path to return to once the account lifecycle is ready. */
   redirectTo?: string;
+  /** Richer originating action (RSVP, join, claim…) to resume after auth. */
+  intent?: NewPostAuthIntent;
 }) {
   const [loading, setLoading] = useState(false);
-  const safeRedirect =
-    redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//") ? redirectTo : null;
 
   const handleClick = async () => {
     setLoading(true);
-    try {
-      const returnUrl = safeRedirect ? window.location.origin + safeRedirect : window.location.origin;
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: returnUrl,
-      });
-      if (result.error) {
-        toast.error(result.error.message ?? "Google sign-in failed");
-        setLoading(false);
-        return;
-      }
-      if (result.redirected) return; // browser will redirect
-      // Session set inline; send new accounts to onboarding, others onward.
-      goToPostAuth(await resolvePostAuthPath(safeRedirect));
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Google sign-in failed");
+    const result = await startOAuth("google", { intent, returnTo: redirectTo ?? null });
+    if (result.status === "error") {
+      toast.error(result.message);
       setLoading(false);
+      return;
     }
+    if (result.status === "redirected") return; // browser is leaving
+    goToAuthCallback();
   };
 
   return (
