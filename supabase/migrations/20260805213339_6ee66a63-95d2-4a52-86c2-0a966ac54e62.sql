@@ -1,0 +1,1 @@
+GRANT SELECT (first_name) ON public.profiles TO anon;

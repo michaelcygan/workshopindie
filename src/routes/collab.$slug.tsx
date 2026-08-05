@@ -171,7 +171,7 @@ function CollabDetail() {
   const [publishOpen, setPublishOpen] = useState(false);
   const [plusGate, setPlusGate] = useState(false);
 
-  const { data: post, isLoading } = useQuery({
+  const { data: post, isLoading, isError, error: postError, refetch: refetchPost } = useQuery({
     queryKey: ["collab", slug],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -331,6 +331,15 @@ function CollabDetail() {
   });
 
   if (isLoading) return <main className="mx-auto max-w-3xl p-10"><div className="h-64 animate-pulse rounded-xl bg-surface-2" /></main>;
+  if (isError) {
+    return (
+      <main className="mx-auto max-w-2xl p-10 text-center">
+        <h1 className="font-display text-3xl text-ink">Couldn't load this Collab</h1>
+        <p className="mt-2 text-sm text-ink-muted">{(postError as Error)?.message ?? "Something went wrong."}</p>
+        <Button className="mt-5 rounded-md" onClick={() => refetchPost()}>Try again</Button>
+      </main>
+    );
+  }
   if (!post) return <main className="mx-auto max-w-3xl p-10 text-center text-ink-muted">Not found.</main>;
 
   const isOwner = user?.id === post.user_id;
