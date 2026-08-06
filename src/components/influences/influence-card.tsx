@@ -17,7 +17,7 @@ function hostOf(url: string | null): string | null {
 /** One influence: a Workshop Work, or an external reference. Quiet by design. */
 export function InfluenceCard({ influence }: { influence: Influence }) {
   const d = influenceDisplay(influence);
-  const cat = CATEGORIES.includes(d.category as Category) ? (d.category as Category) : null;
+  const cat = CATEGORIES.some((c) => c.id === d.category) ? (d.category as Category) : null;
   const host = hostOf(influence.external_url);
   const isWork = influence.source_kind === "workshop_work" && !!influence.work;
 
@@ -57,7 +57,7 @@ export function InfluenceCard({ influence }: { influence: Influence }) {
 
   if (isWork) {
     return (
-      <Link to="/w/$slug" params={{ slug: influence.work!.slug }} className={className}>
+      <Link to="/works/$slug" params={{ slug: influence.work!.slug }} className={className}>
         {inner}
       </Link>
     );
