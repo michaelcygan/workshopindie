@@ -328,7 +328,7 @@ function DmsIndex() {
         </div>
       ) : (
         <ul className="mt-4 space-y-1.5">
-          {filtered.map(({ conv, other, unread, collab, workshop, lastFromMe }) => (
+          {filtered.map(({ conv, other, unread, collab, workshop, work, lastFromMe }) => (
             <li key={conv.id}>
               <button
                 type="button"
