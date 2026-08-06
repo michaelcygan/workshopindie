@@ -4,7 +4,13 @@
  * A real address, not a tab: crawlable, linkable, and filterable through the
  * URL so "screenings in Chicago" is something you can send to someone.
  */
-import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  notFound,
+  useNavigate,
+  stripSearchParams,
+} from "@tanstack/react-router";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { ChevronLeft } from "lucide-react";
