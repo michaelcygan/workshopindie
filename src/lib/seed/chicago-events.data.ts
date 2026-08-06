@@ -463,6 +463,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_infinite_wrench_sun",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fneo-futurists-infinite-wrench.jpg",
+    photo_credit_name: "The Neo-Futurists",
+    photo_credit_url: "https://neofuturists.org/events/theinfinitewrench/",
     cadence: "weekly",
     weekday: 0,
     start_local: "19:00",
