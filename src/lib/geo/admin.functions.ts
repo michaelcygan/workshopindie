@@ -9,11 +9,13 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-async function requireAdmin(supabase: { rpc: (fn: string, args: unknown) => Promise<{ data: unknown }> }, userId: string) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function requireAdmin(supabase: any, userId: string) {
   const { data } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
   if (!data) throw new Error("Forbidden: admin only");
   return true;
 }
+
 
 async function adminClient() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
