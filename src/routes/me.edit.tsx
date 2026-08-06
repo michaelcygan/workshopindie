@@ -841,19 +841,18 @@ function EditProfile() {
           >
             <div className="space-y-2">
               <Label>City</Label>
-              <select
-                value={form.cityId}
-                onChange={(e) => set("cityId", e.target.value)}
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="">— None —</option>
-                {cities.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}, {c.country}
-                  </option>
-                ))}
-              </select>
+              <GlobalLocationCombobox
+                value={locationValue}
+                busy={locationBusy}
+                onSelect={handleLocationSelect}
+                onClear={() => set("cityId", "")}
+              />
+              <p className="text-xs text-ink-muted">
+                Search anywhere in the world. If your city isn&apos;t on Workshop yet, choosing it
+                opens its official group.
+              </p>
             </div>
+
             <LanguagesField
               languages={form.languages}
               onChange={(next) => set("languages", next)}
