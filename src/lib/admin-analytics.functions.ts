@@ -113,10 +113,11 @@ export const getAdminMarketplace = createServerFn({ method: "GET" })
     const since = new Date(Date.now() - 30 * 86400000).toISOString();
     const prevSince = new Date(Date.now() - 60 * 86400000).toISOString();
 
-    const [collabFunnel, worksFunnel, health, posts, apps, guestApps] = await Promise.all([
+    const [collabFunnel, worksFunnel, health, loungeFunnel, posts, apps, guestApps] = await Promise.all([
       panel(v(admin, "vw_collab_funnel").select("*").maybeSingle()),
       panel(v(admin, "vw_works_funnel").select("*").maybeSingle()),
       panel(v(admin, "vw_marketplace_health").select("*").maybeSingle()),
+      panel(v(admin, "vw_lounge_funnel").select("*").maybeSingle()),
       panel(admin.from("collab_posts").select("id,created_at,lifecycle_state").gte("created_at", prevSince)),
       panel(
         admin
@@ -152,7 +153,7 @@ export const getAdminMarketplace = createServerFn({ method: "GET" })
       });
     }
 
-    return { collabFunnel, worksFunnel, health, collabHealth, fetchedAt: new Date().toISOString() };
+    return { collabFunnel, worksFunnel, health, loungeFunnel, collabHealth, fetchedAt: new Date().toISOString() };
   });
 
 export const getAdminLoungeAudio = createServerFn({ method: "GET" })
