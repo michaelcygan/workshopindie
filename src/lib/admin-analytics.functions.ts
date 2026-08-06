@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { panel, ok, unavailable } from "@/lib/analytics/envelope";
+import { panel, ok, unavailable, type Panel } from "@/lib/analytics/envelope";
 
 async function requireAdmin(supabase: any, userId: string) {
   const { data, error } = await supabase
@@ -127,7 +127,7 @@ export const getAdminMarketplace = createServerFn({ method: "GET" })
       panel(admin.from("collab_guest_applications").select("id,collab_post_id,created_at,status").gte("created_at", prevSince)),
     ]);
 
-    let collabHealth: ReturnType<typeof ok<any>> = unavailable("Collab activity unavailable");
+    let collabHealth: Panel<any> = unavailable<any>("Collab activity unavailable");
     if (posts.status !== "unavailable" && apps.status !== "unavailable") {
       const postRows = (posts.data ?? []) as any[];
       const appRows = (apps.data ?? []) as any[];

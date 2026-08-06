@@ -26,10 +26,10 @@ export function unavailable<T>(error?: string): Panel<T> {
   return { data: null, status: "unavailable", ...(error ? { error } : {}) };
 }
 
-type Supabaseish<T> = PromiseLike<{ data: T | null; error: { message: string } | null }>;
+type Supabaseish = PromiseLike<{ data: any; error: { message: string } | null }>;
 
 /** Wrap a Supabase query so failures surface as `unavailable`, not as zeros. */
-export async function panel<T>(query: Supabaseish<T>): Promise<Panel<T>> {
+export async function panel<T = any>(query: Supabaseish): Promise<Panel<T>> {
   try {
     const res = await query;
     if (res.error) return unavailable<T>(res.error.message);
