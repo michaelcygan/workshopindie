@@ -141,6 +141,7 @@ const TEMPLATE_COLUMNS = [
   "tagline",
   "description",
   "kind",
+  "creative_category",
   "format",
   "cover_url",
   "accent_color",

@@ -26,6 +26,7 @@ import {
   setEventFeatured,
 } from "@/lib/group-events-admin.functions";
 import { MEDIUM_GROUPS, type MediumGroupKey } from "@/lib/medium-groups";
+import { EVENT_KIND_OPTIONS, type EventKind } from "@/lib/events/kinds";
 import { toast } from "sonner";
 import { AdminImportEventDialog } from "@/components/admin-import-event-dialog";
 import { VenueAutocomplete } from "@/components/event/venue-autocomplete";
@@ -134,7 +135,7 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
 
   type FormState = {
     group_id: string; title: string; tagline: string; description: string;
-    kind: "open_mic" | "listening_party" | "networking" | "screening" | "workshop_irl" | "online" | "other" | "lineup";
+    kind: EventKind;
     creative_category: "" | MediumGroupKey;
     format: "in_person" | "online" | "hybrid";
     cover_url: string; starts_at: string; ends_at: string;
@@ -355,8 +356,8 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
               <Select value={form.kind} onValueChange={(v) => setForm({ ...form, kind: v as typeof form.kind })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {["open_mic", "listening_party", "networking", "screening", "workshop_irl", "online", "lineup", "other"].map((k) => (
-                    <SelectItem key={k} value={k}>{k.replace(/_/g, " ")}</SelectItem>
+                  {EVENT_KIND_OPTIONS.map((k) => (
+                    <SelectItem key={k.value} value={k.value}>{k.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
