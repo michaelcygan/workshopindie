@@ -9,6 +9,15 @@ import {
   updateInfluence,
 } from "@/lib/influences.functions";
 import type { Influence } from "@/lib/influences/types";
+import type { AddInfluenceInput } from "@/lib/influences/schemas";
+
+type UpdateInfluenceInput = {
+  id: string;
+  title?: string | null;
+  creator_name?: string | null;
+  category?: string | null;
+  thumbnail_url?: string | null;
+};
 
 const SELECT =
   "id,position,source_kind,work_id,external_url,title,creator_name,category,thumbnail_url,provider,work:works(id,slug,title,cover_url,category,status,visibility)";
@@ -61,11 +70,11 @@ export function useInfluenceMutations(profileId: string | undefined) {
   return {
     resolveUrl: useMutation({ mutationFn: (url: string) => resolve({ data: { url } }) }),
     add: useMutation({
-      mutationFn: (input: Parameters<typeof addInfluence>[0]["data"]) => add({ data: input }),
+      mutationFn: (input: AddInfluenceInput) => add({ data: input }),
       onSuccess: invalidate,
     }),
     update: useMutation({
-      mutationFn: (input: Parameters<typeof updateInfluence>[0]["data"]) => update({ data: input }),
+      mutationFn: (input: UpdateInfluenceInput) => update({ data: input }),
       onSuccess: invalidate,
     }),
     remove: useMutation({
