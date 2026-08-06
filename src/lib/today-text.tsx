@@ -1,130 +1,20 @@
-import { Link } from "@tanstack/react-router";
-import { Fragment, useState, type ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { BookOpen, Calendar, Image as ImageIcon, Megaphone, Users } from "lucide-react";
+import { Fragment, type ReactNode } from "react";
 import { isBlockedHost, isShortenerHost } from "@/lib/link-blocklist";
 import { UsernameMention } from "@/components/username-mention";
-import { GroupPeek } from "@/components/group-peek";
-import { EventPeek } from "@/components/event-peek";
-import { CollabPeek } from "@/components/collab-peek";
-import { WorkPeek } from "@/components/work-peek";
-import { BlogPostPeek } from "@/components/blog-post-peek";
-import { supabase } from "@/integrations/supabase/client";
+import { EntityReferenceChip } from "@/components/entity/entity-reference-chip";
+import {
+  parseEntityBody,
+  flattenEntityBody,
+  extractBodyMentions,
+} from "@/lib/entities/parse";
 
 /**
- * Parse a chat / Today post body into renderable segments.
- * Supports:
- *  - @username mentions                    → ProfilePeek chip (via UsernameMention)
- *  - [Label](/collab/slug) inline links     → collab pill + peek dialog
- *  - [Label](/works/slug) inline links      → work pill + peek dialog
- *  - [Label](/g/slug) inline links          → group pill + hover peek
- *  - [Label](/g/slug/e/eventSlug) links     → event pill + hover peek
- *  - [Label](/blog/slug) inline links       → blog post pill + peek dialog
- *  - Bare URLs (http/https)                 → autolinked with soft censoring
+ * Today board body renderer.
+ *
+ * Tokenizing now lives in `@/lib/entities/parse` and reference chips in
+ * `EntityReferenceChip`, shared with Lounge chat and DMs. This file only adds
+ * the Today-specific URL treatment (blocklist censoring, shortener warning).
  */
-
-type Segment =
-  | { type: "text"; value: string }
-  | { type: "mention"; username: string }
-  | { type: "collab"; label: string; slug: string }
-  | { type: "work"; label: string; slug: string }
-  | { type: "group"; label: string; slug: string }
-  | { type: "event"; label: string; groupSlug: string; eventSlug: string }
-  | { type: "post"; label: string; slug: string }
-  | { type: "url"; href: string };
-
-const EVENT_LINK_RE =
-  /\[([^\]\n]{1,120})\]\(\/g\/([a-zA-Z0-9_-]{1,80})\/e\/([a-zA-Z0-9_-]{1,80})\)/g;
-const GROUP_LINK_RE = /\[([^\]\n]{1,120})\]\(\/g\/([a-zA-Z0-9_-]{1,80})\)/g;
-const COLLAB_LINK_RE = /\[([^\]\n]{1,120})\]\(\/collab\/([a-zA-Z0-9_-]{1,80})\)/g;
-const WORK_LINK_RE = /\[([^\]\n]{1,120})\]\(\/works\/([a-zA-Z0-9_-]{1,80})\)/g;
-const POST_LINK_RE = /\[([^\]\n]{1,120})\]\(\/blog\/([a-zA-Z0-9_-]{1,120})\)/g;
-const MENTION_RE = /(^|\s)@([a-zA-Z0-9_]{2,30})/g;
-const URL_RE = /\bhttps?:\/\/[^\s<>"')]+/g;
-
-function tokenize(body: string): Segment[] {
-  type Hit = { start: number; end: number; seg: Segment };
-  const hits: Hit[] = [];
-
-  let m: RegExpExecArray | null;
-  EVENT_LINK_RE.lastIndex = 0;
-  while ((m = EVENT_LINK_RE.exec(body)) !== null) {
-    hits.push({
-      start: m.index,
-      end: m.index + m[0].length,
-      seg: { type: "event", label: m[1], groupSlug: m[2], eventSlug: m[3] },
-    });
-  }
-  GROUP_LINK_RE.lastIndex = 0;
-  while ((m = GROUP_LINK_RE.exec(body)) !== null) {
-    // Skip if already captured as an event (event regex is a superset).
-    if (hits.some((h) => m!.index >= h.start && m!.index < h.end)) continue;
-    hits.push({
-      start: m.index,
-      end: m.index + m[0].length,
-      seg: { type: "group", label: m[1], slug: m[2] },
-    });
-  }
-  COLLAB_LINK_RE.lastIndex = 0;
-  while ((m = COLLAB_LINK_RE.exec(body)) !== null) {
-    if (hits.some((h) => m!.index >= h.start && m!.index < h.end)) continue;
-    hits.push({
-      start: m.index,
-      end: m.index + m[0].length,
-      seg: { type: "collab", label: m[1], slug: m[2] },
-    });
-  }
-  WORK_LINK_RE.lastIndex = 0;
-  while ((m = WORK_LINK_RE.exec(body)) !== null) {
-    if (hits.some((h) => m!.index >= h.start && m!.index < h.end)) continue;
-    hits.push({
-      start: m.index,
-      end: m.index + m[0].length,
-      seg: { type: "work", label: m[1], slug: m[2] },
-    });
-  }
-  POST_LINK_RE.lastIndex = 0;
-  while ((m = POST_LINK_RE.exec(body)) !== null) {
-    if (hits.some((h) => m!.index >= h.start && m!.index < h.end)) continue;
-    hits.push({
-      start: m.index,
-      end: m.index + m[0].length,
-      seg: { type: "post", label: m[1], slug: m[2] },
-    });
-  }
-  URL_RE.lastIndex = 0;
-  while ((m = URL_RE.exec(body)) !== null) {
-    if (hits.some((h) => m!.index >= h.start && m!.index < h.end)) continue;
-    hits.push({
-      start: m.index,
-      end: m.index + m[0].length,
-      seg: { type: "url", href: m[0] },
-    });
-  }
-  MENTION_RE.lastIndex = 0;
-  while ((m = MENTION_RE.exec(body)) !== null) {
-    const at = m.index + (m[1] ? m[1].length : 0);
-    const end = at + 1 + m[2].length;
-    if (hits.some((h) => at >= h.start && at < h.end)) continue;
-    hits.push({ start: at, end, seg: { type: "mention", username: m[2] } });
-  }
-
-  hits.sort((a, b) => a.start - b.start);
-
-  const out: Segment[] = [];
-  let cursor = 0;
-  for (const h of hits) {
-    if (h.start > cursor) {
-      out.push({ type: "text", value: body.slice(cursor, h.start) });
-    }
-    out.push(h.seg);
-    cursor = h.end;
-  }
-  if (cursor < body.length) {
-    out.push({ type: "text", value: body.slice(cursor) });
-  }
-  return out;
-}
 
 function truncateMiddle(s: string, max = 60): string {
   if (s.length <= max) return s;
@@ -133,64 +23,29 @@ function truncateMiddle(s: string, max = 60): string {
 }
 
 export function renderTodayBody(body: string): ReactNode {
-  const segments = tokenize(body);
-  return segments.map((s, i) => {
-    if (s.type === "text") {
-      return <Fragment key={i}>{s.value}</Fragment>;
-    }
+  return parseEntityBody(body).map((s, i) => {
+    if (s.type === "text") return <Fragment key={i}>{s.value}</Fragment>;
     if (s.type === "mention") {
       return (
         <UsernameMention key={i} handle={s.username}>
-          <button
-            type="button"
-            className="rounded px-0.5 font-medium text-primary hover:underline"
-          >
+          <button type="button" className="rounded px-0.5 font-medium text-primary hover:underline">
             @{s.username}
           </button>
         </UsernameMention>
       );
     }
-    if (s.type === "collab") {
-      return <CollabPill key={i} label={s.label} slug={s.slug} />;
-    }
-    if (s.type === "work") {
-      return <WorkPill key={i} label={s.label} slug={s.slug} />;
-    }
-    if (s.type === "group") {
+    if (s.type === "entity") {
       return (
-        <GroupPeek key={i} slug={s.slug}>
-          <Link
-            to="/g/$slug"
-            params={{ slug: s.slug }}
-            className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-signal/30 bg-signal/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-signal hover:bg-signal/10"
-          >
-            <Users className="h-3 w-3" />
-            {s.label}
-          </Link>
-        </GroupPeek>
+        <EntityReferenceChip
+          key={i}
+          kind={s.kind}
+          label={s.label}
+          slug={s.slug}
+          groupSlug={s.groupSlug}
+        />
       );
     }
-    if (s.type === "event") {
-      return (
-        <EventPeek key={i} groupSlug={s.groupSlug} eventSlug={s.eventSlug}>
-          <Link
-            to="/g/$slug/e/$eventSlug"
-            params={{ slug: s.groupSlug, eventSlug: s.eventSlug }}
-            className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-destructive hover:bg-destructive/10"
-          >
-            <Calendar className="h-3 w-3" />
-            {s.label}
-          </Link>
-        </EventPeek>
-      );
-    }
-    if (s.type === "post") {
-      return <PostPill key={i} label={s.label} slug={s.slug} />;
-    }
-    if (s.type === "url") {
-      return <UrlSegment key={i} href={s.href} />;
-    }
-    return null;
+    return <UrlSegment key={i} href={s.href} />;
   });
 }
 
@@ -226,100 +81,8 @@ function UrlSegment({ href }: { href: string }) {
   );
 }
 
-function CollabPill({ label, slug }: { label: string; slug: string }) {
-  const [open, setOpen] = useState(false);
-  const { data: id } = useQuery({
-    queryKey: ["collab-id-by-slug", slug],
-    enabled: open,
-    staleTime: 5 * 60_000,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("collab_posts")
-        .select("id")
-        .eq("slug", slug)
-        .maybeSingle();
-      return (data?.id as string | undefined) ?? null;
-    },
-  });
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-primary hover:bg-primary/10"
-      >
-        <Megaphone className="h-3 w-3" />
-        {label}
-      </button>
-      <CollabPeek collabId={id ?? null} open={open} onOpenChange={setOpen} />
-    </>
-  );
-}
-
-function WorkPill({ label, slug }: { label: string; slug: string }) {
-  const [open, setOpen] = useState(false);
-  const { data: id } = useQuery({
-    queryKey: ["work-id-by-slug", slug],
-    enabled: open,
-    staleTime: 5 * 60_000,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("works")
-        .select("id")
-        .eq("slug", slug)
-        .maybeSingle();
-      return (data?.id as string | undefined) ?? null;
-    },
-  });
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-destructive hover:bg-destructive/10"
-      >
-        <ImageIcon className="h-3 w-3" />
-        {label}
-      </button>
-      <WorkPeek workId={id ?? null} open={open} onOpenChange={setOpen} />
-    </>
-  );
-}
-
-function PostPill({ label, slug }: { label: string; slug: string }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-signal/30 bg-signal/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-signal hover:bg-signal/10"
-      >
-        <BookOpen className="h-3 w-3" />
-        {label}
-      </button>
-      <BlogPostPeek slug={slug} open={open} onOpenChange={setOpen} />
-    </>
-  );
-}
-
-/** Strip markdown links (collab/group/event/post) to plain labels for snippets. */
-export function flattenTodayBodyToText(body: string): string {
-  return body
-    .replace(EVENT_LINK_RE, (_f, label: string) => label)
-    .replace(GROUP_LINK_RE, (_f, label: string) => label)
-    .replace(COLLAB_LINK_RE, (_f, label: string) => label)
-    .replace(WORK_LINK_RE, (_f, label: string) => label)
-    .replace(POST_LINK_RE, (_f, label: string) => label);
-}
+/** Strip markdown links (collab/work/group/event/post) to plain labels. */
+export const flattenTodayBodyToText = flattenEntityBody;
 
 /** Extract @username tokens (deduped, lowercase). */
-export function extractMentions(body: string): string[] {
-  const out = new Set<string>();
-  let m: RegExpExecArray | null;
-  MENTION_RE.lastIndex = 0;
-  while ((m = MENTION_RE.exec(body)) !== null) {
-    out.add(m[2].toLowerCase());
-  }
-  return Array.from(out);
-}
+export const extractMentions = extractBodyMentions;
