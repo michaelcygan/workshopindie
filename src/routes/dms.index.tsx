@@ -67,7 +67,7 @@ function DmsIndex() {
   async function load(uid: string) {
     const { data: convs } = await supabase
       .from("conversations")
-      .select("id, user_a, user_b, last_message_at, last_message_preview, context_collab_post_id, context_workshop_id")
+      .select("id, user_a, user_b, last_message_at, last_message_preview, context_collab_post_id, context_workshop_id, context_work_id")
       .or(`user_a.eq.${uid},user_b.eq.${uid}`)
       .order("last_message_at", { ascending: false, nullsFirst: false })
       .limit(MAX_CONVERSATIONS);
