@@ -42,6 +42,10 @@ async function fetchGroup(slug: string): Promise<DirectoryGroup> {
 
 export const Route = createFileRoute("/g/$slug/events")({
   validateSearch: zodValidator(searchSchema),
+  // Defaults never appear in the URL — an unfiltered directory is a clean address.
+  search: {
+    middlewares: [stripSearchParams({ category: "", kind: "", format: "all", q: "" })],
+  },
   loader: ({ params }) => fetchGroup(params.slug),
   component: GroupEventsPage,
   head: ({ params, loaderData }) => {
