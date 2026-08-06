@@ -94,8 +94,8 @@ async function resolveTags(rows: Row[], opts: { publicOnly: boolean }): Promise<
     if (r.work_id) {
       const w = workMap.get(r.work_id);
       if (!w) continue;
-      if (opts.publicOnly && (w.status !== "published" || w.visibility === "private")) continue;
-      const isPublic = w.status === "published" && w.visibility === "public";
+      const isPublic = isWorkPubliclyReferenceable(w);
+      if (opts.publicOnly && !isPublic) continue;
       out.push({
         kind: "work",
         id: w.id,
@@ -128,27 +128,30 @@ async function resolveTags(rows: Row[], opts: { publicOnly: boolean }): Promise<
     if (r.collab_id) {
       const c = collabMap.get(r.collab_id);
       if (!c) continue;
+      // A finished or closed Collab is still valid editorial context; an
+      // archived or legacy-draft one is not public and must not resolve.
+      if (opts.publicOnly && !isCollabPubliclyReferenceable(c)) continue;
       out.push({ kind: "collab", id: c.id, slug: c.slug, label: c.title, sublabel: c.description ?? null, image: null });
       continue;
     }
     if (r.group_id) {
       const g = groupMap.get(r.group_id);
       if (!g) continue;
-      if (opts.publicOnly && (g.visibility !== "public" || g.deleted_at)) continue;
+      if (opts.publicOnly && !isGroupPubliclyReferenceable(g)) continue;
       out.push({ kind: "group", id: g.id, slug: g.slug, label: g.name, sublabel: g.tagline ?? null, image: g.avatar_url });
       continue;
     }
     if (r.group_event_id) {
       const e = eventMap.get(r.group_event_id);
       if (!e || !e.group?.slug) continue;
-      if (opts.publicOnly && (e.visibility === "private" || e.deleted_at || e.group.deleted_at)) continue;
+      if (opts.publicOnly && !isEventPubliclyReferenceable(e, e.group)) continue;
       out.push({ kind: "event", id: e.id, slug: e.slug, groupSlug: e.group.slug, label: e.title, sublabel: e.group.name, image: e.cover_url });
       continue;
     }
     if (r.profile_id) {
       const p = profileMap.get(r.profile_id);
       if (!p || !p.username) continue;
-      if (opts.publicOnly && p.discoverable === false) continue;
+      if (opts.publicOnly && !isProfilePubliclyReferenceable(p)) continue;
       out.push({ kind: "profile", id: p.id, username: p.username, label: p.display_name || p.username, sublabel: p.headline ?? `@${p.username}`, image: p.avatar_url });
       continue;
     }
