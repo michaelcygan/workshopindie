@@ -711,6 +711,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_songwriters_collective_brig_open_mic",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fsongwriters-collective.jpg",
+    photo_credit_name: "Chicago Songwriters Collective",
+    photo_credit_url: "https://www.meetup.com/vocalists-151/",
     cadence: "dated",
     occurrences: ["2026-08-10T19:00"],
     duration_minutes: 180,
