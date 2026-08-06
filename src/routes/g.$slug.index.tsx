@@ -38,7 +38,6 @@ import { resolveGroupSeedLink, redeemGroupSeedLink } from "@/lib/group-seed-link
 
 import { toast } from "sonner";
 
-import { AdjacentGroupsRail } from "@/components/adjacent-groups-rail";
 import { GroupHero } from "@/components/group/group-hero";
 import { GroupTabBar, type GroupTab } from "@/components/group/group-tab-bar";
 import { GroupEmpty } from "@/components/group/group-empty";
@@ -423,11 +422,8 @@ function GroupPage() {
               {viewTab === "members" && <GroupMembersTab group={group} />}
               {viewTab === "about" && <GroupAboutTab group={group} />}
             </div>
-
-            <div className="mt-16">
-              <AdjacentGroupsRail groupId={group.id} />
-            </div>
           </div>
+
         </div>
       </main>
     </GroupLiveShell>
