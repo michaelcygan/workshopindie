@@ -1,4 +1,3 @@
-import { NON_PUBLIC_STATUSES, RECRUITING_DEADLINE_OR } from "@/lib/collab/query";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Briefcase, Users, MapPin, Calendar, User, Search } from "lucide-react";
@@ -14,7 +13,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import type { BlogEntityKind, BlogEntityTag } from "@/lib/blog-entity-tags";
 import { kindLabel, tagKey } from "@/lib/blog-entity-tags";
-import { DISCOVERABLE_STATUSES } from "@/lib/events/filters";
+import {
+  searchWorks,
+  searchCollabs,
+  searchGroups,
+  searchEvents,
+  searchProfiles,
+  type EntitySearchHit,
+} from "@/lib/entities/search";
 
 const KIND_ICONS: Record<BlogEntityKind, typeof Briefcase> = {
   work: Briefcase,
@@ -23,6 +29,50 @@ const KIND_ICONS: Record<BlogEntityKind, typeof Briefcase> = {
   event: Calendar,
   profile: User,
 };
+
+/**
+ * Shared search hit -> the Blog's own tag shape. Blog tags carry an extra
+ * `work` summary so the "About this post" panel can render mediums live from
+ * the Work's subtype before the post is saved.
+ */
+function hitToBlogTag(hit: EntitySearchHit): BlogEntityTag {
+  const common = {
+    id: hit.id,
+    label: hit.label,
+    sublabel: hit.sublabel ?? null,
+    image: hit.image ?? null,
+  };
+  switch (hit.kind) {
+    case "work":
+      return {
+        kind: "work",
+        slug: hit.slug,
+        ...common,
+        work: {
+          excerpt: null,
+          categories: hit.category ? [hit.category] : [],
+          subtype: hit.subtype ?? null,
+          cover_url: hit.image ?? null,
+          cover_aspect: null,
+          cover_focal_x: null,
+          cover_focal_y: null,
+          credits: [],
+        },
+      };
+    case "collab":
+      return { kind: "collab", slug: hit.slug, ...common };
+    case "group":
+      return { kind: "group", slug: hit.slug, ...common };
+    case "event":
+      return { kind: "event", slug: hit.slug, groupSlug: hit.groupSlug, ...common };
+    case "profile":
+      return { kind: "profile", username: hit.username, ...common };
+    case "post":
+      // The Blog picker never searches posts; keep the switch exhaustive.
+      throw new Error("Blog posts are not taggable as post-context");
+  }
+}
+
 
 type Props = {
   open: boolean;
@@ -79,199 +129,27 @@ export function BlogEntityTagPicker({
   const query = q.trim().toLowerCase();
   const enabled = open;
 
-  const worksQ = useQuery({
-    queryKey: ["blog-tag-picker-works", query, uid],
-    enabled: enabled && (tab === "all" || tab === "work"),
-    staleTime: 30_000,
-    queryFn: async (): Promise<BlogEntityTag[]> => {
-      const fields = "id,slug,title,category,subtype,cover_url,status,visibility,created_by";
-      let req = supabase
-        .from("works")
-        .select(fields)
-        .eq("status", "published")
-        .eq("visibility", "public")
-        .order("published_at", { ascending: false, nullsFirst: false })
-        .limit(8);
-      if (query) req = req.ilike("title", `%${query}%`);
+  // Every group below runs the one shared Workshop entity search, in the
+  // `editorial` context: the complete public record (finished collabs, past
+  // events) rather than the "what's happening now" bias the `@` popover uses.
+  const useKind = (
+    kind: BlogEntityKind,
+    fn: (opts: { query: string; viewerId?: string | null; context: "editorial" }) => Promise<EntitySearchHit[]>,
+    extraEnabled = true,
+  ) =>
+    useQuery({
+      queryKey: ["blog-tag-picker", kind, query, uid],
+      enabled: enabled && (tab === "all" || tab === kind) && extraEnabled,
+      staleTime: 30_000,
+      queryFn: async (): Promise<BlogEntityTag[]> =>
+        (await fn({ query, viewerId: uid, context: "editorial" })).map(hitToBlogTag),
+    });
 
-      // Owners can connect their own Works even when unpublished or unlisted —
-      // the public filter above would otherwise hide their drafts entirely.
-      const mineReq = uid
-        ? (() => {
-            let r = supabase
-              .from("works")
-              .select(fields)
-              .eq("created_by", uid)
-              .order("updated_at", { ascending: false })
-              .limit(8);
-            if (query) r = r.ilike("title", `%${query}%`);
-            return r;
-          })()
-        : null;
-
-      const [pub, mine] = await Promise.all([req, mineReq]);
-      const rows = [...(mine?.data ?? []), ...(pub.data ?? [])] as Array<{
-        id: string;
-        slug: string;
-        title: string;
-        category: string | null;
-        subtype: string | null;
-        cover_url: string | null;
-        status: string | null;
-        visibility: string | null;
-      }>;
-
-      const seen = new Set<string>();
-      const out: BlogEntityTag[] = [];
-      for (const r of rows) {
-        if (seen.has(r.id)) continue;
-        seen.add(r.id);
-        const state =
-          r.status !== "published"
-            ? "Draft"
-            : r.visibility !== "public"
-              ? "Unlisted"
-              : null;
-        const base =
-          r.subtype ||
-          (r.category ? r.category.charAt(0).toUpperCase() + r.category.slice(1) : null);
-        out.push({
-          kind: "work" as const,
-          id: r.id,
-          slug: r.slug,
-          label: r.title,
-          sublabel: [state, base].filter(Boolean).join(" · ") || null,
-          image: r.cover_url ?? null,
-          work: {
-            excerpt: null,
-            categories: r.category ? [r.category] : [],
-            subtype: r.subtype,
-            cover_url: r.cover_url ?? null,
-            cover_aspect: null,
-            cover_focal_x: null,
-            cover_focal_y: null,
-            credits: [],
-          },
-        });
-      }
-      return out.slice(0, 12);
-    },
-  });
-
-
-  const collabsQ = useQuery({
-    queryKey: ["blog-tag-picker-collabs", query],
-    enabled: enabled && (tab === "all" || tab === "collab"),
-    staleTime: 30_000,
-    queryFn: async (): Promise<BlogEntityTag[]> => {
-      let req = supabase
-        .from("collab_posts")
-        .select("id,slug,title,description")
-        .is("archived_at", null).not("status", "in", NON_PUBLIC_STATUSES).is("resulting_work_id", null).eq("applications_open", true).or(RECRUITING_DEADLINE_OR())
-        .order("created_at", { ascending: false })
-        .limit(8);
-      if (query) req = req.ilike("title", `%${query}%`);
-      const { data } = await req;
-      return (data ?? []).map((r) => ({
-        kind: "collab" as const,
-        id: r.id,
-        slug: r.slug,
-        label: r.title,
-        sublabel: r.description ?? null,
-        image: null,
-      }));
-    },
-  });
-
-  const groupsQ = useQuery({
-    queryKey: ["blog-tag-picker-groups", query],
-    enabled: enabled && (tab === "all" || tab === "group"),
-    staleTime: 30_000,
-    queryFn: async (): Promise<BlogEntityTag[]> => {
-      let req = supabase
-        .from("groups")
-        .select("id,slug,name,tagline,avatar_url")
-        .eq("visibility", "public")
-        .is("deleted_at", null)
-        .order("name", { ascending: true })
-        .limit(8);
-      if (query) req = req.ilike("name", `%${query}%`);
-      const { data } = await req;
-      return (data ?? []).map((r) => ({
-        kind: "group" as const,
-        id: r.id,
-        slug: r.slug,
-        label: r.name,
-        sublabel: r.tagline ?? null,
-        image: r.avatar_url,
-      }));
-    },
-  });
-
-  const eventsQ = useQuery({
-    queryKey: ["blog-tag-picker-events", query],
-    enabled: enabled && (tab === "all" || tab === "event"),
-    staleTime: 30_000,
-    queryFn: async (): Promise<BlogEntityTag[]> => {
-      let req = supabase
-        .from("group_events")
-        .select(
-          "id,slug,title,tagline,cover_url,starts_at,group:groups!group_events_group_id_fkey(slug,name)",
-        )
-        .is("deleted_at", null)
-        .eq("visibility", "public")
-        .in("status", DISCOVERABLE_STATUSES as unknown as never)
-        .order("starts_at", { ascending: false })
-        .limit(12);
-      if (query) req = req.ilike("title", `%${query}%`);
-      const { data } = await req;
-      const rows = (data ?? []) as unknown as Array<{
-        id: string;
-        slug: string;
-        title: string;
-        tagline: string | null;
-        cover_url: string | null;
-        starts_at: string;
-        group: { slug: string; name: string } | null;
-      }>;
-      return rows
-        .filter((r) => r.group?.slug)
-        .slice(0, 8)
-        .map((r) => ({
-          kind: "event" as const,
-          id: r.id,
-          slug: r.slug,
-          groupSlug: r.group!.slug,
-          label: r.title,
-          sublabel: r.group!.name,
-          image: r.cover_url ?? null,
-        }));
-    },
-  });
-
-  const profilesQ = useQuery({
-    queryKey: ["blog-tag-picker-profiles", query],
-    enabled: enabled && (tab === "all" || tab === "profile") && query.length >= 1,
-    staleTime: 30_000,
-    queryFn: async (): Promise<BlogEntityTag[]> => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("id,username,display_name,avatar_url,headline")
-        .or(`username.ilike.${query}%,display_name.ilike.%${query}%`)
-        .not("username", "is", null)
-        .limit(8);
-      return (data ?? [])
-        .filter((r) => r.username)
-        .map((r) => ({
-          kind: "profile" as const,
-          id: r.id,
-          username: r.username as string,
-          label: r.display_name || (r.username as string),
-          sublabel: r.headline ?? `@${r.username}`,
-          image: r.avatar_url,
-        }));
-    },
-  });
+  const worksQ = useKind("work", searchWorks);
+  const collabsQ = useKind("collab", searchCollabs);
+  const groupsQ = useKind("group", searchGroups);
+  const eventsQ = useKind("event", searchEvents);
+  const profilesQ = useKind("profile", searchProfiles, query.length >= 1);
 
   const groups: Array<{
     kind: BlogEntityKind;

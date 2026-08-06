@@ -7,6 +7,8 @@
  * This file is client-safe (no server imports).
  */
 
+import { workshopEntityUrl } from "@/lib/entities/kinds";
+
 export type BlogEntityKind = "work" | "collab" | "group" | "event" | "profile";
 
 export const BLOG_ENTITY_KIND_LABEL: Record<BlogEntityKind, string> = {
@@ -80,18 +82,19 @@ export type BlogEntityTag =
       image: string | null;
     };
 
+/**
+ * Blog tags are Workshop entity references with extra editorial payload, so
+ * URLs and inline markdown come from the shared entity layer rather than a
+ * second set of path templates.
+ */
 export function entityUrl(tag: BlogEntityTag): string {
   switch (tag.kind) {
-    case "work":
-      return `/works/${tag.slug}`;
-    case "collab":
-      return `/collab/${tag.slug}`;
-    case "group":
-      return `/g/${tag.slug}`;
-    case "event":
-      return `/g/${tag.groupSlug}/e/${tag.slug}`;
     case "profile":
-      return `/u/${tag.username}`;
+      return workshopEntityUrl({ kind: "profile", username: tag.username });
+    case "event":
+      return workshopEntityUrl({ kind: "event", slug: tag.slug, groupSlug: tag.groupSlug });
+    default:
+      return workshopEntityUrl({ kind: tag.kind, slug: tag.slug });
   }
 }
 
