@@ -206,18 +206,37 @@ export function GroupEventDirectory({
   const hasFilters =
     !!filters.category || !!filters.kind || filters.format !== "all" || filters.q.trim().length > 0;
 
+  const embedded = variant === "embedded";
+  const cap = <T,>(list: T[]) => (embedded && limit ? list.slice(0, limit) : list);
+  const pinnedShown = cap(pinnedOrRecurring);
+  const upcomingShown = cap(upcoming);
+  const moreCount =
+    pinnedOrRecurring.length - pinnedShown.length + (upcoming.length - upcomingShown.length);
+
   const clearAll = () => {
     setSearchOpen(false);
     onFiltersChange({ category: null, kind: null, format: "all", q: "" });
   };
 
   return (
-    <div className="space-y-10">
+    <div className={embedded ? "space-y-6" : "space-y-10"}>
       <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl text-ink md:text-3xl">{directoryHeading(group)}</h1>
-          <p className="mt-1 text-sm text-ink-muted">{directorySubheading(group)}</p>
-        </div>
+        {embedded ? (
+          <Link
+            to="/g/$slug/events"
+            params={{ slug: group.slug }}
+            className="text-sm text-ink-soft underline-offset-2 hover:text-ink hover:underline"
+          >
+            See all events
+          </Link>
+        ) : (
+          <div>
+            <h1 className="font-display text-2xl text-ink md:text-3xl">
+              {directoryHeading(group)}
+            </h1>
+            <p className="mt-1 text-sm text-ink-muted">{directorySubheading(group)}</p>
+          </div>
+        )}
         {isAdmin && (
           <Link
             to="/admin/events"
@@ -230,7 +249,8 @@ export function GroupEventDirectory({
 
       {/* Category → Event type → Attendance → Search */}
       {all.length > 0 && (
-        <div className="-mt-6 flex flex-wrap items-center gap-1 text-ink-muted md:justify-end">
+        <div className="-mt-4 flex flex-wrap items-center gap-1 text-ink-muted md:justify-end">
+
           {availableCategories.length > 1 && (
             <FilterMenu
               label={
