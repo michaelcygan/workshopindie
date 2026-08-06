@@ -29,6 +29,12 @@ import { sanitizeInstagramHandle } from "@/lib/display-name";
 import { RequireAuth } from "@/components/require-auth";
 import { PinnedWorksPicker, type PinnableWork } from "@/components/pinned-works-picker";
 import { getMyAgeFields, setMyBirthdate, setMyAgeFilter } from "@/lib/profile-age.functions";
+import {
+  GlobalLocationCombobox,
+  type SelectedLocation,
+} from "@/components/global-location-combobox";
+import { ensureLocationAndOfficialGroup } from "@/lib/geo/locations.functions";
+
 
 export const Route = createFileRoute("/me/edit")({
   component: () => (
@@ -144,13 +150,57 @@ function EditProfile() {
     if (!loading && !user) navigate({ to: "/login" });
   }, [user, loading, navigate]);
 
-  const { data: cities = [] } = useQuery({
-    queryKey: ["cities-all"],
+  // Selected location display (worldwide picker — no finite city list).
+  const [locationBusy, setLocationBusy] = useState(false);
+  const ensureLocation = useServerFn(ensureLocationAndOfficialGroup);
+
+  const { data: selectedCity } = useQuery({
+    queryKey: ["city-display", form.cityId],
+    enabled: !!form.cityId,
     queryFn: async () => {
-      const { data } = await supabase.from("cities").select("id,name,country").order("name");
-      return (data ?? []) as { id: string; name: string; country: string }[];
+      const { data } = await supabase
+        .from("cities")
+        .select("id,name,state_region,country")
+        .eq("id", form.cityId)
+        .maybeSingle();
+      return data as { id: string; name: string; state_region: string | null; country: string } | null;
     },
   });
+
+  const locationValue: SelectedLocation | null = selectedCity
+    ? {
+        cityId: selectedCity.id,
+        providerId: null,
+        name: selectedCity.name,
+        sublabel: [selectedCity.state_region, selectedCity.country].filter(Boolean).join(", "),
+      }
+    : null;
+
+  async function handleLocationSelect(option: SelectedLocation) {
+    if (option.cityId) {
+      set("cityId", option.cityId);
+      return;
+    }
+    if (!option.providerId) return;
+    setLocationBusy(true);
+    try {
+      const res = await ensureLocation({ data: { providerId: option.providerId } });
+      set("cityId", res.cityId);
+      if (res.created) {
+        toast.success(`Welcome to Workshop ${res.name}.`, {
+          action: {
+            label: "View group",
+            onClick: () => navigate({ to: "/g/$slug", params: { slug: res.groupSlug } }),
+          },
+        });
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't add that location");
+    } finally {
+      setLocationBusy(false);
+    }
+  }
+
 
   const { data: ownedWorks = [], isLoading: worksLoading } = useQuery({
     queryKey: ["me-owned-works", user?.id],
@@ -796,19 +846,18 @@ function EditProfile() {
           >
             <div className="space-y-2">
               <Label>City</Label>
-              <select
-                value={form.cityId}
-                onChange={(e) => set("cityId", e.target.value)}
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="">— None —</option>
-                {cities.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}, {c.country}
-                  </option>
-                ))}
-              </select>
+              <GlobalLocationCombobox
+                value={locationValue}
+                busy={locationBusy}
+                onSelect={handleLocationSelect}
+                onClear={() => set("cityId", "")}
+              />
+              <p className="text-xs text-ink-muted">
+                Search anywhere in the world. If your city isn&apos;t on Workshop yet, choosing it
+                opens its official group.
+              </p>
             </div>
+
             <LanguagesField
               languages={form.languages}
               onChange={(next) => set("languages", next)}

@@ -210,15 +210,18 @@ function TodayChat({ group, expanded = false }: { group: GroupRefForToday; expan
   });
 
   const canPost = !!user && !!isMember;
-  const today = useMemo(
-    () =>
+  // Locale/timezone-dependent — compute after hydration to avoid SSR mismatch.
+  const [today, setToday] = useState("");
+  useEffect(() => {
+    setToday(
       new Date().toLocaleDateString(undefined, {
         weekday: "short",
         month: "short",
         day: "numeric",
       }),
-    [],
-  );
+    );
+  }, []);
+
 
   // Detect "@<query>" being typed near the caret to drive the popover.
   function recalcMention(value: string, caret: number) {
