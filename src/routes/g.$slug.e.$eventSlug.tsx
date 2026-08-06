@@ -94,6 +94,8 @@ type EventRow = {
   kind: string;
   format: "in_person" | "online" | "hybrid";
   cover_url: string | null;
+  photo_credit_name: string | null;
+  photo_credit_url: string | null;
   accent_color: string | null;
   starts_at: string;
   ends_at: string;
@@ -245,6 +247,24 @@ function EventPage() {
             {statusLabel}
           </span>
         </div>
+        {ev.cover_url && ev.photo_credit_name && (
+          <div className="absolute bottom-2 right-3">
+            {ev.photo_credit_url ? (
+              <a
+                href={ev.photo_credit_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-full bg-background/70 px-2 py-0.5 text-[10px] text-ink-muted backdrop-blur hover:text-ink"
+              >
+                Photo: {ev.photo_credit_name}
+              </a>
+            ) : (
+              <span className="rounded-full bg-background/70 px-2 py-0.5 text-[10px] text-ink-muted backdrop-blur">
+                Photo: {ev.photo_credit_name}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="mx-auto mt-6 max-w-2xl px-4 md:px-6">

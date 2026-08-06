@@ -144,6 +144,8 @@ const TEMPLATE_COLUMNS = [
   "creative_category",
   "format",
   "cover_url",
+  "photo_credit_name",
+  "photo_credit_url",
   "accent_color",
   "timezone",
   "venue_name",

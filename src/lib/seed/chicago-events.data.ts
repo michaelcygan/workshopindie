@@ -32,6 +32,16 @@ type SeedBase = {
   source_note: string;
   /** Minutes. Where the venue states no end time we use a conservative block. */
   duration_minutes: number;
+  /**
+   * Cover image, mirrored into Workshop storage from the organizer's own
+   * public page (their share image or page hero) so the listing does not
+   * hotlink and does not break when the venue redesigns.
+   */
+  cover_url?: string;
+  /** Displayed as "Photo: <name>" on the event page. */
+  photo_credit_name?: string;
+  /** The organizer page the credit links to. */
+  photo_credit_url?: string;
 };
 
 export type SeedWeekly = SeedBase & {
@@ -66,6 +76,9 @@ export function seedTemplate(ev: SeedEvent, venueCityId: string | null): Record<
     kind: ev.kind,
     creative_category: ev.creative_category,
     format: "in_person",
+    cover_url: ev.cover_url ?? null,
+    photo_credit_name: ev.photo_credit_name ?? null,
+    photo_credit_url: ev.photo_credit_url ?? null,
     timezone: CHICAGO_TIMEZONE,
     venue_name: ev.venue_name,
     venue_address: ev.venue_address,
@@ -86,6 +99,9 @@ export const CHICAGO_GROUP_SLUG = "chicago";
 export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   {
     key: "chi_uncommon_ground_open_mic",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Funcommon-ground-open-mic.jpg",
+    photo_credit_name: "Uncommon Ground Lakeview",
+    photo_credit_url: "https://www.uncommonground.com/openmic",
     cadence: "weekly",
     weekday: 0,
     start_local: "18:00",
@@ -105,6 +121,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_gallery_cabaret_open_jam",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fgallery-cabaret.jpg",
+    photo_credit_name: "Gallery Cabaret",
+    photo_credit_url: "https://www.gallerycabaret.com/",
     cadence: "weekly",
     weekday: 2,
     start_local: "19:00",
@@ -124,6 +143,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_gallery_cabaret_open_mic",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fgallery-cabaret.jpg",
+    photo_credit_name: "Gallery Cabaret",
+    photo_credit_url: "https://www.gallerycabaret.com/",
     cadence: "weekly",
     weekday: 4,
     start_local: "20:00",
@@ -143,6 +165,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_coles_comedy_open_mic",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fcoles-bar.jpg",
+    photo_credit_name: "Cole's Bar",
+    photo_credit_url: "https://www.colesbarchicago.com/",
     cadence: "weekly",
     weekday: 3,
     start_local: "20:00",
@@ -162,6 +187,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_hungry_brain_sunday_transmission",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fhungry-brain.jpg",
+    photo_credit_name: "The Hungry Brain",
+    photo_credit_url: "https://hungrybrainchicago.com/",
     cadence: "weekly",
     weekday: 0,
     start_local: "21:00",
@@ -181,6 +209,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_platform_studios_figure_drawing",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fplatform-studios.jpg",
+    photo_credit_name: "Platform Studios",
+    photo_credit_url: "https://www.platformchicago.com/figure-drawing-sessions",
     cadence: "weekly",
     weekday: 2,
     start_local: "19:00",
@@ -201,6 +232,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_green_mill_uptown_poetry_slam",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fgreen-mill.jpg",
+    photo_credit_name: "Green Mill Cocktail Lounge",
+    photo_credit_url: "https://greenmilljazz.com/",
     cadence: "dated",
     occurrences: ["2026-08-16T15:00", "2026-09-20T15:00"],
     duration_minutes: 120,

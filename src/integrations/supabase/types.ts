@@ -2049,6 +2049,8 @@ export type Database = {
           notified_2h_at: string | null
           notified_recap_at: string | null
           online_url: string | null
+          photo_credit_name: string | null
+          photo_credit_url: string | null
           pinned_at: string | null
           promo_pass_months: number
           published_at: string | null
@@ -2102,6 +2104,8 @@ export type Database = {
           notified_2h_at?: string | null
           notified_recap_at?: string | null
           online_url?: string | null
+          photo_credit_name?: string | null
+          photo_credit_url?: string | null
           pinned_at?: string | null
           promo_pass_months?: number
           published_at?: string | null
@@ -2155,6 +2159,8 @@ export type Database = {
           notified_2h_at?: string | null
           notified_recap_at?: string | null
           online_url?: string | null
+          photo_credit_name?: string | null
+          photo_credit_url?: string | null
           pinned_at?: string | null
           promo_pass_months?: number
           published_at?: string | null
