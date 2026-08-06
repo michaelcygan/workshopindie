@@ -10,11 +10,14 @@ import { toast } from "sonner";
 import {
   getAdminUserDetail, setAdminUserRole, setAdminUserBadge,
   softDeleteAdminUser, forceSignOutAdminUser,
+  getAdminUserActivity, setAnalyticsExcluded,
 } from "@/lib/admin-users.functions";
 import {
   getUserBlogAccess, grantUserBlogAccess, revokeUserBlogAccess, suspendUserBlogAccess,
 } from "@/lib/admin-blog-access.functions";
 import { UserPlusPanel } from "@/components/admin/user-plus-panel";
+import { ActivityTimeline } from "@/components/admin/activity-timeline";
+import { SURFACE_LABELS } from "@/lib/analytics";
 
 export const Route = createFileRoute("/admin/users/$id")({ component: UserDetail });
 
