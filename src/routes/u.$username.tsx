@@ -36,9 +36,11 @@ import { CANONICAL_CATEGORIES, categoryClassFor, categoryLabel, normalizeCategor
 import { extraMediumLabel } from "@/lib/mediums";
 import { EntityBlogPosts } from "@/components/entity-blog-posts";
 import { EditorialCard, EditorialChip } from "@/components/editorial-card";
+import { InfluencesGrid } from "@/components/influences/influence-card";
+import { useInfluences } from "@/hooks/use-influences";
 
 
-const TAB_VALUES = ["works", "blog", "collabs", "activity", "about"] as const;
+const TAB_VALUES = ["works", "blog", "collabs", "influences", "activity", "about"] as const;
 type ProfileTab = typeof TAB_VALUES[number];
 
 
@@ -548,6 +550,7 @@ function ProfilePage() {
   );
 
 
+  const { data: influences = [] } = useInfluences(profile?.id);
   const activityCount = (drafts?.length ?? 0) + (workshops?.length ?? 0) + (applied?.length ?? 0) + (participating?.length ?? 0);
   // Works tab is unified: owned + credited (visitor-visible).
   const worksTotal = (ownedWorks?.length ?? 0) + (creditedWorks?.length ?? 0);
@@ -556,6 +559,7 @@ function ProfilePage() {
     works: worksTotal,
     collabs: openCollabs?.length ?? 0,
     blog: blogCount,
+    influences: influences.length,
     activity: activityCount,
     about: 1,
   };
@@ -581,6 +585,8 @@ function ProfilePage() {
     if (t === "activity") return isOwn; // owner-only
     if (t === "collabs") return isOwn || counts.collabs > 0;
     if (t === "blog") return blogCount > 0;
+    // Influences stay invisible until the creator opts in by adding one.
+    if (t === "influences") return counts.influences > 0;
     return true; // works, about always
   });
 
@@ -976,6 +982,14 @@ function ProfilePage() {
               participating={(participating ?? []) as ParticipatingRow[]}
               isLoading={!applied || !participating || !drafts || !workshops}
             />
+          )}
+          {defaultTab === "influences" && (
+            <div className="space-y-4">
+              <p className="max-w-prose text-sm text-ink-muted">
+                Things that shaped {isOwn ? "your" : `${name}'s`} work.
+              </p>
+              <InfluencesGrid influences={influences} />
+            </div>
           )}
           {defaultTab === "about" && (
             <AboutTab profile={profile} />

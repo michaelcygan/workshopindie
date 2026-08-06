@@ -24,10 +24,11 @@ import {
 } from "@/lib/mediums";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { Plus, X, User, Sparkles, MapPin, Link2, Pin, Copy, Check } from "lucide-react";
+import { Plus, X, User, Sparkles, MapPin, Link2, Pin, Copy, Check, Library } from "lucide-react";
 import { sanitizeInstagramHandle } from "@/lib/display-name";
 import { RequireAuth } from "@/components/require-auth";
 import { PinnedWorksPicker, type PinnableWork } from "@/components/pinned-works-picker";
+import { InfluencesEditor } from "@/components/influences/influences-editor";
 import { getMyAgeFields, setMyBirthdate, setMyAgeFilter } from "@/lib/profile-age.functions";
 import {
   GlobalLocationCombobox,
@@ -49,13 +50,14 @@ export const Route = createFileRoute("/me/edit")({
 
 type ExtLink = { label: string; url: string };
 
-type SectionId = "identity" | "mediums" | "location" | "links" | "pinned";
+type SectionId = "identity" | "mediums" | "location" | "links" | "pinned" | "influences";
 const SECTIONS: { id: SectionId; label: string; icon: typeof User }[] = [
   { id: "identity", label: "Identity", icon: User },
   { id: "mediums", label: "Mediums & bio", icon: Sparkles },
   { id: "location", label: "Location & languages", icon: MapPin },
   { id: "links", label: "Links", icon: Link2 },
   { id: "pinned", label: "Pinned pieces", icon: Pin },
+  { id: "influences", label: "Influences", icon: Library },
 ];
 
 type FormState = {
@@ -941,6 +943,16 @@ function EditProfile() {
               onChange={(v) => set("pinnedIds", v)}
               loading={worksLoading}
             />
+          </Section>
+
+          {/* INFLUENCES */}
+          <Section
+            id="influences"
+            title="Influences"
+            subtitle="Up to 10 things that shaped your work. Optional — this only shows on your profile once you add one."
+            refMap={sectionRefs}
+          >
+            <InfluencesEditor profileId={user?.id} />
           </Section>
 
           <p className="px-1 pt-2 text-xs text-ink-muted">
