@@ -596,11 +596,22 @@ export const claimGuestApplication = createServerFn({ method: "POST" })
       });
     }
 
+    let guestRoleName: string | null = null;
+    if (app.collab_role_id) {
+      const { data: role } = await supabaseAdmin
+        .from("collab_roles")
+        .select("role_name")
+        .eq("id", app.collab_role_id)
+        .maybeSingle();
+      guestRoleName = role?.role_name ?? null;
+    }
+
     const { conversationId } = await openCollabDmThread({
       collabPostId: app.collab_post_id,
       ownerUserId: post.user_id,
       applicantUserId: userId,
       message: app.message,
+      roleName: guestRoleName,
     });
 
     return { ok: true as const, conversationId };
