@@ -94,6 +94,8 @@ type EventRow = {
   kind: string;
   format: "in_person" | "online" | "hybrid";
   cover_url: string | null;
+  photo_credit_name: string | null;
+  photo_credit_url: string | null;
   accent_color: string | null;
   starts_at: string;
   ends_at: string;
