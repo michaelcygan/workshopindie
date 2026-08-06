@@ -671,6 +671,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_po_box_fiber_night",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fpo-box-collective.jpg",
+    photo_credit_name: "PO Box Collective",
+    photo_credit_url: "https://www.poboxcollective.us/",
     cadence: "dated",
     occurrences: ["2026-08-17T18:00", "2026-09-04T18:00", "2026-09-21T18:00"],
     duration_minutes: 120,
