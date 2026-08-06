@@ -16,10 +16,12 @@ type ConversationRow = {
   last_message_preview: string | null;
   context_collab_post_id: string | null;
   context_workshop_id: string | null;
+  context_work_id: string | null;
 };
 
 type CollabLite = { id: string; title: string; slug: string };
 type WorkshopLite = { id: string; title: string | null; slug: string };
+type WorkLite = { id: string; title: string | null; slug: string };
 
 type ProfileLite = {
   id: string;
@@ -34,6 +36,7 @@ type Row = {
   unread: number;
   collab: CollabLite | null;
   workshop: WorkshopLite | null;
+  work: WorkLite | null;
   lastFromMe: boolean;
 };
 
