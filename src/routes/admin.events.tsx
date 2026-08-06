@@ -31,6 +31,7 @@ import { toast } from "sonner";
 import { AdminImportEventDialog } from "@/components/admin-import-event-dialog";
 import { VenueAutocomplete } from "@/components/event/venue-autocomplete";
 import { CoverImagePicker } from "@/components/event/cover-image-picker";
+import { SeedChicagoButton } from "@/components/admin/seed-chicago-button";
 
 export const Route = createFileRoute("/admin/events")({
   component: AdminEventsPage,
@@ -54,9 +55,11 @@ function AdminEventsPage() {
       <div className="mb-5 flex items-center justify-between">
         <h2 className="font-display text-2xl text-ink">Events</h2>
         <div className="flex items-center gap-2">
+          <SeedChicagoButton onSeeded={() => { qc.invalidateQueries({ queryKey: ["admin-events"] }); }} />
           <AdminImportEventDialog onCreated={() => { qc.invalidateQueries({ queryKey: ["admin-events"] }); }} />
           <CreateEventDialog onCreated={() => { qc.invalidateQueries({ queryKey: ["admin-events"] }); }} />
         </div>
+
       </div>
 
       <ReportsAlertStrip onAnyChange={() => { qc.invalidateQueries({ queryKey: ["admin-events"] }); }} />
