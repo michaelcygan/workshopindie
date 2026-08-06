@@ -633,6 +633,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_missspoken",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fcoles-bar.jpg",
+    photo_credit_name: "Cole's Bar",
+    photo_credit_url: "https://www.colesbarchicago.com/",
     cadence: "dated",
     occurrences: ["2026-08-24T19:00", "2026-09-28T19:00", "2026-10-26T19:00", "2026-11-30T19:00", "2026-12-28T19:00"],
     duration_minutes: 120,
