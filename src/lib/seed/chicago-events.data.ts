@@ -691,6 +691,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_po_box_poetry_series",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fpo-box-collective.jpg",
+    photo_credit_name: "PO Box Collective",
+    photo_credit_url: "https://www.poboxcollective.us/",
     cadence: "dated",
     occurrences: ["2026-08-20T18:30"],
     duration_minutes: 180,
