@@ -389,38 +389,99 @@ export type Database = {
       cities: {
         Row: {
           country: string
+          country_code: string | null
           created_at: string
           id: string
           latitude: number | null
+          location_kind: string | null
           longitude: number | null
+          merged_into_city_id: string | null
           name: string
+          needs_review: boolean
+          official_group_id: string | null
+          place_provider: string | null
+          place_provider_id: string | null
+          provision_error: string | null
+          provision_source: string
+          provisioned_at: string | null
+          provisioned_by: string | null
           slug: string
           state_region: string | null
+          status: string
           timezone: string | null
+          updated_at: string
         }
         Insert: {
           country: string
+          country_code?: string | null
           created_at?: string
           id?: string
           latitude?: number | null
+          location_kind?: string | null
           longitude?: number | null
+          merged_into_city_id?: string | null
           name: string
+          needs_review?: boolean
+          official_group_id?: string | null
+          place_provider?: string | null
+          place_provider_id?: string | null
+          provision_error?: string | null
+          provision_source?: string
+          provisioned_at?: string | null
+          provisioned_by?: string | null
           slug: string
           state_region?: string | null
+          status?: string
           timezone?: string | null
+          updated_at?: string
         }
         Update: {
           country?: string
+          country_code?: string | null
           created_at?: string
           id?: string
           latitude?: number | null
+          location_kind?: string | null
           longitude?: number | null
+          merged_into_city_id?: string | null
           name?: string
+          needs_review?: boolean
+          official_group_id?: string | null
+          place_provider?: string | null
+          place_provider_id?: string | null
+          provision_error?: string | null
+          provision_source?: string
+          provisioned_at?: string | null
+          provisioned_by?: string | null
           slug?: string
           state_region?: string | null
+          status?: string
           timezone?: string | null
+          updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cities_merged_into_city_id_fkey"
+            columns: ["merged_into_city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cities_merged_into_city_id_fkey"
+            columns: ["merged_into_city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "cities_official_group_id_fkey"
+            columns: ["official_group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       collab_boosts: {
         Row: {
@@ -7139,6 +7200,10 @@ export type Database = {
       check_and_bump: {
         Args: { _action: string; _key: string; _max: number; _window_s: number }
         Returns: boolean
+      }
+      city_search_key: {
+        Args: { _country: string; _name: string; _region: string }
+        Returns: string
       }
       claim_lounge_screen_share: {
         Args: { _room_id: string; _user_id: string }
