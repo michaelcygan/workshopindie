@@ -111,6 +111,7 @@ function DmsIndex() {
     const byId = new Map((profs ?? []).map((p) => [p.id, p as ProfileLite]));
     const collabById = new Map((collabs ?? []).map((c) => [c.id, c as CollabLite]));
     const workshopById = new Map((workshops ?? []).map((w) => [w.id, w as WorkshopLite]));
+    const workById = new Map((works ?? []).map((w) => [w.id, w as WorkLite]));
 
     const unreadCounts = new Map<string, number>();
     for (const m of unreadMsgs ?? []) {
@@ -129,6 +130,7 @@ function DmsIndex() {
       unread: unreadCounts.get(c.id) ?? 0,
       collab: c.context_collab_post_id ? collabById.get(c.context_collab_post_id) ?? null : null,
       workshop: c.context_workshop_id ? workshopById.get(c.context_workshop_id) ?? null : null,
+      work: c.context_work_id ? workById.get(c.context_work_id) ?? null : null,
       lastFromMe: lastBy.get(c.id) === uid,
     }));
   }
