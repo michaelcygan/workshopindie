@@ -53,6 +53,34 @@ export type SeedDated = SeedBase & {
 export type SeedEvent = SeedWeekly | SeedDated;
 
 export const CHICAGO_TIMEZONE = "America/Chicago";
+
+/**
+ * Row shape shared by every seeded occurrence. Third-party listings are never
+ * Workshop-official and always carry the organizer's own link.
+ */
+export function seedTemplate(ev: SeedEvent, venueCityId: string | null): Record<string, unknown> {
+  return {
+    title: ev.title,
+    tagline: ev.tagline,
+    description: ev.description,
+    kind: ev.kind,
+    creative_category: ev.creative_category,
+    format: "in_person",
+    timezone: CHICAGO_TIMEZONE,
+    venue_name: ev.venue_name,
+    venue_address: ev.venue_address,
+    venue_city_id: venueCityId,
+    visibility: "public",
+    rsvp_mode: "open",
+    status: "scheduled",
+    is_official: false,
+    source: "external",
+    external_url: ev.external_url,
+    external_organizer: ev.external_organizer,
+    is_recurring: true,
+    recurrence_label: ev.recurrence_label,
+  };
+}
 export const CHICAGO_GROUP_SLUG = "chicago";
 
 export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
