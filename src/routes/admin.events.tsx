@@ -31,6 +31,7 @@ import { toast } from "sonner";
 import { AdminImportEventDialog } from "@/components/admin-import-event-dialog";
 import { VenueAutocomplete } from "@/components/event/venue-autocomplete";
 import { CoverImagePicker } from "@/components/event/cover-image-picker";
+import { SeedChicagoButton } from "@/components/admin/seed-chicago-button";
 
 export const Route = createFileRoute("/admin/events")({
   component: AdminEventsPage,
