@@ -7,6 +7,8 @@
  * This file is client-safe (no server imports).
  */
 
+import { workshopEntityUrl } from "@/lib/entities/kinds";
+
 export type BlogEntityKind = "work" | "collab" | "group" | "event" | "profile";
 
 export const BLOG_ENTITY_KIND_LABEL: Record<BlogEntityKind, string> = {
