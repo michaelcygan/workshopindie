@@ -1,12 +1,48 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getAdminGeo } from "@/lib/admin-analytics.functions";
 import { WorldMap } from "@/components/admin/world-map";
+import { LocalitiesPanel } from "@/components/admin/localities-panel";
+import { LaunchQueuePanel } from "@/components/admin/launch-queue-panel";
 
 export const Route = createFileRoute("/admin/geo")({ component: GeoPage });
 
+const TABS = [
+  { id: "signals", label: "Signals" },
+  { id: "localities", label: "Localities" },
+  { id: "queue", label: "Launch queue" },
+] as const;
+
 function GeoPage() {
+  const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("signals");
+
+  return (
+    <div className="space-y-6">
+      <div className="flex gap-1">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setTab(t.id)}
+            className={`rounded-full border px-3 py-1.5 text-sm ${
+              tab === t.id ? "border-ink bg-ink text-surface" : "border-border text-ink-soft"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "signals" ? <SignalsPanel /> : null}
+      {tab === "localities" ? <LocalitiesPanel /> : null}
+      {tab === "queue" ? <LaunchQueuePanel /> : null}
+    </div>
+  );
+}
+
+function SignalsPanel() {
   const fn = useServerFn(getAdminGeo);
   const { data, isLoading } = useQuery({ queryKey: ["admin", "geo"], queryFn: () => fn() });
   if (isLoading) return <div className="text-sm text-ink-muted">Loading…</div>;
@@ -16,6 +52,7 @@ function GeoPage() {
   return (
     <div className="space-y-6">
       <WorldMap cities={cities as any} />
+
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="overflow-hidden rounded-2xl border border-border bg-surface">

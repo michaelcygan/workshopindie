@@ -7436,6 +7436,7 @@ export type Database = {
       lounge_minutes_today: { Args: { _user_id: string }; Returns: number }
       medium_group_id: { Args: { _canonical: string }; Returns: string }
       medium_to_canonical: { Args: { _medium: string }; Returns: string }
+      merge_city: { Args: { _source: string; _target: string }; Returns: Json }
       moderate_lounge_speaker: {
         Args: { _action: string; _room_id: string; _target_user_id: string }
         Returns: undefined
@@ -7577,6 +7578,10 @@ export type Database = {
           slug: string
           state_region: string
         }[]
+      }
+      set_city_status: {
+        Args: { _city: string; _clear_review?: boolean; _status: string }
+        Returns: undefined
       }
       set_room_note: {
         Args: { _room_id: string; _text: string }
