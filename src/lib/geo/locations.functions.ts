@@ -144,7 +144,7 @@ export const ensureLocationAndOfficialGroup = createServerFn({ method: "POST" })
       throw new Error("That place couldn't be verified as a city or town.");
     }
 
-    const { data: rows, error } = await supabaseAdmin.rpc("provision_locality", {
+    const rpcArgs = {
       _provider: place.provider,
       _provider_id: place.providerId,
       _name: place.name,
@@ -158,7 +158,11 @@ export const ensureLocationAndOfficialGroup = createServerFn({ method: "POST" })
       _slug_candidates: slugCandidates(place),
       _user_id: userId,
       _source: isAdmin ? "admin" : "user",
-    });
+      // Generated types mark these as non-nullable; the SQL accepts NULLs.
+    } as unknown as Parameters<typeof supabaseAdmin.rpc<"provision_locality">>[1];
+
+    const { data: rows, error } = await supabaseAdmin.rpc("provision_locality", rpcArgs);
+
     if (error) throw new Error(error.message);
 
     const row = Array.isArray(rows) ? rows[0] : rows;
