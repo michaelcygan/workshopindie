@@ -26,6 +26,7 @@ import {
   setEventFeatured,
 } from "@/lib/group-events-admin.functions";
 import { MEDIUM_GROUPS, type MediumGroupKey } from "@/lib/medium-groups";
+import { EVENT_KIND_OPTIONS, type EventKind } from "@/lib/events/kinds";
 import { toast } from "sonner";
 import { AdminImportEventDialog } from "@/components/admin-import-event-dialog";
 import { VenueAutocomplete } from "@/components/event/venue-autocomplete";
