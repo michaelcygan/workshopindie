@@ -1034,10 +1034,10 @@ function ProfilePage() {
           <EntityBlogPosts
             kind="profile"
             entityId={profile.id}
-            heading={`Stories by ${profile.display_name || `@${profile.username}`}`}
+            heading={`Stories about ${profile.display_name || `@${profile.username}`}`}
             canWrite={isOwn}
             writeLabel="Write a post"
-            emptyLabel="No stories yet."
+            emptyLabel="No one has written about them yet."
             className="mt-10"
             openSlug={search.story}
             onOpenSlugChange={(s) =>
