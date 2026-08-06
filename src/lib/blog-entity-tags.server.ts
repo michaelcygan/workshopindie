@@ -335,11 +335,99 @@ async function entityIsPublic(kind: BlogEntityKind, entityId: string): Promise<b
 }
 
 /**
+ * Who is allowed to speak *for* an entity on the entity's own page.
+ *
+ * Anyone can tag a Work, Collab, Group, Event or person in their post — that is
+ * the point of the Blog graph. But an object's own page carries that object's
+ * authority, so the reverse rail only echoes stories written by the people
+ * actually behind it. Untrusted posts are never hidden from the Blog itself;
+ * they just don't get to appear as the object's own account of itself.
+ *
+ * Workshop editorial posts bypass this entirely (handled by the caller).
+ */
+export async function resolveTrustedAuthorIds(
+  kind: BlogEntityKind,
+  entityId: string,
+): Promise<{ trusted: Set<string>; creditRole: Map<string, string> }> {
+  const trusted = new Set<string>();
+  const creditRole = new Map<string, string>();
+  const add = (id: string | null | undefined) => {
+    if (id) trusted.add(id);
+  };
+
+  if (kind === "work") {
+    // Creator + credited collaborators. Credits also supply role labels.
+    const [{ data: work }, { data: creditRows }] = await Promise.all([
+      supabaseAdmin.from("works").select("created_by").eq("id", entityId).maybeSingle(),
+      supabaseAdmin.from("work_credits").select("user_id,role_label").eq("work_id", entityId),
+    ]);
+    add((work as { created_by: string | null } | null)?.created_by ?? null);
+    for (const c of (creditRows ?? []) as Array<{ user_id: string | null; role_label: string | null }>) {
+      if (!c.user_id) continue;
+      trusted.add(c.user_id);
+      if (c.role_label) creditRole.set(c.user_id, c.role_label);
+    }
+    return { trusted, creditRole };
+  }
+
+  if (kind === "collab") {
+    // Owner + everyone who actually joined.
+    const [{ data: collab }, { data: invites }] = await Promise.all([
+      supabaseAdmin.from("collab_posts").select("user_id").eq("id", entityId).maybeSingle(),
+      supabaseAdmin
+        .from("collab_invites")
+        .select("invitee_user_id")
+        .eq("collab_post_id", entityId)
+        .eq("status", "accepted"),
+    ]);
+    add((collab as { user_id: string | null } | null)?.user_id ?? null);
+    for (const i of (invites ?? []) as Array<{ invitee_user_id: string | null }>) add(i.invitee_user_id);
+    return { trusted, creditRole };
+  }
+
+  if (kind === "event") {
+    // Organizer + co-hosts, plus the parent group's stewards.
+    const { data: ev } = await supabaseAdmin
+      .from("group_events")
+      .select("created_by,group_id")
+      .eq("id", entityId)
+      .maybeSingle();
+    const row = ev as { created_by: string | null; group_id: string | null } | null;
+    add(row?.created_by ?? null);
+    const [{ data: cohosts }, stewards] = await Promise.all([
+      supabaseAdmin.from("group_event_cohosts").select("user_id").eq("event_id", entityId),
+      row?.group_id ? resolveTrustedAuthorIds("group", row.group_id) : null,
+    ]);
+    for (const c of (cohosts ?? []) as Array<{ user_id: string | null }>) add(c.user_id);
+    for (const id of stewards?.trusted ?? []) trusted.add(id);
+    return { trusted, creditRole };
+  }
+
+  if (kind === "group") {
+    const [{ data: group }, { data: members }] = await Promise.all([
+      supabaseAdmin.from("groups").select("created_by").eq("id", entityId).maybeSingle(),
+      supabaseAdmin
+        .from("group_members")
+        .select("user_id,role")
+        .eq("group_id", entityId)
+        .in("role", ["steward", "owner"]),
+    ]);
+    add((group as { created_by: string | null } | null)?.created_by ?? null);
+    for (const m of (members ?? []) as Array<{ user_id: string | null }>) add(m.user_id);
+    return { trusted, creditRole };
+  }
+
+  // Profile: only the person themselves speaks for their own page.
+  add(entityId);
+  return { trusted, creditRole };
+}
+
+/**
  * Reverse discovery: recently-published blog posts tagged with a given entity.
  *
- * For Works, `trustedOnly` limits the surface to stories written by the Work's
- * creator, a credited collaborator, or Workshop editorial — anyone else can tag
- * a Work, but only trusted context is echoed back onto the Work page.
+ * `trustedOnly` narrows the rail to stories written by the people behind the
+ * entity (see `resolveTrustedAuthorIds`) plus Workshop editorial. It applies to
+ * every kind — Works, Collabs, Groups, Events and profiles alike.
  */
 export async function listBlogPostsForEntityServer(
   kind: BlogEntityKind,
@@ -406,21 +494,11 @@ export async function listBlogPostsForEntityServer(
     authorsByPost.set(a.blog_post_id, arr);
   }
 
-  // Trusted-context filter + credit-aware role labels for Works.
-  const creditRole = new Map<string, string>();
-  if (kind === "work") {
-    const [{ data: work }, { data: creditRows }] = await Promise.all([
-      supabaseAdmin.from("works").select("created_by").eq("id", entityId).maybeSingle(),
-      supabaseAdmin.from("work_credits").select("user_id,role_label,sort_order").eq("work_id", entityId),
-    ]);
-    const trusted = new Set<string>();
-    const ownerId = (work as { created_by: string | null } | null)?.created_by ?? null;
-    if (ownerId) trusted.add(ownerId);
-    for (const c of (creditRows ?? []) as Array<{ user_id: string | null; role_label: string | null }>) {
-      if (!c.user_id) continue;
-      trusted.add(c.user_id);
-      if (c.role_label) creditRole.set(c.user_id, c.role_label);
-    }
+  // Trusted-context filter (every kind) + credit-aware role labels for Works.
+  let creditRole = new Map<string, string>();
+  if (kind === "work" || opts.trustedOnly) {
+    const resolved = await resolveTrustedAuthorIds(kind, entityId);
+    creditRole = resolved.creditRole;
     if (opts.trustedOnly) {
       rows = rows.filter((r) => {
         if (r.publication_type && r.publication_type !== "member") return true; // editorial / admin
@@ -429,7 +507,7 @@ export async function listBlogPostsForEntityServer(
           r.author_profile_id,
           ...(authorsByPost.get(r.id) ?? []).map((a) => a.profile_id),
         ].filter(Boolean) as string[];
-        return authorIds.some((pid) => trusted.has(pid));
+        return authorIds.some((pid) => resolved.trusted.has(pid));
       });
     }
   }

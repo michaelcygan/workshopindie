@@ -16,10 +16,12 @@ type ConversationRow = {
   last_message_preview: string | null;
   context_collab_post_id: string | null;
   context_workshop_id: string | null;
+  context_work_id: string | null;
 };
 
 type CollabLite = { id: string; title: string; slug: string };
 type WorkshopLite = { id: string; title: string | null; slug: string };
+type WorkLite = { id: string; title: string | null; slug: string };
 
 type ProfileLite = {
   id: string;
@@ -34,6 +36,7 @@ type Row = {
   unread: number;
   collab: CollabLite | null;
   workshop: WorkshopLite | null;
+  work: WorkLite | null;
   lastFromMe: boolean;
 };
 
@@ -64,7 +67,7 @@ function DmsIndex() {
   async function load(uid: string) {
     const { data: convs } = await supabase
       .from("conversations")
-      .select("id, user_a, user_b, last_message_at, last_message_preview, context_collab_post_id, context_workshop_id")
+      .select("id, user_a, user_b, last_message_at, last_message_preview, context_collab_post_id, context_workshop_id, context_work_id")
       .or(`user_a.eq.${uid},user_b.eq.${uid}`)
       .order("last_message_at", { ascending: false, nullsFirst: false })
       .limit(MAX_CONVERSATIONS);
@@ -72,8 +75,9 @@ function DmsIndex() {
     const otherIds = list.map((c) => (c.user_a === uid ? c.user_b : c.user_a));
     const collabIds = Array.from(new Set(list.map((c) => c.context_collab_post_id).filter(Boolean) as string[]));
     const workshopIds = Array.from(new Set(list.map((c) => c.context_workshop_id).filter(Boolean) as string[]));
+    const workIds = Array.from(new Set(list.map((c) => c.context_work_id).filter(Boolean) as string[]));
 
-    const [{ data: profs }, { data: collabs }, { data: workshops }, { data: unreadMsgs }, { data: lastFrom }] = await Promise.all([
+    const [{ data: profs }, { data: collabs }, { data: workshops }, { data: works }, { data: unreadMsgs }, { data: lastFrom }] = await Promise.all([
       otherIds.length
         ? supabase.from("profiles").select("id, username, display_name, avatar_url").in("id", otherIds)
         : Promise.resolve({ data: [] as ProfileLite[] }),
@@ -83,6 +87,9 @@ function DmsIndex() {
       workshopIds.length
         ? supabase.from("workshops").select("id, title, slug").in("id", workshopIds)
         : Promise.resolve({ data: [] as WorkshopLite[] }),
+      workIds.length
+        ? supabase.from("works").select("id, title, slug").in("id", workIds)
+        : Promise.resolve({ data: [] as WorkLite[] }),
       list.length
         ? supabase
             .from("messages")
@@ -104,6 +111,7 @@ function DmsIndex() {
     const byId = new Map((profs ?? []).map((p) => [p.id, p as ProfileLite]));
     const collabById = new Map((collabs ?? []).map((c) => [c.id, c as CollabLite]));
     const workshopById = new Map((workshops ?? []).map((w) => [w.id, w as WorkshopLite]));
+    const workById = new Map((works ?? []).map((w) => [w.id, w as WorkLite]));
 
     const unreadCounts = new Map<string, number>();
     for (const m of unreadMsgs ?? []) {
@@ -122,6 +130,7 @@ function DmsIndex() {
       unread: unreadCounts.get(c.id) ?? 0,
       collab: c.context_collab_post_id ? collabById.get(c.context_collab_post_id) ?? null : null,
       workshop: c.context_workshop_id ? workshopById.get(c.context_workshop_id) ?? null : null,
+      work: c.context_work_id ? workById.get(c.context_work_id) ?? null : null,
       lastFromMe: lastBy.get(c.id) === uid,
     }));
   }
@@ -200,6 +209,7 @@ function DmsIndex() {
         r.conv.last_message_preview ?? "",
         r.collab?.title ?? "",
         r.workshop?.title ?? "",
+        r.work?.title ?? "",
       ].join(" ").toLowerCase();
       return hay.includes(query);
     });
@@ -318,7 +328,7 @@ function DmsIndex() {
         </div>
       ) : (
         <ul className="mt-4 space-y-1.5">
-          {filtered.map(({ conv, other, unread, collab, workshop, lastFromMe }) => (
+          {filtered.map(({ conv, other, unread, collab, workshop, work, lastFromMe }) => (
             <li key={conv.id}>
               <button
                 type="button"
@@ -350,11 +360,11 @@ function DmsIndex() {
                       </span>
                     )}
                   </div>
-                  {(collab || workshop) && (
+                  {(collab || work || workshop) && (
                     <span className={`mt-0.5 inline-block max-w-full truncate rounded-full px-2 py-0.5 text-[10px] ${
-                      collab ? "bg-primary/10 text-primary" : "bg-signal/10 text-signal"
+                      collab || work ? "bg-primary/10 text-primary" : "bg-signal/10 text-signal"
                     }`}>
-                      Re: {collab?.title ?? workshop?.title ?? "Audio room"}
+                      Re: {collab?.title ?? work?.title ?? workshop?.title ?? "Audio room"}
                     </span>
                   )}
                   <p className={`truncate text-xs ${unread > 0 ? "text-ink" : "text-ink-muted"}`}>
