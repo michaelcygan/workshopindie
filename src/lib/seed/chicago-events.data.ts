@@ -613,6 +613,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_test_literary_series",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Ftest-literary-series.jpg",
+    photo_credit_name: "TEST Literary Series",
+    photo_credit_url: "https://whistlerchicago.com/events/test-literary-series-aug-2026",
     cadence: "dated",
     occurrences: ["2026-08-12T18:30"],
     duration_minutes: 90,
