@@ -20,6 +20,7 @@ import {
   CHICAGO_GROUP_SLUG,
   CHICAGO_SEED_EVENTS,
   CHICAGO_TIMEZONE,
+  MEDIUM_GROUP_SLUG,
   seedTemplate,
 } from "./chicago-events.data";
 
@@ -48,6 +49,25 @@ export const seedChicagoEvents = createServerFn({ method: "POST" })
     if (!group) throw new Error("The Chicago city Group does not exist yet — provision it first.");
     const groupId = group.id as string;
     const cityId = (group.city_id as string | null) ?? null;
+
+    // Medium Groups are resolved by slug — never hardcoded ids. The primary
+    // medium is attached automatically from `creative_category`; secondary
+    // mediums are attached here as additional Groups for discovery.
+    const { data: mediumGroups } = await supabaseAdmin
+      .from("groups")
+      .select("id,slug")
+      .in("slug", Object.values(MEDIUM_GROUP_SLUG));
+    const mediumIdBySlug = new Map<string, string>(
+      (mediumGroups ?? []).map((g) => [g.slug as string, g.id as string]),
+    );
+    const extraGroupsFor = (ev: (typeof CHICAGO_SEED_EVENTS)[number]) =>
+      Array.from(
+        new Set(
+          (ev.secondary_categories ?? [])
+            .map((c) => mediumIdBySlug.get(MEDIUM_GROUP_SLUG[c]))
+            .filter((id): id is string => Boolean(id) && id !== groupId),
+        ),
+      );
 
     const results: {
       key: string;
@@ -111,6 +131,7 @@ export const seedChicagoEvents = createServerFn({ method: "POST" })
               timezone: CHICAGO_TIMEZONE,
               template,
               horizon_weeks: 8,
+              extra_group_ids: extraGroupsFor(ev),
               next_occurrence_at: firstStart.toISOString(),
               created_by: userId,
             } as never)
@@ -122,7 +143,12 @@ export const seedChicagoEvents = createServerFn({ method: "POST" })
           // Refresh the template so manifest corrections reach future dates.
           const { data: updated } = await supabaseAdmin
             .from("event_series")
-            .update({ template, duration_minutes: ev.duration_minutes, canceled_at: null } as never)
+            .update({
+              template,
+              duration_minutes: ev.duration_minutes,
+              canceled_at: null,
+              extra_group_ids: extraGroupsFor(ev),
+            } as never)
             .eq("id", seriesRow.id)
             .select(SERIES_SELECT)
             .single();
@@ -171,7 +197,10 @@ export const seedChicagoEvents = createServerFn({ method: "POST" })
         if (inserted) {
           await supabaseAdmin
             .from("event_groups")
-            .upsert([{ event_id: inserted.id as string, group_id: groupId }], {
+            .upsert([
+              { event_id: inserted.id as string, group_id: groupId },
+              ...extraGroupsFor(ev).map((gid) => ({ event_id: inserted.id as string, group_id: gid })),
+            ], {
               onConflict: "event_id,group_id",
               ignoreDuplicates: true,
             });
