@@ -40,18 +40,25 @@ export function CityCombobox({
   }, []);
 
   type CityRow = { id: string; name: string; country: string };
+  // Filter-only picker: ranked search across every locality Workshop has.
+  // Accent- and typo-tolerant, and scales past a hand-curated launch list.
   const { data: cities } = useQuery<CityRow[]>({
     queryKey: ["city-combobox-search", query],
     queryFn: async () => {
-      const base = supabase.from("cities").select("id,name,country").order("name").limit(8);
-      const { data } = query.trim()
-        ? await base.ilike("name", `%${query.trim()}%`)
-        : await base;
-      return (data ?? []) as CityRow[];
+      const { data } = await supabase.rpc("search_cities", {
+        _q: query.trim(),
+        _limit: 8,
+      });
+      return ((data ?? []) as { id: string; name: string; country: string }[]).map((c) => ({
+        id: c.id,
+        name: c.name,
+        country: c.country,
+      }));
     },
     enabled: open && !disabled,
     staleTime: 30_000,
   });
+
 
   return (
     <div ref={wrapRef} className={cn("relative flex-1 min-w-[16rem]", disabled && "opacity-50", className)}>
