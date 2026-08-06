@@ -184,6 +184,26 @@ export function SiteFooter() {
                     Refer & Earn
                   </Link>
                 </li>
+                <li>
+                  <a
+                    href="https://www.infinitefilmfest.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-ink-soft hover:text-ink"
+                  >
+                    Infinite Film Fest
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="https://www.infiniteremix.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-ink-soft hover:text-ink"
+                  >
+                    Infinite Remix
+                  </a>
+                </li>
               </ul>
             </div>
           </div>
