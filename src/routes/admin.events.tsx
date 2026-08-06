@@ -135,7 +135,7 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
 
   type FormState = {
     group_id: string; title: string; tagline: string; description: string;
-    kind: "open_mic" | "listening_party" | "networking" | "screening" | "workshop_irl" | "online" | "other" | "lineup";
+    kind: EventKind;
     creative_category: "" | MediumGroupKey;
     format: "in_person" | "online" | "hybrid";
     cover_url: string; starts_at: string; ends_at: string;
