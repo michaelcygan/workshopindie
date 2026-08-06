@@ -40,9 +40,9 @@ async function resolveTags(rows: Row[], opts: { publicOnly: boolean }): Promise<
     collabIds.length
       ? supabaseAdmin
           .from("collab_posts")
-          .select("id,slug,title,description,status")
+          .select("id,slug,title,description,status,archived_at,resulting_work_id")
           .in("id", collabIds)
-      : Promise.resolve({ data: [] as Array<{ id: string; slug: string; title: string; description: string | null; status: string }> }),
+      : Promise.resolve({ data: [] as Array<{ id: string; slug: string; title: string; description: string | null; status: string; archived_at: string | null; resulting_work_id: string | null }> }),
     groupIds.length
       ? supabaseAdmin
           .from("groups")
