@@ -22,8 +22,9 @@ import {
 } from "@/lib/group-events-admin.functions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { EVENT_KIND_OPTIONS, type EventKind } from "@/lib/events/kinds";
 
-type Kind = "open_mic" | "listening_party" | "networking" | "screening" | "workshop_irl" | "online" | "other";
+type Kind = EventKind;
 type Format = "in_person" | "online" | "hybrid";
 type Rule = "ONCE" | "WEEKLY" | "BIWEEKLY" | "MONTHLY";
 
@@ -37,13 +38,27 @@ type FormState = {
   cover_url: string;
   starts_at: string;
   ends_at: string;
+  timezone: string;
   venue_name: string;
   venue_address: string;
   online_url: string;
   capacity: string;
+  /** Provenance. Imported third-party listings are never Workshop-official. */
+  source: "workshop" | "external";
+  external_url: string;
+  external_organizer: string;
   rule: Rule;
   occurrences: number;
 };
+
+const LOCAL_TZ = (() => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  } catch {
+    return "UTC";
+  }
+})();
+
 
 function toLocalInput(iso: string | null): string {
   if (!iso) return "";
@@ -57,8 +72,9 @@ function emptyForm(): FormState {
   return {
     group_id: "", title: "", tagline: "", description: "",
     kind: "other", format: "in_person", cover_url: "",
-    starts_at: "", ends_at: "",
+    starts_at: "", ends_at: "", timezone: LOCAL_TZ,
     venue_name: "", venue_address: "", online_url: "", capacity: "",
+    source: "external", external_url: "", external_organizer: "",
     rule: "ONCE", occurrences: 8,
   };
 }
@@ -125,7 +141,7 @@ export function AdminImportEventDialog({ onCreated }: { onCreated: () => void })
   }
 
   function loadDraftIntoForm(
-    draft: { title: string; tagline: string | null; description: string | null; kind: Kind; format: Format; cover_url: string | null; starts_at: string | null; ends_at: string | null; venue_name: string | null; venue_address: string | null; online_url: string | null; capacity: number | null; recurrence: { rule: "WEEKLY" | "BIWEEKLY" | "MONTHLY"; hint: string } | null },
+    draft: { title: string; tagline: string | null; description: string | null; kind: Kind; format: Format; cover_url: string | null; starts_at: string | null; ends_at: string | null; timezone?: string | null; venue_name: string | null; venue_address: string | null; online_url: string | null; capacity: number | null; recurrence: { rule: "WEEKLY" | "BIWEEKLY" | "MONTHLY"; hint: string } | null },
     src: { url: string; host: string; parser?: string },
     warn: string[],
   ) {
@@ -142,16 +158,23 @@ export function AdminImportEventDialog({ onCreated }: { onCreated: () => void })
       cover_url: draft.cover_url ?? "",
       starts_at: toLocalInput(draft.starts_at),
       ends_at: toLocalInput(draft.ends_at),
+      timezone: draft.timezone || LOCAL_TZ,
       venue_name: draft.venue_name ?? "",
       venue_address: draft.venue_address ?? "",
       online_url: draft.online_url ?? "",
       capacity: draft.capacity ? String(draft.capacity) : "",
+      // Anything arriving through "Import from link" is somebody else's event
+      // until an admin says otherwise.
+      source: "external",
+      external_url: src.url,
+      external_organizer: draft.venue_name ?? src.host,
       rule: draft.recurrence ? draft.recurrence.rule : "ONCE",
       occurrences: 8,
     });
   }
 
   function basePayload() {
+    const isExternal = form.source === "external";
     return {
       group_id: form.group_id,
       title: form.title,
@@ -162,13 +185,18 @@ export function AdminImportEventDialog({ onCreated }: { onCreated: () => void })
       cover_url: form.cover_url || null,
       starts_at: new Date(form.starts_at).toISOString(),
       ends_at: new Date(form.ends_at).toISOString(),
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+      timezone: form.timezone || LOCAL_TZ,
       venue_name: form.venue_name || null,
       venue_address: form.venue_address || null,
       online_url: form.online_url || null,
       capacity: form.capacity ? Number(form.capacity) : null,
       featured: false,
-      is_official: true,
+      // Provenance travels with the event. External listings are never
+      // presented as Workshop-official; the server enforces the same rule.
+      source: form.source,
+      external_url: isExternal ? form.external_url.trim() || null : null,
+      external_organizer: isExternal ? form.external_organizer.trim() || null : null,
+      is_official: !isExternal,
     };
   }
 
@@ -261,10 +289,13 @@ export function AdminImportEventDialog({ onCreated }: { onCreated: () => void })
             venue_address: r.draft.venue_address ?? null,
             online_url: r.draft.online_url ?? null,
             capacity: r.draft.capacity ?? null,
-            
             featured: false,
-            is_official: true,
-            status: "draft",
+            // Bulk imports are third-party listings by definition.
+            source: "external" as const,
+            external_url: r.url,
+            external_organizer: r.draft.venue_name ?? r.host,
+            is_official: false,
+            status: "draft" as const,
           },
         });
         okCount++;
@@ -451,6 +482,49 @@ export function AdminImportEventDialog({ onCreated }: { onCreated: () => void })
               </Select>
             </div>
 
+            {/* Provenance — who actually runs this event */}
+            <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-3">
+              <div>
+                <Label>Whose event is this?</Label>
+                <Select
+                  value={form.source}
+                  onValueChange={(v) => update("source", v as "workshop" | "external")}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="external">External — someone else organizes it</SelectItem>
+                    <SelectItem value="workshop">Workshop — we organize it</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="mt-1 text-[11px] text-ink-muted">
+                  External events are never badged Official and always link back to the organizer.
+                </p>
+              </div>
+              {form.source === "external" && (
+                <>
+                  <div>
+                    <Label>Official event page URL</Label>
+                    <Input
+                      value={form.external_url}
+                      onChange={(e) => update("external_url", e.target.value)}
+                      onBlur={(e) => update("external_url", normalizeUrlOrKeep(e.target.value))}
+                      placeholder="https://…"
+                    />
+                  </div>
+                  <div>
+                    <Label>Organizer / venue</Label>
+                    <Input
+                      value={form.external_organizer}
+                      onChange={(e) => update("external_organizer", e.target.value)}
+                      maxLength={140}
+                      placeholder="Green Mill Cocktail Lounge"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+
             <div>
               <Label>Title{aiHint("title")}</Label>
               <Input value={form.title} onChange={(e) => update("title", e.target.value)} />
@@ -470,8 +544,8 @@ export function AdminImportEventDialog({ onCreated }: { onCreated: () => void })
                 <Select value={form.kind} onValueChange={(v) => update("kind", v as Kind)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {["open_mic", "listening_party", "networking", "screening", "workshop_irl", "online", "other"].map((k) => (
-                      <SelectItem key={k} value={k}>{k.replace(/_/g, " ")}</SelectItem>
+                    {EVENT_KIND_OPTIONS.map((k) => (
+                      <SelectItem key={k.value} value={k.value}>{k.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -499,6 +573,18 @@ export function AdminImportEventDialog({ onCreated }: { onCreated: () => void })
                 <Input type="datetime-local" value={form.ends_at} onChange={(e) => update("ends_at", e.target.value)} />
               </div>
             </div>
+            <div>
+              <Label>Timezone</Label>
+              <Input
+                value={form.timezone}
+                onChange={(e) => update("timezone", e.target.value)}
+                placeholder="America/Chicago"
+              />
+              <p className="mt-1 text-[11px] text-ink-muted">
+                IANA name for the venue's local time — not necessarily yours.
+              </p>
+            </div>
+
 
             {/* Repeats */}
             <div className="rounded-lg border border-border bg-muted/30 p-3">

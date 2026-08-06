@@ -123,6 +123,7 @@ type EventRow = {
   short_code: string | null;
   created_by: string | null;
   lineup_capacity: number | null;
+  source?: string | null;
   external_organizer: string | null;
   external_url: string | null;
   group: { id: string; slug: string; name: string; avatar_url: string | null; kind?: string | null };
@@ -258,9 +259,13 @@ function EventPage() {
             <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-soft">
               <Tag className="h-3 w-3" /> {ev.kind.replace(/_/g, " ")}
             </span>
-            {ev.is_official && (
+            {ev.source === "external" ? (
+              <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-ink-muted">
+                External event
+              </span>
+            ) : ev.is_official ? (
               <span className="rounded-full bg-ink/10 px-2 py-0.5 text-[10px] font-medium text-ink-soft">Official</span>
-            )}
+            ) : null}
           </div>
           <h1 className="mt-2 font-display text-3xl text-ink md:text-4xl">{ev.title}</h1>
           {ev.tagline && <p className="mt-1 text-base text-ink-soft">{ev.tagline}</p>}
@@ -391,7 +396,28 @@ function EventPage() {
               )
             }
           />
+          {ev.source === "external" && (
+            <div className="mt-3 rounded-xl border border-border bg-surface p-4">
+              {ev.external_url && (
+                <a
+                  href={ev.external_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+                >
+                  Official event page
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              )}
+              <p className="mt-1 text-xs text-ink-muted">
+                {ev.external_organizer ? `${ev.external_organizer} runs this event.` : "An outside organizer runs this event."}{" "}
+                RSVPing on Workshop tells other members you're going — it doesn't hold a ticket, sign you
+                up to perform, or cover door, age, or venue requirements.
+              </p>
+            </div>
+          )}
         </div>
+
 
         {/* Four tabs. Nothing else. */}
         <div className="mt-6">
