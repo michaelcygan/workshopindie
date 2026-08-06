@@ -1,4 +1,3 @@
-import { NON_PUBLIC_STATUSES, RECRUITING_DEADLINE_OR } from "@/lib/collab/query";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Briefcase, Users, MapPin, Calendar, User, Search } from "lucide-react";
@@ -14,7 +13,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import type { BlogEntityKind, BlogEntityTag } from "@/lib/blog-entity-tags";
 import { kindLabel, tagKey } from "@/lib/blog-entity-tags";
-import { DISCOVERABLE_STATUSES } from "@/lib/events/filters";
+import {
+  searchWorks,
+  searchCollabs,
+  searchGroups,
+  searchEvents,
+  searchProfiles,
+  type EntitySearchHit,
+} from "@/lib/entities/search";
 
 const KIND_ICONS: Record<BlogEntityKind, typeof Briefcase> = {
   work: Briefcase,
@@ -23,6 +29,50 @@ const KIND_ICONS: Record<BlogEntityKind, typeof Briefcase> = {
   event: Calendar,
   profile: User,
 };
+
+/**
+ * Shared search hit -> the Blog's own tag shape. Blog tags carry an extra
+ * `work` summary so the "About this post" panel can render mediums live from
+ * the Work's subtype before the post is saved.
+ */
+function hitToBlogTag(hit: EntitySearchHit): BlogEntityTag {
+  const common = {
+    id: hit.id,
+    label: hit.label,
+    sublabel: hit.sublabel ?? null,
+    image: hit.image ?? null,
+  };
+  switch (hit.kind) {
+    case "work":
+      return {
+        kind: "work",
+        slug: hit.slug,
+        ...common,
+        work: {
+          excerpt: null,
+          categories: hit.category ? [hit.category] : [],
+          subtype: hit.subtype ?? null,
+          cover_url: hit.image ?? null,
+          cover_aspect: null,
+          cover_focal_x: null,
+          cover_focal_y: null,
+          credits: [],
+        },
+      };
+    case "collab":
+      return { kind: "collab", slug: hit.slug, ...common };
+    case "group":
+      return { kind: "group", slug: hit.slug, ...common };
+    case "event":
+      return { kind: "event", slug: hit.slug, groupSlug: hit.groupSlug, ...common };
+    case "profile":
+      return { kind: "profile", username: hit.username, ...common };
+    case "post":
+      // The Blog picker never searches posts; keep the switch exhaustive.
+      throw new Error("Blog posts are not taggable as post-context");
+  }
+}
+
 
 type Props = {
   open: boolean;
