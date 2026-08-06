@@ -9,8 +9,8 @@
  *    (unique constraint on `series_key`), then materialize occurrences.
  *  - Dated entries insert `group_events` rows directly; the unique index on
  *    (series_key, starts_at) makes re-running a no-op.
- * Re-running the seed updates the stored template so manifest copy fixes
- * propagate to future occurrences, and never duplicates anything.
+ * Re-running updates the stored template so manifest copy fixes reach future
+ * occurrences, and never duplicates anything.
  */
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -20,7 +20,7 @@ import {
   CHICAGO_GROUP_SLUG,
   CHICAGO_SEED_EVENTS,
   CHICAGO_TIMEZONE,
-  type SeedEvent,
+  seedTemplate,
 } from "./chicago-events.data";
 
 async function assertAdmin(supabase: SupabaseClient<Database>, userId: string) {
@@ -28,48 +28,8 @@ async function assertAdmin(supabase: SupabaseClient<Database>, userId: string) {
   if (!data) throw new Error("Admin only");
 }
 
-type SeedResult = {
-  key: string;
-  title: string;
-  action: "created" | "updated" | "unchanged";
-  occurrences_added: number;
-};
-
-function templateFor(ev: SeedEvent, venueCityId: string | null): Record<string, unknown> {
-  return {
-    title: ev.title,
-    tagline: ev.tagline,
-    description: ev.description,
-    kind: ev.kind,
-    creative_category: ev.creative_category,
-    format: "in_person",
-    timezone: CHICAGO_TIMEZONE,
-    venue_name: ev.venue_name,
-    venue_address: ev.venue_address,
-    venue_city_id: venueCityId,
-    visibility: "public",
-    rsvp_mode: "open",
-    status: "scheduled",
-    // Third-party listing. Never Workshop-official, always credited and linked.
-    is_official: false,
-    source: "external",
-    external_url: ev.external_url,
-    external_organizer: ev.external_organizer,
-    is_recurring: true,
-    recurrence_label: ev.recurrence_label,
-  };
-}
-
-/** Parse "YYYY-MM-DDTHH:MM" local wall clock into a UTC instant in `tz`. */
-function localToUtc(local: string, tz: string, zonedPartsToUtc: (p: never, t: string) => Date): Date {
-  const [datePart, timePart] = local.split("T");
-  const [y, mo, d] = datePart.split("-").map(Number);
-  const [h, mi] = (timePart ?? "00:00").split(":").map(Number);
-  return zonedPartsToUtc(
-    { year: y, month: mo, day: d, hour: h, minute: mi, second: 0 } as never,
-    tz,
-  );
-}
+const SERIES_SELECT =
+  "id,series_key,group_id,recurrence_rule,duration_minutes,template,horizon_weeks,next_occurrence_at,ends_on,timezone,start_time_local,extra_group_ids";
 
 export const seedChicagoEvents = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -78,9 +38,7 @@ export const seedChicagoEvents = createServerFn({ method: "POST" })
     await assertAdmin(supabase, userId);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { materializeSeries, zonedPartsToUtc, toZonedParts, advanceParts } = await import(
-      "@/lib/event-series.server"
-    );
+    const { materializeSeries, zonedPartsToUtc, toZonedParts } = await import("@/lib/event-series.server");
 
     const { data: group } = await supabaseAdmin
       .from("groups")
@@ -91,46 +49,53 @@ export const seedChicagoEvents = createServerFn({ method: "POST" })
     const groupId = group.id as string;
     const cityId = (group.city_id as string | null) ?? null;
 
-    const results: SeedResult[] = [];
+    const results: {
+      key: string;
+      title: string;
+      action: "created" | "updated" | "unchanged";
+      occurrences_added: number;
+    }[] = [];
     const now = new Date();
 
     for (const ev of CHICAGO_SEED_EVENTS) {
-      const template = templateFor(ev, cityId);
+      const template = seedTemplate(ev, cityId);
+      const [hh, mm] = (ev.cadence === "weekly" ? ev.start_local : "00:00").split(":").map(Number);
 
       if (ev.cadence === "weekly") {
-        const [h, mi] = ev.start_local.split(":").map(Number);
-        // First occurrence at or after now that lands on the manifest weekday.
-        let parts = toZonedParts(now, CHICAGO_TIMEZONE);
-        parts = { ...parts, hour: h, minute: mi, second: 0 };
-        let guard = 0;
-        while (guard < 14) {
-          const candidate = zonedPartsToUtc(parts, CHICAGO_TIMEZONE);
-          const weekday = new Date(
-            Date.UTC(parts.year, parts.month - 1, parts.day),
-          ).getUTCDay();
-          if (weekday === ev.weekday && candidate > now) break;
-          parts = {
-            ...parts,
-            ...toZonedParts(
-              new Date(Date.UTC(parts.year, parts.month - 1, parts.day + 1)),
-              "UTC",
-            ),
-            hour: h,
-            minute: mi,
-            second: 0,
-          };
-          guard += 1;
+        // Walk forward one local day at a time to the next matching weekday.
+        const today = toZonedParts(now, CHICAGO_TIMEZONE);
+        let cursor = new Date(Date.UTC(today.year, today.month - 1, today.day));
+        let firstStart = zonedPartsToUtc(
+          { year: today.year, month: today.month, day: today.day, hour: hh, minute: mm, second: 0 },
+          CHICAGO_TIMEZONE,
+        );
+        for (let i = 0; i < 8; i += 1) {
+          const candidate = zonedPartsToUtc(
+            {
+              year: cursor.getUTCFullYear(),
+              month: cursor.getUTCMonth() + 1,
+              day: cursor.getUTCDate(),
+              hour: hh,
+              minute: mm,
+              second: 0,
+            },
+            CHICAGO_TIMEZONE,
+          );
+          if (cursor.getUTCDay() === ev.weekday && candidate > now) {
+            firstStart = candidate;
+            break;
+          }
+          cursor = new Date(cursor.getTime() + 86_400_000);
         }
-        const firstStart = zonedPartsToUtc(parts, CHICAGO_TIMEZONE);
 
         const { data: existing } = await supabaseAdmin
           .from("event_series")
-          .select("id,series_key,group_id,recurrence_rule,duration_minutes,template,horizon_weeks,next_occurrence_at,ends_on,timezone,start_time_local,extra_group_ids")
+          .select(SERIES_SELECT)
           .eq("series_key", ev.key)
           .maybeSingle();
 
         let seriesRow = existing;
-        let action: SeedResult["action"] = "unchanged";
+        let action: "created" | "updated" = "created";
 
         if (!seriesRow) {
           const { data: inserted, error } = await supabaseAdmin
@@ -141,7 +106,7 @@ export const seedChicagoEvents = createServerFn({ method: "POST" })
               recurrence_rule: "WEEKLY",
               weekday: ev.weekday,
               day_of_month: null,
-              start_time_local: `${String(h).padStart(2, "0")}:${String(mi).padStart(2, "0")}:00`,
+              start_time_local: `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}:00`,
               duration_minutes: ev.duration_minutes,
               timezone: CHICAGO_TIMEZONE,
               template,
@@ -149,18 +114,17 @@ export const seedChicagoEvents = createServerFn({ method: "POST" })
               next_occurrence_at: firstStart.toISOString(),
               created_by: userId,
             } as never)
-            .select("id,series_key,group_id,recurrence_rule,duration_minutes,template,horizon_weeks,next_occurrence_at,ends_on,timezone,start_time_local,extra_group_ids")
+            .select(SERIES_SELECT)
             .single();
           if (error) throw new Error(`${ev.key}: ${error.message}`);
           seriesRow = inserted;
-          action = "created";
         } else {
           // Refresh the template so manifest corrections reach future dates.
           const { data: updated } = await supabaseAdmin
             .from("event_series")
             .update({ template, duration_minutes: ev.duration_minutes, canceled_at: null } as never)
             .eq("id", seriesRow.id)
-            .select("id,series_key,group_id,recurrence_rule,duration_minutes,template,horizon_weeks,next_occurrence_at,ends_on,timezone,start_time_local,extra_group_ids")
+            .select(SERIES_SELECT)
             .single();
           if (updated) seriesRow = updated;
           action = "updated";
@@ -168,14 +132,19 @@ export const seedChicagoEvents = createServerFn({ method: "POST" })
 
         const added = await materializeSeries(supabaseAdmin, seriesRow as never, userId);
         results.push({ key: ev.key, title: ev.title, action, occurrences_added: added });
-        void advanceParts;
         continue;
       }
 
       // Dated occurrences: publish exactly the dates the organizer listed.
       let added = 0;
       for (const local of ev.occurrences) {
-        const startsAt = localToUtc(local, CHICAGO_TIMEZONE, zonedPartsToUtc as never);
+        const [datePart, timePart] = local.split("T");
+        const [y, mo, d] = datePart.split("-").map(Number);
+        const [h2, m2] = (timePart ?? "00:00").split(":").map(Number);
+        const startsAt = zonedPartsToUtc(
+          { year: y, month: mo, day: d, hour: h2, minute: m2, second: 0 },
+          CHICAGO_TIMEZONE,
+        );
         if (startsAt <= now) continue;
         const endsAt = new Date(startsAt.getTime() + ev.duration_minutes * 60_000);
         const { data: inserted, error } = await supabaseAdmin
