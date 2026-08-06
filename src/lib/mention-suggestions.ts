@@ -43,7 +43,8 @@ function toSuggestion(hit: EntitySearchHit, kind: MentionKind): MentionSuggestio
     label: hit.label,
     sublabel: hit.sublabel ?? null,
     avatar: hit.image ?? null,
-    insert: kind === "user" ? `@${hit.username} ` : `${entityMarkdown(hit)} `,
+    insert:
+      hit.kind === "profile" ? `@${hit.username} ` : `${entityMarkdown(hit)} `,
   };
 }
 
