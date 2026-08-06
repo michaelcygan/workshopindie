@@ -365,6 +365,8 @@ function EventPage() {
               format={ev.format}
               venueName={ev.venue_name}
               venueAddress={ev.venue_address}
+              publicAddress={ev.source === "external"}
+
               venueLat={ev.venue_lat}
               venueLng={ev.venue_lng}
               onlineUrl={joinLink?.online_url ?? null}
