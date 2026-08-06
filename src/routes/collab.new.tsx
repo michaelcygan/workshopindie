@@ -15,7 +15,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { COLLAB_CATEGORIES, type Category, type CollabCategory } from "@/lib/categories";
 import { CategoryMultiPicker } from "@/components/category-multi-picker";
-import { CityCombobox, type CityValue } from "@/components/city-combobox";
+import { type CityValue } from "@/components/city-combobox";
+import { AuthoringLocationPicker } from "@/components/authoring-location-picker";
 import { TimelinePicker, type TimelineValue } from "@/components/timeline-picker";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -435,7 +436,7 @@ export function CollabComposer({
             {locationMode !== "online" && (
               <div className="space-y-2 pt-2">
                 <Label className="text-xs text-ink-muted">Primary city</Label>
-                <CityCombobox value={city} onChange={setCity} />
+                <AuthoringLocationPicker value={city} onChange={setCity} />
 
                 {!showAlsoCities && alsoCities.length === 0 && (
                   <button
@@ -479,7 +480,7 @@ export function CollabComposer({
                       </div>
                     )}
                     {alsoCities.length < 4 && (
-                      <CityCombobox
+                      <AuthoringLocationPicker
                         value={null}
                         onChange={(v) => v && setPendingAlso(v)}
                         placeholder="Add another city"

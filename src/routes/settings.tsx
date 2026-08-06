@@ -50,7 +50,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { CityCombobox, type CityValue } from "@/components/city-combobox";
+import { type CityValue } from "@/components/city-combobox";
+import { AuthoringLocationPicker } from "@/components/authoring-location-picker";
 import { RequireAuth } from "@/components/require-auth";
 import { cn } from "@/lib/utils";
 
@@ -398,12 +399,14 @@ function AccountSection() {
         <MapPin className="mt-2 h-4 w-4 shrink-0 text-ink-muted" />
         <div className="w-32 shrink-0 pt-2 text-sm text-ink-muted">Default city</div>
         <div className="ml-auto min-w-0 flex-1 max-w-sm">
-          <CityCombobox
+          <AuthoringLocationPicker
             value={prefs?.city ?? null}
             onChange={saveCity}
             placeholder="Search any city"
             disabled={prefsLoading}
+            join
           />
+
           <p className="mt-1 text-xs text-ink-muted">
             Scopes city pages, Group audio, and local discovery to your home base.
           </p>

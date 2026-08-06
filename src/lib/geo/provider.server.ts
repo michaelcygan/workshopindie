@@ -176,3 +176,32 @@ export async function resolveProviderPlace(providerId: string): Promise<Canonica
     return null;
   }
 }
+
+/**
+ * Server-derived locality for a coordinate. Used when the client picks a venue
+ * (a POI, not a locality) and Workshop must decide which city that venue is in
+ * without trusting browser-supplied place metadata.
+ */
+export async function reverseProviderLocality(
+  lat: number,
+  lng: number,
+): Promise<CanonicalPlace | null> {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  const url = new URL("https://nominatim.openstreetmap.org/reverse");
+  url.searchParams.set("lat", String(lat));
+  url.searchParams.set("lon", String(lng));
+  url.searchParams.set("format", "jsonv2");
+  url.searchParams.set("addressdetails", "1");
+  // zoom 10 asks Nominatim for the enclosing city/town rather than the POI.
+  url.searchParams.set("zoom", "10");
+  try {
+    const rows = await getJson(url);
+    for (const r of rows) {
+      const place = toCanonical(r);
+      if (place) return place;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}

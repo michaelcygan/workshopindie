@@ -109,97 +109,24 @@ export const ensureLocationAndOfficialGroup = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }): Promise<EnsuredLocation> => {
     const { supabase, userId } = context;
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { resolveProviderPlace, PLACE_PROVIDER } = await import("@/lib/geo/provider.server");
-    const { slugCandidates } = await import("@/lib/geo/slug-candidates");
+    const { resolveProviderPlace } = await import("@/lib/geo/provider.server");
+    const { ensureLocalityFromPlace } = await import("@/lib/geo/provision.server");
 
     const { data: isAdmin } = await supabase.rpc("has_role", {
       _user_id: userId,
       _role: "admin",
     });
 
-    // Selecting a locality Workshop already has is not "provisioning" and is
-    // never rate limited.
-    const { data: known } = await supabaseAdmin
-      .from("cities")
-      .select("id")
-      .eq("place_provider", PLACE_PROVIDER)
-      .eq("place_provider_id", data.providerId)
-      .maybeSingle();
-
-    if (!known && !isAdmin) {
-      const { data: ok } = await supabaseAdmin.rpc("check_and_bump", {
-        _action: "provision_locality",
-        _key: userId,
-        _window_s: 86400,
-        _max: 5,
-      });
-      if (ok === false) {
-        throw new Error("You've added several new places recently. Try again tomorrow.");
-      }
-    }
-
     const place = await resolveProviderPlace(data.providerId);
     if (!place) {
       throw new Error("That place couldn't be verified as a city or town.");
     }
 
-    const rpcArgs = {
-      _provider: place.provider,
-      _provider_id: place.providerId,
-      _name: place.name,
-      _state_region: place.stateRegion,
-      _country: place.country,
-      _country_code: place.countryCode,
-      _lat: place.latitude,
-      _lng: place.longitude,
-      _timezone: null,
-      _location_kind: place.locationKind,
-      _slug_candidates: slugCandidates(place),
-      _user_id: userId,
-      _source: isAdmin ? "admin" : "user",
-      // Generated types mark these as non-nullable; the SQL accepts NULLs.
-    } as unknown as Parameters<typeof supabaseAdmin.rpc<"provision_locality">>[1];
-
-    const { data: rows, error } = await supabaseAdmin.rpc("provision_locality", rpcArgs);
-
-    if (error) throw new Error(error.message);
-
-    const row = Array.isArray(rows) ? rows[0] : rows;
-    if (!row) throw new Error("Could not set up that location.");
-
-    if (data.join !== false) {
-      await supabaseAdmin
-        .from("group_members")
-        .upsert(
-          { group_id: row.group_id, user_id: userId, role: "member", source_type: "profile" },
-          { onConflict: "group_id,user_id", ignoreDuplicates: true },
-        );
-    }
-
-    if (row.was_created) {
-      await supabaseAdmin.from("admin_audit_log").insert({
-        actor_user_id: userId,
-        action: "locality.provisioned",
-        target_type: "city",
-        target_id: row.city_id,
-        payload: {
-          provider: place.provider,
-          provider_id: place.providerId,
-          name: place.name,
-          country_code: place.countryCode,
-          source: isAdmin ? "admin" : "user",
-          group_slug: row.group_slug,
-        },
-      });
-    }
-
-    return {
-      cityId: row.city_id,
-      citySlug: row.city_slug,
-      groupId: row.group_id,
-      groupSlug: row.group_slug,
-      name: place.name,
-      created: !!row.was_created,
-    };
+    return ensureLocalityFromPlace({
+      place,
+      userId,
+      isAdmin: !!isAdmin,
+      join: data.join !== false,
+    });
   });
+

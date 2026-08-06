@@ -115,7 +115,16 @@ export function PostWorkshopFromCitySheet({ open, onOpenChange, city, isAdmin, o
 
     if (where === "in_person" && venue) {
       try {
-        const resolved = await resolveVenue({ data: venue });
+        const resolved = await resolveVenue({
+          data: {
+            name: venue.name,
+            address: venue.address,
+            lat: venue.lat,
+            lng: venue.lng,
+            osm_ref: venue.osm_ref,
+          },
+        });
+
         if (resolved.city_id !== city.id) {
           setSubmitting(false);
           return toast.error(`Venue is outside ${city.name}. Pick a venue in ${city.name} or switch to Online.`);
