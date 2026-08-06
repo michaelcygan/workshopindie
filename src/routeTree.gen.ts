@@ -39,6 +39,7 @@ import { Route as AdminEventsRouteImport } from './routes/admin.events'
 import { Route as AdminGeoRouteImport } from './routes/admin.geo'
 import { Route as AdminGroupsRouteImport } from './routes/admin.groups'
 import { Route as AdminGrowthRouteImport } from './routes/admin.growth'
+import { Route as AdminInvestorRouteImport } from './routes/admin.investor'
 import { Route as AdminLinksRouteImport } from './routes/admin.links'
 import { Route as AdminMarketplaceRouteImport } from './routes/admin.marketplace'
 import { Route as AdminModerationRouteImport } from './routes/admin.moderation'
@@ -261,6 +262,11 @@ const AdminGroupsRoute = AdminGroupsRouteImport.update({
 const AdminGrowthRoute = AdminGrowthRouteImport.update({
   id: '/growth',
   path: '/growth',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminInvestorRoute = AdminInvestorRouteImport.update({
+  id: '/investor',
+  path: '/investor',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminLinksRoute = AdminLinksRouteImport.update({
@@ -653,6 +659,7 @@ export interface FileRoutesByFullPath {
   '/admin/geo': typeof AdminGeoRoute
   '/admin/groups': typeof AdminGroupsRoute
   '/admin/growth': typeof AdminGrowthRoute
+  '/admin/investor': typeof AdminInvestorRoute
   '/admin/links': typeof AdminLinksRoute
   '/admin/marketplace': typeof AdminMarketplaceRoute
   '/admin/moderation': typeof AdminModerationRoute
@@ -750,6 +757,7 @@ export interface FileRoutesByTo {
   '/admin/geo': typeof AdminGeoRoute
   '/admin/groups': typeof AdminGroupsRoute
   '/admin/growth': typeof AdminGrowthRoute
+  '/admin/investor': typeof AdminInvestorRoute
   '/admin/links': typeof AdminLinksRoute
   '/admin/marketplace': typeof AdminMarketplaceRoute
   '/admin/moderation': typeof AdminModerationRoute
@@ -854,6 +862,7 @@ export interface FileRoutesById {
   '/admin/geo': typeof AdminGeoRoute
   '/admin/groups': typeof AdminGroupsRoute
   '/admin/growth': typeof AdminGrowthRoute
+  '/admin/investor': typeof AdminInvestorRoute
   '/admin/links': typeof AdminLinksRoute
   '/admin/marketplace': typeof AdminMarketplaceRoute
   '/admin/moderation': typeof AdminModerationRoute
@@ -959,6 +968,7 @@ export interface FileRouteTypes {
     | '/admin/geo'
     | '/admin/groups'
     | '/admin/growth'
+    | '/admin/investor'
     | '/admin/links'
     | '/admin/marketplace'
     | '/admin/moderation'
@@ -1056,6 +1066,7 @@ export interface FileRouteTypes {
     | '/admin/geo'
     | '/admin/groups'
     | '/admin/growth'
+    | '/admin/investor'
     | '/admin/links'
     | '/admin/marketplace'
     | '/admin/moderation'
@@ -1159,6 +1170,7 @@ export interface FileRouteTypes {
     | '/admin/geo'
     | '/admin/groups'
     | '/admin/growth'
+    | '/admin/investor'
     | '/admin/links'
     | '/admin/marketplace'
     | '/admin/moderation'
@@ -1506,6 +1518,13 @@ declare module '@tanstack/react-router' {
       path: '/growth'
       fullPath: '/admin/growth'
       preLoaderRoute: typeof AdminGrowthRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/investor': {
+      id: '/admin/investor'
+      path: '/investor'
+      fullPath: '/admin/investor'
+      preLoaderRoute: typeof AdminInvestorRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/links': {
@@ -2028,6 +2047,7 @@ interface AdminRouteChildren {
   AdminGeoRoute: typeof AdminGeoRoute
   AdminGroupsRoute: typeof AdminGroupsRoute
   AdminGrowthRoute: typeof AdminGrowthRoute
+  AdminInvestorRoute: typeof AdminInvestorRoute
   AdminLinksRoute: typeof AdminLinksRoute
   AdminMarketplaceRoute: typeof AdminMarketplaceRoute
   AdminModerationRoute: typeof AdminModerationRoute
@@ -2051,6 +2071,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminGeoRoute: AdminGeoRoute,
   AdminGroupsRoute: AdminGroupsRoute,
   AdminGrowthRoute: AdminGrowthRoute,
+  AdminInvestorRoute: AdminInvestorRoute,
   AdminLinksRoute: AdminLinksRoute,
   AdminMarketplaceRoute: AdminMarketplaceRoute,
   AdminModerationRoute: AdminModerationRoute,
