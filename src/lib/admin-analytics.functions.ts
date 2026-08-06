@@ -214,3 +214,63 @@ export const getInvestorSnapshot = createServerFn({ method: "GET" })
     ]);
     return { kpi, growth, retention, cohorts, surfaces, cities, countries, revenue, funnel, fetchedAt: new Date().toISOString() };
   });
+
+/**
+ * Data health: can these numbers be trusted? Every check is panel-wrapped, so
+ * a failed probe reads "Data unavailable" rather than a reassuring zero.
+
+/**
+ * Data health: can these numbers be trusted? Every probe is failure-aware, so
+ * a broken query reads "Data unavailable" rather than a reassuring zero.
+ */
+export const getAdminDataHealth = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await requireAdmin(context.supabase, context.userId);
+    const admin = await getAdmin();
+
+    /** Head-count probe: null means the query failed, never 0. */
+    const countOf = async (q: any): Promise<number | null> => {
+      try {
+        const { count, error } = await q;
+        return error ? null : (count ?? 0);
+      } catch {
+        return null;
+      }
+    };
+
+    const [latestDay, kpi, members, excluded, noCity, noUsername, softDeleted, activationRows, activated, subsLive, subsSandbox] =
+      await Promise.all([
+        panel<any>(v(admin, "vw_user_activity_day").select("day").order("day", { ascending: false }).limit(1).maybeSingle()),
+        panel<any>(v(admin, "vw_kpi_periods").select("computed_at,members_total").maybeSingle()),
+        countOf(admin.from("profiles").select("id", { count: "exact", head: true })),
+        countOf(admin.from("profiles").select("id", { count: "exact", head: true }).eq("analytics_excluded", true)),
+        countOf(admin.from("profiles").select("id", { count: "exact", head: true }).is("home_city_id", null)),
+        countOf(admin.from("profiles").select("id", { count: "exact", head: true }).is("username", null)),
+        countOf(admin.from("profiles").select("id", { count: "exact", head: true }).not("deleted_at", "is", null)),
+        countOf(v(admin, "vw_user_activation").select("user_id", { count: "exact", head: true })),
+        countOf(v(admin, "vw_user_activation").select("user_id", { count: "exact", head: true }).eq("activated", true)),
+        countOf(admin.from("subscriptions").select("id", { count: "exact", head: true }).eq("environment", "live")),
+        countOf(admin.from("subscriptions").select("id", { count: "exact", head: true }).eq("environment", "sandbox")),
+      ]);
+
+    return {
+      latestActivityDay: latestDay.status === "unavailable" ? null : ((latestDay.data as any)?.day ?? null),
+      spineStatus: latestDay.status,
+      kpiComputedAt: (kpi.data as any)?.computed_at ?? null,
+      kpiMembers: (kpi.data as any)?.members_total ?? null,
+      kpiStatus: kpi.status,
+      counts: {
+        members,
+        excluded,
+        noCity,
+        noUsername,
+        softDeleted,
+        activationRows,
+        activated,
+        subsLive,
+        subsSandbox,
+      },
+      fetchedAt: new Date().toISOString(),
+    };
+  });

@@ -10,11 +10,14 @@ import { toast } from "sonner";
 import {
   getAdminUserDetail, setAdminUserRole, setAdminUserBadge,
   softDeleteAdminUser, forceSignOutAdminUser,
+  getAdminUserActivity, setAnalyticsExcluded,
 } from "@/lib/admin-users.functions";
 import {
   getUserBlogAccess, grantUserBlogAccess, revokeUserBlogAccess, suspendUserBlogAccess,
 } from "@/lib/admin-blog-access.functions";
 import { UserPlusPanel } from "@/components/admin/user-plus-panel";
+import { ActivityTimeline } from "@/components/admin/activity-timeline";
+import { SURFACE_LABELS } from "@/lib/analytics";
 
 export const Route = createFileRoute("/admin/users/$id")({ component: UserDetail });
 
@@ -29,10 +32,17 @@ function UserDetail() {
   const badgeFn = useServerFn(setAdminUserBadge);
   const delFn = useServerFn(softDeleteAdminUser);
   const signOutFn = useServerFn(forceSignOutAdminUser);
+  const activityFn = useServerFn(getAdminUserActivity);
+  const excludeFn = useServerFn(setAnalyticsExcluded);
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin", "user", id],
     queryFn: () => detailFn({ data: { userId: id } }),
+  });
+  const activity = useQuery({
+    queryKey: ["admin", "user-activity", id],
+    queryFn: () => activityFn({ data: { userId: id } }),
+    refetchOnWindowFocus: false,
   });
 
   const grantRole = useMutation({
@@ -55,12 +65,33 @@ function UserDetail() {
     mutationFn: () => signOutFn({ data: { userId: id } }),
     onSuccess: () => toast.success("Signed out everywhere"),
   });
+  const setExcluded = useMutation({
+    mutationFn: (excluded: boolean) => excludeFn({ data: { userId: id, excluded } }),
+    onSuccess: () => {
+      toast.success("Analytics exclusion updated");
+      qc.invalidateQueries({ queryKey: ["admin", "user", id] });
+      qc.invalidateQueries({ queryKey: ["admin", "user-activity", id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+
 
   const [badgeChoice, setBadgeChoice] = useState<string | null>(null);
   if (isLoading) return <div className="text-sm text-ink-muted">Loading…</div>;
   const p = data?.profile as any;
   if (!p) return <div className="text-sm text-ink-muted">User not found.</div>;
   const roles = data!.roles;
+  const act = (activity.data?.activation?.data ?? null) as any;
+  const city = activity.data?.city ?? null;
+  const sub = data?.subscription as any;
+  const planLabel =
+    sub && sub.environment === "live" && (sub.status === "active" || sub.status === "trialing")
+      ? sub.status === "trialing"
+        ? "Plus (trial)"
+        : "Plus"
+      : "Free";
+  const excluded = activity.data?.analyticsExcluded ?? !!p.analytics_excluded;
 
   return (
     <div className="space-y-6">
@@ -72,6 +103,14 @@ function UserDetail() {
             <div className="mt-2 flex flex-wrap gap-2 text-xs">
               <Badge variant="secondary">{p.creator_status}</Badge>
               {roles.map((r) => <Badge key={r} variant="outline">{r}</Badge>)}
+              <Badge variant="outline">{planLabel}</Badge>
+              {city ? <Badge variant="outline">{city.name}{city.country ? `, ${city.country}` : ""}</Badge> : <Badge variant="outline">No home city</Badge>}
+              {act ? (
+                <Badge variant="outline" className={act.activated ? "border-emerald-300 text-emerald-700" : "border-amber-300 text-amber-700"}>
+                  {act.activated ? "Activated" : "Not activated"}
+                </Badge>
+              ) : null}
+              {excluded ? <Badge className="bg-amber-100 text-amber-800">excluded from analytics</Badge> : null}
               {p.deleted_at ? <Badge className="bg-rose-100 text-rose-700">deleted</Badge> : null}
             </div>
             <div className="mt-3 text-xs text-ink-soft">
@@ -79,11 +118,20 @@ function UserDetail() {
               Last active {p.last_active_at ? new Date(p.last_active_at).toLocaleDateString() : "—"} ·
               Last sign-in {data?.lastSignInAt ? new Date(data.lastSignInAt).toLocaleString() : "—"}
             </div>
+            {act?.first_action_day ? (
+              <div className="mt-1 text-xs text-ink-soft">
+                First creative action {new Date(act.first_action_day).toLocaleDateString()}
+                {act.first_action_surface ? ` · ${SURFACE_LABELS[act.first_action_surface] ?? act.first_action_surface}` : ""}
+              </div>
+            ) : (
+              <div className="mt-1 text-xs text-ink-soft">No creative action recorded yet.</div>
+            )}
           </div>
           <div className="flex flex-col items-end gap-2 text-xs">
             <Link to="/u/$username" params={{ username: p.username ?? "" }} className="text-primary hover:underline">View public profile →</Link>
           </div>
         </div>
+
 
         <div className="mt-5 grid grid-cols-3 gap-2 text-center text-sm sm:grid-cols-7">
           {[
@@ -118,9 +166,41 @@ function UserDetail() {
             <Button size="sm" onClick={() => badgeChoice && setBadge.mutate(badgeChoice)} disabled={!badgeChoice || setBadge.isPending}>Set badge</Button>
           </div>
           <Button variant="outline" size="sm" onClick={() => forceOut.mutate()} disabled={forceOut.isPending}>Force sign-out</Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={setExcluded.isPending}
+            onClick={() => {
+              const next = !excluded;
+              if (
+                confirm(
+                  next
+                    ? "Exclude this account from analytics? It disappears from every metric, cohort and map."
+                    : "Include this account in analytics again?",
+                )
+              )
+                setExcluded.mutate(next);
+            }}
+          >
+            {excluded ? "Include in analytics" : "Exclude from analytics"}
+          </Button>
           <Button variant="destructive" size="sm" onClick={() => { if (confirm("Soft-delete this account? They lose discoverability and are flagged for hard delete.")) softDelete.mutate(); }}>Soft delete</Button>
         </div>
+        <p className="mt-3 text-xs text-ink-muted">
+          Excluded accounts (test, system, internal) are held out of every analytics view, cohort and map.
+        </p>
       </div>
+
+      {activity.isLoading ? (
+        <div className="text-sm text-ink-muted">Loading activity…</div>
+      ) : (
+        <ActivityTimeline
+          rows={(activity.data?.days?.data ?? []) as any[]}
+          unavailable={activity.isError || activity.data?.days?.status === "unavailable"}
+        />
+      )}
+
+
 
       {data?.subscription ? (
         <div className="rounded-2xl border border-border bg-surface p-5">

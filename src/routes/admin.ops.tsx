@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { toast } from "sonner";
+import { DataHealth } from "@/components/admin/data-health";
 import { listFeatureFlags, upsertFeatureFlag, deleteFeatureFlag, sendAdminBroadcast, listAdminBroadcasts } from "@/lib/admin-ops.functions";
 
 export const Route = createFileRoute("/admin/ops")({ component: OpsPage });
@@ -35,6 +36,9 @@ function OpsPage() {
 
   return (
     <div className="space-y-8">
+      <section>
+        <DataHealth />
+      </section>
       <section>
         <h2 className="mb-3 font-display text-xl text-ink">Feature flags</h2>
         <NewFlagForm onSave={(p) => save.mutate(p)} />

@@ -9,6 +9,7 @@ import { SurfaceTable } from "@/components/admin/surface-table";
 import { METRIC_DEFINITIONS, PLUS_MONTHLY_PRICE_USD, fmtNumber, fmtUsd } from "@/lib/analytics";
 import { isOk, rows } from "@/lib/analytics/envelope";
 import { pulseNarrative } from "@/lib/analytics/narrative";
+import { DataHealth } from "@/components/admin/data-health";
 
 export const Route = createFileRoute("/admin/")({ component: Pulse });
 
@@ -139,6 +140,10 @@ function Pulse() {
             sublabel={`${cities.filter((c) => (c.mau ?? 0) > 0).length} active in 30d`}
           />
         </div>
+      </section>
+
+      <section>
+        <DataHealth compact />
       </section>
     </div>
   );
