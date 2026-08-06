@@ -340,27 +340,38 @@ export function GroupEventDirectory({
 
       {isLoading && <p className="text-sm text-ink-muted">Loading…</p>}
 
-      {!isLoading && pinnedOrRecurring.length > 0 && (
+      {!isLoading && pinnedShown.length > 0 && (
         <section className="space-y-3">
           <h2 className="font-display text-lg text-ink">Pinned &amp; recurring</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {pinnedOrRecurring.map((e) => (
+            {pinnedShown.map((e) => (
               <EventCardLite key={e.id} ev={e} />
             ))}
           </div>
         </section>
       )}
 
-      {!isLoading && upcoming.length > 0 && (
+      {!isLoading && upcomingShown.length > 0 && (
         <section className="space-y-3">
           <h2 className="font-display text-lg text-ink">Upcoming</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {upcoming.map((e) => (
+            {upcomingShown.map((e) => (
               <EventCardLite key={e.id} ev={e} />
             ))}
           </div>
         </section>
       )}
+
+      {!isLoading && embedded && moreCount > 0 && (
+        <Link
+          to="/g/$slug/events"
+          params={{ slug: group.slug }}
+          className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1.5 text-sm text-ink-soft shadow-soft hover:bg-muted"
+        >
+          See all {pinnedOrRecurring.length + upcoming.length} events
+        </Link>
+      )}
+
 
       {!isLoading &&
         !hasAnyMatch &&
