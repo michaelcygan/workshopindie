@@ -29,6 +29,12 @@ import { sanitizeInstagramHandle } from "@/lib/display-name";
 import { RequireAuth } from "@/components/require-auth";
 import { PinnedWorksPicker, type PinnableWork } from "@/components/pinned-works-picker";
 import { getMyAgeFields, setMyBirthdate, setMyAgeFilter } from "@/lib/profile-age.functions";
+import {
+  GlobalLocationCombobox,
+  type SelectedLocation,
+} from "@/components/global-location-combobox";
+import { ensureLocationAndOfficialGroup } from "@/lib/geo/locations.functions";
+
 
 export const Route = createFileRoute("/me/edit")({
   component: () => (
