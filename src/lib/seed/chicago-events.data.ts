@@ -785,6 +785,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_indie_game_showcase_2026",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Findie-city-games-showcase.jpg",
+    photo_credit_name: "Indie City Games",
+    photo_credit_url: "https://indiecitygames.org/calendar/cigs-2026",
     cadence: "dated",
     occurrences: ["2026-09-13T13:00"],
     duration_minutes: 420,
