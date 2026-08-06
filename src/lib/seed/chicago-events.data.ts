@@ -559,6 +559,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_this_much_is_true",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fthis-much-is-true.jpg",
+    photo_credit_name: "This Much Is True",
+    photo_credit_url: "https://www.thismuchistruechicago.com/",
     cadence: "dated",
     occurrences: ["2026-08-13T19:30"],
     duration_minutes: 120,
