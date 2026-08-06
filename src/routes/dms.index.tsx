@@ -209,6 +209,7 @@ function DmsIndex() {
         r.conv.last_message_preview ?? "",
         r.collab?.title ?? "",
         r.workshop?.title ?? "",
+        r.work?.title ?? "",
       ].join(" ").toLowerCase();
       return hay.includes(query);
     });
