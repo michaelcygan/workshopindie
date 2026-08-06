@@ -1,95 +1,143 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getAdminOverview } from "@/lib/admin-analytics.functions";
-import { KpiTile } from "@/components/admin/kpi-tile";
+import { getAdminPulse } from "@/lib/admin-analytics.functions";
+import { Metric, RatioMetric, SectionHeading, UpdatedAt, Unavailable } from "@/components/admin/metric";
 import { MetricChart } from "@/components/admin/metric-chart";
+import { NarrativeList } from "@/components/admin/narrative-list";
+import { SurfaceTable } from "@/components/admin/surface-table";
+import { METRIC_DEFINITIONS, PLUS_MONTHLY_PRICE_USD, fmtNumber, fmtUsd } from "@/lib/analytics";
+import { isOk, rows } from "@/lib/analytics/envelope";
+import { pulseNarrative } from "@/lib/analytics/narrative";
 
-export const Route = createFileRoute("/admin/")({ component: Overview });
+export const Route = createFileRoute("/admin/")({ component: Pulse });
 
-function fmt(n: number | null | undefined): string {
-  return (n ?? 0).toLocaleString();
-}
-
-function Overview() {
-  const fn = useServerFn(getAdminOverview);
-  const { data, isLoading } = useQuery({ queryKey: ["admin", "overview"], queryFn: () => fn() });
+function Pulse() {
+  const fn = useServerFn(getAdminPulse);
+  const { data, isLoading } = useQuery({ queryKey: ["admin", "pulse"], queryFn: () => fn(), refetchOnWindowFocus: false });
 
   if (isLoading) return <div className="text-sm text-ink-muted">Loading…</div>;
-  const k = data?.kpi as any;
-  const stickiness = k?.mau ? Math.round((k.dau / k.mau) * 100) : 0;
+
+  const kpi = isOk(data?.kpi) ? (data!.kpi.data as any) : null;
+  const revenue = isOk(data?.revenue) ? (data!.revenue.data as any) : null;
+  const cities = rows<any>(data?.cities);
+  const growth = rows<any>(data?.growth);
+  const daily = rows<any>(data?.daily);
+  const surfaces = rows<any>(data?.surfaces);
+  const retention = rows<any>(data?.retention);
+  const mrr = revenue ? (revenue.live_active_paid ?? 0) * PLUS_MONTHLY_PRICE_USD : null;
+  const d7 = retention.find((r) => r.window_days === 7);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <section>
-        <h2 className="mb-3 font-display text-xl text-ink">North-star &amp; daily pulse</h2>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
-          <KpiTile label="Total users" value={fmt(k?.total_users)} />
-          <KpiTile label="Signups (7d)" value={fmt(k?.signups_7d)} sublabel={`${fmt(k?.signups_30d)} in 30d`} />
-          <KpiTile label="DAU" value={fmt(k?.dau)} />
-          <KpiTile label="WAU" value={fmt(k?.wau)} />
-          <KpiTile label="MAU" value={fmt(k?.mau)} />
-          <KpiTile label="DAU/MAU" value={`${stickiness}%`} sublabel="Stickiness" tone={stickiness >= 20 ? "good" : "warn"} />
+        <SectionHeading
+          title="Company pulse"
+          hint="Everything below is trailing 30 days unless labelled otherwise."
+          right={<UpdatedAt at={kpi?.computed_at ?? data?.fetchedAt} />}
+        />
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
+          <Metric
+            label="Members"
+            value={kpi?.members_total ?? null}
+            status={data?.kpi.status}
+            definition={METRIC_DEFINITIONS.members_total.definition}
+            size="lg"
+          />
+          <Metric
+            label="New members 30d"
+            value={kpi?.signups_30d ?? null}
+            prior={kpi?.signups_prev_30d}
+            status={data?.kpi.status}
+            definition={METRIC_DEFINITIONS.signup.definition}
+          />
+          <Metric
+            label="Weekly active creators"
+            value={kpi?.wac ?? null}
+            prior={kpi?.wac_prev}
+            periodLabel="prior 7d"
+            status={data?.kpi.status}
+            definition={METRIC_DEFINITIONS.wac.definition}
+          />
+          <Metric
+            label="MAU"
+            value={kpi?.mau ?? null}
+            prior={kpi?.mau_prev}
+            sublabel={kpi ? `${fmtNumber(kpi.mac)} of them created` : undefined}
+            status={data?.kpi.status}
+            definition={METRIC_DEFINITIONS.mau.definition}
+          />
+          <RatioMetric
+            label="Activation (30d cohort)"
+            numerator={kpi?.cohort_30d_activated}
+            denominator={kpi?.cohort_30d}
+            status={data?.kpi.status}
+            definition={METRIC_DEFINITIONS.activated.definition}
+          />
+          <Metric
+            label="MRR"
+            value={mrr === null ? null : fmtUsd(mrr)}
+            sublabel={revenue ? `${fmtNumber(revenue.live_active_paid)} paying · ${fmtNumber(revenue.live_trialing)} trialing` : undefined}
+            status={data?.revenue.status}
+            definition={METRIC_DEFINITIONS.mrr.definition}
+          />
         </div>
       </section>
 
       <section>
-        <h2 className="mb-3 font-display text-xl text-ink">Creation &amp; marketplace (7d)</h2>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
-          <KpiTile label="Works shipped" value={fmt(k?.works_published_7d)} sublabel={`${fmt(k?.works_total)} all-time`} />
-          <KpiTile label="Collabs posted" value={fmt(k?.collabs_posted_7d)} sublabel={`${fmt(k?.collabs_total)} all-time`} />
-          <KpiTile label="Collab apps" value={fmt(k?.collab_applications_7d)} sublabel={`${fmt(k?.collab_guest_applications_7d)} guest`} />
-          <KpiTile label="Audio rooms opened" value={fmt(k?.lounge_rooms_opened_7d)} sublabel={`${fmt(k?.lounge_participants_7d)} people`} />
-          <KpiTile label="Group audio min" value={fmt(k?.lounge_audio_minutes_7d)} />
-          <KpiTile label="Blog posts" value={fmt(k?.blog_posts_published_7d)} />
-          <KpiTile label="Events created" value={fmt(k?.group_events_7d)} />
-          <KpiTile label="Event RSVPs" value={fmt(k?.event_rsvps_7d)} />
-        </div>
-      </section>
-
-      <section>
-        <h2 className="mb-3 font-display text-xl text-ink">Revenue &amp; trust</h2>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <KpiTile label="Active Plus subs" value={fmt(k?.active_subs)} tone="good" />
-          <KpiTile label="New follows (7d)" value={fmt(k?.follows_7d)} />
-          <KpiTile label="Open reports" value={fmt(k?.open_reports)} tone={k?.open_reports ? "warn" : "default"} />
-        </div>
+        <SectionHeading title="The read" hint="Plain-language restatement of the numbers above. No estimates." />
+        <NarrativeList items={pulseNarrative(kpi, revenue, cities)} />
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-2xl border border-border bg-surface p-4">
-          <h3 className="mb-2 font-display text-lg text-ink">Daily signups (365d)</h3>
-          <MetricChart data={(data?.signups ?? []) as any} xKey="day" yKey="signups" />
+          <h3 className="mb-2 font-display text-lg text-ink">Members over time</h3>
+          {data?.growth.status === "unavailable" ? (
+            <Unavailable />
+          ) : (
+            <MetricChart data={growth as any} xKey="day" yKey="members_cumulative" />
+          )}
         </div>
         <div className="rounded-2xl border border-border bg-surface p-4">
-          <h3 className="mb-2 font-display text-lg text-ink">DAU (90d)</h3>
-          <MetricChart data={(data?.dau ?? []) as any} xKey="day" yKey="dau" color="hsl(var(--accent))" />
+          <h3 className="mb-2 font-display text-lg text-ink">Daily active members</h3>
+          {data?.daily.status === "unavailable" ? (
+            <Unavailable />
+          ) : (
+            <MetricChart data={daily as any} xKey="day" yKey="active_users" color="hsl(var(--accent))" />
+          )}
         </div>
       </section>
 
       <section>
-        <h2 className="mb-3 font-display text-xl text-ink">Engagement by surface (7d)</h2>
-        <div className="overflow-hidden rounded-2xl border border-border bg-surface">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 text-xs uppercase tracking-wide text-ink-muted">
-              <tr>
-                <th className="px-3 py-2 text-left">Surface</th>
-                <th className="px-3 py-2 text-right">Active users</th>
-                <th className="px-3 py-2 text-right">Actions</th>
-                <th className="px-3 py-2 text-right">Per active</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(data?.surfaces ?? []).map((s: any) => (
-                <tr key={s.surface} className="border-t border-border">
-                  <td className="px-3 py-2 text-ink">{s.surface}</td>
-                  <td className="px-3 py-2 text-right">{fmt(s.active_users)}</td>
-                  <td className="px-3 py-2 text-right">{fmt(s.actions)}</td>
-                  <td className="px-3 py-2 text-right">{s.active_users > 0 ? (s.actions / s.active_users).toFixed(2) : "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <SectionHeading
+          title="Where the work happens"
+          hint="Members and actions per surface, last 30 days."
+          right={<Link to="/admin/engagement" className="text-sm text-primary hover:underline">Product detail →</Link>}
+        />
+        <SurfaceTable rows={surfaces} unavailable={data?.surfaces.status === "unavailable"} />
+      </section>
+
+      <section>
+        <SectionHeading
+          title="Needs attention"
+          right={<Link to="/admin/reports" className="text-sm text-primary hover:underline">Reports →</Link>}
+        />
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <Metric label="Open reports" value={kpi?.open_reports ?? null} status={data?.kpi.status} />
+          <Metric label="Past due subscriptions" value={revenue?.live_past_due ?? null} status={data?.revenue.status} />
+          <RatioMetric
+            label="D7 retention"
+            numerator={d7?.retained}
+            denominator={d7?.eligible}
+            status={data?.retention.status}
+            definition={METRIC_DEFINITIONS.d7.definition}
+          />
+          <Metric
+            label="Cities with members"
+            value={cities.filter((c) => c.members > 0).length}
+            status={data?.cities.status}
+            sublabel={`${cities.filter((c) => (c.mau ?? 0) > 0).length} active in 30d`}
+          />
         </div>
       </section>
     </div>
