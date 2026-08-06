@@ -92,6 +92,7 @@ import { Route as BlogCCategoryRouteImport } from './routes/blog.c.$category'
 import { Route as CollabSlugEditRouteImport } from './routes/collab.$slug.edit'
 import { Route as CollabClaimTokenRouteImport } from './routes/collab.claim.$token'
 import { Route as GSlugIndexRouteImport } from './routes/g.$slug.index'
+import { Route as GSlugEventsRouteImport } from './routes/g.$slug.events'
 import { Route as MeBlogIndexRouteImport } from './routes/me.blog.index'
 import { Route as MeBlogIdRouteImport } from './routes/me.blog.$id'
 import { Route as WorksSlugEditRouteImport } from './routes/works.$slug.edit'
@@ -528,6 +529,11 @@ const GSlugIndexRoute = GSlugIndexRouteImport.update({
   path: '/$slug/',
   getParentRoute: () => GRoute,
 } as any)
+const GSlugEventsRoute = GSlugEventsRouteImport.update({
+  id: '/$slug/events',
+  path: '/$slug/events',
+  getParentRoute: () => GRoute,
+} as any)
 const MeBlogIndexRoute = MeBlogIndexRouteImport.update({
   id: '/me/blog/',
   path: '/me/blog/',
@@ -699,6 +705,7 @@ export interface FileRoutesByFullPath {
   '/blog/c/$category': typeof BlogCCategoryRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
+  '/g/$slug/events': typeof GSlugEventsRoute
   '/me/blog/$id': typeof MeBlogIdRoute
   '/works/$slug/edit': typeof WorksSlugEditRoute
   '/works/collab/new': typeof WorksCollabNewRoute
@@ -795,6 +802,7 @@ export interface FileRoutesByTo {
   '/blog/c/$category': typeof BlogCCategoryRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
+  '/g/$slug/events': typeof GSlugEventsRoute
   '/me/blog/$id': typeof MeBlogIdRoute
   '/works/$slug/edit': typeof WorksSlugEditRoute
   '/works/collab/new': typeof WorksCollabNewRoute
@@ -898,6 +906,7 @@ export interface FileRoutesById {
   '/blog/c/$category': typeof BlogCCategoryRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
+  '/g/$slug/events': typeof GSlugEventsRoute
   '/me/blog/$id': typeof MeBlogIdRoute
   '/works/$slug/edit': typeof WorksSlugEditRoute
   '/works/collab/new': typeof WorksCollabNewRoute
@@ -1002,6 +1011,7 @@ export interface FileRouteTypes {
     | '/blog/c/$category'
     | '/collab/$slug/edit'
     | '/collab/claim/$token'
+    | '/g/$slug/events'
     | '/me/blog/$id'
     | '/works/$slug/edit'
     | '/works/collab/new'
@@ -1098,6 +1108,7 @@ export interface FileRouteTypes {
     | '/blog/c/$category'
     | '/collab/$slug/edit'
     | '/collab/claim/$token'
+    | '/g/$slug/events'
     | '/me/blog/$id'
     | '/works/$slug/edit'
     | '/works/collab/new'
@@ -1200,6 +1211,7 @@ export interface FileRouteTypes {
     | '/blog/c/$category'
     | '/collab/$slug/edit'
     | '/collab/claim/$token'
+    | '/g/$slug/events'
     | '/me/blog/$id'
     | '/works/$slug/edit'
     | '/works/collab/new'
@@ -1867,6 +1879,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GSlugIndexRouteImport
       parentRoute: typeof GRoute
     }
+    '/g/$slug/events': {
+      id: '/g/$slug/events'
+      path: '/$slug/events'
+      fullPath: '/g/$slug/events'
+      preLoaderRoute: typeof GSlugEventsRouteImport
+      parentRoute: typeof GRoute
+    }
     '/me/blog/': {
       id: '/me/blog/'
       path: '/me/blog'
@@ -2092,11 +2111,13 @@ const CollabRouteWithChildren =
   CollabRoute._addFileChildren(CollabRouteChildren)
 
 interface GRouteChildren {
+  GSlugEventsRoute: typeof GSlugEventsRoute
   GSlugIndexRoute: typeof GSlugIndexRoute
   GSlugEEventSlugRoute: typeof GSlugEEventSlugRoute
 }
 
 const GRouteChildren: GRouteChildren = {
+  GSlugEventsRoute: GSlugEventsRoute,
   GSlugIndexRoute: GSlugIndexRoute,
   GSlugEEventSlugRoute: GSlugEEventSlugRoute,
 }
