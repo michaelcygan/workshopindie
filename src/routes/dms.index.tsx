@@ -360,11 +360,11 @@ function DmsIndex() {
                       </span>
                     )}
                   </div>
-                  {(collab || workshop) && (
+                  {(collab || work || workshop) && (
                     <span className={`mt-0.5 inline-block max-w-full truncate rounded-full px-2 py-0.5 text-[10px] ${
-                      collab ? "bg-primary/10 text-primary" : "bg-signal/10 text-signal"
+                      collab || work ? "bg-primary/10 text-primary" : "bg-signal/10 text-signal"
                     }`}>
-                      Re: {collab?.title ?? workshop?.title ?? "Audio room"}
+                      Re: {collab?.title ?? work?.title ?? workshop?.title ?? "Audio room"}
                     </span>
                   )}
                   <p className={`truncate text-xs ${unread > 0 ? "text-ink" : "text-ink-muted"}`}>
