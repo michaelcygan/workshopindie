@@ -1,0 +1,485 @@
+/**
+ * The Group Event Directory — a public, filterable projection of the Event
+ * objects connected to a Group.
+ *
+ * There is no directory object. The Event is the primitive; this reads every
+ * event linked to the Group through `event_groups` (which always contains the
+ * primary group, guaranteed by the `ensure_primary_event_group` trigger) so an
+ * event chosen under "Also show in" really does appear here.
+ *
+ * Filter state lives in the URL so a filtered view is a durable, shareable
+ * public address.
+ */
+import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { ChevronDown, Plus, Search, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import { supabase } from "@/integrations/supabase/client";
+import { DISCOVERABLE_STATUSES, collapseSeries, effectiveEndMs } from "@/lib/events/filters";
+import {
+  eventKindLabel,
+  attendanceLabel,
+  matchesAttendance,
+  ATTENDANCE_OPTIONS,
+  type AttendanceFilter,
+} from "@/lib/events/kinds";
+import { MEDIUM_GROUPS, mediumGroupByKey, type MediumGroupKey } from "@/lib/medium-groups";
+import { useEventsRealtime } from "@/hooks/use-events-realtime";
+import { useAuth } from "@/hooks/use-auth";
+import { cn } from "@/lib/utils";
+
+export type DirectoryGroup = {
+  id: string;
+  slug: string;
+  name: string;
+  kind: "city" | "genre" | "micro" | "scene";
+};
+
+export type EventLite = {
+  id: string;
+  slug: string;
+  title: string;
+  tagline: string | null;
+  kind: string;
+  creative_category: MediumGroupKey | null;
+  format: "in_person" | "online" | "hybrid";
+  cover_url: string | null;
+  starts_at: string;
+  ends_at?: string | null;
+  series_key?: string | null;
+  venue_name: string | null;
+  venue_address: string | null;
+  going_count: number;
+  capacity: number | null;
+  featured_at: string | null;
+  source: "workshop" | "external" | null;
+  external_url: string | null;
+  external_organizer: string | null;
+  is_recurring: boolean | null;
+  recurrence_label: string | null;
+  pinned_at: string | null;
+  online_url: string | null;
+  /** Owning group slug — an event linked here may live on another Group. */
+  group_slug: string;
+};
+
+export type DirectoryFilters = {
+  category: MediumGroupKey | null;
+  kind: string | null;
+  format: AttendanceFilter;
+  q: string;
+};
+
+const EVENT_COLUMNS =
+  "id,slug,title,tagline,kind,creative_category,format,cover_url,starts_at,ends_at,venue_name,venue_address,going_count,capacity,featured_at,source,external_url,external_organizer,is_recurring,recurrence_label,pinned_at,online_url,series_key,group_id";
+
+/** Every event connected to this Group, deduplicated and series-collapsed. */
+export function useGroupDirectoryEvents(groupId: string) {
+  return useQuery({
+    queryKey: ["group", groupId, "directory-events"],
+    queryFn: async (): Promise<EventLite[]> => {
+      const { data: links, error: linkErr } = await supabase
+        .from("event_groups")
+        .select("event_id")
+        .eq("group_id", groupId);
+      if (linkErr) throw linkErr;
+      const ids = Array.from(new Set((links ?? []).map((l) => l.event_id as string)));
+      if (ids.length === 0) return [];
+
+      const { data, error } = await supabase
+        .from("group_events")
+        .select(`${EVENT_COLUMNS},group:groups!group_events_group_id_fkey(slug,deleted_at)`)
+        .in("id", ids)
+        .in("status", DISCOVERABLE_STATUSES as never)
+        .not("published_at", "is", null)
+        .is("archived_at", null)
+        .is("deleted_at", null)
+        .order("starts_at", { ascending: true });
+      if (error) throw error;
+
+      type Row = Omit<EventLite, "group_slug"> & {
+        group: { slug: string; deleted_at: string | null } | null;
+      };
+      const seen = new Set<string>();
+      const rows: EventLite[] = [];
+      for (const r of (data ?? []) as unknown as Row[]) {
+        if (!r.group || r.group.deleted_at || !r.group.slug) continue;
+        if (seen.has(r.id)) continue;
+        seen.add(r.id);
+        const { group, ...rest } = r;
+        rows.push({ ...rest, group_slug: group.slug });
+      }
+      // A recurring night contributes one card: its nearest occurrence.
+      return collapseSeries(rows);
+    },
+  });
+}
+
+export function directoryHeading(group: DirectoryGroup): string {
+  return group.kind === "city" ? `Independent events in ${group.name}` : `Events in ${group.name}`;
+}
+
+export function directorySubheading(group: DirectoryGroup): string {
+  return group.kind === "city"
+    ? "Open mics, screenings, workshops, meetups, shows, and other places to connect."
+    : "Gatherings, workshops, and events connected to this community.";
+}
+
+export function GroupEventDirectory({
+  group,
+  filters,
+  onFiltersChange,
+}: {
+  group: DirectoryGroup;
+  filters: DirectoryFilters;
+  onFiltersChange: (next: Partial<DirectoryFilters>) => void;
+}) {
+  useEventsRealtime(group.id);
+  const { user } = useAuth();
+  const { data: isAdmin } = useQuery({
+    queryKey: ["is-admin", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user!.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      return !!data;
+    },
+  });
+
+  const { data: events, isLoading } = useGroupDirectoryEvents(group.id);
+  const [searchOpen, setSearchOpen] = useState(!!filters.q);
+
+  const all = events ?? [];
+  const now = Date.now();
+
+  // Only offer filters the Group's own dataset can actually satisfy.
+  const availableKinds = Array.from(new Set(all.map((e) => e.kind).filter(Boolean)));
+  const availableCategories = MEDIUM_GROUPS.filter((m) =>
+    all.some((e) => e.creative_category === m.key),
+  );
+
+  const matches = (e: EventLite) => {
+    if (filters.category && e.creative_category !== filters.category) return false;
+    if (filters.kind && e.kind !== filters.kind) return false;
+    if (!matchesAttendance(e.format, filters.format)) return false;
+    const needle = filters.q.trim().toLowerCase();
+    if (needle) {
+      const hay =
+        `${e.title} ${e.tagline ?? ""} ${e.venue_name ?? ""} ${e.external_organizer ?? ""}`.toLowerCase();
+      if (!hay.includes(needle)) return false;
+    }
+    return true;
+  };
+
+  const matched = all.filter(matches);
+  const pinnedOrRecurring = matched
+    .filter((e) => (e.pinned_at || e.is_recurring) && effectiveEndMs(e) >= now)
+    .sort((a, b) => {
+      if (!!b.pinned_at !== !!a.pinned_at) return b.pinned_at ? 1 : -1;
+      return new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime();
+    });
+  const pinnedIds = new Set(pinnedOrRecurring.map((e) => e.id));
+  const upcoming = matched.filter((e) => !pinnedIds.has(e.id) && effectiveEndMs(e) >= now);
+  const past = matched
+    .filter((e) => !pinnedIds.has(e.id) && effectiveEndMs(e) < now)
+    .sort((a, b) => new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime());
+
+  const hasAnyMatch = pinnedOrRecurring.length + upcoming.length > 0;
+  const hasFilters =
+    !!filters.category || !!filters.kind || filters.format !== "all" || filters.q.trim().length > 0;
+
+  const clearAll = () => {
+    setSearchOpen(false);
+    onFiltersChange({ category: null, kind: null, format: "all", q: "" });
+  };
+
+  return (
+    <div className="space-y-10">
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="font-display text-2xl text-ink md:text-3xl">{directoryHeading(group)}</h1>
+          <p className="mt-1 text-sm text-ink-muted">{directorySubheading(group)}</p>
+        </div>
+        {isAdmin && (
+          <Link
+            to="/admin/events"
+            className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1.5 text-sm text-ink-soft shadow-soft hover:bg-muted"
+          >
+            + Add event
+          </Link>
+        )}
+      </header>
+
+      {/* Category → Event type → Attendance → Search */}
+      {all.length > 0 && (
+        <div className="-mt-6 flex flex-wrap items-center gap-1 text-ink-muted md:justify-end">
+          {availableCategories.length > 1 && (
+            <FilterMenu
+              label={
+                filters.category
+                  ? (mediumGroupByKey(filters.category)?.label ?? "All categories")
+                  : "All categories"
+              }
+              active={!!filters.category}
+            >
+              <DropdownMenuItem onClick={() => onFiltersChange({ category: null })}>
+                All categories
+              </DropdownMenuItem>
+              {availableCategories.map((m) => (
+                <DropdownMenuItem key={m.key} onClick={() => onFiltersChange({ category: m.key })}>
+                  {m.label}
+                </DropdownMenuItem>
+              ))}
+            </FilterMenu>
+          )}
+
+          {availableKinds.length > 1 && (
+            <FilterMenu
+              label={filters.kind ? eventKindLabel(filters.kind) : "All event types"}
+              active={!!filters.kind}
+            >
+              <DropdownMenuItem onClick={() => onFiltersChange({ kind: null })}>
+                All event types
+              </DropdownMenuItem>
+              {availableKinds.map((k) => (
+                <DropdownMenuItem key={k} onClick={() => onFiltersChange({ kind: k })}>
+                  {eventKindLabel(k)}
+                </DropdownMenuItem>
+              ))}
+            </FilterMenu>
+          )}
+
+          <FilterMenu label={attendanceLabel(filters.format)} active={filters.format !== "all"}>
+            {ATTENDANCE_OPTIONS.map((o) => (
+              <DropdownMenuItem key={o.value} onClick={() => onFiltersChange({ format: o.value })}>
+                {o.label}
+              </DropdownMenuItem>
+            ))}
+          </FilterMenu>
+
+          {searchOpen || filters.q ? (
+            <div className="flex items-center gap-1">
+              <Input
+                autoFocus
+                value={filters.q}
+                onChange={(e) => onFiltersChange({ q: e.target.value })}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    onFiltersChange({ q: "" });
+                    setSearchOpen(false);
+                  }
+                }}
+                onBlur={() => {
+                  if (!filters.q) setSearchOpen(false);
+                }}
+                placeholder="Search events…"
+                className="h-8 w-[200px] text-xs"
+              />
+              {filters.q && (
+                <button
+                  onClick={() => {
+                    onFiltersChange({ q: "" });
+                    setSearchOpen(false);
+                  }}
+                  className="rounded-full p-1 hover:bg-surface-2"
+                  aria-label="Clear search"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="rounded-full p-1.5 hover:bg-surface-2"
+              aria-label="Search events"
+            >
+              <Search className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      )}
+
+      {isLoading && <p className="text-sm text-ink-muted">Loading…</p>}
+
+      {!isLoading && pinnedOrRecurring.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="font-display text-lg text-ink">Pinned &amp; recurring</h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {pinnedOrRecurring.map((e) => (
+              <EventCardLite key={e.id} ev={e} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {!isLoading && upcoming.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="font-display text-lg text-ink">Upcoming</h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {upcoming.map((e) => (
+              <EventCardLite key={e.id} ev={e} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {!isLoading &&
+        !hasAnyMatch &&
+        (hasFilters ? (
+          <div className="text-center text-sm text-ink-muted">
+            No events match your filters.{" "}
+            <button onClick={clearAll} className="underline hover:text-ink">
+              Clear
+            </button>
+          </div>
+        ) : isAdmin ? (
+          <Link
+            to="/admin/events"
+            className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border bg-surface p-8 text-center text-sm text-ink-soft transition hover:border-border-strong hover:bg-muted"
+          >
+            <span className="inline-flex items-center gap-2 font-medium text-ink">
+              <Plus className="h-4 w-4" /> Add the first event to {group.name}
+            </span>
+            <span className="text-xs text-ink-muted">
+              New events will appear here as they are added.
+            </span>
+          </Link>
+        ) : (
+          <p className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center text-sm text-ink-muted">
+            The calendar is quiet for now. New events will appear here as they are added.
+          </p>
+        ))}
+
+      {!isLoading && past.length > 0 && (
+        <details className="rounded-2xl border border-border bg-surface p-4">
+          <summary className="cursor-pointer text-sm font-medium text-ink-soft">
+            Past events ({past.length})
+          </summary>
+          <ul className="mt-3 space-y-2">
+            {past.map((e) => (
+              <li key={e.id}>
+                <Link
+                  to="/g/$slug/e/$eventSlug"
+                  params={{ slug: e.group_slug, eventSlug: e.slug }}
+                  className="text-sm text-ink-soft hover:text-ink"
+                >
+                  · {e.title}{" "}
+                  <span className="text-ink-muted">
+                    — {new Date(e.starts_at).toLocaleDateString()}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </div>
+  );
+}
+
+function FilterMenu({
+  label,
+  active,
+  children,
+}: {
+  label: string;
+  active: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          className={cn(
+            "inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs transition hover:bg-surface-2",
+            active && "bg-surface-2 font-medium text-ink",
+          )}
+        >
+          {label}
+          <ChevronDown className="h-3 w-3" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="max-h-72 w-48 overflow-y-auto">
+        {children}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+export function EventCardLite({ ev }: { ev: EventLite }) {
+  const starts = new Date(ev.starts_at);
+  const isExternal = ev.source === "external" && !!ev.external_url;
+  const isOnline = ev.format === "online" || ev.format === "hybrid";
+  const locationLine = isOnline ? "Online" : (ev.venue_name ?? ev.venue_address ?? "TBA");
+  const category = mediumGroupByKey(ev.creative_category);
+
+  // Canonical destination only — outbound links live on the event page.
+  return (
+    <Link
+      to="/g/$slug/e/$eventSlug"
+      params={{ slug: ev.group_slug, eventSlug: ev.slug }}
+      className="group flex flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift"
+    >
+      <div
+        className={cn("relative h-32 w-full", ev.cover_url ? "bg-cover bg-center" : "bg-secondary")}
+        style={ev.cover_url ? { backgroundImage: `url(${ev.cover_url})` } : undefined}
+      >
+        <div className="absolute left-3 top-3 rounded-xl bg-background/90 px-2 py-1 text-center shadow-soft">
+          <div className="text-[9px] font-medium uppercase text-ink-muted">
+            {starts.toLocaleDateString(undefined, { month: "short" })}
+          </div>
+          <div className="font-display text-base leading-none text-ink">{starts.getDate()}</div>
+        </div>
+        <div className="absolute right-3 top-3 flex flex-col items-end gap-1">
+          {ev.pinned_at && (
+            <span className="rounded-full bg-background/90 px-2 py-0.5 text-[10px] font-medium text-ink shadow-soft">
+              Pinned
+            </span>
+          )}
+          {ev.is_recurring && (
+            <span className="rounded-full bg-primary/90 px-2 py-0.5 text-[10px] font-medium text-primary-foreground shadow-soft">
+              {ev.recurrence_label || "Recurring"}
+            </span>
+          )}
+        </div>
+      </div>
+      <div className="flex flex-1 flex-col gap-1 p-3">
+        <h3 className="line-clamp-2 font-display text-sm text-ink">{ev.title}</h3>
+        <div className="text-[11px] text-ink-muted">
+          {starts.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+          {" · "}
+          {locationLine}
+        </div>
+        {/* One quiet directory line: what kind of event, what creative world. */}
+        <div className="text-[11px] text-ink-muted/80">
+          {eventKindLabel(ev.kind)}
+          {category ? ` · ${category.label}` : ""}
+        </div>
+        <div className="mt-auto flex items-center justify-between pt-1 text-[11px]">
+          <span className="text-ink-muted">
+            {isExternal
+              ? `External${ev.external_organizer ? ` · ${ev.external_organizer}` : ""}`
+              : `${ev.going_count} going${ev.capacity ? ` / ${ev.capacity}` : ""}`}
+          </span>
+          {isExternal ? (
+            <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-ink-soft">
+              View event ↗
+            </span>
+          ) : null}
+        </div>
+      </div>
+    </Link>
+  );
+}
