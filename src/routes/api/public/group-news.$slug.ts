@@ -88,34 +88,66 @@ export const Route = createFileRoute("/api/public/group-news/$slug")({
           return json([], "upstream_error", 502, NO_STORE);
         }
 
+        // Serve a fresh cached snapshot without touching upstream at all.
+        const { data: cached } = await supabase
+          .from("group_news_cache" as never)
+          .select("items, fetched_at")
+          .eq("slug", slug)
+          .maybeSingle();
+        const cachedRow = cached as { items?: NewsItem[]; fetched_at?: string } | null;
+        const cachedItems = Array.isArray(cachedRow?.items) ? (cachedRow!.items as NewsItem[]) : [];
+        const cachedAgeMs = cachedRow?.fetched_at
+          ? Date.now() - new Date(cachedRow.fetched_at).getTime()
+          : Number.POSITIVE_INFINITY;
+        if (cachedItems.length > 0 && cachedAgeMs < 20 * 60 * 1000) {
+          return json(cachedItems, "ok", 200, SUCCESS);
+        }
+
+        // Upstream (Google News) intermittently 503s Cloudflare edge traffic; retry briefly.
         let xml = "";
-        try {
-          const res = await fetch(feedUrl, {
-            redirect: "follow",
-            headers: {
-              "user-agent":
-                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36 WorkshopBot/1.0 (+https://workshopindie.com)",
-              accept:
-                "application/rss+xml, application/atom+xml, application/xml, text/xml, */*;q=0.5",
-              "accept-language": "en-US,en;q=0.9",
-            },
-            signal: AbortSignal.timeout(10000),
-          });
-          if (!res.ok) {
+        let failure: Reason | null = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            const res = await fetch(feedUrl, {
+              redirect: "follow",
+              headers: {
+                "user-agent":
+                  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+                accept:
+                  "application/rss+xml, application/atom+xml, application/xml, text/xml, */*;q=0.5",
+                "accept-language": "en-US,en;q=0.9",
+              },
+              signal: AbortSignal.timeout(8000),
+            });
+            if (!res.ok) {
+              failure = "upstream_status";
+              console.error(
+                `[group-news] upstream ${res.status} slug=${slug} hostname=${hostname} attempt=${attempt + 1}`,
+              );
+              await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
+              continue;
+            }
+            xml = await res.text();
+            failure = null;
+            break;
+          } catch (e) {
+            const timedOut =
+              e instanceof Error && (e.name === "TimeoutError" || e.name === "AbortError");
+            failure = timedOut ? "upstream_timeout" : "upstream_error";
             console.error(
-              `[group-news] upstream ${res.status} slug=${slug} hostname=${hostname}`,
+              `[group-news] upstream ${timedOut ? "timeout" : "error"} slug=${slug} hostname=${hostname} name=${
+                e instanceof Error ? e.name : "unknown"
+              }`,
             );
-            return json([], "upstream_status", 502, NO_STORE);
           }
-          xml = await res.text();
-        } catch (e) {
-          const timedOut = e instanceof Error && (e.name === "TimeoutError" || e.name === "AbortError");
-          console.error(
-            `[group-news] upstream ${timedOut ? "timeout" : "error"} slug=${slug} hostname=${hostname} name=${
-              e instanceof Error ? e.name : "unknown"
-            } msg=${e instanceof Error ? e.message.slice(0, 120) : ""}`,
-          );
-          return json([], timedOut ? "upstream_timeout" : "upstream_error", 502, NO_STORE);
+        }
+
+        if (failure) {
+          if (cachedItems.length > 0) {
+            console.warn(`[group-news] serving stale cache slug=${slug} reason=${failure}`);
+            return json(cachedItems, "ok", 200, SHORT);
+          }
+          return json([], failure, 502, NO_STORE);
         }
 
         const items = parseFeed(xml, 12);
@@ -123,7 +155,21 @@ export const Route = createFileRoute("/api/public/group-news/$slug")({
           console.warn(
             `[group-news] parse returned zero items slug=${slug} hostname=${hostname} bytes=${xml.length}`,
           );
+          if (cachedItems.length > 0) return json(cachedItems, "ok", 200, SHORT);
           return json([], "empty_feed", 200, SHORT);
+        }
+
+        try {
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          await supabaseAdmin
+            .from("group_news_cache" as never)
+            .upsert({ slug, items, fetched_at: new Date().toISOString() } as never, {
+              onConflict: "slug",
+            });
+        } catch (e) {
+          console.error(
+            `[group-news] cache write failed slug=${slug} name=${e instanceof Error ? e.name : "?"}`,
+          );
         }
 
         console.log(`[group-news] success slug=${slug} items=${items.length}`);
@@ -132,3 +178,4 @@ export const Route = createFileRoute("/api/public/group-news/$slug")({
     },
   },
 });
+
