@@ -395,7 +395,7 @@ function GroupPage() {
               {viewTab === "work" && <GroupWorkTab group={group} />}
               {viewTab === "links" && <GroupLinksTab group={group} />}
               {viewTab === "posts" && <GroupPostsTab group={group} />}
-              {viewTab === "events" && <GroupEventsTab group={group} />}
+              
               {viewTab === "subgroups" && (
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                   {childGroups.map((g) => (
