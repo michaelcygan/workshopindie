@@ -235,11 +235,15 @@ function CollabPage() {
           </div>
           <div className="flex min-w-[16rem] flex-1 items-center gap-2">
             <CityCombobox
-              value={filters.city}
-              valueLabel={search.cityName}
-              onChange={setCity}
+              value={
+                filters.city
+                  ? { id: filters.city, name: search.cityName ?? "Selected city" }
+                  : null
+              }
+              onChange={(next) => setCity({ id: next?.id, name: next?.name })}
               disabled={filters.online}
             />
+
             <button
               type="button"
               onClick={toggleOnline}
