@@ -423,11 +423,8 @@ function GroupPage() {
               {viewTab === "members" && <GroupMembersTab group={group} />}
               {viewTab === "about" && <GroupAboutTab group={group} />}
             </div>
-
-            <div className="mt-16">
-              <AdjacentGroupsRail groupId={group.id} />
-            </div>
           </div>
+
         </div>
       </main>
     </GroupLiveShell>
