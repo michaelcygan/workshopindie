@@ -4796,6 +4796,93 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_influences: {
+        Row: {
+          category: string | null
+          created_at: string
+          creator_name: string | null
+          external_url: string | null
+          id: string
+          normalized_url: string | null
+          position: number
+          profile_id: string
+          provider: string | null
+          source_kind: string
+          thumbnail_url: string | null
+          title: string | null
+          updated_at: string
+          work_id: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          creator_name?: string | null
+          external_url?: string | null
+          id?: string
+          normalized_url?: string | null
+          position?: number
+          profile_id: string
+          provider?: string | null
+          source_kind: string
+          thumbnail_url?: string | null
+          title?: string | null
+          updated_at?: string
+          work_id?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          creator_name?: string | null
+          external_url?: string | null
+          id?: string
+          normalized_url?: string | null
+          position?: number
+          profile_id?: string
+          provider?: string | null
+          source_kind?: string
+          thumbnail_url?: string | null
+          title?: string | null
+          updated_at?: string
+          work_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_influences_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_influences_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_influences_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_influences_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "profile_influences_work_id_fkey"
+            columns: ["work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           age_filter_min: number | null
