@@ -273,10 +273,21 @@ function EventPage() {
           <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-ink-soft">
             <span className="inline-flex items-center gap-1.5">
               <Calendar className="h-4 w-4 text-ink-muted" />
-              {starts.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
+              {starts.toLocaleDateString(undefined, {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+                timeZone: ev.timezone || undefined,
+              })}
               {" · "}
-              {starts.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+              {starts.toLocaleTimeString(undefined, {
+                hour: "numeric",
+                minute: "2-digit",
+                timeZone: ev.timezone || undefined,
+                timeZoneName: "short",
+              })}
             </span>
+
             <a href={`/api/public/events/${ev.id}/ics`} className="text-xs text-primary hover:underline">
               Add to calendar
             </a>
