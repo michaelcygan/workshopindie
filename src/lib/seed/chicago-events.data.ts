@@ -23,6 +23,15 @@ type SeedBase = {
   description: string;
   kind: SeedKind;
   creative_category: SeedCategory;
+  /**
+   * Extra mediums this event genuinely belongs to. Each becomes an additional
+   * medium Group on the listing (e.g. a zine night reaches Writing and Visual
+   * Art). Primary geography is always the Chicago city Group.
+   */
+  secondary_categories?: SeedCategory[];
+  /** Defaults to in_person. Online book clubs etc. set this explicitly. */
+  format?: "in_person" | "online" | "hybrid";
+
   venue_name: string;
   venue_address: string;
   /** The organizer's own page — always linked from the Workshop event. */
