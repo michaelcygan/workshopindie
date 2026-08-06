@@ -120,11 +120,9 @@ export function VenueAutocomplete({
     setOpen(false);
     onChange({ venue_name: name, venue_address: address, venue_lat: lat, venue_lng: lng });
 
-    // Resolve (or create) the Workshop city for this venue so the event is
-    // discoverable in city filters. Never blocks the form on failure.
-    const addr = r.address ?? {};
-    const cityName = addr.city || addr.town || addr.village || addr.municipality || addr.county;
-    if (!cityName) return;
+    // Resolve (or provision) the Workshop city for this venue so the event is
+    // discoverable in city filters. The server derives the city from the
+    // coordinates — we never send city metadata. Never blocks the form.
     setResolving(true);
     try {
       const res = await resolveCityFn({
@@ -134,14 +132,6 @@ export function VenueAutocomplete({
           lat,
           lng,
           osm_ref: r.place_id ? `osm:${r.place_id}` : null,
-          city: {
-            name: cityName,
-            state_region: addr.state ?? null,
-            country: addr.country || "Unknown",
-            country_code: addr.country_code ? addr.country_code.toUpperCase() : null,
-            lat,
-            lng,
-          },
         },
       });
       onChange({
@@ -150,7 +140,7 @@ export function VenueAutocomplete({
         venue_lat: lat,
         venue_lng: lng,
         venue_city_id: res.city_id ?? null,
-        city_label: [cityName, addr.state].filter(Boolean).join(", "),
+        city_label: res.city_label ?? null,
       });
     } catch {
       // City resolution is best-effort; publishing validation catches the gap.
@@ -158,6 +148,7 @@ export function VenueAutocomplete({
       setResolving(false);
     }
   }
+
 
   return (
     <div className="space-y-2">
