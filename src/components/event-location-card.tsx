@@ -12,6 +12,7 @@ export function EventLocationCard({
   onlineUrl,
   city,
   variant = "card",
+  publicAddress = false,
 }: {
   format: "in_person" | "online" | "hybrid";
   venueName: string | null;
@@ -21,10 +22,14 @@ export function EventLocationCard({
   onlineUrl: string | null;
   city: string | null;
   variant?: "card" | "embedded";
+  /** Third-party listings publish their address openly — never gate it behind RSVP. */
+  publicAddress?: boolean;
 }) {
   const { user } = useAuth();
+  const canSeeAddress = !!user || publicAddress;
   const showInPerson = format === "in_person" || format === "hybrid";
   const showOnline = format === "online" || format === "hybrid";
+
   const rowCls =
     variant === "embedded"
       ? "flex items-start gap-3"
