@@ -392,8 +392,9 @@ async function openCollabDmThread(args: {
   ownerUserId: string;
   applicantUserId: string;
   message: string;
+  roleName?: string | null;
 }): Promise<{ conversationId: string }> {
-  const { collabPostId, ownerUserId, applicantUserId, message } = args;
+  const { collabPostId, ownerUserId, applicantUserId, message, roleName } = args;
   if (ownerUserId === applicantUserId) throw new Error("Cannot apply to your own collab.");
 
   // 1. Block guard
@@ -411,11 +412,11 @@ async function openCollabDmThread(args: {
       { onConflict: "collab_post_id,owner_user_id,applicant_user_id" },
     );
 
-  // 3. Find or create conversation (ordered pair). Set collab context only on creation.
+  // 3. Find or create conversation (ordered pair).
   const [a, b] = applicantUserId < ownerUserId ? [applicantUserId, ownerUserId] : [ownerUserId, applicantUserId];
   const { data: existing } = await supabaseAdmin
     .from("conversations")
-    .select("id")
+    .select("id, context_collab_post_id")
     .eq("user_a", a)
     .eq("user_b", b)
     .maybeSingle();
@@ -423,6 +424,14 @@ async function openCollabDmThread(args: {
   let conversationId: string;
   if (existing?.id) {
     conversationId = existing.id;
+    // Existing threads keep their history but must point at the collab this
+    // application/suggestion came from, otherwise the inbox shows no context.
+    if (existing.context_collab_post_id !== collabPostId) {
+      await supabaseAdmin
+        .from("conversations")
+        .update({ context_collab_post_id: collabPostId })
+        .eq("id", conversationId);
+    }
   } else {
     const { data: created, error: convErr } = await supabaseAdmin
       .from("conversations")
@@ -433,14 +442,29 @@ async function openCollabDmThread(args: {
     conversationId = created.id;
   }
 
-  // 4. Insert opening message from applicant.
+  // 4. Insert opening message from applicant, prefixed with durable context so the
+  // thread stays readable even if a later collab re-points the header chip.
+  const { data: postRow } = await supabaseAdmin
+    .from("collab_posts")
+    .select("title")
+    .eq("id", collabPostId)
+    .maybeSingle();
+  const title = postRow?.title?.trim();
+  const lead = title
+    ? roleName
+      ? `Applying for ${roleName} on “${title}”`
+      : `Suggestion for “${title}”`
+    : null;
+  const body = lead ? `${lead}\n\n${message}` : message;
+
   const { error: msgErr } = await supabaseAdmin
     .from("messages")
-    .insert({ conversation_id: conversationId, sender_id: applicantUserId, body: message });
+    .insert({ conversation_id: conversationId, sender_id: applicantUserId, body });
   if (msgErr) throw new Error(msgErr.message);
 
   return { conversationId };
 }
+
 
 const applySchema = z.object({
   collabPostId: z.string().uuid(),
