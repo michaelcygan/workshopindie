@@ -521,6 +521,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_paper_machete",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fpaper-machete.jpg",
+    photo_credit_name: "The Paper Machete",
+    photo_credit_url: "https://thepapermachete.org/",
     cadence: "dated",
     occurrences: ["2026-08-08T15:00", "2026-08-22T15:00"],
     duration_minutes: 120,
