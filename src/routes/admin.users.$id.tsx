@@ -65,6 +65,17 @@ function UserDetail() {
     mutationFn: () => signOutFn({ data: { userId: id } }),
     onSuccess: () => toast.success("Signed out everywhere"),
   });
+  const setExcluded = useMutation({
+    mutationFn: (excluded: boolean) => excludeFn({ data: { userId: id, excluded } }),
+    onSuccess: () => {
+      toast.success("Analytics exclusion updated");
+      qc.invalidateQueries({ queryKey: ["admin", "user", id] });
+      qc.invalidateQueries({ queryKey: ["admin", "user-activity", id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+
 
   const [badgeChoice, setBadgeChoice] = useState<string | null>(null);
   if (isLoading) return <div className="text-sm text-ink-muted">Loading…</div>;
