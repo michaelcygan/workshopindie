@@ -306,6 +306,13 @@ function GroupPage() {
   const hasBlogPosts = groupBlogPosts.length > 0;
   const viewTab: Tab = tab === "posts" && !groupBlogLoading && !hasBlogPosts ? "today" : tab;
 
+  // Legacy ?t=events deep links keep working — they land on the directory.
+  useEffect(() => {
+    if (tab === "events") {
+      navigate({ to: "/g/$slug/events", params: { slug: group.slug }, replace: true });
+    }
+  }, [tab, group.slug, navigate]);
+
   // Full child-group payload — only fetched when the Subgroups tab is opened.
   const { data: childGroups = [] } = useQuery({
     enabled: tab === "subgroups" && childCount > 0,
