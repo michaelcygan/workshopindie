@@ -840,6 +840,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_group_312_films_annual_report",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fgroup-312-films.jpg",
+    photo_credit_name: "Group 312 Films",
+    photo_credit_url: "https://chicagofilmmakers.org/upcoming-screenings-and-events/group-312-films-2026-annual-report",
     cadence: "dated",
     occurrences: ["2026-08-29T19:00"],
     duration_minutes: 120,
