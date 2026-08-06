@@ -399,6 +399,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_jarvis_squear_open_mic",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fjarvis-square-tavern.jpg",
+    photo_credit_name: "Jarvis Square Tavern",
+    photo_credit_url: "https://jarvissquaretavern.com/js-events/",
     cadence: "weekly",
     weekday: 3,
     start_local: "20:00",
@@ -418,6 +421,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_infinite_wrench_fri",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fneo-futurists-infinite-wrench.jpg",
+    photo_credit_name: "The Neo-Futurists",
+    photo_credit_url: "https://neofuturists.org/events/theinfinitewrench/",
     cadence: "weekly",
     weekday: 5,
     start_local: "22:30",
@@ -436,6 +442,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_infinite_wrench_sat",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fneo-futurists-infinite-wrench.jpg",
+    photo_credit_name: "The Neo-Futurists",
+    photo_credit_url: "https://neofuturists.org/events/theinfinitewrench/",
     cadence: "weekly",
     weekday: 6,
     start_local: "22:30",
@@ -454,6 +463,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_infinite_wrench_sun",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fneo-futurists-infinite-wrench.jpg",
+    photo_credit_name: "The Neo-Futurists",
+    photo_credit_url: "https://neofuturists.org/events/theinfinitewrench/",
     cadence: "weekly",
     weekday: 0,
     start_local: "19:00",
@@ -509,6 +521,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_paper_machete",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fpaper-machete.jpg",
+    photo_credit_name: "The Paper Machete",
+    photo_credit_url: "https://thepapermachete.org/",
     cadence: "dated",
     occurrences: ["2026-08-08T15:00", "2026-08-22T15:00"],
     duration_minutes: 120,
@@ -544,6 +559,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_this_much_is_true",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fthis-much-is-true.jpg",
+    photo_credit_name: "This Much Is True",
+    photo_credit_url: "https://www.thismuchistruechicago.com/",
     cadence: "dated",
     occurrences: ["2026-08-13T19:30"],
     duration_minutes: 120,
@@ -595,6 +613,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_test_literary_series",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Ftest-literary-series.jpg",
+    photo_credit_name: "TEST Literary Series",
+    photo_credit_url: "https://whistlerchicago.com/events/test-literary-series-aug-2026",
     cadence: "dated",
     occurrences: ["2026-08-12T18:30"],
     duration_minutes: 90,
@@ -612,6 +633,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_missspoken",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fcoles-bar.jpg",
+    photo_credit_name: "Cole's Bar",
+    photo_credit_url: "https://www.colesbarchicago.com/",
     cadence: "dated",
     occurrences: ["2026-08-24T19:00", "2026-09-28T19:00", "2026-10-26T19:00", "2026-11-30T19:00", "2026-12-28T19:00"],
     duration_minutes: 120,
@@ -647,6 +671,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_po_box_fiber_night",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fpo-box-collective.jpg",
+    photo_credit_name: "PO Box Collective",
+    photo_credit_url: "https://www.poboxcollective.us/",
     cadence: "dated",
     occurrences: ["2026-08-17T18:00", "2026-09-04T18:00", "2026-09-21T18:00"],
     duration_minutes: 120,
@@ -664,6 +691,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_po_box_poetry_series",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fpo-box-collective.jpg",
+    photo_credit_name: "PO Box Collective",
+    photo_credit_url: "https://www.poboxcollective.us/",
     cadence: "dated",
     occurrences: ["2026-08-20T18:30"],
     duration_minutes: 180,
@@ -681,6 +711,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_songwriters_collective_brig_open_mic",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fsongwriters-collective.jpg",
+    photo_credit_name: "Chicago Songwriters Collective",
+    photo_credit_url: "https://www.meetup.com/vocalists-151/",
     cadence: "dated",
     occurrences: ["2026-08-10T19:00"],
     duration_minutes: 180,
@@ -698,6 +731,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_songwriters_collective_song_sharing",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fsongwriters-collective.jpg",
+    photo_credit_name: "Chicago Songwriters Collective",
+    photo_credit_url: "https://www.meetup.com/vocalists-151/",
     cadence: "dated",
     occurrences: ["2026-08-24T19:00"],
     duration_minutes: 180,
@@ -749,6 +785,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_indie_game_showcase_2026",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Findie-city-games-showcase.jpg",
+    photo_credit_name: "Indie City Games",
+    photo_credit_url: "https://indiecitygames.org/calendar/cigs-2026",
     cadence: "dated",
     occurrences: ["2026-09-13T13:00"],
     duration_minutes: 420,
@@ -801,6 +840,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_group_312_films_annual_report",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fgroup-312-films.jpg",
+    photo_credit_name: "Group 312 Films",
+    photo_credit_url: "https://chicagofilmmakers.org/upcoming-screenings-and-events/group-312-films-2026-annual-report",
     cadence: "dated",
     occurrences: ["2026-08-29T19:00"],
     duration_minutes: 120,
@@ -869,6 +911,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_light_painting_workshop_fall_2026",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Flight-painting-workshop.jpg",
+    photo_credit_name: "Chicago Photography Classes",
+    photo_credit_url: "https://chicagophotoclasses.com/product/light-painting-workshop/",
     cadence: "dated",
     occurrences: ["2026-09-18T19:00"],
     duration_minutes: 180,
