@@ -19,38 +19,48 @@ export const Route = createFileRoute("/admin")({
 type NavItem = { to: string; label: string; exact?: boolean };
 const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
-    label: "Pulse",
+    label: "Home",
     items: [
-      { to: "/admin", label: "Overview", exact: true },
-      { to: "/admin/growth", label: "Growth" },
-      { to: "/admin/engagement", label: "Engagement" },
-      { to: "/admin/marketplace", label: "Marketplace" },
-      { to: "/admin/revenue", label: "Revenue" },
-      { to: "/admin/geo", label: "Geo Map" },
+      { to: "/admin", label: "Pulse", exact: true },
+      { to: "/admin/investor", label: "Investor view" },
     ],
   },
   {
-    label: "People & Trust",
+    label: "People",
     items: [
-      { to: "/admin/users", label: "Users" },
+      { to: "/admin/users", label: "Members" },
       { to: "/admin/groups", label: "Groups" },
       { to: "/admin/events", label: "Events" },
-      { to: "/admin/moderation", label: "Moderation" },
-      { to: "/admin/reports", label: "Reports" },
     ],
   },
   {
-    label: "Ops",
+    label: "Analytics",
+    items: [
+      { to: "/admin/growth", label: "Growth" },
+      { to: "/admin/engagement", label: "Product" },
+      { to: "/admin/marketplace", label: "Marketplace" },
+      { to: "/admin/geo", label: "Geography" },
+      { to: "/admin/revenue", label: "Revenue" },
+    ],
+  },
+  {
+    label: "Trust",
+    items: [
+      { to: "/admin/moderation", label: "Moderation" },
+      { to: "/admin/reports", label: "Reports" },
+      { to: "/admin/audit", label: "Audit log" },
+    ],
+  },
+  {
+    label: "Manage",
     items: [
       { to: "/admin/blog", label: "Blog" },
       { to: "/admin/badges", label: "Badges" },
       { to: "/admin/links", label: "Links" },
-      { to: "/admin/plus", label: "Plus Grants" },
+      { to: "/admin/plus", label: "Plus grants" },
       { to: "/admin/ops", label: "Flags" },
-      { to: "/admin/audit", label: "Audit Log" },
     ],
   },
-
 ];
 
 function AdminLayout() {
