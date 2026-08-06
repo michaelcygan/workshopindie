@@ -483,6 +483,63 @@ export type Database = {
           },
         ]
       }
+      city_launch_queue: {
+        Row: {
+          city_id: string | null
+          created_at: string
+          display_name: string
+          error: string | null
+          id: string
+          payload: Json
+          place_provider: string
+          place_provider_id: string
+          queued_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          city_id?: string | null
+          created_at?: string
+          display_name: string
+          error?: string | null
+          id?: string
+          payload?: Json
+          place_provider: string
+          place_provider_id: string
+          queued_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          city_id?: string | null
+          created_at?: string
+          display_name?: string
+          error?: string | null
+          id?: string
+          payload?: Json
+          place_provider?: string
+          place_provider_id?: string
+          queued_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "city_launch_queue_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "city_launch_queue_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
+          },
+        ]
+      }
       collab_boosts: {
         Row: {
           collab_post_id: string
@@ -7389,6 +7446,19 @@ export type Database = {
         Returns: number
       }
       moderation_text_is_blocked: { Args: { _text: string }; Returns: boolean }
+      nearest_active_city: {
+        Args: { _lat: number; _lng: number; _max_km?: number }
+        Returns: {
+          country: string
+          country_code: string
+          distance_km: number
+          id: string
+          latitude: number
+          longitude: number
+          name: string
+          slug: string
+        }[]
+      }
       next_local_midnight_utc: { Args: { _tz: string }; Returns: string }
       object_host_claim: { Args: { _room_id: string }; Returns: undefined }
       profile_published_blog_count: {
@@ -7398,6 +7468,30 @@ export type Database = {
       promote_next_lounge_listener: {
         Args: { _room_id: string }
         Returns: undefined
+      }
+      provision_locality: {
+        Args: {
+          _country: string
+          _country_code: string
+          _lat: number
+          _lng: number
+          _location_kind: string
+          _name: string
+          _provider: string
+          _provider_id: string
+          _slug_candidates: string[]
+          _source: string
+          _state_region: string
+          _timezone: string
+          _user_id: string
+        }
+        Returns: {
+          city_id: string
+          city_slug: string
+          group_id: string
+          group_slug: string
+          was_created: boolean
+        }[]
       }
       publish_work_from_collab: {
         Args: {
@@ -7469,6 +7563,19 @@ export type Database = {
           group_name: string
           group_slug: string
           is_active: boolean
+        }[]
+      }
+      search_cities: {
+        Args: { _limit?: number; _q: string }
+        Returns: {
+          country: string
+          country_code: string
+          id: string
+          name: string
+          official_group_id: string
+          score: number
+          slug: string
+          state_region: string
         }[]
       }
       set_room_note: {
