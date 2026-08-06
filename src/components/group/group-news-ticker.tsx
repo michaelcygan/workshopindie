@@ -19,9 +19,14 @@ export function GroupNewsTicker({ slug }: { slug: string }) {
     queryKey: ["group-news", slug],
     queryFn: async (): Promise<{ items: NewsItem[] }> => {
       const res = await fetch(`/api/public/group-news/${encodeURIComponent(slug)}`);
-      if (!res.ok) return { items: [] };
+      if (!res.ok) {
+        // Surface real backend failures to React Query (and devtools) instead of
+        // silently rendering as "this group has no news".
+        throw new Error(`Group news request failed: ${res.status}`);
+      }
       return (await res.json()) as { items: NewsItem[] };
     },
+    retry: 1,
     staleTime: 30 * 60 * 1000,
   });
   const items = data?.items ?? [];
