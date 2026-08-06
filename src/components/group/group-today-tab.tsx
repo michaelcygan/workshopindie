@@ -21,7 +21,7 @@ import { WorkPeek } from "@/components/work-peek";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { TodayPresenceBubbles } from "@/components/group/today-presence-bubbles";
-import { useAdjacentGroups } from "@/components/adjacent-groups-rail";
+import { useAdjacentGroups } from "@/components/group/use-adjacent-groups";
 
 
 type TodayPost = {
