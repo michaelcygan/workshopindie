@@ -191,6 +191,11 @@ function GroupPage() {
   // Today is the default landing surface; ?t= deep-links to a specific tab.
   const tab: Tab = (search.t as Tab | undefined) ?? "today";
   const setTab = (next: Tab) => {
+    // Events live at their own durable, shareable address.
+    if (next === "events") {
+      navigate({ to: "/g/$slug/events", params: { slug: group.slug } });
+      return;
+    }
     navigate({
       to: "/g/$slug",
       params: { slug: group.slug },
