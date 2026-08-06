@@ -32,10 +32,17 @@ function UserDetail() {
   const badgeFn = useServerFn(setAdminUserBadge);
   const delFn = useServerFn(softDeleteAdminUser);
   const signOutFn = useServerFn(forceSignOutAdminUser);
+  const activityFn = useServerFn(getAdminUserActivity);
+  const excludeFn = useServerFn(setAnalyticsExcluded);
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin", "user", id],
     queryFn: () => detailFn({ data: { userId: id } }),
+  });
+  const activity = useQuery({
+    queryKey: ["admin", "user-activity", id],
+    queryFn: () => activityFn({ data: { userId: id } }),
+    refetchOnWindowFocus: false,
   });
 
   const grantRole = useMutation({
