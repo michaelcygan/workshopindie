@@ -547,6 +547,7 @@ export const applyToCollab = createServerFn({ method: "POST" })
       ownerUserId: post.user_id,
       applicantUserId: userId,
       message: data.message,
+      roleName: resolvedRoleName,
     });
 
     return { ok: true as const, conversationId };
