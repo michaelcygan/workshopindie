@@ -1,13 +1,11 @@
 import { useMemo, useRef, useState } from "react";
-import { Calendar, FileText, Megaphone, Send, Users } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { Send } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { MentionPopover } from "@/components/mention-popover";
-import { GroupPeek } from "@/components/group-peek";
-import { EventPeek } from "@/components/event-peek";
-import { BlogPostPeek } from "@/components/blog-post-peek";
+import { EntityReferenceChip } from "@/components/entity/entity-reference-chip";
+import { parseEntityBody } from "@/lib/entities/parse";
 import type { MentionSuggestion } from "@/lib/mention-suggestions";
 
 export type MentionCandidate = {
