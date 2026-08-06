@@ -404,7 +404,9 @@ function AccountSection() {
             onChange={saveCity}
             placeholder="Search any city"
             disabled={prefsLoading}
+            join
           />
+
           <p className="mt-1 text-xs text-ink-muted">
             Scopes city pages, Group audio, and local discovery to your home base.
           </p>
