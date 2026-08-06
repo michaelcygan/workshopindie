@@ -98,7 +98,9 @@ export function useGroupBlogPosts(groupId: string) {
     staleTime: 60_000,
     queryFn: async (): Promise<GroupPost[]> => {
       const [tagged, byAuthors] = await Promise.all([
-        fetchTagged({ data: { kind: "group" as const, entityId: groupId, limit: 6 } }),
+        // Trusted only: a Group page echoes its own stewards and Workshop
+        // editorial, not anyone who happened to tag the group.
+        fetchTagged({ data: { kind: "group" as const, entityId: groupId, limit: 6, trustedOnly: true } }),
         profileIds.length > 0
           ? fetchByAuthors({ data: { profileIds, limit: 40 } })
           : Promise.resolve([]),
