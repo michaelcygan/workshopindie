@@ -59,7 +59,7 @@ export function EventLocationCard({
           <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-ink-muted" />
           <div className="min-w-0 flex-1">
             <div className="text-xs font-medium uppercase tracking-wide text-ink-muted">In person</div>
-            {user ? (
+            {canSeeAddress ? (
               <>
                 {(venueName || venueAddress) && mapUrl ? (
                   <div className="flex items-start gap-2">
