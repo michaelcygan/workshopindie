@@ -152,7 +152,6 @@ function EditProfile() {
 
   // Selected location display (worldwide picker — no finite city list).
   const [locationBusy, setLocationBusy] = useState(false);
-  const [homeCityId, setHomeCityId] = useState<string | null>(null);
   const ensureLocation = useServerFn(ensureLocationAndOfficialGroup);
 
   const { data: selectedCity } = useQuery({
