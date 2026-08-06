@@ -33,7 +33,8 @@ type SeedBase = {
   format?: "in_person" | "online" | "hybrid";
 
   venue_name: string;
-  venue_address: string;
+  /** Omitted when the organizer publishes no street address. */
+  venue_address?: string;
   /** The organizer's own page — always linked from the Workshop event. */
   external_url: string;
   external_organizer: string;
@@ -90,7 +91,7 @@ export function seedTemplate(ev: SeedEvent, venueCityId: string | null): Record<
     photo_credit_url: ev.photo_credit_url ?? null,
     timezone: CHICAGO_TIMEZONE,
     venue_name: ev.venue_name,
-    venue_address: ev.venue_address,
+    venue_address: ev.venue_address ?? null,
     venue_city_id: venueCityId,
     visibility: "public",
     rsvp_mode: "open",
