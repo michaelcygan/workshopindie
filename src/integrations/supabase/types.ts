@@ -2261,6 +2261,24 @@ export type Database = {
           },
         ]
       }
+      group_news_cache: {
+        Row: {
+          fetched_at: string
+          items: Json
+          slug: string
+        }
+        Insert: {
+          fetched_at?: string
+          items?: Json
+          slug: string
+        }
+        Update: {
+          fetched_at?: string
+          items?: Json
+          slug?: string
+        }
+        Relationships: []
+      }
       group_seed_links: {
         Row: {
           click_count: number
