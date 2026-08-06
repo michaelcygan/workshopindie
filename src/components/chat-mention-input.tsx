@@ -176,10 +176,12 @@ export function ChatMentionInput({
 }
 
 /**
- * Render a chat message body with:
- *  - @handle chips (participant-aware, `meUsername` gets primary accent)
- *  - [Label](/collab|/g|/g/…/e/…) internal-link chips with peek popovers
- *  - Bare URL autolinks
+ * Render a chat / DM message body.
+ *
+ * Tokenizing is shared with the Today board (`@/lib/entities/parse`) and
+ * reference chips come from `EntityReferenceChip`, so a Work referenced in a
+ * DM behaves exactly as it does on a Today post. Participant-aware `@handle`
+ * chips stay local to this surface.
  */
 export function MessageBody({
   body,
@@ -200,121 +202,13 @@ export function MessageBody({
   }) => React.ReactNode;
   renderUnknownMention?: (args: { handle: string; children: React.ReactNode }) => React.ReactNode;
 }) {
-  const parts = useMemo(() => {
-    type Seg =
-      | { type: "text"; text: string }
-      | { type: "mention"; text: string; user?: MentionCandidate; handle: string }
-      | { type: "link"; text: string; href: string }
-      | { type: "collab"; label: string; slug: string }
-      | { type: "group"; label: string; slug: string }
-      | { type: "event"; label: string; groupSlug: string; eventSlug: string }
-      | { type: "post"; label: string; slug: string };
-
-    type Hit = { start: number; end: number; seg: Seg };
-    const hits: Hit[] = [];
-
-    const eventRe =
-      /\[([^\]\n]{1,120})\]\(\/g\/([a-zA-Z0-9_-]{1,80})\/e\/([a-zA-Z0-9_-]{1,80})\)/g;
-    const groupRe = /\[([^\]\n]{1,120})\]\(\/g\/([a-zA-Z0-9_-]{1,80})\)/g;
-    const collabRe = /\[([^\]\n]{1,120})\]\(\/collab\/([a-zA-Z0-9_-]{1,80})\)/g;
-    const postRe = /\[([^\]\n]{1,120})\]\(\/blog\/([a-zA-Z0-9_-]{1,120})\)/g;
-    const mentionRe = /(^|\s)@([A-Za-z0-9_]{1,30})/g;
-    const urlRe = /\bhttps?:\/\/[^\s<]+/g;
-    const bareUrlRe =
-      /\b(?:www\.[^\s<]+|(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,24}(?:\/[^\s<]*)?)/gi;
-
-    let m: RegExpExecArray | null;
-    while ((m = eventRe.exec(body))) {
-      hits.push({
-        start: m.index,
-        end: m.index + m[0].length,
-        seg: { type: "event", label: m[1], groupSlug: m[2], eventSlug: m[3] },
-      });
-    }
-    while ((m = groupRe.exec(body))) {
-      if (hits.some((h) => m!.index >= h.start && m!.index < h.end)) continue;
-      hits.push({
-        start: m.index,
-        end: m.index + m[0].length,
-        seg: { type: "group", label: m[1], slug: m[2] },
-      });
-    }
-    while ((m = postRe.exec(body))) {
-      if (hits.some((h) => m!.index >= h.start && m!.index < h.end)) continue;
-      hits.push({
-        start: m.index,
-        end: m.index + m[0].length,
-        seg: { type: "post", label: m[1], slug: m[2] },
-      });
-    }
-    while ((m = collabRe.exec(body))) {
-      if (hits.some((h) => m!.index >= h.start && m!.index < h.end)) continue;
-      hits.push({
-        start: m.index,
-        end: m.index + m[0].length,
-        seg: { type: "collab", label: m[1], slug: m[2] },
-      });
-    }
-    while ((m = urlRe.exec(body))) {
-      if (hits.some((h) => m!.index >= h.start && m!.index < h.end)) continue;
-      const raw = m[0].replace(/[),.;!?]+$/g, "");
-      hits.push({
-        start: m.index,
-        end: m.index + raw.length,
-        seg: { type: "link", text: raw, href: raw },
-      });
-    }
-    while ((m = bareUrlRe.exec(body))) {
-      const start = m.index;
-      const raw = m[0].replace(/[),.;!?]+$/g, "");
-      const end = start + raw.length;
-      if (/^https?:\/\//i.test(raw)) continue;
-      if (hits.some((h) => start < h.end && end > h.start)) continue;
-      // Require a hostname that parses cleanly.
-      let href: string;
-      try {
-        const u = new URL(`https://${raw}`);
-        if (!u.hostname.includes(".")) continue;
-        href = u.toString();
-      } catch {
-        continue;
-      }
-      hits.push({ start, end, seg: { type: "link", text: raw, href } });
-    }
-
-    while ((m = mentionRe.exec(body))) {
-      const at = m.index + (m[1]?.length ?? 0);
-      const end = at + 1 + m[2].length;
-      if (hits.some((h) => at >= h.start && at < h.end)) continue;
-      const handle = m[2];
-      const user = participants.find(
-        (p) => (p.username ?? "").toLowerCase() === handle.toLowerCase(),
-      );
-      hits.push({
-        start: at,
-        end,
-        seg: { type: "mention", text: `@${handle}`, user, handle },
-      });
-    }
-
-    hits.sort((a, b) => a.start - b.start);
-
-    const segments: Seg[] = [];
-    let cursor = 0;
-    for (const h of hits) {
-      if (h.start > cursor) segments.push({ type: "text", text: body.slice(cursor, h.start) });
-      segments.push(h.seg);
-      cursor = h.end;
-    }
-    if (cursor < body.length) segments.push({ type: "text", text: body.slice(cursor) });
-    return segments;
-  }, [body, participants]);
+  const parts = useMemo(() => parseEntityBody(body, { bareUrls: true }), [body]);
 
   return (
     <span className="whitespace-pre-wrap break-words">
       {parts.map((p, i) => {
-        if (p.type === "text") return <span key={i}>{p.text}</span>;
-        if (p.type === "link") {
+        if (p.type === "text") return <span key={i}>{p.value}</span>;
+        if (p.type === "url") {
           return (
             <a
               key={i}
@@ -328,92 +222,42 @@ export function MessageBody({
             </a>
           );
         }
-        if (p.type === "collab") {
+        if (p.type === "entity") {
           return (
-            <Link
+            <EntityReferenceChip
               key={i}
-              to="/collab/$slug"
-              params={{ slug: p.slug }}
-              className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-primary hover:bg-primary/10"
-            >
-              <Megaphone className="h-3 w-3" />
-              {p.label}
-            </Link>
+              kind={p.kind}
+              label={p.label}
+              slug={p.slug}
+              groupSlug={p.groupSlug}
+            />
           );
         }
-        if (p.type === "group") {
-          return (
-            <GroupPeek key={i} slug={p.slug}>
-              <Link
-                to="/g/$slug"
-                params={{ slug: p.slug }}
-                className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-signal/30 bg-signal/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-signal hover:bg-signal/10"
-              >
-                <Users className="h-3 w-3" />
-                {p.label}
-              </Link>
-            </GroupPeek>
-          );
-        }
-        if (p.type === "event") {
-          return (
-            <EventPeek key={i} groupSlug={p.groupSlug} eventSlug={p.eventSlug}>
-              <Link
-                to="/g/$slug/e/$eventSlug"
-                params={{ slug: p.groupSlug, eventSlug: p.eventSlug }}
-                className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-destructive hover:bg-destructive/10"
-              >
-                <Calendar className="h-3 w-3" />
-                {p.label}
-              </Link>
-            </EventPeek>
-          );
-        }
-        if (p.type === "post") {
-          return <PostChip key={i} slug={p.slug} label={p.label} />;
-        }
-        // mention
-        const isMe = !!meUsername && p.user?.username?.toLowerCase() === meUsername.toLowerCase();
+        const handle = p.username;
+        const user = participants.find(
+          (c) => (c.username ?? "").toLowerCase() === handle.toLowerCase(),
+        );
+        const isMe = !!meUsername && user?.username?.toLowerCase() === meUsername.toLowerCase();
         const chip = (
           <button
             type="button"
-            onClick={() => p.user && onMentionClick?.(p.user.user_id)}
+            onClick={() => user && onMentionClick?.(user.user_id)}
             className={cn(
               "rounded px-1 font-medium",
               isMe ? "bg-primary/20 text-primary" : "bg-foreground/10 hover:bg-foreground/20",
             )}
           >
-            {p.text}
+            @{handle}
           </button>
         );
-        if (p.user && renderMention) {
-          return <span key={i}>{renderMention({ user: p.user, isMe, children: chip })}</span>;
+        if (user && renderMention) {
+          return <span key={i}>{renderMention({ user, isMe, children: chip })}</span>;
         }
-        if (!p.user && renderUnknownMention) {
-          return <span key={i}>{renderUnknownMention({ handle: p.handle, children: chip })}</span>;
+        if (!user && renderUnknownMention) {
+          return <span key={i}>{renderUnknownMention({ handle, children: chip })}</span>;
         }
         return <span key={i}>{chip}</span>;
       })}
     </span>
-  );
-}
-
-function PostChip({ slug, label }: { slug: string; label: string }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen(true);
-        }}
-        className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-ink/20 bg-ink/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-ink hover:bg-ink/10"
-      >
-        <FileText className="h-3 w-3" />
-        {label}
-      </button>
-      <BlogPostPeek slug={slug} open={open} onOpenChange={setOpen} />
-    </>
   );
 }
