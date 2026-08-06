@@ -214,3 +214,74 @@ export const getInvestorSnapshot = createServerFn({ method: "GET" })
     ]);
     return { kpi, growth, retention, cohorts, surfaces, cities, countries, revenue, funnel, fetchedAt: new Date().toISOString() };
   });
+
+/**
+ * Data health: can these numbers be trusted? Every check is panel-wrapped, so
+ * a failed probe reads "Data unavailable" rather than a reassuring zero.
+ */
+export const getAdminDataHealth = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await requireAdmin(context.supabase, context.userId);
+    const admin = await getAdmin();
+    const head = (q: any) => q;
+
+    const [latestDay, members, excluded, noCity, noUsername, softDeleted, activationRows, activated, subsLive, subsSandbox, kpi] =
+      await Promise.all([
+        panel<any>(v(admin, "vw_user_activity_day").select("day").order("day", { ascending: false }).limit(1).maybeSingle()),
+        panel<any>(head(admin.from("profiles").select("id", { count: "exact", head: true }))),
+        panel<any>(head(admin.from("profiles").select("id", { count: "exact", head: true }).eq("analytics_excluded", true))),
+        panel<any>(head(admin.from("profiles").select("id", { count: "exact", head: true }).is("home_city_id", null))),
+        panel<any>(head(admin.from("profiles").select("id", { count: "exact", head: true }).is("username", null))),
+        panel<any>(head(admin.from("profiles").select("id", { count: "exact", head: true }).not("deleted_at", "is", null))),
+        panel<any>(head(v(admin, "vw_user_activation").select("user_id", { count: "exact", head: true }))),
+        panel<any>(head(v(admin, "vw_user_activation").select("user_id", { count: "exact", head: true }).eq("activated", true))),
+        panel<any>(head(admin.from("subscriptions").select("id", { count: "exact", head: true }).eq("environment", "live"))),
+        panel<any>(head(admin.from("subscriptions").select("id", { count: "exact", head: true }).eq("environment", "sandbox"))),
+        panel<any>(v(admin, "vw_kpi_periods").select("computed_at,members_total").maybeSingle()),
+      ]);
+
+    // panel() keeps `data`, not `count`; re-read counts from the resolved queries.
+    const countOf = async (q: any) => {
+      try {
+        const { count, error } = await q;
+        return error ? null : (count ?? 0);
+      } catch {
+        return null;
+      }
+    };
+    const [membersC, excludedC, noCityC, noUsernameC, softDeletedC, activationC, activatedC, subsLiveC, subsSandboxC] =
+      await Promise.all([
+        countOf(admin.from("profiles").select("id", { count: "exact", head: true })),
+        countOf(admin.from("profiles").select("id", { count: "exact", head: true }).eq("analytics_excluded", true)),
+        countOf(admin.from("profiles").select("id", { count: "exact", head: true }).is("home_city_id", null)),
+        countOf(admin.from("profiles").select("id", { count: "exact", head: true }).is("username", null)),
+        countOf(admin.from("profiles").select("id", { count: "exact", head: true }).not("deleted_at", "is", null)),
+        countOf(v(admin, "vw_user_activation").select("user_id", { count: "exact", head: true })),
+        countOf(v(admin, "vw_user_activation").select("user_id", { count: "exact", head: true }).eq("activated", true)),
+        countOf(admin.from("subscriptions").select("id", { count: "exact", head: true }).eq("environment", "live")),
+        countOf(admin.from("subscriptions").select("id", { count: "exact", head: true }).eq("environment", "sandbox")),
+      ]);
+
+    void members; void excluded; void noCity; void noUsername; void softDeleted; void activationRows;
+    void activated; void subsLive; void subsSandbox;
+
+    return {
+      latestActivityDay: latestDay.status === "unavailable" ? null : ((latestDay.data as any)?.day ?? null),
+      spineStatus: latestDay.status,
+      kpiComputedAt: (kpi.data as any)?.computed_at ?? null,
+      kpiStatus: kpi.status,
+      counts: {
+        members: membersC,
+        excluded: excludedC,
+        noCity: noCityC,
+        noUsername: noUsernameC,
+        softDeleted: softDeletedC,
+        activationRows: activationC,
+        activated: activatedC,
+        subsLive: subsLiveC,
+        subsSandbox: subsSandboxC,
+      },
+      fetchedAt: new Date().toISOString(),
+    };
+  });

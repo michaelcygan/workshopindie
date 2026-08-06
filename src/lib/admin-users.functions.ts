@@ -283,3 +283,54 @@ export const listAdminUserCities = createServerFn({ method: "GET" })
       .limit(300);
     return ((data ?? []) as any[]).map((c) => ({ id: c.city_id, label: `${c.name}${c.country ? `, ${c.country}` : ""}`, members: c.members }));
   });
+
+/**
+ * Per-member activity: 90 days of the immutable activity spine plus the
+ * member's activation row and home city. Panel-wrapped so a failed query
+ * never renders as an honest-looking zero.
+ */
+export const getAdminUserActivity = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { userId: string }) => d)
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context.supabase, context.userId);
+    const { panel } = await import("@/lib/analytics/envelope");
+    const admin = await getAdmin();
+    const since = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
+
+    const [days, activation, profile] = await Promise.all([
+      panel<any[]>(
+        admin
+          .from("vw_user_activity_day" as never)
+          .select("day,surface,is_creative,actions")
+          .eq("user_id", data.userId)
+          .gte("day", since)
+          .order("day", { ascending: true })
+          .limit(2000),
+      ),
+      panel<any>(
+        admin
+          .from("vw_user_activation" as never)
+          .select("user_id,created_at,onboarded,first_action_day,first_action_surface,activated")
+          .eq("user_id", data.userId)
+          .maybeSingle(),
+      ),
+      panel<any>(admin.from("profiles").select("home_city_id,analytics_excluded").eq("id", data.userId).maybeSingle()),
+    ]);
+
+    let city: { name: string; country: string | null } | null = null;
+    const cityId = (profile.data as any)?.home_city_id ?? null;
+    if (cityId) {
+      const { data: c } = await admin.from("cities").select("name,country").eq("id", cityId).maybeSingle();
+      if (c) city = { name: (c as any).name, country: (c as any).country ?? null };
+    }
+
+    return {
+      days,
+      activation,
+      city,
+      analyticsExcluded: !!(profile.data as any)?.analytics_excluded,
+      since,
+      fetchedAt: new Date().toISOString(),
+    };
+  });
