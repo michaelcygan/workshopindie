@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { CityCombobox, type CityValue } from "@/components/city-combobox";
+import { type CityValue } from "@/components/city-combobox";
+import { AuthoringLocationPicker } from "@/components/authoring-location-picker";
 import { TimelinePicker, type TimelineValue } from "@/components/timeline-picker";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -171,7 +172,7 @@ function EditCollab() {
             ))}
           </div>
           {locationMode !== "online" && (
-            <CityCombobox value={city} onChange={setCity} placeholder="Pick a city" />
+            <AuthoringLocationPicker value={city} onChange={setCity} placeholder="Pick a city" />
           )}
         </section>
 
