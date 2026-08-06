@@ -399,6 +399,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_jarvis_squear_open_mic",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fjarvis-square-tavern.jpg",
+    photo_credit_name: "Jarvis Square Tavern",
+    photo_credit_url: "https://jarvissquaretavern.com/js-events/",
     cadence: "weekly",
     weekday: 3,
     start_local: "20:00",
