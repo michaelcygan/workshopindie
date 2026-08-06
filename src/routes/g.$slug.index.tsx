@@ -14,6 +14,10 @@ import { Input } from "@/components/ui/input";
 import { CATEGORY_LABELS, type Category } from "@/lib/categories";
 import { supabase } from "@/integrations/supabase/client";
 import { DISCOVERABLE_STATUSES, collapseSeries, effectiveEndMs } from "@/lib/events/filters";
+import {
+  GroupEventDirectory,
+  type DirectoryFilters,
+} from "@/components/group/group-event-directory";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { JoinGroupButton, useIsMemberOfGroup } from "@/components/join-group-button";
@@ -191,11 +195,6 @@ function GroupPage() {
   // Today is the default landing surface; ?t= deep-links to a specific tab.
   const tab: Tab = (search.t as Tab | undefined) ?? "today";
   const setTab = (next: Tab) => {
-    // Events live at their own durable, shareable address.
-    if (next === "events") {
-      navigate({ to: "/g/$slug/events", params: { slug: group.slug } });
-      return;
-    }
     navigate({
       to: "/g/$slug",
       params: { slug: group.slug },
@@ -207,6 +206,15 @@ function GroupPage() {
       replace: true,
     });
   };
+
+  // Events filters stay local inside the Group view; the standalone
+  // /g/$slug/events page owns the shareable URL-backed filter state.
+  const [eventFilters, setEventFilters] = useState<DirectoryFilters>({
+    category: null,
+    kind: null,
+    format: "all",
+    q: "",
+  });
 
   const qc = useQueryClient();
   // Audio admission is membership-gated; viewing the Group never is.
@@ -306,13 +314,6 @@ function GroupPage() {
   const hasBlogPosts = groupBlogPosts.length > 0;
   const viewTab: Tab = tab === "posts" && !groupBlogLoading && !hasBlogPosts ? "today" : tab;
 
-  // Legacy ?t=events deep links keep working — they land on the directory.
-  useEffect(() => {
-    if (tab === "events") {
-      navigate({ to: "/g/$slug/events", params: { slug: group.slug }, replace: true });
-    }
-  }, [tab, group.slug, navigate]);
-
   // Full child-group payload — only fetched when the Subgroups tab is opened.
   const { data: childGroups = [] } = useQuery({
     enabled: tab === "subgroups" && childCount > 0,
@@ -402,6 +403,15 @@ function GroupPage() {
               {viewTab === "work" && <GroupWorkTab group={group} />}
               {viewTab === "links" && <GroupLinksTab group={group} />}
               {viewTab === "posts" && <GroupPostsTab group={group} />}
+              {viewTab === "events" && (
+                <GroupEventDirectory
+                  group={group}
+                  filters={eventFilters}
+                  onFiltersChange={(next) => setEventFilters((prev) => ({ ...prev, ...next }))}
+                  variant="embedded"
+                  limit={6}
+                />
+              )}
               
               {viewTab === "subgroups" && (
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">

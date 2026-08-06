@@ -49,22 +49,51 @@ export function isDiscoverable(e: {
 }
 
 /**
- * A recurring series contributes exactly one card: the nearest occurrence in
- * the list's own sort order. Non-recurring events pass through untouched.
+ * A recurring series contributes exactly one card: its nearest occurrence that
+ * hasn't ended yet. Only when the whole series is over does the most recent
+ * past occurrence stand in for it. Non-recurring events pass through
+ * untouched, and each series keeps the list position of its first occurrence.
  */
-export function collapseSeries<T extends { series_key?: string | null }>(rows: T[]): T[] {
-  const seen = new Set<string>();
-  const out: T[] = [];
+export function collapseSeries<
+  T extends { series_key?: string | null; starts_at?: string | null; ends_at?: string | null },
+>(rows: T[], nowMs: number = Date.now()): T[] {
+  const slotForKey = new Map<string, number>();
+  const out: (T | null)[] = [];
+
+  const endMs = (r: T) =>
+    r.starts_at ? effectiveEndMs({ starts_at: r.starts_at, ends_at: r.ends_at }) : NaN;
+
+  /** Is `candidate` a better representative of the series than `current`? */
+  const isBetter = (candidate: T, current: T) => {
+    const a = endMs(candidate);
+    const b = endMs(current);
+    if (!Number.isFinite(a)) return false;
+    if (!Number.isFinite(b)) return true;
+    const aFuture = a >= nowMs;
+    const bFuture = b >= nowMs;
+    if (aFuture !== bFuture) return aFuture; // upcoming always beats finished
+    return aFuture ? a < b : a > b; // soonest upcoming, else most recent past
+  };
+
   for (const r of rows) {
     const key = r.series_key;
-    if (key) {
-      if (seen.has(key)) continue;
-      seen.add(key);
+    if (!key) {
+      out.push(r);
+      continue;
     }
-    out.push(r);
+    const slot = slotForKey.get(key);
+    if (slot === undefined) {
+      slotForKey.set(key, out.length);
+      out.push(r);
+      continue;
+    }
+    const current = out[slot] as T;
+    if (isBetter(r, current)) out[slot] = r;
   }
-  return out;
+
+  return out.filter((r): r is T => r !== null);
 }
+
 
 /**
  * Apply the discovery lifecycle invariants to any PostgREST query builder

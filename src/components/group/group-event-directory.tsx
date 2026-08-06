@@ -136,11 +136,18 @@ export function GroupEventDirectory({
   group,
   filters,
   onFiltersChange,
+  variant = "page",
+  limit,
 }: {
   group: DirectoryGroup;
   filters: DirectoryFilters;
   onFiltersChange: (next: Partial<DirectoryFilters>) => void;
+  /** "embedded" renders inside the Group shell: no page heading, capped lists. */
+  variant?: "page" | "embedded";
+  /** Max cards per section when embedded. */
+  limit?: number;
 }) {
+
   useEventsRealtime(group.id);
   const { user } = useAuth();
   const { data: isAdmin } = useQuery({
@@ -199,18 +206,37 @@ export function GroupEventDirectory({
   const hasFilters =
     !!filters.category || !!filters.kind || filters.format !== "all" || filters.q.trim().length > 0;
 
+  const embedded = variant === "embedded";
+  const cap = <T,>(list: T[]) => (embedded && limit ? list.slice(0, limit) : list);
+  const pinnedShown = cap(pinnedOrRecurring);
+  const upcomingShown = cap(upcoming);
+  const moreCount =
+    pinnedOrRecurring.length - pinnedShown.length + (upcoming.length - upcomingShown.length);
+
   const clearAll = () => {
     setSearchOpen(false);
     onFiltersChange({ category: null, kind: null, format: "all", q: "" });
   };
 
   return (
-    <div className="space-y-10">
+    <div className={embedded ? "space-y-6" : "space-y-10"}>
       <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl text-ink md:text-3xl">{directoryHeading(group)}</h1>
-          <p className="mt-1 text-sm text-ink-muted">{directorySubheading(group)}</p>
-        </div>
+        {embedded ? (
+          <Link
+            to="/g/$slug/events"
+            params={{ slug: group.slug }}
+            className="text-sm text-ink-soft underline-offset-2 hover:text-ink hover:underline"
+          >
+            See all events
+          </Link>
+        ) : (
+          <div>
+            <h1 className="font-display text-2xl text-ink md:text-3xl">
+              {directoryHeading(group)}
+            </h1>
+            <p className="mt-1 text-sm text-ink-muted">{directorySubheading(group)}</p>
+          </div>
+        )}
         {isAdmin && (
           <Link
             to="/admin/events"
@@ -223,7 +249,8 @@ export function GroupEventDirectory({
 
       {/* Category → Event type → Attendance → Search */}
       {all.length > 0 && (
-        <div className="-mt-6 flex flex-wrap items-center gap-1 text-ink-muted md:justify-end">
+        <div className="-mt-4 flex flex-wrap items-center gap-1 text-ink-muted md:justify-end">
+
           {availableCategories.length > 1 && (
             <FilterMenu
               label={
@@ -313,27 +340,38 @@ export function GroupEventDirectory({
 
       {isLoading && <p className="text-sm text-ink-muted">Loading…</p>}
 
-      {!isLoading && pinnedOrRecurring.length > 0 && (
+      {!isLoading && pinnedShown.length > 0 && (
         <section className="space-y-3">
           <h2 className="font-display text-lg text-ink">Pinned &amp; recurring</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {pinnedOrRecurring.map((e) => (
+            {pinnedShown.map((e) => (
               <EventCardLite key={e.id} ev={e} />
             ))}
           </div>
         </section>
       )}
 
-      {!isLoading && upcoming.length > 0 && (
+      {!isLoading && upcomingShown.length > 0 && (
         <section className="space-y-3">
           <h2 className="font-display text-lg text-ink">Upcoming</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {upcoming.map((e) => (
+            {upcomingShown.map((e) => (
               <EventCardLite key={e.id} ev={e} />
             ))}
           </div>
         </section>
       )}
+
+      {!isLoading && embedded && moreCount > 0 && (
+        <Link
+          to="/g/$slug/events"
+          params={{ slug: group.slug }}
+          className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1.5 text-sm text-ink-soft shadow-soft hover:bg-muted"
+        >
+          See all {pinnedOrRecurring.length + upcoming.length} events
+        </Link>
+      )}
+
 
       {!isLoading &&
         !hasAnyMatch &&
