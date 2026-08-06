@@ -19,25 +19,11 @@ function num(h: string | null | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function haversineKm(
-  a: { lat: number; lng: number },
-  b: { lat: number; lng: number },
-): number {
-  const R = 6371;
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const lat1 = toRad(a.lat);
-  const lat2 = toRad(b.lat);
-  const x =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(x));
-}
-
 /**
  * Reads Cloudflare geo headers from the current request and returns the
- * nearest city in `public.cities` to the visitor. Falls back to country-only
+ * nearest active city to the visitor. Nearest-city math runs in the database
+ * (`nearest_active_city`) with a distance cap, so this stays correct and cheap
+ * as Workshop's locality table grows worldwide. Falls back to country-only
  * matching when no coordinates are available.
  */
 async function inferFromHeaders(): Promise<SuggestedCity | null> {
@@ -45,40 +31,36 @@ async function inferFromHeaders(): Promise<SuggestedCity | null> {
   const lng = num(getRequestHeader("cf-iplongitude"));
   const country = (getRequestHeader("cf-ipcountry") ?? "").toUpperCase() || null;
 
-  const { data: rows } = await supabaseAdmin
-    .from("cities")
-    .select("id,name,country,slug,latitude,longitude");
-  if (!rows || rows.length === 0) return null;
-
-  // Coordinates available — pick nearest globally
   if (lat !== null && lng !== null) {
-    let best: { row: typeof rows[number]; dist: number } | null = null;
-    for (const r of rows) {
-      if (r.latitude === null || r.longitude === null) continue;
-      const d = haversineKm(
-        { lat, lng },
-        { lat: r.latitude as number, lng: r.longitude as number },
-      );
-      if (!best || d < best.dist) best = { row: r, dist: d };
-    }
-    if (best) {
+    const { data } = await supabaseAdmin.rpc("nearest_active_city", {
+      _lat: lat,
+      _lng: lng,
+      _max_km: 250,
+    });
+    const near = (data ?? [])[0];
+    if (near) {
       return {
-        id: best.row.id,
-        name: best.row.name,
-        country: best.row.country,
-        slug: best.row.slug,
-        latitude: best.row.latitude as number | null,
-        longitude: best.row.longitude as number | null,
+        id: near.id,
+        name: near.name,
+        country: near.country,
+        slug: near.slug,
+        latitude: near.latitude,
+        longitude: near.longitude,
         source: "ip",
       };
     }
   }
 
-  // Country-only fallback — pick the first city in that country
+  // Country-only fallback — the most established active city in that country.
   if (country) {
-    const match = rows.find(
-      (r) => (r.country ?? "").toUpperCase().startsWith(country),
-    );
+    const { data: match } = await supabaseAdmin
+      .from("cities")
+      .select("id,name,country,slug,latitude,longitude")
+      .eq("country_code", country)
+      .eq("status", "active")
+      .order("name")
+      .limit(1)
+      .maybeSingle();
     if (match) {
       return {
         id: match.id,
@@ -93,6 +75,7 @@ async function inferFromHeaders(): Promise<SuggestedCity | null> {
   }
 
   return null;
+
 }
 
 /**
