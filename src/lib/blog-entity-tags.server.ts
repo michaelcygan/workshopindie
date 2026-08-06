@@ -1,6 +1,13 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { BlogEntityKind, BlogEntityTag } from "@/lib/blog-entity-tags";
 import { MAX_BLOG_ENTITY_TAGS } from "@/lib/blog-entity-tags";
+import {
+  isWorkPubliclyReferenceable,
+  isCollabPubliclyReferenceable,
+  isGroupPubliclyReferenceable,
+  isEventPubliclyReferenceable,
+  isProfilePubliclyReferenceable,
+} from "@/lib/entities/visibility";
 
 type Row = {
   work_id: string | null;
