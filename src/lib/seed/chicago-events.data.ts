@@ -911,6 +911,9 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_light_painting_workshop_fall_2026",
+    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Flight-painting-workshop.jpg",
+    photo_credit_name: "Chicago Photography Classes",
+    photo_credit_url: "https://chicagophotoclasses.com/product/light-painting-workshop/",
     cadence: "dated",
     occurrences: ["2026-09-18T19:00"],
     duration_minutes: 180,
