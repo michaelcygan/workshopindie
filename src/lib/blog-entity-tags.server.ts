@@ -494,21 +494,11 @@ export async function listBlogPostsForEntityServer(
     authorsByPost.set(a.blog_post_id, arr);
   }
 
-  // Trusted-context filter + credit-aware role labels for Works.
-  const creditRole = new Map<string, string>();
-  if (kind === "work") {
-    const [{ data: work }, { data: creditRows }] = await Promise.all([
-      supabaseAdmin.from("works").select("created_by").eq("id", entityId).maybeSingle(),
-      supabaseAdmin.from("work_credits").select("user_id,role_label,sort_order").eq("work_id", entityId),
-    ]);
-    const trusted = new Set<string>();
-    const ownerId = (work as { created_by: string | null } | null)?.created_by ?? null;
-    if (ownerId) trusted.add(ownerId);
-    for (const c of (creditRows ?? []) as Array<{ user_id: string | null; role_label: string | null }>) {
-      if (!c.user_id) continue;
-      trusted.add(c.user_id);
-      if (c.role_label) creditRole.set(c.user_id, c.role_label);
-    }
+  // Trusted-context filter (every kind) + credit-aware role labels for Works.
+  let creditRole = new Map<string, string>();
+  if (kind === "work" || opts.trustedOnly) {
+    const resolved = await resolveTrustedAuthorIds(kind, entityId);
+    creditRole = resolved.creditRole;
     if (opts.trustedOnly) {
       rows = rows.filter((r) => {
         if (r.publication_type && r.publication_type !== "member") return true; // editorial / admin
@@ -517,7 +507,7 @@ export async function listBlogPostsForEntityServer(
           r.author_profile_id,
           ...(authorsByPost.get(r.id) ?? []).map((a) => a.profile_id),
         ].filter(Boolean) as string[];
-        return authorIds.some((pid) => trusted.has(pid));
+        return authorIds.some((pid) => resolved.trusted.has(pid));
       });
     }
   }
