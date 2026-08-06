@@ -84,7 +84,7 @@ export function seedTemplate(ev: SeedEvent, venueCityId: string | null): Record<
     description: ev.description,
     kind: ev.kind,
     creative_category: ev.creative_category,
-    format: "in_person",
+    format: ev.format ?? "in_person",
     cover_url: ev.cover_url ?? null,
     photo_credit_name: ev.photo_credit_name ?? null,
     photo_credit_url: ev.photo_credit_url ?? null,
@@ -104,6 +104,15 @@ export function seedTemplate(ev: SeedEvent, venueCityId: string | null): Record<
   };
 }
 export const CHICAGO_GROUP_SLUG = "chicago";
+
+/** Medium Group slugs, keyed by creative category. */
+export const MEDIUM_GROUP_SLUG: Record<SeedCategory, string> = {
+  music: "music",
+  film_video: "film-video",
+  writing: "writing",
+  visual_art: "visual-art",
+  games_tech: "games-tech",
+};
 
 export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   {
