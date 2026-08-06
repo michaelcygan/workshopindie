@@ -136,11 +136,18 @@ export function GroupEventDirectory({
   group,
   filters,
   onFiltersChange,
+  variant = "page",
+  limit,
 }: {
   group: DirectoryGroup;
   filters: DirectoryFilters;
   onFiltersChange: (next: Partial<DirectoryFilters>) => void;
+  /** "embedded" renders inside the Group shell: no page heading, capped lists. */
+  variant?: "page" | "embedded";
+  /** Max cards per section when embedded. */
+  limit?: number;
 }) {
+
   useEventsRealtime(group.id);
   const { user } = useAuth();
   const { data: isAdmin } = useQuery({
