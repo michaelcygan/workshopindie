@@ -573,6 +573,13 @@ export type Database = {
             referencedColumns: ["city_id"]
           },
           {
+            foreignKeyName: "cities_merged_into_city_id_fkey"
+            columns: ["merged_into_city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
+            referencedColumns: ["city_id"]
+          },
+          {
             foreignKeyName: "cities_official_group_id_fkey"
             columns: ["official_group_id"]
             isOneToOne: false
@@ -634,6 +641,13 @@ export type Database = {
             columns: ["city_id"]
             isOneToOne: false
             referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "city_launch_queue_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
             referencedColumns: ["city_id"]
           },
         ]
@@ -1098,6 +1112,13 @@ export type Database = {
             columns: ["city_id"]
             isOneToOne: false
             referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "collab_posts_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
             referencedColumns: ["city_id"]
           },
           {
@@ -2473,6 +2494,13 @@ export type Database = {
             referencedRelation: "vw_city_activity_7d"
             referencedColumns: ["city_id"]
           },
+          {
+            foreignKeyName: "group_events_venue_city_id_fkey"
+            columns: ["venue_city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
+            referencedColumns: ["city_id"]
+          },
         ]
       }
       group_members: {
@@ -2885,6 +2913,13 @@ export type Database = {
             columns: ["city_id"]
             isOneToOne: false
             referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "groups_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
             referencedColumns: ["city_id"]
           },
           {
@@ -3693,6 +3728,13 @@ export type Database = {
             columns: ["city_id"]
             isOneToOne: false
             referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "instant_rooms_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
             referencedColumns: ["city_id"]
           },
           {
@@ -4921,6 +4963,13 @@ export type Database = {
             referencedColumns: ["city_id"]
           },
           {
+            foreignKeyName: "profiles_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
+            referencedColumns: ["city_id"]
+          },
+          {
             foreignKeyName: "profiles_cover_work_id_fkey"
             columns: ["cover_work_id"]
             isOneToOne: false
@@ -4939,6 +4988,13 @@ export type Database = {
             columns: ["home_city_id"]
             isOneToOne: false
             referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "profiles_home_city_id_fkey"
+            columns: ["home_city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
             referencedColumns: ["city_id"]
           },
         ]
@@ -5316,6 +5372,13 @@ export type Database = {
             columns: ["city_id"]
             isOneToOne: false
             referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "standing_meetups_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
             referencedColumns: ["city_id"]
           },
           {
@@ -6229,6 +6292,13 @@ export type Database = {
             columns: ["city_id"]
             isOneToOne: false
             referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "works_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
             referencedColumns: ["city_id"]
           },
           {
@@ -7590,6 +7660,13 @@ export type Database = {
             referencedColumns: ["city_id"]
           },
           {
+            foreignKeyName: "workshops_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
+            referencedColumns: ["city_id"]
+          },
+          {
             foreignKeyName: "workshops_host_user_id_fkey"
             columns: ["host_user_id"]
             isOneToOne: false
@@ -7786,6 +7863,13 @@ export type Database = {
             referencedColumns: ["city_id"]
           },
           {
+            foreignKeyName: "profiles_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
+            referencedColumns: ["city_id"]
+          },
+          {
             foreignKeyName: "profiles_cover_work_id_fkey"
             columns: ["cover_work_id"]
             isOneToOne: false
@@ -7804,6 +7888,13 @@ export type Database = {
             columns: ["home_city_id"]
             isOneToOne: false
             referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "profiles_home_city_id_fkey"
+            columns: ["home_city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
             referencedColumns: ["city_id"]
           },
         ]
@@ -7854,6 +7945,17 @@ export type Database = {
           name?: string | null
           works_7d?: never
           workshops_7d?: never
+        }
+        Relationships: []
+      }
+      vw_cohort_retention_weekly: {
+        Row: {
+          cohort_size: number | null
+          cohort_week: string | null
+          retained: number | null
+          retained_pct: number | null
+          week_complete: boolean | null
+          week_n: number | null
         }
         Relationships: []
       }
@@ -8041,6 +8143,13 @@ export type Database = {
             referencedColumns: ["city_id"]
           },
           {
+            foreignKeyName: "profiles_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
+            referencedColumns: ["city_id"]
+          },
+          {
             foreignKeyName: "profiles_cover_work_id_fkey"
             columns: ["cover_work_id"]
             isOneToOne: false
@@ -8059,6 +8168,13 @@ export type Database = {
             columns: ["home_city_id"]
             isOneToOne: false
             referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "profiles_home_city_id_fkey"
+            columns: ["home_city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
             referencedColumns: ["city_id"]
           },
         ]
@@ -8120,6 +8236,71 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_geo_city_stats: {
+        Row: {
+          activated: number | null
+          city_id: string | null
+          collabs_30d: number | null
+          country: string | null
+          country_code: string | null
+          latitude: number | null
+          longitude: number | null
+          mau: number | null
+          members: number | null
+          name: string | null
+          new_30d: number | null
+          new_prev_30d: number | null
+          state_region: string | null
+          works_30d: number | null
+        }
+        Insert: {
+          activated?: never
+          city_id?: string | null
+          collabs_30d?: never
+          country?: string | null
+          country_code?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          mau?: never
+          members?: never
+          name?: string | null
+          new_30d?: never
+          new_prev_30d?: never
+          state_region?: string | null
+          works_30d?: never
+        }
+        Update: {
+          activated?: never
+          city_id?: string | null
+          collabs_30d?: never
+          country?: string | null
+          country_code?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          mau?: never
+          members?: never
+          name?: string | null
+          new_30d?: never
+          new_prev_30d?: never
+          state_region?: string | null
+          works_30d?: never
+        }
+        Relationships: []
+      }
+      vw_geo_country_stats: {
+        Row: {
+          activated: number | null
+          collabs_30d: number | null
+          country: string | null
+          country_code: string | null
+          mau: number | null
+          members: number | null
+          new_30d: number | null
+          new_prev_30d: number | null
+          works_30d: number | null
+        }
+        Relationships: []
+      }
       vw_kpi_now: {
         Row: {
           active_subs: number | null
@@ -8146,6 +8327,50 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_kpi_periods: {
+        Row: {
+          actions_30d: number | null
+          actions_prev_30d: number | null
+          activated_total: number | null
+          applications_30d: number | null
+          applications_prev_30d: number | null
+          blog_30d: number | null
+          blog_prev_30d: number | null
+          cohort_30d: number | null
+          cohort_30d_activated: number | null
+          collabs_30d: number | null
+          collabs_prev_30d: number | null
+          computed_at: string | null
+          dau: number | null
+          events_30d: number | null
+          events_prev_30d: number | null
+          follows_30d: number | null
+          follows_prev_30d: number | null
+          group_joins_30d: number | null
+          group_posts_30d: number | null
+          lounge_minutes_30d: number | null
+          lounge_minutes_prev_30d: number | null
+          mac: number | null
+          mau: number | null
+          mau_prev: number | null
+          members_total: number | null
+          onboarded_total: number | null
+          open_reports: number | null
+          rsvps_30d: number | null
+          rsvps_prev_30d: number | null
+          signups_30d: number | null
+          signups_7d: number | null
+          signups_prev_30d: number | null
+          signups_prev_7d: number | null
+          wac: number | null
+          wac_prev: number | null
+          wau: number | null
+          wau_prev: number | null
+          works_30d: number | null
+          works_prev_30d: number | null
+        }
+        Relationships: []
+      }
       vw_lounge_funnel: {
         Row: {
           audio_minutes_30d: number | null
@@ -8167,6 +8392,14 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_membership_growth: {
+        Row: {
+          day: string | null
+          members_cumulative: number | null
+          signups: number | null
+        }
+        Relationships: []
+      }
       vw_mrr_series: {
         Row: {
           active_subs: number | null
@@ -8182,6 +8415,27 @@ export type Database = {
           signups: number | null
           user_id: string | null
           username: string | null
+        }
+        Relationships: []
+      }
+      vw_retention_headline: {
+        Row: {
+          eligible: number | null
+          retained: number | null
+          window_days: number | null
+        }
+        Relationships: []
+      }
+      vw_revenue_now: {
+        Row: {
+          eligible_members: number | null
+          live_active_paid: number | null
+          live_canceled_total: number | null
+          live_past_due: number | null
+          live_trialing: number | null
+          new_paid_30d: number | null
+          new_paid_prev_30d: number | null
+          sandbox_plus: number | null
         }
         Relationships: []
       }
@@ -8201,6 +8455,18 @@ export type Database = {
           n: number | null
           status: string | null
           tier: string | null
+        }
+        Relationships: []
+      }
+      vw_surface_30d: {
+        Row: {
+          actions: number | null
+          activated_users: number | null
+          active_users: number | null
+          prev_actions: number | null
+          prev_active_users: number | null
+          returning_users: number | null
+          surface: string | null
         }
         Relationships: []
       }
