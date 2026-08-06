@@ -118,6 +118,20 @@ export type Database = {
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "blog_post_authors_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_post_authors_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       blog_post_entity_tags: {
@@ -199,6 +213,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_post_entity_tags_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_post_entity_tags_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "blog_post_entity_tags_work_id_fkey"
@@ -295,6 +323,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "blog_posts_author_profile_id_fkey"
+            columns: ["author_profile_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_posts_author_profile_id_fkey"
+            columns: ["author_profile_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "blog_posts_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
@@ -309,6 +351,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "blog_posts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_posts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "blog_posts_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
@@ -321,6 +377,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_posts_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_posts_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -371,6 +441,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "blog_writer_access_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_writer_access_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "blog_writer_access_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
@@ -383,6 +467,20 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_writer_access_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_writer_access_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -475,6 +573,13 @@ export type Database = {
             referencedColumns: ["city_id"]
           },
           {
+            foreignKeyName: "cities_merged_into_city_id_fkey"
+            columns: ["merged_into_city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
+            referencedColumns: ["city_id"]
+          },
+          {
             foreignKeyName: "cities_official_group_id_fkey"
             columns: ["official_group_id"]
             isOneToOne: false
@@ -536,6 +641,13 @@ export type Database = {
             columns: ["city_id"]
             isOneToOne: false
             referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "city_launch_queue_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
             referencedColumns: ["city_id"]
           },
         ]
@@ -631,6 +743,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collab_contact_events_sender_user_id_fkey"
+            columns: ["sender_user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collab_contact_events_sender_user_id_fkey"
+            columns: ["sender_user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -839,6 +965,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "collab_messages_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collab_messages_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "collab_messages_collab_post_id_fkey"
             columns: ["collab_post_id"]
             isOneToOne: false
@@ -975,6 +1115,13 @@ export type Database = {
             referencedColumns: ["city_id"]
           },
           {
+            foreignKeyName: "collab_posts_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
+            referencedColumns: ["city_id"]
+          },
+          {
             foreignKeyName: "collab_posts_live_workshop_id_fkey"
             columns: ["live_workshop_id"]
             isOneToOne: false
@@ -1001,6 +1148,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collab_posts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collab_posts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -1127,6 +1288,20 @@ export type Database = {
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "collab_tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collab_tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       collab_vouches: {
@@ -1199,6 +1374,20 @@ export type Database = {
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "collab_workspace_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collab_workspace_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       comments: {
@@ -1256,6 +1445,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "comments_work_id_fkey"
@@ -1319,6 +1522,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "comp_memberships_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comp_memberships_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "comp_memberships_granted_to_fkey"
             columns: ["granted_to"]
             isOneToOne: false
@@ -1331,6 +1548,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comp_memberships_granted_to_fkey"
+            columns: ["granted_to"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comp_memberships_granted_to_fkey"
+            columns: ["granted_to"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -1415,6 +1646,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "conversations_user_a_fkey"
+            columns: ["user_a"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_user_a_fkey"
+            columns: ["user_a"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "conversations_user_b_fkey"
             columns: ["user_b"]
             isOneToOne: false
@@ -1427,6 +1672,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_user_b_fkey"
+            columns: ["user_b"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_user_b_fkey"
+            columns: ["user_b"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -1786,6 +2045,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "follows_followed_user_id_fkey"
+            columns: ["followed_user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follows_followed_user_id_fkey"
+            columns: ["followed_user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "follows_follower_user_id_fkey"
             columns: ["follower_user_id"]
             isOneToOne: false
@@ -1798,6 +2071,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follows_follower_user_id_fkey"
+            columns: ["follower_user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follows_follower_user_id_fkey"
+            columns: ["follower_user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -2207,6 +2494,13 @@ export type Database = {
             referencedRelation: "vw_city_activity_7d"
             referencedColumns: ["city_id"]
           },
+          {
+            foreignKeyName: "group_events_venue_city_id_fkey"
+            columns: ["venue_city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
+            referencedColumns: ["city_id"]
+          },
         ]
       }
       group_members: {
@@ -2424,6 +2718,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "group_today_posts_author_profile_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_today_posts_author_profile_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "group_today_posts_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
@@ -2605,6 +2913,13 @@ export type Database = {
             columns: ["city_id"]
             isOneToOne: false
             referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "groups_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
             referencedColumns: ["city_id"]
           },
           {
@@ -3043,6 +3358,20 @@ export type Database = {
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "instant_messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instant_messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       instant_presence: {
@@ -3100,6 +3429,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instant_presence_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instant_presence_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -3388,6 +3731,13 @@ export type Database = {
             referencedColumns: ["city_id"]
           },
           {
+            foreignKeyName: "instant_rooms_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
+            referencedColumns: ["city_id"]
+          },
+          {
             foreignKeyName: "instant_rooms_collab_id_fkey"
             columns: ["collab_id"]
             isOneToOne: false
@@ -3414,6 +3764,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instant_rooms_pinned_by_user_id_fkey"
+            columns: ["pinned_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instant_rooms_pinned_by_user_id_fkey"
+            columns: ["pinned_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "instant_rooms_pinned_message_id_fkey"
@@ -3663,6 +4027,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "media_assets_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_assets_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "media_assets_work_id_fkey"
             columns: ["work_id"]
             isOneToOne: false
@@ -3759,6 +4137,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -3985,6 +4377,20 @@ export type Database = {
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "notification_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       notifications: {
@@ -4037,6 +4443,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "notifications_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "notifications_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -4049,6 +4469,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -4129,6 +4563,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "plus_access_grants_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plus_access_grants_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "plus_access_grants_revoked_by_fkey"
             columns: ["revoked_by"]
             isOneToOne: false
@@ -4143,6 +4591,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "plus_access_grants_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plus_access_grants_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "plus_access_grants_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -4155,6 +4617,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plus_access_grants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plus_access_grants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -4219,6 +4695,20 @@ export type Database = {
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "plus_offer_links_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plus_offer_links_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       plus_offer_redemptions: {
@@ -4275,6 +4765,20 @@ export type Database = {
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "plus_offer_redemptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plus_offer_redemptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       processed_stripe_events: {
@@ -4297,6 +4801,7 @@ export type Database = {
           age_filter_min: number | null
           alias_urls: string[]
           aliases: string[]
+          analytics_excluded: boolean
           artist_statement: string | null
           avatar_url: string | null
           bio: string | null
@@ -4346,6 +4851,7 @@ export type Database = {
           age_filter_min?: number | null
           alias_urls?: string[]
           aliases?: string[]
+          analytics_excluded?: boolean
           artist_statement?: string | null
           avatar_url?: string | null
           bio?: string | null
@@ -4395,6 +4901,7 @@ export type Database = {
           age_filter_min?: number | null
           alias_urls?: string[]
           aliases?: string[]
+          analytics_excluded?: boolean
           artist_statement?: string | null
           avatar_url?: string | null
           bio?: string | null
@@ -4456,6 +4963,13 @@ export type Database = {
             referencedColumns: ["city_id"]
           },
           {
+            foreignKeyName: "profiles_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
+            referencedColumns: ["city_id"]
+          },
+          {
             foreignKeyName: "profiles_cover_work_id_fkey"
             columns: ["cover_work_id"]
             isOneToOne: false
@@ -4474,6 +4988,13 @@ export type Database = {
             columns: ["home_city_id"]
             isOneToOne: false
             referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "profiles_home_city_id_fkey"
+            columns: ["home_city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
             referencedColumns: ["city_id"]
           },
         ]
@@ -4669,6 +5190,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "relationship_edges_other_user_id_fkey"
+            columns: ["other_user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "relationship_edges_other_user_id_fkey"
+            columns: ["other_user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "relationship_edges_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -4681,6 +5216,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "relationship_edges_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "relationship_edges_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -4729,6 +5278,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_reporter_user_id_fkey"
+            columns: ["reporter_user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_reporter_user_id_fkey"
+            columns: ["reporter_user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -4812,6 +5375,13 @@ export type Database = {
             referencedColumns: ["city_id"]
           },
           {
+            foreignKeyName: "standing_meetups_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
+            referencedColumns: ["city_id"]
+          },
+          {
             foreignKeyName: "standing_meetups_host_user_id_fkey"
             columns: ["host_user_id"]
             isOneToOne: false
@@ -4824,6 +5394,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "standing_meetups_host_user_id_fkey"
+            columns: ["host_user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "standing_meetups_host_user_id_fkey"
+            columns: ["host_user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -4958,6 +5542,20 @@ export type Database = {
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "work_agreement_signatures_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_agreement_signatures_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       work_agreements: {
@@ -5016,6 +5614,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "work_agreements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_agreements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "work_agreements_work_id_fkey"
             columns: ["work_id"]
             isOneToOne: false
@@ -5066,6 +5678,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_applications_applicant_user_id_fkey"
+            columns: ["applicant_user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_applications_applicant_user_id_fkey"
+            columns: ["applicant_user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "work_applications_work_id_fkey"
@@ -5159,6 +5785,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "work_collaborators_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_collaborators_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "work_collaborators_work_id_fkey"
             columns: ["work_id"]
             isOneToOne: false
@@ -5217,6 +5857,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "work_credits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_credits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "work_credits_work_id_fkey"
             columns: ["work_id"]
             isOneToOne: false
@@ -5267,6 +5921,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_invite_tokens_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_invite_tokens_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "work_invite_tokens_work_id_fkey"
@@ -5327,6 +5995,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "work_invites_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_invites_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "work_invites_invitee_user_id_fkey"
             columns: ["invitee_user_id"]
             isOneToOne: false
@@ -5339,6 +6021,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_invites_invitee_user_id_fkey"
+            columns: ["invitee_user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_invites_invitee_user_id_fkey"
+            columns: ["invitee_user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "work_invites_work_id_fkey"
@@ -5385,6 +6081,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "work_reactions_work_id_fkey"
@@ -5585,6 +6295,13 @@ export type Database = {
             referencedColumns: ["city_id"]
           },
           {
+            foreignKeyName: "works_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
+            referencedColumns: ["city_id"]
+          },
+          {
             foreignKeyName: "works_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
@@ -5597,6 +6314,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "works_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "works_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "works_source_collab_post_id_fkey"
@@ -5672,6 +6403,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_applications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_applications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "workshop_applications_workshop_id_fkey"
@@ -6120,6 +6865,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "workshop_messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "workshop_messages_workshop_id_fkey"
             columns: ["workshop_id"]
             isOneToOne: false
@@ -6177,6 +6936,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "workshop_participants_workshop_id_fkey"
@@ -6360,6 +7133,20 @@ export type Database = {
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "workshop_session_demos_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_session_demos_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       workshop_session_tracks: {
@@ -6427,6 +7214,20 @@ export type Database = {
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "workshop_session_tracks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_session_tracks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       workshop_sessions: {
@@ -6487,6 +7288,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_sessions_started_by_fkey"
+            columns: ["started_by"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_sessions_started_by_fkey"
+            columns: ["started_by"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "workshop_sessions_workshop_id_fkey"
@@ -6604,6 +7419,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_tool_items_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_tool_items_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "workshop_tool_items_tool_id_fkey"
@@ -6831,6 +7660,13 @@ export type Database = {
             referencedColumns: ["city_id"]
           },
           {
+            foreignKeyName: "workshops_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
+            referencedColumns: ["city_id"]
+          },
+          {
             foreignKeyName: "workshops_host_user_id_fkey"
             columns: ["host_user_id"]
             isOneToOne: false
@@ -6843,6 +7679,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshops_host_user_id_fkey"
+            columns: ["host_user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshops_host_user_id_fkey"
+            columns: ["host_user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "workshops_published_work_id_fkey"
@@ -7013,6 +7863,13 @@ export type Database = {
             referencedColumns: ["city_id"]
           },
           {
+            foreignKeyName: "profiles_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
+            referencedColumns: ["city_id"]
+          },
+          {
             foreignKeyName: "profiles_cover_work_id_fkey"
             columns: ["cover_work_id"]
             isOneToOne: false
@@ -7031,6 +7888,13 @@ export type Database = {
             columns: ["home_city_id"]
             isOneToOne: false
             referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "profiles_home_city_id_fkey"
+            columns: ["home_city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
             referencedColumns: ["city_id"]
           },
         ]
@@ -7084,6 +7948,17 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_cohort_retention_weekly: {
+        Row: {
+          cohort_size: number | null
+          cohort_week: string | null
+          retained: number | null
+          retained_pct: number | null
+          week_complete: boolean | null
+          week_n: number | null
+        }
+        Relationships: []
+      }
       vw_collab_funnel: {
         Row: {
           applications_30d: number | null
@@ -7094,6 +7969,215 @@ export type Database = {
           posts_30d: number | null
         }
         Relationships: []
+      }
+      vw_countable_profiles: {
+        Row: {
+          age_filter_min: number | null
+          alias_urls: string[] | null
+          aliases: string[] | null
+          analytics_excluded: boolean | null
+          artist_statement: string | null
+          avatar_url: string | null
+          bio: string | null
+          birthdate: string | null
+          categories: Database["public"]["Enums"]["category"][] | null
+          cc_consent_ack: boolean | null
+          cc_consent_ack_at: string | null
+          city_id: string | null
+          cover_url: string | null
+          cover_work_id: string | null
+          created_at: string | null
+          creator_status: Database["public"]["Enums"]["creator_status"] | null
+          deleted_at: string | null
+          deletion_requested_at: string | null
+          discoverable: boolean | null
+          display_name: string | null
+          dm_policy: string | null
+          event_visibility:
+            | Database["public"]["Enums"]["event_visibility"]
+            | null
+          external_links: Json | null
+          first_name: string | null
+          follower_count: number | null
+          following_count: number | null
+          headline: string | null
+          hide_group_memberships: boolean | null
+          home_city_changed_at: string | null
+          home_city_id: string | null
+          id: string | null
+          indexable: boolean | null
+          instagram_handle: string | null
+          languages: string[] | null
+          last_active_at: string | null
+          last_name: string | null
+          mediums: string[] | null
+          onboarded: boolean | null
+          pinned_work_ids: string[] | null
+          preferred_language: string | null
+          referred_by: string | null
+          show_online: boolean | null
+          tools: string[] | null
+          tour_completed_at: string | null
+          updated_at: string | null
+          username: string | null
+          work_count: number | null
+          worked_with_count: number | null
+        }
+        Insert: {
+          age_filter_min?: number | null
+          alias_urls?: string[] | null
+          aliases?: string[] | null
+          analytics_excluded?: boolean | null
+          artist_statement?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          birthdate?: string | null
+          categories?: Database["public"]["Enums"]["category"][] | null
+          cc_consent_ack?: boolean | null
+          cc_consent_ack_at?: string | null
+          city_id?: string | null
+          cover_url?: string | null
+          cover_work_id?: string | null
+          created_at?: string | null
+          creator_status?: Database["public"]["Enums"]["creator_status"] | null
+          deleted_at?: string | null
+          deletion_requested_at?: string | null
+          discoverable?: boolean | null
+          display_name?: string | null
+          dm_policy?: string | null
+          event_visibility?:
+            | Database["public"]["Enums"]["event_visibility"]
+            | null
+          external_links?: Json | null
+          first_name?: string | null
+          follower_count?: number | null
+          following_count?: number | null
+          headline?: string | null
+          hide_group_memberships?: boolean | null
+          home_city_changed_at?: string | null
+          home_city_id?: string | null
+          id?: string | null
+          indexable?: boolean | null
+          instagram_handle?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          last_name?: string | null
+          mediums?: string[] | null
+          onboarded?: boolean | null
+          pinned_work_ids?: string[] | null
+          preferred_language?: string | null
+          referred_by?: string | null
+          show_online?: boolean | null
+          tools?: string[] | null
+          tour_completed_at?: string | null
+          updated_at?: string | null
+          username?: string | null
+          work_count?: number | null
+          worked_with_count?: number | null
+        }
+        Update: {
+          age_filter_min?: number | null
+          alias_urls?: string[] | null
+          aliases?: string[] | null
+          analytics_excluded?: boolean | null
+          artist_statement?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          birthdate?: string | null
+          categories?: Database["public"]["Enums"]["category"][] | null
+          cc_consent_ack?: boolean | null
+          cc_consent_ack_at?: string | null
+          city_id?: string | null
+          cover_url?: string | null
+          cover_work_id?: string | null
+          created_at?: string | null
+          creator_status?: Database["public"]["Enums"]["creator_status"] | null
+          deleted_at?: string | null
+          deletion_requested_at?: string | null
+          discoverable?: boolean | null
+          display_name?: string | null
+          dm_policy?: string | null
+          event_visibility?:
+            | Database["public"]["Enums"]["event_visibility"]
+            | null
+          external_links?: Json | null
+          first_name?: string | null
+          follower_count?: number | null
+          following_count?: number | null
+          headline?: string | null
+          hide_group_memberships?: boolean | null
+          home_city_changed_at?: string | null
+          home_city_id?: string | null
+          id?: string | null
+          indexable?: boolean | null
+          instagram_handle?: string | null
+          languages?: string[] | null
+          last_active_at?: string | null
+          last_name?: string | null
+          mediums?: string[] | null
+          onboarded?: boolean | null
+          pinned_work_ids?: string[] | null
+          preferred_language?: string | null
+          referred_by?: string | null
+          show_online?: boolean | null
+          tools?: string[] | null
+          tour_completed_at?: string | null
+          updated_at?: string | null
+          username?: string | null
+          work_count?: number | null
+          worked_with_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "profiles_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "profiles_cover_work_id_fkey"
+            columns: ["cover_work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_home_city_id_fkey"
+            columns: ["home_city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_home_city_id_fkey"
+            columns: ["home_city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "profiles_home_city_id_fkey"
+            columns: ["home_city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
+            referencedColumns: ["city_id"]
+          },
+        ]
       }
       vw_country_activity_7d: {
         Row: {
@@ -7110,6 +8194,15 @@ export type Database = {
         Row: {
           day: string | null
           signups: number | null
+        }
+        Relationships: []
+      }
+      vw_dau_daily: {
+        Row: {
+          actions: number | null
+          active_creators: number | null
+          active_users: number | null
+          day: string | null
         }
         Relationships: []
       }
@@ -7143,6 +8236,71 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_geo_city_stats: {
+        Row: {
+          activated: number | null
+          city_id: string | null
+          collabs_30d: number | null
+          country: string | null
+          country_code: string | null
+          latitude: number | null
+          longitude: number | null
+          mau: number | null
+          members: number | null
+          name: string | null
+          new_30d: number | null
+          new_prev_30d: number | null
+          state_region: string | null
+          works_30d: number | null
+        }
+        Insert: {
+          activated?: never
+          city_id?: string | null
+          collabs_30d?: never
+          country?: string | null
+          country_code?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          mau?: never
+          members?: never
+          name?: string | null
+          new_30d?: never
+          new_prev_30d?: never
+          state_region?: string | null
+          works_30d?: never
+        }
+        Update: {
+          activated?: never
+          city_id?: string | null
+          collabs_30d?: never
+          country?: string | null
+          country_code?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          mau?: never
+          members?: never
+          name?: string | null
+          new_30d?: never
+          new_prev_30d?: never
+          state_region?: string | null
+          works_30d?: never
+        }
+        Relationships: []
+      }
+      vw_geo_country_stats: {
+        Row: {
+          activated: number | null
+          collabs_30d: number | null
+          country: string | null
+          country_code: string | null
+          mau: number | null
+          members: number | null
+          new_30d: number | null
+          new_prev_30d: number | null
+          works_30d: number | null
+        }
+        Relationships: []
+      }
       vw_kpi_now: {
         Row: {
           active_subs: number | null
@@ -7169,6 +8327,50 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_kpi_periods: {
+        Row: {
+          actions_30d: number | null
+          actions_prev_30d: number | null
+          activated_total: number | null
+          applications_30d: number | null
+          applications_prev_30d: number | null
+          blog_30d: number | null
+          blog_prev_30d: number | null
+          cohort_30d: number | null
+          cohort_30d_activated: number | null
+          collabs_30d: number | null
+          collabs_prev_30d: number | null
+          computed_at: string | null
+          dau: number | null
+          events_30d: number | null
+          events_prev_30d: number | null
+          follows_30d: number | null
+          follows_prev_30d: number | null
+          group_joins_30d: number | null
+          group_posts_30d: number | null
+          lounge_minutes_30d: number | null
+          lounge_minutes_prev_30d: number | null
+          mac: number | null
+          mau: number | null
+          mau_prev: number | null
+          members_total: number | null
+          onboarded_total: number | null
+          open_reports: number | null
+          rsvps_30d: number | null
+          rsvps_prev_30d: number | null
+          signups_30d: number | null
+          signups_7d: number | null
+          signups_prev_30d: number | null
+          signups_prev_7d: number | null
+          wac: number | null
+          wac_prev: number | null
+          wau: number | null
+          wau_prev: number | null
+          works_30d: number | null
+          works_prev_30d: number | null
+        }
+        Relationships: []
+      }
       vw_lounge_funnel: {
         Row: {
           audio_minutes_30d: number | null
@@ -7190,6 +8392,14 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_membership_growth: {
+        Row: {
+          day: string | null
+          members_cumulative: number | null
+          signups: number | null
+        }
+        Relationships: []
+      }
       vw_mrr_series: {
         Row: {
           active_subs: number | null
@@ -7205,6 +8415,27 @@ export type Database = {
           signups: number | null
           user_id: string | null
           username: string | null
+        }
+        Relationships: []
+      }
+      vw_retention_headline: {
+        Row: {
+          eligible: number | null
+          retained: number | null
+          window_days: number | null
+        }
+        Relationships: []
+      }
+      vw_revenue_now: {
+        Row: {
+          eligible_members: number | null
+          live_active_paid: number | null
+          live_canceled_total: number | null
+          live_past_due: number | null
+          live_trialing: number | null
+          new_paid_30d: number | null
+          new_paid_prev_30d: number | null
+          sandbox_plus: number | null
         }
         Relationships: []
       }
@@ -7224,6 +8455,47 @@ export type Database = {
           n: number | null
           status: string | null
           tier: string | null
+        }
+        Relationships: []
+      }
+      vw_surface_30d: {
+        Row: {
+          actions: number | null
+          activated_users: number | null
+          active_users: number | null
+          prev_actions: number | null
+          prev_active_users: number | null
+          returning_users: number | null
+          surface: string | null
+        }
+        Relationships: []
+      }
+      vw_user_activation: {
+        Row: {
+          activated: boolean | null
+          created_at: string | null
+          first_action_day: string | null
+          first_action_surface: string | null
+          onboarded: boolean | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      vw_user_activity_day: {
+        Row: {
+          actions: number | null
+          day: string | null
+          is_creative: boolean | null
+          surface: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      vw_weekly_active_creators: {
+        Row: {
+          actions: number | null
+          active_creators: number | null
+          week: string | null
         }
         Relationships: []
       }
