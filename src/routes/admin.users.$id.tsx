@@ -166,9 +166,41 @@ function UserDetail() {
             <Button size="sm" onClick={() => badgeChoice && setBadge.mutate(badgeChoice)} disabled={!badgeChoice || setBadge.isPending}>Set badge</Button>
           </div>
           <Button variant="outline" size="sm" onClick={() => forceOut.mutate()} disabled={forceOut.isPending}>Force sign-out</Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={setExcluded.isPending}
+            onClick={() => {
+              const next = !excluded;
+              if (
+                confirm(
+                  next
+                    ? "Exclude this account from analytics? It disappears from every metric, cohort and map."
+                    : "Include this account in analytics again?",
+                )
+              )
+                setExcluded.mutate(next);
+            }}
+          >
+            {excluded ? "Include in analytics" : "Exclude from analytics"}
+          </Button>
           <Button variant="destructive" size="sm" onClick={() => { if (confirm("Soft-delete this account? They lose discoverability and are flagged for hard delete.")) softDelete.mutate(); }}>Soft delete</Button>
         </div>
+        <p className="mt-3 text-xs text-ink-muted">
+          Excluded accounts (test, system, internal) are held out of every analytics view, cohort and map.
+        </p>
       </div>
+
+      {activity.isLoading ? (
+        <div className="text-sm text-ink-muted">Loading activity…</div>
+      ) : (
+        <ActivityTimeline
+          rows={(activity.data?.days?.data ?? []) as any[]}
+          unavailable={activity.isError || activity.data?.days?.status === "unavailable"}
+        />
+      )}
+
+
 
       {data?.subscription ? (
         <div className="rounded-2xl border border-border bg-surface p-5">
