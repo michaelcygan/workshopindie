@@ -1,10 +1,11 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { safeDestination } from "@/lib/safe-destination";
 import { setPostAuthIntent } from "@/lib/post-auth-intent";
 import { AUTH_CALLBACK_PATH } from "@/lib/auth-launcher";
+import { stashHandoffPassword, takeHandoffPassword } from "@/lib/auth-handoff";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +16,7 @@ import { sanitizeInstagramHandle } from "@/lib/display-name";
 import { toast } from "sonner";
 
 const REF_KEY = "signup-ref";
+
 
 export const Route = createFileRoute("/signup")({
   component: Signup,
@@ -47,13 +49,15 @@ export const Route = createFileRoute("/signup")({
 
 function Signup() {
   const search = Route.useSearch();
+  const navigate = useNavigate();
   const { user: signedInUser, loading: authLoading } = useAuth();
 
   const [firstName, setFirstName] = useState(search.first ?? "");
   const [lastName, setLastName] = useState(search.last ?? "");
   const [instagram, setInstagram] = useState(search.ig ?? "");
   const [email, setEmail] = useState(search.email ?? "");
-  const [password, setPassword] = useState("");
+  const [password, setPassword] = useState(() => takeHandoffPassword());
+
   const [loading, setLoading] = useState(false);
   const fromGuest = search.from === "guest_apply";
 
@@ -111,6 +115,33 @@ function Signup() {
         },
       },
     });
+    // Already has an account? Log them in instead of dead-ending on an error.
+    const alreadyRegistered =
+      (error && /already registered|already exists|user already/i.test(error.message)) ||
+      (!error && data.user && (data.user.identities?.length ?? 0) === 0);
+
+    if (alreadyRegistered) {
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      setLoading(false);
+      if (!signInError) {
+        window.location.assign(AUTH_CALLBACK_PATH);
+        return;
+      }
+      stashHandoffPassword(password);
+      toast.info("You already have an account — sign in.");
+      navigate({
+        to: "/login",
+        search: {
+          claim: search.claim,
+          join: search.join,
+          group: search.group,
+          redirect: search.redirect,
+          email: email.trim(),
+        },
+      });
+      return;
+    }
+
     if (error) {
       setLoading(false);
       return toast.error(error.message);
@@ -124,6 +155,7 @@ function Signup() {
     // Email confirmation is on: the user must click the link before the lifecycle runs.
     toast.success("Check your inbox to confirm your email.");
   };
+
 
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center px-4 py-10">
