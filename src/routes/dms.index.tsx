@@ -63,6 +63,7 @@ function DmsIndex() {
   const [q, setQ] = useState("");
   const [composeOpen, setComposeOpen] = useState(false);
   const reloadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inboxReloadRef = useRef<() => void>(() => {});
 
   async function load(uid: string) {
     const { data: convs } = await supabase
