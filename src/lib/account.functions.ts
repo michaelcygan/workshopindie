@@ -41,7 +41,7 @@ export const claimAutoUsername = createServerFn({ method: "POST" })
     candidates.push(`user${userId.slice(0, 8)}`);
 
     for (const candidate of candidates) {
-      if (!candidate || candidate.length < 2) continue;
+      if (!candidate || !validateUsername(candidate).ok) continue;
       const { data: taken } = await supabaseAdmin
         .from("profiles")
         .select("id")
