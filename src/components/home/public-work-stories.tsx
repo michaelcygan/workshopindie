@@ -29,10 +29,12 @@ export function PublicWorkStories({ stories }: { stories: HomeWorkStory[] }) {
 
       <div className="mt-8 space-y-10">
         {stories.map(({ work, credits, stories: posts }) => {
+          // cover_focal_x/y are stored as percentages (0-100), not fractions.
           const focal =
             work.cover_focal_x != null && work.cover_focal_y != null
-              ? `${work.cover_focal_x * 100}% ${work.cover_focal_y * 100}%`
+              ? `${work.cover_focal_x}% ${work.cover_focal_y}%`
               : undefined;
+
           const names = credits
             .map((c) => c.display_name || c.username)
             .filter(Boolean)
