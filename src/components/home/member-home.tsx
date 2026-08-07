@@ -14,6 +14,8 @@ import { NowBoardMobile } from "@/components/home/now-board-mobile";
 import { NowBoardDesktop } from "@/components/home/now-board-desktop";
 import { YourWorkshop } from "@/components/home/your-workshop";
 import { BlogRail } from "@/components/home/blog-rail";
+import { GroupNewsTicker } from "@/components/group/group-news-ticker";
+
 import { getMemberHome } from "@/lib/home.functions";
 import { CATEGORY_LABELS } from "@/lib/categories";
 import type { HomeCircleStory, MemberHomePayload } from "@/lib/home-types";
