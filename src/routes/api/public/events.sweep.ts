@@ -102,16 +102,16 @@ export const Route = createFileRoute("/api/public/events/sweep")({
             .eq("event_id", ev.id)
             .eq("status", "going");
           if (rsvps && rsvps.length > 0) {
-            await supabaseAdmin.from("notifications").insert(
-              rsvps.map((r) => ({
-                user_id: r.user_id as string,
-                kind: "event_recap",
-                entity_type: "group_event",
-                entity_id: ev.id,
-                payload: { event_title: ev.title, event_slug: ev.slug, group_slug: ev.group.slug },
-              })),
-            );
+            const { notifyMany } = await import("@/lib/notifications/deliver.server");
+            await notifyMany({
+              recipientIds: rsvps.map((r) => r.user_id as string),
+              kind: "event_recap",
+              entityType: "group_event",
+              entityId: ev.id,
+              payload: { event_title: ev.title, event_slug: ev.slug, group_slug: ev.group.slug },
+            });
           }
+
           await supabaseAdmin.from("group_events").update({ notified_recap_at: nowIso }).eq("id", ev.id);
         }
 
