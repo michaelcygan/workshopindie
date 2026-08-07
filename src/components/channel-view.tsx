@@ -23,7 +23,6 @@ import {
 import { useMediaRoom, type MediaMode } from "@/hooks/use-media-room";
 import { joinLounge } from "@/lib/instant.functions";
 import { sendChatMessage } from "@/lib/chat.functions";
-import { purgeRoomWhiteboard } from "@/lib/room-views.functions";
 import { setRoomTitle } from "@/lib/host-room.functions";
 import { PinnedMessage, PinMessageButton, useRoomPin } from "@/components/pinned-message";
 import { WorkPeek } from "@/components/work-peek";
@@ -205,7 +204,6 @@ export function ChannelView({
     setWorkPeekOpen(true);
   };
   const dropNew = useServerFn(joinLounge);
-  const purgeBoard = useServerFn(purgeRoomWhiteboard);
   const sendMessage = useServerFn(sendChatMessage);
   // Host claim retired in v1 — anyone in the room can use tools directly.
   const renameRoom = useServerFn(setRoomTitle);
@@ -247,10 +245,6 @@ export function ChannelView({
   }, [media.error, media.audioJoined, media.busy]);
 
   function handleExit() {
-    // If I'm the last one here, purge the ephemeral whiteboard for this room.
-    if (media.joined && media.count <= 1) {
-      purgeBoard({ data: { roomId } }).catch(() => {});
-    }
     media.leave();
     router.navigate({ to: "/" });
   }

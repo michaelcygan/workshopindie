@@ -329,40 +329,30 @@ export const joinSpecificInstantRoom = createServerFn({ method: "POST" })
     z.object({ roomId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { userId } = context;
-    const { data: room } = await supabaseAdmin
-      .from("instant_rooms")
-      .select("id, kind, status, participant_cap, locked, host_user_id")
-      .eq("id", data.roomId)
-      .maybeSingle();
-    if (!room) throw new Error("That room no longer exists");
-    if (room.kind !== "lounge" || room.status !== "active") {
-      throw new Error("That room isn't live anymore");
+    const { supabase } = context;
+    // Admission is decided in one Postgres transaction: status, lock,
+    // removal cooldown and capacity are all checked under a row lock, so
+    // simultaneous joiners can't both slip into the final slot.
+    const { data: outcome, error } = await supabase.rpc("join_instant_room", {
+      _room_id: data.roomId,
+    } as never);
+    if (error) throw new Error(error.message);
+    switch (String(outcome)) {
+      case "joined":
+      case "already_joined":
+        return { roomId: data.roomId };
+      case "not_found":
+        throw new Error("That room no longer exists");
+      case "full":
+        throw new Error("Room is full");
+      case "forbidden":
+        throw new Error("You were removed from this Workshop. Try again later.");
+      case "closed":
+      default:
+        throw new Error("That room isn't live anymore");
     }
-    // Locked rooms reject new joiners (host can still rejoin).
-    if ((room as any).locked && (room as any).host_user_id !== userId) {
-      throw new Error("This Workshop is locked. Ask the host for a link.");
-    }
-    // Recently removed users can't rejoin until their cooldown expires.
-    const { data: rm } = await supabaseAdmin
-      .from("instant_room_removals")
-      .select("until")
-      .eq("room_id", data.roomId)
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (rm && new Date((rm as any).until).getTime() > Date.now()) {
-      throw new Error("You were removed from this Workshop. Try again later.");
-    }
-    const cap = (room as any).participant_cap ?? 10;
-    const cutoff = new Date(Date.now() - 5 * 60_000).toISOString();
-    const { count } = await supabaseAdmin
-      .from("instant_presence")
-      .select("user_id", { count: "exact", head: true })
-      .eq("room_id", data.roomId)
-      .gt("last_seen_at", cutoff);
-    if ((count ?? 0) >= cap) throw new Error("Room is full");
-    return { roomId: data.roomId };
   });
+
 
 /** Matchmaker for medium-specific Instant Workshops (Film, Music, Writing, Build, Visual). */
 export const joinMediumLounge = createServerFn({ method: "POST" })

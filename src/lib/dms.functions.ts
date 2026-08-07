@@ -31,38 +31,19 @@ export const openOrCreateConversation = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     if (userId === data.otherUserId) throw new Error("Cannot message yourself");
 
-    const [a, b] = pairOrder(userId, data.otherUserId);
-
-    const { data: existing } = await supabase
-      .from("conversations")
-      .select("id")
-      .eq("user_a", a)
-      .eq("user_b", b)
-      .maybeSingle();
-
-    if (existing?.id) return { conversationId: existing.id };
-
-    const insertRow: {
-      user_a: string;
-      user_b: string;
-      context_collab_post_id?: string;
-      context_workshop_id?: string;
-      context_work_id?: string;
-      context_comment_id?: string;
-    } = { user_a: a, user_b: b };
-    if (data.contextCollabPostId) insertRow.context_collab_post_id = data.contextCollabPostId;
-    if (data.contextWorkshopId) insertRow.context_workshop_id = data.contextWorkshopId;
-    if (data.contextWorkId) insertRow.context_work_id = data.contextWorkId;
-    if (data.contextCommentId) insertRow.context_comment_id = data.contextCommentId;
-
-    const { data: created, error } = await supabase
-      .from("conversations")
-      .insert(insertRow)
-      .select("id")
-      .single();
+    // Atomic get-or-create: opening the same thread from both sides at the
+    // same moment returns the one canonical conversation instead of racing.
+    const { data: conversationId, error } = await supabase.rpc("get_or_create_conversation", {
+      _other: data.otherUserId,
+      _context_collab_post_id: data.contextCollabPostId,
+      _context_workshop_id: data.contextWorkshopId,
+      _context_work_id: data.contextWorkId,
+      _context_comment_id: data.contextCommentId,
+    } as never);
     if (error) throw new Error(error.message);
-    return { conversationId: created.id };
+    return { conversationId: conversationId as unknown as string };
   });
+
 
 
 
