@@ -6,6 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { safeDestination } from "@/lib/safe-destination";
+import { normalizeUsername, validateUsername } from "@/lib/usernames";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
