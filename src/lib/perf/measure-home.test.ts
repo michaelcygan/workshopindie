@@ -43,7 +43,9 @@ async function measure(label: string, fn: () => Promise<unknown>) {
   );
 }
 
-describe("home fan-out measurement", () => {
+// Opt-in harness: `PERF_TRACE=1 bunx vitest run src/lib/perf/measure-home.test.ts`.
+// Hits the real database, so it stays out of the default suite.
+describe.skipIf(process.env["PERF_TRACE"] !== "1")("home fan-out measurement", () => {
   it("public home", async () => {
     const { getPublicHomeServer } = await import("@/lib/home.server");
     const { invalidateCached } = await import("./ttl-cache.server");
