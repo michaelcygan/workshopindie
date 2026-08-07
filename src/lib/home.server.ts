@@ -1246,15 +1246,17 @@ export async function disciplineItemsServer(mediums: string[]): Promise<HomeDisc
  * a failure loading Events can never blank Today, Lounge, or Continue.
  */
 export async function getMemberHomeServer(userId: string): Promise<MemberHomePayload> {
-  const [profileRes, blocked, groups] = await Promise.all([
-    supabaseAdmin
-      .from("profiles")
-      .select("display_name,username,first_name,cover_url,cover_work_id,home_city_id,mediums")
-      .eq("id", userId)
-      .maybeSingle(),
-    blockedIdsFor(userId),
-    myGroupsFor(userId),
-  ]);
+  const [profileRes, blocked, groups] = await span("prelude", () =>
+    Promise.all([
+      supabaseAdmin
+        .from("profiles")
+        .select("display_name,username,first_name,cover_url,cover_work_id,home_city_id,mediums")
+        .eq("id", userId)
+        .maybeSingle(),
+      blockedIdsFor(userId),
+      myGroupsFor(userId),
+    ]),
+  );
 
   const profile = profileRes.data as {
     display_name: string | null;
@@ -1268,7 +1270,9 @@ export async function getMemberHomeServer(userId: string): Promise<MemberHomePay
   const mediums = profile?.mediums ?? [];
   const homeCityId = profile?.home_city_id ?? null;
 
-  const today = await todaySummariesServer(groups, blocked).catch(() => [] as HomeTodaySummary[]);
+  const today = await span("today", () =>
+    todaySummariesServer(groups, blocked).catch(() => [] as HomeTodaySummary[]),
+  );
 
   const [
     loungesR,
@@ -1284,39 +1288,50 @@ export async function getMemberHomeServer(userId: string): Promise<MemberHomePay
     cityR,
     cityGroupR,
   ] = await Promise.allSettled([
-    myGroupLoungesServer(groups),
-    upcomingEventsServer(userId, groups, homeCityId, 4),
-    continueActionsServer(userId, groups, today),
-    groups.length
-      ? Promise.resolve([] as HomeGroupSuggestion[])
-      : groupSuggestionsServer(homeCityId, mediums),
-    circleStoriesServer(userId, groups, blocked),
-    peopleSuggestionsServer(userId, groups, blocked, homeCityId, mediums),
-    disciplineItemsServer(mediums),
-    profile?.cover_work_id
-      ? supabaseAdmin
-          .from("works")
-          .select("slug,title")
-          .eq("id", profile.cover_work_id)
-          .maybeSingle()
-      : Promise.resolve({ data: null }),
-    featuredBlogServer(),
-    myWorkshopServer(userId),
-    homeCityId
-      ? supabaseAdmin.from("cities").select("id,name,slug").eq("id", homeCityId).maybeSingle()
-      : Promise.resolve({ data: null }),
-    homeCityId
-      ? supabaseAdmin
-          .from("groups")
-          .select("id,name,slug")
-          .eq("city_id", homeCityId)
-          .eq("visibility", "public")
-          .is("deleted_at", null)
-          .order("member_count", { ascending: false })
-          .limit(1)
-          .maybeSingle()
-      : Promise.resolve({ data: null }),
+    span("lounges", () => myGroupLoungesServer(groups)),
+    span("events", () => upcomingEventsServer(userId, groups, homeCityId, 4)),
+    span("continue", () => continueActionsServer(userId, groups, today)),
+    span("groupSuggestions", () =>
+      groups.length
+        ? Promise.resolve([] as HomeGroupSuggestion[])
+        : groupSuggestionsServer(homeCityId, mediums),
+    ),
+    span("circle", () => circleStoriesServer(userId, groups, blocked)),
+    span("people", () =>
+      peopleSuggestionsServer(userId, groups, blocked, homeCityId, mediums),
+    ),
+    span("disciplines", () => disciplineItemsServer(mediums)),
+    span("coverWork", () =>
+      profile?.cover_work_id
+        ? supabaseAdmin
+            .from("works")
+            .select("slug,title")
+            .eq("id", profile.cover_work_id)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+    ),
+    span("featuredBlog", () => featuredBlogServer()),
+    span("mine", () => myWorkshopServer(userId)),
+    span("city", () =>
+      homeCityId
+        ? supabaseAdmin.from("cities").select("id,name,slug").eq("id", homeCityId).maybeSingle()
+        : Promise.resolve({ data: null }),
+    ),
+    span("cityGroup", () =>
+      homeCityId
+        ? supabaseAdmin
+            .from("groups")
+            .select("id,name,slug")
+            .eq("city_id", homeCityId)
+            .eq("visibility", "public")
+            .is("deleted_at", null)
+            .order("member_count", { ascending: false })
+            .limit(1)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+    ),
   ]);
+
 
   const lounges = loungesR.status === "fulfilled" ? loungesR.value : [];
   const upcomingEvents = eventsR.status === "fulfilled" ? eventsR.value : [];
