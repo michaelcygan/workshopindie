@@ -17,14 +17,18 @@ export const checkEmailExists = createServerFn({ method: "POST" })
 
     try {
       const res = await fetch(
-        `${url}/auth/v1/admin/users?page=1&per_page=1&filter=${encodeURIComponent(data.email)}`,
+        `${url}/auth/v1/admin/users?page=1&per_page=2&filter=${encodeURIComponent(data.email)}`,
         { headers: { apikey: key, Authorization: `Bearer ${key}` } },
       );
       if (!res.ok) return { exists: null as boolean | null };
       const body = (await res.json()) as { users?: Array<{ email?: string | null }> };
+      const users = body.users ?? [];
       const target = data.email.toLowerCase();
-      const exists = (body.users ?? []).some((u) => (u.email ?? "").toLowerCase() === target);
-      return { exists: exists as boolean | null };
+      if (users.some((u) => (u.email ?? "").toLowerCase() === target)) return { exists: true };
+      // Empty result means the filter ran and matched nothing. A non-empty result
+      // with no match means the server ignored the filter — don't guess.
+      return { exists: users.length === 0 ? false : (null as boolean | null) };
+
     } catch {
       return { exists: null as boolean | null };
     }
