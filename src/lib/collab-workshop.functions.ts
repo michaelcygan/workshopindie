@@ -94,28 +94,30 @@ export const openWorkshopOnCollab = createServerFn({ method: "POST" })
 export const rsvpToWorkshop = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ workshopId: z.string().uuid() }).parse(input))
-  .handler(async ({ data, context }) => {
-    // Seat reservation happens under a row lock in Postgres, so the cap holds
-    // even when several people tap RSVP in the same second.
-    const { data: outcome, error } = await context.supabase.rpc("reserve_workshop_seat", {
-      _workshop_id: data.workshopId,
-    } as never);
-    if (error) throw new Error(error.message);
-    const status = String(outcome);
-    switch (status) {
-      case "joined":
-      case "already_joined":
-        return { ok: true };
-      case "full":
-        throw rpcOutcomeError(status, "This Workshop is full.");
-      case "closed":
-        throw rpcOutcomeError(status, "This Workshop is closed.");
-      case "not_found":
-        throw rpcOutcomeError(status, "Workshop not found.");
-      default:
-        throw rpcOutcomeError(status, "You can't join this Workshop.");
-    }
-  });
+  .handler(async ({ data, context }) =>
+    withOpLog('workshop.seat.reserve', { entity: "workshop", entityId: data.workshopId, authed: true }, async () => {
+      // Seat reservation happens under a row lock in Postgres, so the cap holds
+      // even when several people tap RSVP in the same second.
+      const { data: outcome, error } = await context.supabase.rpc("reserve_workshop_seat", {
+        _workshop_id: data.workshopId,
+      } as never);
+      if (error) throw new Error(error.message);
+      const status = String(outcome);
+      switch (status) {
+        case "joined":
+        case "already_joined":
+          return { ok: true };
+        case "full":
+          throw rpcOutcomeError(status, "This Workshop is full.");
+        case "closed":
+          throw rpcOutcomeError(status, "This Workshop is closed.");
+        case "not_found":
+          throw rpcOutcomeError(status, "Workshop not found.");
+        default:
+          throw rpcOutcomeError(status, "You can't join this Workshop.");
+      }
+    }),
+  );
 
 
 export const cancelRsvp = createServerFn({ method: "POST" })

@@ -239,52 +239,54 @@ const rsvpSchema = z.object({
 export const rsvp = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => rsvpSchema.parse(i))
-  .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-    const { requireEventAccess } = await import("@/lib/events/access.server");
-    const { event, access } = await requireEventAccess(supabase, data.event_id, userId);
-    const attending = data.status === "going" || data.status === "maybe";
+  .handler(async ({ data, context }) =>
+    withOpLog('rsvp.set', { entity: "event", entityId: data.event_id, authed: true }, async () => {
+      const { supabase, userId } = context;
+      const { requireEventAccess } = await import("@/lib/events/access.server");
+      const { event, access } = await requireEventAccess(supabase, data.event_id, userId);
+      const attending = data.status === "going" || data.status === "maybe";
 
-    if (attending) {
-      if (access.lifecycle === "canceled")
-        throw domainError("CLOSED", "This Event was canceled.");
-      if (access.lifecycle === "draft")
-        throw domainError("CLOSED", "This Event isn't published yet.");
-      if (!access.canRsvp)
-        throw domainError("CLOSED", "RSVPs are closed for this Event.");
-    }
+      if (attending) {
+        if (access.lifecycle === "canceled")
+          throw domainError("CLOSED", "This Event was canceled.");
+        if (access.lifecycle === "draft")
+          throw domainError("CLOSED", "This Event isn't published yet.");
+        if (!access.canRsvp)
+          throw domainError("CLOSED", "RSVPs are closed for this Event.");
+      }
 
-    // Capacity/waitlist is settled inside one Postgres transaction, so two
-    // people taking the last seat at the same instant can never both win.
-    const { data: outcome, error } = await supabase.rpc("reserve_event_rsvp", {
-      _event_id: data.event_id,
-      _status: data.status,
-      _plus_ones: data.plus_ones ?? 0,
-      _note: data.note ?? null,
-    } as never);
-    if (error) throw new Error(error.message);
+      // Capacity/waitlist is settled inside one Postgres transaction, so two
+      // people taking the last seat at the same instant can never both win.
+      const { data: outcome, error } = await supabase.rpc("reserve_event_rsvp", {
+        _event_id: data.event_id,
+        _status: data.status,
+        _plus_ones: data.plus_ones ?? 0,
+        _note: data.note ?? null,
+      } as never);
+      if (error) throw new Error(error.message);
 
-    const effectiveStatus = String(outcome);
-    if (effectiveStatus === "full") throw rpcOutcomeError(effectiveStatus, "This Event is full.");
-    if (effectiveStatus === "closed")
-      throw rpcOutcomeError(effectiveStatus, "RSVPs are closed for this Event.");
-    if (effectiveStatus === "not_found") throw rpcOutcomeError(effectiveStatus, "Event not found");
-    if (effectiveStatus === "forbidden")
-      throw rpcOutcomeError(effectiveStatus, "Please sign in to RSVP.");
+      const effectiveStatus = String(outcome);
+      if (effectiveStatus === "full") throw rpcOutcomeError(effectiveStatus, "This Event is full.");
+      if (effectiveStatus === "closed")
+        throw rpcOutcomeError(effectiveStatus, "RSVPs are closed for this Event.");
+      if (effectiveStatus === "not_found") throw rpcOutcomeError(effectiveStatus, "Event not found");
+      if (effectiveStatus === "forbidden")
+        throw rpcOutcomeError(effectiveStatus, "Please sign in to RSVP.");
 
-    // Auto-join host group when the user is attending. Best-effort —
-    // any failure here must not block the RSVP itself.
-    if (attending && effectiveStatus !== "waitlist" && event.group_id) {
-      await supabase
-        .from("group_members")
-        .upsert(
-          { group_id: event.group_id, user_id: userId, role: "member" },
-          { onConflict: "group_id,user_id", ignoreDuplicates: true },
-        );
-    }
+      // Auto-join host group when the user is attending. Best-effort —
+      // any failure here must not block the RSVP itself.
+      if (attending && effectiveStatus !== "waitlist" && event.group_id) {
+        await supabase
+          .from("group_members")
+          .upsert(
+            { group_id: event.group_id, user_id: userId, role: "member" },
+            { onConflict: "group_id,user_id", ignoreDuplicates: true },
+          );
+      }
 
-    return { ok: true, status: effectiveStatus };
-  });
+      return { ok: true, status: effectiveStatus };
+    }),
+  );
 
 
 export const getMyRsvp = createServerFn({ method: "POST" })

@@ -320,34 +320,36 @@ export const joinSpecificInstantRoom = createServerFn({ method: "POST" })
   .inputValidator((input: { roomId: string }) =>
     z.object({ roomId: z.string().uuid() }).parse(input),
   )
-  .handler(async ({ data, context }) => {
-    const { supabase } = context;
-    // Admission is decided in one Postgres transaction: status, lock,
-    // removal cooldown and capacity are all checked under a row lock, so
-    // simultaneous joiners can't both slip into the final slot.
-    const { data: outcome, error } = await supabase.rpc("join_instant_room", {
-      _room_id: data.roomId,
-    } as never);
-    if (error) throw new Error(error.message);
-    const status = String(outcome);
-    switch (status) {
-      case "joined":
-      case "already_joined":
-        return { roomId: data.roomId };
-      case "not_found":
-        throw rpcOutcomeError(status, "That room no longer exists");
-      case "full":
-        throw rpcOutcomeError(status, "Room is full");
-      case "forbidden":
-        throw rpcOutcomeError(status, "You were removed from this Workshop. Try again later.");
-      case "locked":
-        throw rpcOutcomeError(status, "This Workshop is locked");
-      case "closed":
-      default:
-        throw rpcOutcomeError(status, "That room isn't live anymore");
+  .handler(async ({ data, context }) =>
+    withOpLog('room.join', { entity: "instant_room", entityId: data.roomId, authed: true }, async () => {
+      const { supabase } = context;
+      // Admission is decided in one Postgres transaction: status, lock,
+      // removal cooldown and capacity are all checked under a row lock, so
+      // simultaneous joiners can't both slip into the final slot.
+      const { data: outcome, error } = await supabase.rpc("join_instant_room", {
+        _room_id: data.roomId,
+      } as never);
+      if (error) throw new Error(error.message);
+      const status = String(outcome);
+      switch (status) {
+        case "joined":
+        case "already_joined":
+          return { roomId: data.roomId };
+        case "not_found":
+          throw rpcOutcomeError(status, "That room no longer exists");
+        case "full":
+          throw rpcOutcomeError(status, "Room is full");
+        case "forbidden":
+          throw rpcOutcomeError(status, "You were removed from this Workshop. Try again later.");
+        case "locked":
+          throw rpcOutcomeError(status, "This Workshop is locked");
+        case "closed":
+        default:
+          throw rpcOutcomeError(status, "That room isn't live anymore");
 
-    }
-  });
+      }
+    }),
+  );
 
 
 /** Matchmaker for medium-specific Instant Workshops (Film, Music, Writing, Build, Visual). */
