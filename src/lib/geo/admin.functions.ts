@@ -318,3 +318,156 @@ export const cancelQueued = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/* ------------------------------------------------------------------ */
+/* One-time administrative batch launch (Midwest-first US expansion).  */
+/* Orchestrates the exact same flow as the single-city admin launch.   */
+/* ------------------------------------------------------------------ */
+
+export type BatchCityResult = {
+  requested: string;
+  state: string;
+  canonicalName: string | null;
+  providerId: string | null;
+  created: boolean;
+  cityId: string | null;
+  citySlug: string | null;
+  groupId: string | null;
+  groupSlug: string | null;
+  queueStatus: string;
+  note: string;
+};
+
+/** Nominatim asks for <=1 request/second. Keep every provider call paced. */
+const PROVIDER_GAP_MS = 1100;
+const CHUNK = 4;
+
+function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+export const runCityLaunchBatch = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { cursor?: number; createdSoFar?: number }) =>
+    z
+      .object({
+        cursor: z.number().int().min(0).max(100).optional(),
+        createdSoFar: z.number().int().min(0).max(100).optional(),
+      })
+      .parse(input ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context.supabase, context.userId);
+    const { searchProviderLocalities } = await import("@/lib/geo/provider.server");
+    const { LAUNCH_MANIFEST, TARGET_NEW_CITIES, matchesManifest } = await import(
+      "@/lib/geo/city-launch-manifest"
+    );
+    const admin = await adminClient();
+
+    let cursor = data.cursor ?? 0;
+    let created = data.createdSoFar ?? 0;
+    const results: BatchCityResult[] = [];
+    let stopped = false;
+    let stopReason: string | null = null;
+    let emptySearches = 0;
+    let processed = 0;
+
+    while (
+      cursor < LAUNCH_MANIFEST.length &&
+      created < TARGET_NEW_CITIES &&
+      processed < CHUNK &&
+      !stopped
+    ) {
+      const entry = LAUNCH_MANIFEST[cursor]!;
+      cursor += 1;
+      processed += 1;
+
+      const base: BatchCityResult = {
+        requested: entry.city,
+        state: entry.state,
+        canonicalName: null,
+        providerId: null,
+        created: false,
+        cityId: null,
+        citySlug: null,
+        groupId: null,
+        groupSlug: null,
+        queueStatus: "—",
+        note: "",
+      };
+
+      await sleep(PROVIDER_GAP_MS);
+      const candidates = await searchProviderLocalities(entry.query, { limit: 8 });
+      if (candidates.length === 0) {
+        emptySearches += 1;
+        results.push({ ...base, note: "No provider results" });
+        if (emptySearches >= 2) {
+          stopped = true;
+          stopReason = "Place provider returned no results twice in a row — stopping cleanly.";
+        }
+        continue;
+      }
+      emptySearches = 0;
+
+      const match = candidates.find((p) => matchesManifest(entry, p));
+      if (!match) {
+        results.push({
+          ...base,
+          note: `No exact ${entry.city}, ${entry.state} match — skipped (reserve will be used)`,
+        });
+        continue;
+      }
+
+      try {
+        await sleep(PROVIDER_GAP_MS);
+        const queued = await queuePlaceForLaunch(match.providerId, context.userId);
+        await sleep(PROVIDER_GAP_MS);
+        const launched = await launchQueueEntry(queued.id, context.userId);
+
+        const { data: city } = await admin
+          .from("cities")
+          .select("id,name,slug,official_group_id")
+          .eq("id", launched.cityId)
+          .maybeSingle();
+        const { data: group } = city?.official_group_id
+          ? await admin.from("groups").select("id,slug").eq("id", city.official_group_id).maybeSingle()
+          : { data: null };
+
+        // `created` counts only localities this operation brought into Workshop.
+        const wasNew = !!launched.cityId;
+        const { data: audit } = await admin
+          .from("admin_audit_log")
+          .select("id")
+          .eq("target_id", launched.cityId)
+          .eq("action", "locality.provisioned")
+          .limit(1);
+        const isNew = (audit ?? []).length > 0;
+        if (wasNew && isNew) created += 1;
+
+        results.push({
+          ...base,
+          canonicalName: match.name,
+          providerId: match.providerId,
+          created: isNew,
+          cityId: launched.cityId,
+          citySlug: city?.slug ?? null,
+          groupId: group?.id ?? null,
+          groupSlug: group?.slug ?? null,
+          queueStatus: "launched",
+          note: isNew ? "Provisioned" : "Already existed",
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Launch failed";
+        results.push({
+          ...base,
+          canonicalName: match.name,
+          providerId: match.providerId,
+          queueStatus: "failed",
+          note: message,
+        });
+      }
+    }
+
+    const done = stopped || cursor >= LAUNCH_MANIFEST.length || created >= TARGET_NEW_CITIES;
+    return { results, cursor, created, done, stopped, stopReason };
+  });
