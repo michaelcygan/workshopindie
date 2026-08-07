@@ -1,7 +1,15 @@
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { cancelQueued, enqueueLaunch, launchQueued, listLaunchQueue } from "@/lib/geo/admin.functions";
+import {
+  cancelQueued,
+  enqueueLaunch,
+  launchQueued,
+  listLaunchQueue,
+  runCityLaunchBatch,
+  type BatchCityResult,
+} from "@/lib/geo/admin.functions";
 import { LocalitySearch } from "@/components/admin/locality-search";
 import { Button } from "@/components/ui/button";
 
@@ -11,6 +19,11 @@ export function LaunchQueuePanel() {
   const enqueue = useServerFn(enqueueLaunch);
   const launch = useServerFn(launchQueued);
   const cancel = useServerFn(cancelQueued);
+  const runBatch = useServerFn(runCityLaunchBatch);
+  const [batchRunning, setBatchRunning] = useState(false);
+  const [batchResults, setBatchResults] = useState<BatchCityResult[]>([]);
+  const [batchNote, setBatchNote] = useState<string | null>(null);
+
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin", "launch-queue"],
