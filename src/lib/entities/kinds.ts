@@ -58,7 +58,7 @@ export type WorkshopEntityRef = WorkshopEntityAddress & {
 export function workshopEntityUrl(address: WorkshopEntityAddress): string {
   switch (address.kind) {
     case "profile":
-      return `/u/${address.username}`;
+      return `/${address.username}`;
     case "work":
       return `/works/${address.slug}`;
     case "post":

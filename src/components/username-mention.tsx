@@ -34,7 +34,7 @@ export function UsernameMention({
   if (isLoading) return <>{children}</>;
   if (!data) {
     return (
-      <Link to="/u/$username" params={{ username: handle }}>
+      <Link to="/$username" params={{ username: handle }}>
         {children}
       </Link>
     );

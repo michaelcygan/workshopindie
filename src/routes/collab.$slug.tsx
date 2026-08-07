@@ -114,7 +114,7 @@ export const Route = createFileRoute("/collab/$slug")({
         hiringOrganization: {
           "@type": "Organization",
           name: hostName,
-          sameAs: s.user?.username ? `https://workshopindie.com/u/${s.user.username}` : "https://workshopindie.com",
+          sameAs: s.user?.username ? `https://workshopindie.com/${s.user.username}` : "https://workshopindie.com",
         },
         directApply: true,
         url,
@@ -763,7 +763,7 @@ function CollabDetail() {
 
         {hostUser && (
           <div className="mt-6 flex flex-wrap items-center gap-2">
-            <Link to="/u/$username" params={{ username: hostUser.username || "" }} className="inline-flex flex-1 min-w-[14rem] items-center gap-3 rounded-2xl border border-border bg-surface p-3 hover:bg-surface-2 transition">
+            <Link to="/$username" params={{ username: hostUser.username || "" }} className="inline-flex flex-1 min-w-[14rem] items-center gap-3 rounded-2xl border border-border bg-surface p-3 hover:bg-surface-2 transition">
               <div className="h-10 w-10 overflow-hidden rounded-full bg-muted">
                 {hostUser.avatar_url && <img src={hostUser.avatar_url} alt="" className="h-full w-full object-cover" />}
               </div>
@@ -936,7 +936,7 @@ function CollabDetail() {
       {hostUser?.username && (
         <div className="mt-10 md:hidden">
           <Link
-            to="/u/$username"
+            to="/$username"
             params={{ username: hostUser.username }}
             className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-ink-muted hover:bg-surface-2 hover:text-ink transition"
           >

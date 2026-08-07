@@ -128,7 +128,7 @@ function UserDetail() {
             )}
           </div>
           <div className="flex flex-col items-end gap-2 text-xs">
-            <Link to="/u/$username" params={{ username: p.username ?? "" }} className="text-primary hover:underline">View public profile →</Link>
+            <Link to="/$username" params={{ username: p.username ?? "" }} className="text-primary hover:underline">View public profile →</Link>
           </div>
         </div>
 

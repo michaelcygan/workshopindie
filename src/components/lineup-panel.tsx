@@ -259,7 +259,7 @@ function SignupRow({
         {index}
       </div>
       {profile?.username ? (
-        <Link to="/u/$username" params={{ username: profile.username }} className="flex items-center gap-2">
+        <Link to="/$username" params={{ username: profile.username }} className="flex items-center gap-2">
           <Avatar className="h-7 w-7">
             <AvatarImage src={profile.avatar_url ?? undefined} />
             <AvatarFallback>{name.slice(0, 1)}</AvatarFallback>

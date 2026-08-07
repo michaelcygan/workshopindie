@@ -370,7 +370,7 @@ function Byline({ credits }: { credits: WorkRow["work_credits"] }) {
         if (p?.username) {
           return (
             <span key={c.id}>
-              <Link to="/u/$username" params={{ username: p.username }}>{inner}</Link>
+              <Link to="/$username" params={{ username: p.username }}>{inner}</Link>
               {sep}
             </span>
           );

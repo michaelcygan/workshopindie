@@ -233,7 +233,7 @@ export function ApplicantsPanel({ postId }: Props) {
                     <div className="flex items-center gap-2 flex-wrap">
                       {sender?.username ? (
                         <Link
-                          to="/u/$username"
+                          to="/$username"
                           params={{ username: sender.username }}
                           className="font-medium text-ink hover:underline"
                         >

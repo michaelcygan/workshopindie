@@ -77,7 +77,7 @@ export function BlogEntityTags({
           return (
             <Link
               key={`${tag.kind}:${tag.id}`}
-              to="/u/$username"
+              to="/$username"
               params={{ username: tag.username }}
               className={className}
             >

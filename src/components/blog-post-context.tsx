@@ -103,7 +103,7 @@ function WorkEntry({ tag }: { tag: BlogContextWork }) {
 function PersonEntry({ tag }: { tag: BlogContextPerson }) {
   return (
     <Link
-      to="/u/$username"
+      to="/$username"
       params={{ username: tag.username }}
       className="group flex items-center gap-3"
     >

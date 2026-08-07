@@ -19,7 +19,7 @@ export function FriendRow({ friend, action, onInviteClick, inviteLabel = "Invite
   return (
     <div className="flex items-center gap-3 rounded-xl border border-border bg-surface p-3">
       <Link
-        to="/u/$username"
+        to="/$username"
         params={{ username: friend.username ?? friend.user_id }}
         className="relative shrink-0"
         aria-label={`Open ${friend.display_name ?? friend.username ?? "profile"}`}
@@ -38,7 +38,7 @@ export function FriendRow({ friend, action, onInviteClick, inviteLabel = "Invite
       </Link>
       <div className="min-w-0 flex-1">
         <Link
-          to="/u/$username"
+          to="/$username"
           params={{ username: friend.username ?? friend.user_id }}
           className="block truncate text-sm font-medium text-ink hover:underline"
         >

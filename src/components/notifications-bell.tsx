@@ -85,14 +85,14 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
       return {
         title: `${actor} followed you`,
         subtitle: "",
-        href: actorUsername ? `/u/${actorUsername}` : "/me",
+        href: actorUsername ? `/${actorUsername}` : "/me",
       };
 
     case "referral_joined":
       return {
         title: `${actor} joined via your link`,
         subtitle: "Say hi — they came from your invite.",
-        href: actorUsername ? `/u/${actorUsername}` : "/me",
+        href: actorUsername ? `/${actorUsername}` : "/me",
       };
     case "referral_reward_earned": {
       const applied = n.payload?.status === "applied";

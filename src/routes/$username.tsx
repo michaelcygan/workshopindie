@@ -52,7 +52,7 @@ const profileSearch = z.object({
 });
 
 
-export const Route = createFileRoute("/u/$username")({
+export const Route = createFileRoute("/$username")({
   component: ProfilePage,
   validateSearch: zodValidator(profileSearch),
   loader: async ({ params }) => {
@@ -76,7 +76,7 @@ export const Route = createFileRoute("/u/$username")({
   ),
   head: ({ params, loaderData }) => {
     const p = loaderData?.seo;
-    const url = `https://workshopindie.com/u/${params.username}`;
+    const url = `https://workshopindie.com/${params.username}`;
     const name = p?.display_name ?? p?.username ?? params.username;
     const title = `${name} — Workshop`;
     const description = p?.headline ?? p?.bio?.slice(0, 160) ?? `${name}'s profile on Workshop.`;
@@ -519,7 +519,7 @@ function ProfilePage() {
           entity={{
             type: "profile",
             id: profile.id,
-            url: `https://workshopindie.com/u/${profile.username}`,
+            url: `https://workshopindie.com/${profile.username}`,
             title: name,
             subtitle: profile.headline ?? undefined,
           }}
@@ -539,7 +539,7 @@ function ProfilePage() {
             entity={{
               type: "profile",
               id: profile.id,
-              url: `https://workshopindie.com/u/${profile.username}`,
+              url: `https://workshopindie.com/${profile.username}`,
               title: name,
               subtitle: profile.headline ?? undefined,
             }}
@@ -571,7 +571,7 @@ function ProfilePage() {
   const setTab = (t: ProfileTab) => {
     if (t === "collabs") markCollabsSeen();
     navigate({
-      to: "/u/$username",
+      to: "/$username",
       params: { username },
       search: { tab: t },
       replace: true,
@@ -720,7 +720,7 @@ function ProfilePage() {
                             entity={{
                               type: "profile",
                               id: profile.id,
-                              url: `https://workshopindie.com/u/${profile.username}`,
+                              url: `https://workshopindie.com/${profile.username}`,
                               title: name,
                               subtitle: profile.headline ?? undefined,
                             }}
@@ -738,7 +738,7 @@ function ProfilePage() {
                             entity={{
                               type: "profile",
                               id: profile.id,
-                              url: `https://workshopindie.com/u/${profile.username}`,
+                              url: `https://workshopindie.com/${profile.username}`,
                               title: name,
                               subtitle: profile.headline ?? undefined,
                             }}
@@ -966,7 +966,7 @@ function ProfilePage() {
               isOwn={isOwn}
               onOpenPost={(slug: string) =>
                 navigate({
-                  to: "/u/$username",
+                  to: "/$username",
                   params: { username },
                   search: (prev: Record<string, unknown>) => ({ ...prev, tab: "blog" as const, post: slug }),
                   replace: true,
@@ -1000,7 +1000,7 @@ function ProfilePage() {
             open={!!search.post}
             onSelectPost={(slug: string) =>
               navigate({
-                to: "/u/$username",
+                to: "/$username",
                 params: { username },
                 search: (prev: Record<string, unknown>) => ({ ...prev, tab: "blog" as const, post: slug }),
                 replace: true,
@@ -1010,7 +1010,7 @@ function ProfilePage() {
             onOpenChange={(v: boolean) => {
               if (v) return;
               navigate({
-                to: "/u/$username",
+                to: "/$username",
                 params: { username },
                 search: (prev: Record<string, unknown>) => {
                   const next = { ...prev };
@@ -1043,7 +1043,7 @@ function ProfilePage() {
             openSlug={search.story}
             onOpenSlugChange={(s) =>
               navigate({
-                to: "/u/$username",
+                to: "/$username",
                 params: { username },
                 search: { ...search, story: s ?? undefined },
                 replace: true,
@@ -1094,7 +1094,7 @@ function ProfileStats({
       {items.map((item) => (
         <Link
           key={item.label}
-          to="/u/$username"
+          to="/$username"
           params={{ username }}
           search={{ tab: item.tab }}
           replace
@@ -1744,7 +1744,7 @@ function FrequentCollaborators({ userId }: { userId: string }) {
             </div>
           );
           if (c.username) {
-            return <Link key={c.id} to="/u/$username" params={{ username: c.username }}>{inner}</Link>;
+            return <Link key={c.id} to="/$username" params={{ username: c.username }}>{inner}</Link>;
           }
           return (
             <ProfilePeek key={c.id} userId={c.id}>

@@ -45,7 +45,7 @@ export const Route = createFileRoute("/sitemap.xml")({
 
 
         for (const w of works.data ?? []) urls.push({ loc: `${SITE}/works/${w.slug}`, lastmod: w.published_at ?? undefined, priority: 0.8 });
-        for (const p of profiles.data ?? []) urls.push({ loc: `${SITE}/u/${p.username}`, lastmod: p.updated_at ?? undefined, priority: 0.6 });
+        for (const p of profiles.data ?? []) urls.push({ loc: `${SITE}/${p.username}`, lastmod: p.updated_at ?? undefined, priority: 0.6 });
         for (const w of workshops.data ?? []) urls.push({ loc: `${SITE}/workshops/${w.slug}`, lastmod: w.updated_at ?? undefined, priority: 0.7 });
         for (const c of collabs.data ?? []) urls.push({ loc: `${SITE}/collab/${c.slug}`, lastmod: c.updated_at ?? undefined, priority: 0.7 });
         for (const c of cities.data ?? []) urls.push({ loc: `${SITE}/g/${c.slug}`, priority: 0.5 });

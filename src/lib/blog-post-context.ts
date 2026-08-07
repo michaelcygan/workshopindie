@@ -99,7 +99,7 @@ export function contextMentions(ctx: BlogPostContext, site: string) {
   const push = (type: string, name: string, path: string) =>
     nodes.push({ "@type": type, name, url: `${site}${path}` });
   for (const w of ctx.works) push("CreativeWork", w.label, `/works/${w.slug}`);
-  for (const p of ctx.people) push("Person", p.label, `/u/${p.username}`);
+  for (const p of ctx.people) push("Person", p.label, `/${p.username}`);
   for (const c of ctx.collabs) push("Thing", c.label, `/collab/${c.slug}`);
   for (const g of ctx.groups) push("Organization", g.label, `/g/${g.slug}`);
   for (const e of ctx.events) push("Event", e.label, `/g/${e.groupSlug}/e/${e.slug}`);

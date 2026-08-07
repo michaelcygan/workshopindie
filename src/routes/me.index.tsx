@@ -56,7 +56,7 @@ function MeRedirect() {
         }
       }
       if (cancelled) return;
-      navigate({ to: "/u/$username", params: { username }, replace: true });
+      navigate({ to: "/$username", params: { username }, replace: true });
     })();
     return () => {
       cancelled = true;

@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as UsernameRouteImport } from './routes/$username'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as CitiesRouteImport } from './routes/cities'
 import { Route as CollabRouteImport } from './routes/collab'
@@ -74,7 +75,6 @@ import { Route as MeFriendsRouteImport } from './routes/me.friends'
 import { Route as MeNetworkRouteImport } from './routes/me.network'
 import { Route as MeTicketsRouteImport } from './routes/me.tickets'
 import { Route as RedeemCodeRouteImport } from './routes/redeem.$code'
-import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as WTokenRouteImport } from './routes/w.$token'
 import { Route as WorksSlugRouteImport } from './routes/works.$slug'
 import { Route as WorksNewRouteImport } from './routes/works.new'
@@ -115,6 +115,11 @@ import { Route as ApiPublicEventsIdIcsRouteImport } from './routes/api/public/ev
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsernameRoute = UsernameRouteImport.update({
+  id: '/$username',
+  path: '/$username',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -439,11 +444,6 @@ const RedeemCodeRoute = RedeemCodeRouteImport.update({
   path: '/redeem/$code',
   getParentRoute: () => rootRouteImport,
 } as any)
-const UUsernameRoute = UUsernameRouteImport.update({
-  id: '/u/$username',
-  path: '/u/$username',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const WTokenRoute = WTokenRouteImport.update({
   id: '/w/$token',
   path: '/w/$token',
@@ -631,6 +631,7 @@ const ApiPublicEventsIdIcsRoute = ApiPublicEventsIdIcsRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/$username': typeof UsernameRoute
   '/admin': typeof AdminRouteWithChildren
   '/cities': typeof CitiesRouteWithChildren
   '/collab': typeof CollabRouteWithChildren
@@ -686,7 +687,6 @@ export interface FileRoutesByFullPath {
   '/me/network': typeof MeNetworkRoute
   '/me/tickets': typeof MeTicketsRoute
   '/redeem/$code': typeof RedeemCodeRoute
-  '/u/$username': typeof UUsernameRoute
   '/w/$token': typeof WTokenRoute
   '/works/$slug': typeof WorksSlugRouteWithChildren
   '/works/new': typeof WorksNewRoute
@@ -735,6 +735,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/$username': typeof UsernameRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/g': typeof GRouteWithChildren
   '/gallery': typeof GalleryRoute
@@ -784,7 +785,6 @@ export interface FileRoutesByTo {
   '/me/network': typeof MeNetworkRoute
   '/me/tickets': typeof MeTicketsRoute
   '/redeem/$code': typeof RedeemCodeRoute
-  '/u/$username': typeof UUsernameRoute
   '/w/$token': typeof WTokenRoute
   '/works/$slug': typeof WorksSlugRouteWithChildren
   '/works/new': typeof WorksNewRoute
@@ -834,6 +834,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/$username': typeof UsernameRoute
   '/admin': typeof AdminRouteWithChildren
   '/cities': typeof CitiesRouteWithChildren
   '/collab': typeof CollabRouteWithChildren
@@ -889,7 +890,6 @@ export interface FileRoutesById {
   '/me/network': typeof MeNetworkRoute
   '/me/tickets': typeof MeTicketsRoute
   '/redeem/$code': typeof RedeemCodeRoute
-  '/u/$username': typeof UUsernameRoute
   '/w/$token': typeof WTokenRoute
   '/works/$slug': typeof WorksSlugRouteWithChildren
   '/works/new': typeof WorksNewRoute
@@ -940,6 +940,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/$username'
     | '/admin'
     | '/cities'
     | '/collab'
@@ -995,7 +996,6 @@ export interface FileRouteTypes {
     | '/me/network'
     | '/me/tickets'
     | '/redeem/$code'
-    | '/u/$username'
     | '/w/$token'
     | '/works/$slug'
     | '/works/new'
@@ -1044,6 +1044,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/$username'
     | '/forgot-password'
     | '/g'
     | '/gallery'
@@ -1093,7 +1094,6 @@ export interface FileRouteTypes {
     | '/me/network'
     | '/me/tickets'
     | '/redeem/$code'
-    | '/u/$username'
     | '/w/$token'
     | '/works/$slug'
     | '/works/new'
@@ -1142,6 +1142,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/$username'
     | '/admin'
     | '/cities'
     | '/collab'
@@ -1197,7 +1198,6 @@ export interface FileRouteTypes {
     | '/me/network'
     | '/me/tickets'
     | '/redeem/$code'
-    | '/u/$username'
     | '/w/$token'
     | '/works/$slug'
     | '/works/new'
@@ -1247,6 +1247,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  UsernameRoute: typeof UsernameRoute
   AdminRoute: typeof AdminRouteWithChildren
   CitiesRoute: typeof CitiesRouteWithChildren
   CollabRoute: typeof CollabRouteWithChildren
@@ -1282,7 +1283,6 @@ export interface RootRouteChildren {
   MeNetworkRoute: typeof MeNetworkRoute
   MeTicketsRoute: typeof MeTicketsRoute
   RedeemCodeRoute: typeof RedeemCodeRoute
-  UUsernameRoute: typeof UUsernameRoute
   WTokenRoute: typeof WTokenRoute
   WorksSlugRoute: typeof WorksSlugRouteWithChildren
   WorksNewRoute: typeof WorksNewRoute
@@ -1315,6 +1315,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$username': {
+      id: '/$username'
+      path: '/$username'
+      fullPath: '/$username'
+      preLoaderRoute: typeof UsernameRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -1763,13 +1770,6 @@ declare module '@tanstack/react-router' {
       path: '/redeem/$code'
       fullPath: '/redeem/$code'
       preLoaderRoute: typeof RedeemCodeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/u/$username': {
-      id: '/u/$username'
-      path: '/u/$username'
-      fullPath: '/u/$username'
-      preLoaderRoute: typeof UUsernameRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/w/$token': {
@@ -2224,6 +2224,7 @@ const WorksSlugRouteWithChildren = WorksSlugRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  UsernameRoute: UsernameRoute,
   AdminRoute: AdminRouteWithChildren,
   CitiesRoute: CitiesRouteWithChildren,
   CollabRoute: CollabRouteWithChildren,
@@ -2260,7 +2261,6 @@ const rootRouteChildren: RootRouteChildren = {
   MeNetworkRoute: MeNetworkRoute,
   MeTicketsRoute: MeTicketsRoute,
   RedeemCodeRoute: RedeemCodeRoute,
-  UUsernameRoute: UUsernameRoute,
   WTokenRoute: WTokenRoute,
   WorksSlugRoute: WorksSlugRouteWithChildren,
   WorksNewRoute: WorksNewRoute,

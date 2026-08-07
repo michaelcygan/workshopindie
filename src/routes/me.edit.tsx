@@ -126,7 +126,7 @@ function EditProfile() {
     if (!form.username) return "";
     const origin =
       typeof window !== "undefined" ? window.location.origin : "https://workshopindie.com";
-    return `${origin}/u/${form.username}`;
+    return `${origin}/${form.username}`;
   }, [form.username]);
 
   async function copyBioLink() {
