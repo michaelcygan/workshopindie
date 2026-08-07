@@ -240,7 +240,7 @@ export const rsvp = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => rsvpSchema.parse(i))
   .handler(async ({ data, context }) =>
-    withOpLog('rsvp.set', { entity: "event", entityId: data.event_id, authed: true }, async () => {
+    withOpLog("rsvp.set", { entity: "event", entityId: data.event_id, authed: true }, async () => {
       const { supabase, userId } = context;
       const { requireEventAccess } = await import("@/lib/events/access.server");
       const { event, access } = await requireEventAccess(supabase, data.event_id, userId);

@@ -321,7 +321,7 @@ export const joinSpecificInstantRoom = createServerFn({ method: "POST" })
     z.object({ roomId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) =>
-    withOpLog('room.join', { entity: "instant_room", entityId: data.roomId, authed: true }, async () => {
+    withOpLog("room.join", { entity: "instant_room", entityId: data.roomId, authed: true }, async () => {
       const { supabase } = context;
       // Admission is decided in one Postgres transaction: status, lock,
       // removal cooldown and capacity are all checked under a row lock, so

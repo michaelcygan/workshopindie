@@ -95,7 +95,7 @@ export const rsvpToWorkshop = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ workshopId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) =>
-    withOpLog('workshop.seat.reserve', { entity: "workshop", entityId: data.workshopId, authed: true }, async () => {
+    withOpLog("workshop.seat.reserve", { entity: "workshop", entityId: data.workshopId, authed: true }, async () => {
       // Seat reservation happens under a row lock in Postgres, so the cap holds
       // even when several people tap RSVP in the same second.
       const { data: outcome, error } = await context.supabase.rpc("reserve_workshop_seat", {
