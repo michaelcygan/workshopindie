@@ -63,23 +63,21 @@ export const openWorkshopOnCollab = createServerFn({ method: "POST" })
         ),
       );
       if (senderIds.length > 0) {
-        await supabaseAdmin
-          .from("notifications")
-          .insert(
-            senderIds.map((uid) => ({
-              user_id: uid,
-              kind: "collab_workshop_live",
-              actor_user_id: userId,
-              entity_type: "workshop",
-              entity_id: ws.id,
-              payload: {
-                collab_post_id: collabPostId,
-                workshop_slug: ws.slug,
-                title: post?.title ?? "",
-              },
-            })),
-          )
-          .then(() => null, () => null);
+        const { notifyMany } = await import("@/lib/notifications/deliver.server");
+        await notifyMany({
+          recipientIds: senderIds,
+          actorUserId: userId,
+          kind: "collab_workshop_live",
+          entityType: "workshop",
+          entityId: ws.id,
+          preference: "inapp_collab_activity",
+          payload: {
+            collab_post_id: collabPostId,
+            workshop_slug: ws.slug,
+            title: post?.title ?? "",
+          },
+        });
+
       }
     }
 
