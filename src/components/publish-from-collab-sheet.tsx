@@ -15,6 +15,8 @@ import { publishWorkFromCollab } from "@/lib/collab-publish.functions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { PlusGate } from "@/components/plus-gate";
+import { CategoryPlaceholder } from "@/components/home/category-placeholder";
+
 
 type Props = {
   open: boolean;
