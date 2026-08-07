@@ -3,10 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getPublicHome } from "@/lib/home.functions";
 import { PublicFeaturedStories } from "@/components/home/public-featured-stories";
-import {
-  PublicLatestStories,
-  PublicMoreStories,
-} from "@/components/home/public-latest-stories";
+import { PublicLatestStories, PublicMoreStories } from "@/components/home/public-latest-stories";
 import { PublicOpenCollabs } from "@/components/home/public-open-collabs";
 import { PublicWorkStories } from "@/components/home/public-work-stories";
 import { PublicGroupScenes } from "@/components/home/public-group-scenes";
@@ -33,15 +30,11 @@ export function PublicHome() {
   const headerPosts = data
     ? [
         ...data.featuredPosts,
-        ...data.latestPosts.filter(
-          (p) => !data.featuredPosts.some((f) => f.id === p.id),
-        ),
+        ...data.latestPosts.filter((p) => !data.featuredPosts.some((f) => f.id === p.id)),
       ].slice(0, 3)
     : [];
   const headerIds = new Set(headerPosts.map((p) => p.id));
-  const latestPosts = data
-    ? data.latestPosts.filter((p) => !headerIds.has(p.id))
-    : [];
+  const latestPosts = data ? data.latestPosts.filter((p) => !headerIds.has(p.id)) : [];
 
   return (
     <>
@@ -75,8 +68,8 @@ function Masthead() {
           Independent culture, happening now.
         </h1>
         <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-ink-soft md:text-[15px]">
-          Read stories from independent creators, discover the Work behind them, find open
-          Collabs, and join Groups where creative communities gather.
+          Read stories from independent creators, discover the Work behind them, find open Collabs,
+          and join Groups where creative communities gather.
         </p>
       </div>
     </section>

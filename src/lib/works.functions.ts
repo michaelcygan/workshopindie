@@ -31,7 +31,8 @@ export const createCollaborativeWork = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
 
     const total = data.splits.reduce((s, x) => s + (Number(x.pct) || 0), 0);
-    if (Math.round(total) !== 100) throw new Error(`Splits must total 100% (got ${total.toFixed(0)}%)`);
+    if (Math.round(total) !== 100)
+      throw new Error(`Splits must total 100% (got ${total.toFixed(0)}%)`);
 
     // 1. Create the Work as a draft (status switches to published when the user is ready).
     const { data: work, error: wErr } = await supabase
@@ -57,7 +58,9 @@ export const createCollaborativeWork = createServerFn({ method: "POST" })
     // 2. Snapshot the rights agreement (v1) and sign it as the creator.
     const splitsForHash = JSON.stringify(data.splits);
     const content_hash = createHash("sha256")
-      .update(`${data.license}|${data.license_custom ?? ""}|${data.credit_template ?? ""}|${data.commercial_use}|${splitsForHash}`)
+      .update(
+        `${data.license}|${data.license_custom ?? ""}|${data.credit_template ?? ""}|${data.commercial_use}|${splitsForHash}`,
+      )
       .digest("hex");
 
     const { data: agreement, error: aErr } = await supabase
@@ -128,8 +131,10 @@ export const redeemWorkInviteToken = createServerFn({ method: "POST" })
       .maybeSingle();
     if (tErr) throw new Error(tErr.message);
     if (!tok) throw new Error("Invite link is invalid or has been used.");
-    if (tok.expires_at && new Date(tok.expires_at) < new Date()) throw new Error("This invite has expired.");
-    if (tok.uses_remaining !== null && tok.uses_remaining <= 0) throw new Error("This invite has been used up.");
+    if (tok.expires_at && new Date(tok.expires_at) < new Date())
+      throw new Error("This invite has expired.");
+    if (tok.uses_remaining !== null && tok.uses_remaining <= 0)
+      throw new Error("This invite has been used up.");
 
     // Already on the Work? Just bounce them in.
     const { data: existing } = await supabase
@@ -266,4 +271,3 @@ export const getMyPinForWork = createServerFn({ method: "POST" })
       maxPins: MAX_PINS,
     };
   });
-

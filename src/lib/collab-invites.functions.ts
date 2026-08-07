@@ -5,12 +5,14 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export const inviteToCollab = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
-    z.object({
-      collabPostId: z.string().uuid(),
-      roleId: z.string().uuid().nullable(),
-      inviteeUserId: z.string().uuid(),
-      message: z.string().max(1000).optional(),
-    }).parse(input),
+    z
+      .object({
+        collabPostId: z.string().uuid(),
+        roleId: z.string().uuid().nullable(),
+        inviteeUserId: z.string().uuid(),
+        message: z.string().max(1000).optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;

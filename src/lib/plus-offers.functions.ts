@@ -7,6 +7,7 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { domainError } from "@/lib/errors";
 import { z } from "zod";
 import { randomBytes, createHash } from "crypto";
 import { logAdminAction } from "@/lib/admin-audit.functions";
@@ -18,7 +19,7 @@ async function requireAdmin(supabase: any, userId: string) {
     .eq("user_id", userId)
     .eq("role", "admin")
     .maybeSingle();
-  if (error || !data) throw new Error("Forbidden: admin only");
+  if (error || !data) throw domainError("FORBIDDEN", "Forbidden: admin only");
 }
 
 async function getAdmin() {
@@ -74,13 +75,19 @@ export const adminCreatePlusOfferLink = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
 
-    await logAdminAction(context.supabase, "plus_offer_create", "plus_offer_link", (row as any).id, {
-      name: data.name,
-      benefitType: data.benefitType,
-      durationMonths: data.durationMonths ?? null,
-      maxRedemptions: data.maxRedemptions ?? null,
-      expiresAt: data.expiresAt ?? null,
-    });
+    await logAdminAction(
+      context.supabase,
+      "plus_offer_create",
+      "plus_offer_link",
+      (row as any).id,
+      {
+        name: data.name,
+        benefitType: data.benefitType,
+        durationMonths: data.durationMonths ?? null,
+        maxRedemptions: data.maxRedemptions ?? null,
+        expiresAt: data.expiresAt ?? null,
+      },
+    );
 
     return { id: (row as any).id, token };
   });

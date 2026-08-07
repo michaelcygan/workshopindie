@@ -108,7 +108,9 @@ export function summarize(trace: Trace): TraceSummary {
       .filter(([, v]) => v.count > 1)
       .map(([, v]) => ({ signature: v.label, count: v.count, totalMs: Math.round(v.totalMs) }))
       .sort((a, b) => b.count - a.count),
-    spans: [...trace.spans].sort((a, b) => b.ms - a.ms).map((s) => ({ ...s, ms: Math.round(s.ms) })),
+    spans: [...trace.spans]
+      .sort((a, b) => b.ms - a.ms)
+      .map((s) => ({ ...s, ms: Math.round(s.ms) })),
   };
 }
 
@@ -217,7 +219,12 @@ function wrapBuilder<T extends object>(
             return proxy;
           }
           if (typeof result === "object" && result !== null && isThenable(result)) {
-            return wrapBuilder(result as object, table, [...ops, String(prop)], [...keyParts, part]);
+            return wrapBuilder(
+              result as object,
+              table,
+              [...ops, String(prop)],
+              [...keyParts, part],
+            );
           }
           return result;
         };
@@ -248,9 +255,12 @@ export function traceClient<T extends { from: (table: string) => unknown }>(clie
         return (...args: unknown[]) => {
           const builder = (value as (...a: unknown[]) => unknown).apply(target, args);
           if (typeof builder !== "object" || builder === null) return builder;
-          return wrapBuilder(builder as object, `rpc:${String(args[0])}`, [], [
-            `args(${safeArgs(args.slice(1))})`,
-          ]);
+          return wrapBuilder(
+            builder as object,
+            `rpc:${String(args[0])}`,
+            [],
+            [`args(${safeArgs(args.slice(1))})`],
+          );
         };
       }
       return typeof value === "function" ? (value as () => unknown).bind(target) : value;

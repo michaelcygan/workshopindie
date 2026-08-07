@@ -16,7 +16,6 @@ async function requireAdmin(supabase: any, userId: string) {
   return true;
 }
 
-
 async function adminClient() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   return supabaseAdmin;
@@ -76,14 +75,20 @@ export const listLocalities = createServerFn({ method: "GET" })
 
     const ids = cities.map((c) => c.id);
     const actorIds = [...new Set(cities.map((c) => c.provisioned_by).filter(Boolean))] as string[];
-    const groupIds = [...new Set(cities.map((c) => c.official_group_id).filter(Boolean))] as string[];
-    const mergedIds = [...new Set(cities.map((c) => c.merged_into_city_id).filter(Boolean))] as string[];
+    const groupIds = [
+      ...new Set(cities.map((c) => c.official_group_id).filter(Boolean)),
+    ] as string[];
+    const mergedIds = [
+      ...new Set(cities.map((c) => c.merged_into_city_id).filter(Boolean)),
+    ] as string[];
 
     const [membersRes, actorsRes, groupsRes, mergedRes] = await Promise.all([
       admin.from("profiles").select("home_city_id").in("home_city_id", ids),
       actorIds.length
         ? admin.from("profiles").select("id,username,first_name").in("id", actorIds)
-        : Promise.resolve({ data: [] as { id: string; username: string | null; first_name: string | null }[] }),
+        : Promise.resolve({
+            data: [] as { id: string; username: string | null; first_name: string | null }[],
+          }),
       groupIds.length
         ? admin.from("groups").select("id,slug").in("id", groupIds)
         : Promise.resolve({ data: [] as { id: string; slug: string }[] }),
@@ -98,13 +103,20 @@ export const listLocalities = createServerFn({ method: "GET" })
       memberCounts.set(r.home_city_id, (memberCounts.get(r.home_city_id) ?? 0) + 1);
     }
     const actors = new Map(
-      ((actorsRes.data ?? []) as { id: string; username: string | null; first_name: string | null }[]).map((p) => [
-        p.id,
-        p.username ? `@${p.username}` : (p.first_name ?? "Member"),
-      ]),
+      (
+        (actorsRes.data ?? []) as {
+          id: string;
+          username: string | null;
+          first_name: string | null;
+        }[]
+      ).map((p) => [p.id, p.username ? `@${p.username}` : (p.first_name ?? "Member")]),
     );
-    const groups = new Map(((groupsRes.data ?? []) as { id: string; slug: string }[]).map((g) => [g.id, g.slug]));
-    const merged = new Map(((mergedRes.data ?? []) as { id: string; name: string }[]).map((c) => [c.id, c.name]));
+    const groups = new Map(
+      ((groupsRes.data ?? []) as { id: string; slug: string }[]).map((g) => [g.id, g.slug]),
+    );
+    const merged = new Map(
+      ((mergedRes.data ?? []) as { id: string; name: string }[]).map((c) => [c.id, c.name]),
+    );
 
     return {
       localities: cities.map((c) => ({
@@ -129,13 +141,14 @@ export const listLocalities = createServerFn({ method: "GET" })
 /** Approve (clear review flag), pause, deactivate, or reactivate a locality. */
 export const reviewLocality = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { cityId: string; action: "approve" | "pause" | "deactivate" | "reactivate" }) =>
-    z
-      .object({
-        cityId: z.string().uuid(),
-        action: z.enum(["approve", "pause", "deactivate", "reactivate"]),
-      })
-      .parse(input),
+  .inputValidator(
+    (input: { cityId: string; action: "approve" | "pause" | "deactivate" | "reactivate" }) =>
+      z
+        .object({
+          cityId: z.string().uuid(),
+          action: z.enum(["approve", "pause", "deactivate", "reactivate"]),
+        })
+        .parse(input),
   )
   .handler(async ({ data, context }) => {
     await requireAdmin(context.supabase, context.userId);
@@ -267,7 +280,10 @@ async function launchQueueEntry(queueId: string, userId: string) {
     return { ok: true, launched: true, id: queueId, cityId: ensured.cityId, name: ensured.name };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Launch failed";
-    await admin.from("city_launch_queue").update({ status: "failed", error: message }).eq("id", queueId);
+    await admin
+      .from("city_launch_queue")
+      .update({ status: "failed", error: message })
+      .eq("id", queueId);
     throw new Error(message);
   }
 }

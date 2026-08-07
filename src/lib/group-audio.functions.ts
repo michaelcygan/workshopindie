@@ -17,9 +17,7 @@ export const joinGroupAudio = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { groupId: string }) => groupInput.parse(input))
   .handler(async ({ data, context }) => {
-    const { assertGroupAudioAccess, admitToGroupAudio } = await import(
-      "@/lib/group-audio.server"
-    );
+    const { assertGroupAudioAccess, admitToGroupAudio } = await import("@/lib/group-audio.server");
     await assertGroupAudioAccess(context.userId, data.groupId);
     return admitToGroupAudio(context.userId, data.groupId);
   });

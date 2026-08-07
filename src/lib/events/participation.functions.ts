@@ -11,7 +11,10 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const eventInput = z.object({ event_id: z.string().uuid() });
 
-export type CheckInResult = { checkedIn: boolean; reason: "ok" | "already" | "not_attending" | "closed" };
+export type CheckInResult = {
+  checkedIn: boolean;
+  reason: "ok" | "already" | "not_attending" | "closed";
+};
 
 export const checkInToEvent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -74,7 +77,11 @@ export const listEventRoster = createServerFn({ method: "POST" })
     type R = {
       user_id: string;
       checked_in_at: string;
-      profile: { display_name: string | null; username: string | null; avatar_url: string | null } | null;
+      profile: {
+        display_name: string | null;
+        username: string | null;
+        avatar_url: string | null;
+      } | null;
     };
     return ((rows ?? []) as unknown as R[]).map((r) => ({
       user_id: r.user_id,
@@ -90,9 +97,13 @@ export const getEventCounts = createServerFn({ method: "POST" })
   .inputValidator((i) => eventInput.parse(i))
   .handler(async ({ data }): Promise<{ going: number; here: number }> => {
     const { createClient } = await import("@supabase/supabase-js");
-    const supabase = createClient(process.env["SUPABASE_URL"]!, process.env["SUPABASE_PUBLISHABLE_KEY"]!, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
+    const supabase = createClient(
+      process.env["SUPABASE_URL"]!,
+      process.env["SUPABASE_PUBLISHABLE_KEY"]!,
+      {
+        auth: { persistSession: false, autoRefreshToken: false },
+      },
+    );
     const [going, here] = await Promise.all([
       supabase
         .from("group_event_rsvps")

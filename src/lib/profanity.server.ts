@@ -45,14 +45,34 @@ export async function findHateSlurAsync(text: string | null | undefined): Promis
 // version can only see a small local fallback (no DB access), matching the
 // original hardcoded behavior for the worst English slurs; migrate call sites.
 const FALLBACK_SLURS = [
-  "nigger","nigga","chink","gook","spic","kike","faggot","tranny","retard",
-  "raghead","towelhead","paki","coon","kys",
+  "nigger",
+  "nigga",
+  "chink",
+  "gook",
+  "spic",
+  "kike",
+  "faggot",
+  "tranny",
+  "retard",
+  "raghead",
+  "towelhead",
+  "paki",
+  "coon",
+  "kys",
 ];
 function normalizeFallback(s: string) {
-  return s.normalize("NFKD").toLowerCase()
+  return s
+    .normalize("NFKD")
+    .toLowerCase()
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/0/g, "o").replace(/1/g, "i").replace(/3/g, "e").replace(/4/g, "a").replace(/5/g, "s").replace(/7/g, "t")
-    .replace(/\$/g, "s").replace(/@/g, "a")
+    .replace(/0/g, "o")
+    .replace(/1/g, "i")
+    .replace(/3/g, "e")
+    .replace(/4/g, "a")
+    .replace(/5/g, "s")
+    .replace(/7/g, "t")
+    .replace(/\$/g, "s")
+    .replace(/@/g, "a")
     .replace(/[\s._\-*+]+/g, "");
 }
 export function findHateSlur(text: string | null | undefined): string | null {

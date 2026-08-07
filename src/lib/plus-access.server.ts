@@ -43,7 +43,8 @@ function paidSubscriptionActive(sub: SubRow | null): boolean {
   const status = sub.status ?? "";
   const end = sub.current_period_end ? new Date(sub.current_period_end) : null;
   const endFuture = !end || end.getTime() > Date.now();
-  if ((status === "active" || status === "trialing" || status === "past_due") && endFuture) return true;
+  if ((status === "active" || status === "trialing" || status === "past_due") && endFuture)
+    return true;
   if (status === "canceled" && end && end.getTime() > Date.now()) return true;
   return false;
 }
@@ -68,9 +69,7 @@ function pickActiveGrant(rows: GrantRow[]): GrantRow | null {
   });
 }
 
-export async function resolveEffectivePlusAccess(
-  userId: string,
-): Promise<EffectivePlusAccess> {
+export async function resolveEffectivePlusAccess(userId: string): Promise<EffectivePlusAccess> {
   if (!userId) return FREE_EFFECTIVE_PLUS_ACCESS;
 
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

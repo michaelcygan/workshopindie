@@ -16,9 +16,7 @@ function readEnv() {
   const apiSecret = process.env.STREAM_API_SECRET;
   const callType = process.env.STREAM_LOUNGE_CALL_TYPE ?? DEFAULT_CALL_TYPE;
   if (!apiKey || !apiSecret) {
-    throw new Error(
-      "Stream is not configured. Set STREAM_API_KEY and STREAM_API_SECRET.",
-    );
+    throw new Error("Stream is not configured. Set STREAM_API_KEY and STREAM_API_SECRET.");
   }
   return { apiKey, apiSecret, callType };
 }
@@ -76,7 +74,7 @@ export async function issueLoungeStreamToken(opts: {
     validity_in_seconds: TOKEN_TTL_SECONDS,
     // Ensure `exp` is set even if the SDK skips it in some paths.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ...(({ exp: expSec } as any) as Record<string, never>),
+    ...({ exp: expSec } as any as Record<string, never>),
   });
 
   return {

@@ -1,12 +1,16 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { domainError } from "@/lib/errors";
 
 async function requireAdmin(context: { supabase: any; userId: string }) {
   const { data } = await context.supabase
-    .from("user_roles").select("role")
-    .eq("user_id", context.userId).eq("role", "admin").maybeSingle();
-  if (!data) throw new Error("Forbidden: admin only");
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", context.userId)
+    .eq("role", "admin")
+    .maybeSingle();
+  if (!data) throw domainError("FORBIDDEN", "Forbidden: admin only");
 }
 
 export const getUserBlogAccess = createServerFn({ method: "GET" })
@@ -32,28 +36,28 @@ export const getUserBlogAccess = createServerFn({ method: "GET" })
 export const grantUserBlogAccess = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({
-      userId: z.string().uuid(),
-      note: z.string().trim().max(200).nullable().optional(),
-      expiresAt: z.string().datetime().nullable().optional(),
-    }).parse(d),
+    z
+      .object({
+        userId: z.string().uuid(),
+        note: z.string().trim().max(200).nullable().optional(),
+        expiresAt: z.string().datetime().nullable().optional(),
+      })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     await requireAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin
-      .from("blog_writer_access")
-      .upsert(
-        {
-          user_id: data.userId,
-          status: "granted",
-          note: data.note ?? null,
-          expires_at: data.expiresAt ?? null,
-          granted_at: new Date().toISOString(),
-          granted_by: context.userId,
-        },
-        { onConflict: "user_id" },
-      );
+    const { error } = await supabaseAdmin.from("blog_writer_access").upsert(
+      {
+        user_id: data.userId,
+        status: "granted",
+        note: data.note ?? null,
+        expires_at: data.expiresAt ?? null,
+        granted_at: new Date().toISOString(),
+        granted_by: context.userId,
+      },
+      { onConflict: "user_id" },
+    );
     if (error) throw new Error(error.message);
     await supabaseAdmin.from("admin_audit_log").insert({
       action: "blog_writer_access.granted",
@@ -89,23 +93,23 @@ export const revokeUserBlogAccess = createServerFn({ method: "POST" })
 export const suspendUserBlogAccess = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({ userId: z.string().uuid(), note: z.string().trim().max(200).nullable().optional() }).parse(d),
+    z
+      .object({ userId: z.string().uuid(), note: z.string().trim().max(200).nullable().optional() })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     await requireAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin
-      .from("blog_writer_access")
-      .upsert(
-        {
-          user_id: data.userId,
-          status: "suspended",
-          note: data.note ?? null,
-          granted_at: new Date().toISOString(),
-          granted_by: context.userId,
-        },
-        { onConflict: "user_id" },
-      );
+    const { error } = await supabaseAdmin.from("blog_writer_access").upsert(
+      {
+        user_id: data.userId,
+        status: "suspended",
+        note: data.note ?? null,
+        granted_at: new Date().toISOString(),
+        granted_by: context.userId,
+      },
+      { onConflict: "user_id" },
+    );
     if (error) throw new Error(error.message);
     await supabaseAdmin.from("admin_audit_log").insert({
       action: "blog_writer_access.suspended",

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { HomeBlogCard } from "@/lib/home-types";
+import { formatDayMonth as formatDate } from "@/lib/format-date";
 
 const INTERVAL_MS = 8000;
 
@@ -16,11 +17,6 @@ function greetingFor(name: string | null) {
           ? "Good afternoon"
           : "Good evening";
   return name ? `${g}, ${name}` : g;
-}
-
-function formatDate(value: string | null) {
-  if (!value) return "";
-  return new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
 function Slide({ post }: { post: HomeBlogCard }) {

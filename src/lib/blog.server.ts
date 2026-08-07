@@ -55,13 +55,15 @@ async function requireAdmin(context: AuthContext) {
 }
 
 function slugifyTitle(value: string) {
-  return value
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 100) || "post";
+  return (
+    value
+      .toLowerCase()
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 100) || "post"
+  );
 }
 
 async function uniqueSlug(base: string, excludeId?: string): Promise<string> {
@@ -103,7 +105,12 @@ async function moderateBlogWrite(userId: string, data: BlogWrite) {
   });
 }
 
-async function audit(action: string, targetId: string, actor: string, payload: Record<string, unknown> = {}) {
+async function audit(
+  action: string,
+  targetId: string,
+  actor: string,
+  payload: Record<string, unknown> = {},
+) {
   await supabaseAdmin.from("admin_audit_log").insert({
     action,
     target_type: "blog_post",
@@ -120,7 +127,9 @@ export function blogPublicCacheHeader() {
 export async function listPublishedPostsServer() {
   const { data, error } = await publicClient()
     .from("blog_posts")
-    .select("id,title,slug,excerpt,cover_image_url,cover_image_alt,author_name,published_at,updated_at,featured,publication_type,category_slug,author_profile:profiles!blog_posts_author_profile_id_fkey(username,display_name,avatar_url)")
+    .select(
+      "id,title,slug,excerpt,cover_image_url,cover_image_alt,author_name,published_at,updated_at,featured,publication_type,category_slug,author_profile:profiles!blog_posts_author_profile_id_fkey(username,display_name,avatar_url)",
+    )
     .eq("status", "published")
     .eq("show_in_blog_index", true)
     .lte("published_at", new Date().toISOString())
@@ -133,7 +142,9 @@ export async function listPublishedPostsServer() {
 export async function getPublishedPostServer(slug: string) {
   const { data, error } = await publicClient()
     .from("blog_posts")
-    .select("id,title,slug,excerpt,body_markdown,cover_image_url,cover_image_alt,seo_title,seo_description,author_name,published_at,updated_at,show_in_blog_index,publication_type,category_slug,author_profile:profiles!blog_posts_author_profile_id_fkey(username,display_name,avatar_url)")
+    .select(
+      "id,title,slug,excerpt,body_markdown,cover_image_url,cover_image_alt,seo_title,seo_description,author_name,published_at,updated_at,show_in_blog_index,publication_type,category_slug,author_profile:profiles!blog_posts_author_profile_id_fkey(username,display_name,avatar_url)",
+    )
     .eq("slug", slug)
     .eq("status", "published")
     .lte("published_at", new Date().toISOString())
@@ -143,12 +154,23 @@ export async function getPublishedPostServer(slug: string) {
 
   const { data: authorRows } = await publicClient()
     .from("blog_post_authors")
-    .select("sort_order,role_label,profile:profiles!blog_post_authors_profile_id_fkey(id,username,display_name,avatar_url)")
+    .select(
+      "sort_order,role_label,profile:profiles!blog_post_authors_profile_id_fkey(id,username,display_name,avatar_url)",
+    )
     .eq("blog_post_id", data.id)
     .order("sort_order", { ascending: true });
   const authors = (authorRows ?? [])
     .map((r) => {
-      const p = (r as { profile: { id: string; username: string | null; display_name: string | null; avatar_url: string | null } | null }).profile;
+      const p = (
+        r as {
+          profile: {
+            id: string;
+            username: string | null;
+            display_name: string | null;
+            avatar_url: string | null;
+          } | null;
+        }
+      ).profile;
       if (!p) return null;
       return {
         id: p.id,
@@ -165,15 +187,22 @@ export async function getPublishedPostServer(slug: string) {
   return { ...data, authors, entity_tags };
 }
 
-export async function listProfileBlogPostsServer(profileId: string, cursor: { published_at: string; id: string } | null, limit: number) {
+export async function listProfileBlogPostsServer(
+  profileId: string,
+  cursor: { published_at: string; id: string } | null,
+  limit: number,
+) {
   const safeLimit = Math.min(Math.max(limit, 1), 24);
   const { data: attrRows, error: attrError } = await publicClient()
     .from("blog_post_authors")
     .select("blog_post_id")
     .eq("profile_id", profileId);
   if (attrError) throw new Error(attrError.message);
-  const ids = Array.from(new Set((attrRows ?? []).map((r) => (r as { blog_post_id: string }).blog_post_id)));
-  if (ids.length === 0) return { posts: [], nextCursor: null as { published_at: string; id: string } | null };
+  const ids = Array.from(
+    new Set((attrRows ?? []).map((r) => (r as { blog_post_id: string }).blog_post_id)),
+  );
+  if (ids.length === 0)
+    return { posts: [], nextCursor: null as { published_at: string; id: string } | null };
 
   let qb = publicClient()
     .from("blog_posts")
@@ -193,17 +222,28 @@ export async function listProfileBlogPostsServer(profileId: string, cursor: { pu
   }
   const { data, error } = await qb;
   if (error) throw new Error(error.message);
-  const rows = (data ?? []) as Array<{ id: string; slug: string; title: string; excerpt: string; cover_image_url: string | null; cover_image_alt: string | null; published_at: string | null }>;
+  const rows = (data ?? []) as Array<{
+    id: string;
+    slug: string;
+    title: string;
+    excerpt: string;
+    cover_image_url: string | null;
+    cover_image_alt: string | null;
+    published_at: string | null;
+  }>;
   const hasMore = rows.length > safeLimit;
   const posts = hasMore ? rows.slice(0, safeLimit) : rows;
   const last = posts[posts.length - 1];
-  const nextCursor = hasMore && last?.published_at ? { published_at: last.published_at, id: last.id } : null;
+  const nextCursor =
+    hasMore && last?.published_at ? { published_at: last.published_at, id: last.id } : null;
   return { posts, nextCursor };
 }
 
 export async function listPostsByAuthorsServer(profileIds: string[], limit: number) {
   const safeLimit = Math.min(Math.max(limit, 1), 60);
-  const uniqueIds = Array.from(new Set(profileIds.filter((id) => typeof id === "string" && id.length > 0)));
+  const uniqueIds = Array.from(
+    new Set(profileIds.filter((id) => typeof id === "string" && id.length > 0)),
+  );
   if (uniqueIds.length === 0) return [];
   const client = publicClient();
   const { data: attrRows, error: attrErr } = await client
@@ -221,7 +261,9 @@ export async function listPostsByAuthorsServer(profileIds: string[], limit: numb
   if (postIds.length === 0) return [];
   const { data, error } = await client
     .from("blog_posts")
-    .select("id,slug,title,excerpt,cover_image_url,cover_image_alt,author_name,published_at,category_slug")
+    .select(
+      "id,slug,title,excerpt,cover_image_url,cover_image_alt,author_name,published_at,category_slug",
+    )
     .in("id", postIds)
     .eq("status", "published")
     .eq("show_in_blog_index", true)
@@ -229,16 +271,18 @@ export async function listPostsByAuthorsServer(profileIds: string[], limit: numb
     .order("published_at", { ascending: false })
     .limit(safeLimit);
   if (error) throw new Error(error.message);
-  return ((data ?? []) as Array<{
-    id: string;
-    slug: string;
-    title: string;
-    excerpt: string;
-    cover_image_url: string | null;
-    cover_image_alt: string | null;
-    author_name: string;
-    published_at: string | null;
-  }>).map((p) => ({ ...p, author_profile_ids: idToAuthors.get(p.id) ?? [] }));
+  return (
+    (data ?? []) as Array<{
+      id: string;
+      slug: string;
+      title: string;
+      excerpt: string;
+      cover_image_url: string | null;
+      cover_image_alt: string | null;
+      author_name: string;
+      published_at: string | null;
+    }>
+  ).map((p) => ({ ...p, author_profile_ids: idToAuthors.get(p.id) ?? [] }));
 }
 
 export async function getRelatedPostsServer(excludeId: string, limit: number) {
@@ -250,7 +294,9 @@ export async function adminListPostsServer(context: AuthContext) {
   await requireAdmin(context);
   const { data, error } = await supabaseAdmin
     .from("blog_posts")
-    .select("id,title,slug,status,author_name,published_at,updated_at,created_at,cover_image_url,publication_type,show_in_blog_index,featured,author_profile_id,category_slug")
+    .select(
+      "id,title,slug,status,author_name,published_at,updated_at,created_at,cover_image_url,publication_type,show_in_blog_index,featured,author_profile_id,category_slug",
+    )
     .order("updated_at", { ascending: false })
     .limit(500);
   if (error) throw new Error(error.message);
@@ -273,8 +319,6 @@ export async function adminListPostsServer(context: AuthContext) {
     })),
   }));
 }
-
-
 
 export async function adminListAuthorProfilesServer(context: AuthContext) {
   await requireAdmin(context);
@@ -299,12 +343,23 @@ export async function adminGetPostServer(context: AuthContext, id: string) {
   if (!data) throw new Error("Not found");
   const { data: authorRows } = await supabaseAdmin
     .from("blog_post_authors")
-    .select("sort_order,role_label,profile:profiles!blog_post_authors_profile_id_fkey(id,username,display_name,avatar_url)")
+    .select(
+      "sort_order,role_label,profile:profiles!blog_post_authors_profile_id_fkey(id,username,display_name,avatar_url)",
+    )
     .eq("blog_post_id", id)
     .order("sort_order", { ascending: true });
   const authors = (authorRows ?? [])
     .map((r) => {
-      const p = (r as { profile: { id: string; username: string | null; display_name: string | null; avatar_url: string | null } | null }).profile;
+      const p = (
+        r as {
+          profile: {
+            id: string;
+            username: string | null;
+            display_name: string | null;
+            avatar_url: string | null;
+          } | null;
+        }
+      ).profile;
       if (!p) return null;
       return {
         id: p.id,
@@ -399,7 +454,10 @@ export async function adminCreateDraftServer(context: AuthContext, data: BlogWri
   return row;
 }
 
-export async function adminUpdatePostServer(context: AuthContext, data: BlogWrite & { id: string }) {
+export async function adminUpdatePostServer(
+  context: AuthContext,
+  data: BlogWrite & { id: string },
+) {
   await requireAdmin(context);
   await moderateBlogWrite(context.userId, data);
   const { data: existing, error: existingError } = await supabaseAdmin
@@ -441,7 +499,11 @@ export async function adminUpdatePostServer(context: AuthContext, data: BlogWrit
 /** At most this many posts may be featured; the set powers /blog and member Home. */
 export const FEATURED_POST_CAP = 5;
 
-export async function adminSetPostFeaturedServer(context: AuthContext, id: string, featured: boolean) {
+export async function adminSetPostFeaturedServer(
+  context: AuthContext,
+  id: string,
+  featured: boolean,
+) {
   await requireAdmin(context);
   // Multiple posts can be featured — 2+ render as an auto-advancing carousel
   // on /blog and in the member-home featured header. Never silently unfeature
@@ -454,9 +516,7 @@ export async function adminSetPostFeaturedServer(context: AuthContext, id: strin
     if (countErr) throw new Error(countErr.message);
     const others = (current ?? []).filter((r) => r.id !== id);
     if (others.length >= FEATURED_POST_CAP) {
-      throw new Error(
-        `${FEATURED_POST_CAP} posts are already featured — unfeature one first.`,
-      );
+      throw new Error(`${FEATURED_POST_CAP} posts are already featured — unfeature one first.`);
     }
   }
 
@@ -468,7 +528,6 @@ export async function adminSetPostFeaturedServer(context: AuthContext, id: strin
   await audit("blog_post.featured", id, context.userId, { featured });
   return { id, featured };
 }
-
 
 export async function adminPublishPostServer(context: AuthContext, id: string) {
   await requireAdmin(context);
@@ -512,7 +571,8 @@ export async function adminDeleteDraftServer(context: AuthContext, id: string) {
     .eq("id", id)
     .maybeSingle();
   if (!existing) throw new Error("Not found");
-  if (existing.published_at) throw new Error("Unpublish first; previously published posts cannot be deleted.");
+  if (existing.published_at)
+    throw new Error("Unpublish first; previously published posts cannot be deleted.");
   const { error } = await supabaseAdmin.from("blog_posts").delete().eq("id", id);
   if (error) throw new Error(error.message);
   await audit("blog_post.deleted", id, context.userId, { title: existing.title });

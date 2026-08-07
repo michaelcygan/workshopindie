@@ -23,9 +23,7 @@ export type LoungeAudioAccess = {
   reason: string | null;
 };
 
-export async function resolveLoungeAudioAccess(
-  userId: string,
-): Promise<LoungeAudioAccess> {
+export async function resolveLoungeAudioAccess(userId: string): Promise<LoungeAudioAccess> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { resolveEffectivePlusAccess } = await import("./plus-access.server");
 

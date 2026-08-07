@@ -21,10 +21,12 @@ async function assertHost(roomId: string, userId: string) {
 export const setRoomFocusMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { roomId: string; text: string | null }) =>
-    z.object({
-      roomId: z.string().uuid(),
-      text: z.string().trim().max(140).nullable(),
-    }).parse(input),
+    z
+      .object({
+        roomId: z.string().uuid(),
+        text: z.string().trim().max(140).nullable(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     await assertHost(data.roomId, context.userId);
@@ -42,10 +44,12 @@ export const setRoomFocusMessage = createServerFn({ method: "POST" })
 export const setRoomTitle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { roomId: string; title: string }) =>
-    z.object({
-      roomId: z.string().uuid(),
-      title: z.string().trim().min(1).max(120),
-    }).parse(input),
+    z
+      .object({
+        roomId: z.string().uuid(),
+        title: z.string().trim().min(1).max(120),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -80,7 +84,6 @@ export const setRoomTitle = createServerFn({ method: "POST" })
     if (upErr) throw new Error(upErr.message);
     return { ok: true, title: data.title };
   });
-
 
 /** Host: hand off the crown to another live participant. */
 export const transferHost = createServerFn({ method: "POST" })
@@ -142,14 +145,12 @@ export const removeFromRoom = createServerFn({ method: "POST" })
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const until = new Date(Date.now() + REMOVAL_MINUTES * 60_000).toISOString();
-    const { error: rmErr } = await supabaseAdmin
-      .from("instant_room_removals")
-      .upsert({
-        room_id: data.roomId,
-        user_id: data.targetUserId,
-        until,
-        removed_by: context.userId,
-      } as any);
+    const { error: rmErr } = await supabaseAdmin.from("instant_room_removals").upsert({
+      room_id: data.roomId,
+      user_id: data.targetUserId,
+      until,
+      removed_by: context.userId,
+    } as any);
     if (rmErr) throw new Error(rmErr.message);
     await supabaseAdmin
       .from("instant_presence")
@@ -186,7 +187,9 @@ export const startHostClaim = createServerFn({ method: "POST" })
     z.object({ roomId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.rpc("start_host_claim", { _room_id: data.roomId } as any);
+    const { error } = await context.supabase.rpc("start_host_claim", {
+      _room_id: data.roomId,
+    } as any);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -198,7 +201,9 @@ export const objectHostClaim = createServerFn({ method: "POST" })
     z.object({ roomId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.rpc("object_host_claim", { _room_id: data.roomId } as any);
+    const { error } = await context.supabase.rpc("object_host_claim", {
+      _room_id: data.roomId,
+    } as any);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -210,7 +215,9 @@ export const finalizeHostClaim = createServerFn({ method: "POST" })
     z.object({ roomId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.rpc("finalize_host_claim", { _room_id: data.roomId } as any);
+    const { error } = await context.supabase.rpc("finalize_host_claim", {
+      _room_id: data.roomId,
+    } as any);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -223,10 +230,12 @@ export const finalizeHostClaim = createServerFn({ method: "POST" })
 export const setRoomNote = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { roomId: string; text: string | null }) =>
-    z.object({
-      roomId: z.string().uuid(),
-      text: z.string().max(2000).nullable(),
-    }).parse(input),
+    z
+      .object({
+        roomId: z.string().uuid(),
+        text: z.string().max(2000).nullable(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.rpc("set_room_note", {
@@ -245,10 +254,12 @@ export const setRoomNote = createServerFn({ method: "POST" })
 export const setRoomPin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { roomId: string; messageId: string | null }) =>
-    z.object({
-      roomId: z.string().uuid(),
-      messageId: z.string().uuid().nullable(),
-    }).parse(input),
+    z
+      .object({
+        roomId: z.string().uuid(),
+        messageId: z.string().uuid().nullable(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.rpc("set_room_pin", {

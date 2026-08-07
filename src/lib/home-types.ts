@@ -61,7 +61,11 @@ export type HomeTodaySummary = {
   groupAvatar: string | null;
   postCount: number;
   latestBody: string | null;
-  latestAuthor: { username: string | null; display_name: string | null; avatar_url: string | null } | null;
+  latestAuthor: {
+    username: string | null;
+    display_name: string | null;
+    avatar_url: string | null;
+  } | null;
   latestAt: string | null;
 };
 
@@ -229,7 +233,6 @@ export type MemberHomePayload = {
   /** Several ranked upcoming Events; `nextEvent` is the first of these. */
   upcomingEvents: HomeEvent[];
 };
-
 
 // ─────────────────────── Public (logged-out) home ───────────────────────
 

@@ -47,7 +47,6 @@ export type BlogEntityTag =
       image: string | null;
       work?: BlogWorkSummary | null;
     }
-
   | {
       kind: "collab";
       id: string;
@@ -134,4 +133,3 @@ export function invalidateEntityTagCaches(
     }
   }
 }
-

@@ -65,7 +65,8 @@ export async function resolveEventAccess(
   const participant = isAttending || privileged;
 
   const canSeeEvent = lifecycle !== "draft" || privileged;
-  const participationOpen = isParticipationOpen(event, now) || (privileged && lifecycle !== "draft");
+  const participationOpen =
+    isParticipationOpen(event, now) || (privileged && lifecycle !== "draft");
 
   return {
     eventId: event.id,
@@ -82,8 +83,7 @@ export async function resolveEventAccess(
     // The join link is never part of the public flyer.
     canSeeOnlineUrl: canSeeEvent && participant,
     canRsvp: Boolean(viewerId) && isRsvpOpen(event, now) && lifecycle === "published",
-    canCheckIn:
-      Boolean(viewerId) && isAttending && isCheckInOpen(event, now) && !isCheckedIn,
+    canCheckIn: Boolean(viewerId) && isAttending && isCheckInOpen(event, now) && !isCheckedIn,
     canParticipate: participant && participationOpen,
     canSeeRoster: participant && canSeeEvent,
     canModerate: privileged,

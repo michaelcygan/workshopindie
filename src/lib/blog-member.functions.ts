@@ -14,9 +14,7 @@ import {
 import { BLOG_SEED_PROMPT_IDS } from "@/lib/blog-seed-prompts";
 import { BLOG_CATEGORY_SLUGS } from "@/lib/blog-categories";
 
-const cursorSchema = z
-  .object({ updated_at: z.string(), id: z.string().uuid() })
-  .nullable();
+const cursorSchema = z.object({ updated_at: z.string(), id: z.string().uuid() }).nullable();
 
 export const getMyBlogAccess = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -25,7 +23,12 @@ export const getMyBlogAccess = createServerFn({ method: "GET" })
 export const listMyBlogPosts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({ cursor: cursorSchema.default(null), limit: z.number().int().min(1).max(50).default(20) }).parse(input),
+    z
+      .object({
+        cursor: cursorSchema.default(null),
+        limit: z.number().int().min(1).max(50).default(20),
+      })
+      .parse(input),
   )
   .handler(({ context, data }) => listMyBlogPostsServer(context, data.cursor, data.limit));
 
@@ -80,7 +83,6 @@ export const updateMyBlogPost = createServerFn({ method: "POST" })
           .max(20)
           .optional(),
         expected_updated_at: z.string().optional(),
-
       })
       .parse(input),
   )

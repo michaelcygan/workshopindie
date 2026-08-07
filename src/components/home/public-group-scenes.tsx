@@ -16,7 +16,10 @@ export function PublicGroupScenes({ groups }: { groups: PublicGroupScene[] }) {
           <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
             Creative scenes
           </p>
-          <h2 id="creative-scenes" className="mt-1 font-display text-[26px] text-ink md:text-[32px]">
+          <h2
+            id="creative-scenes"
+            className="mt-1 font-display text-[26px] text-ink md:text-[32px]"
+          >
             Find the people your work belongs with.
           </h2>
           <p className="mt-2 max-w-lg text-sm text-ink-soft">

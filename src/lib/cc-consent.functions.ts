@@ -19,8 +19,7 @@ export const getMyCcConsent = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return {
       ack: (data as { cc_consent_ack?: boolean } | null)?.cc_consent_ack ?? false,
-      ackAt:
-        (data as { cc_consent_ack_at?: string | null } | null)?.cc_consent_ack_at ?? null,
+      ackAt: (data as { cc_consent_ack_at?: string | null } | null)?.cc_consent_ack_at ?? null,
     };
   });
 

@@ -66,4 +66,3 @@ export const ensureWorkshopRoom = createServerFn({ method: "POST" })
     if (raced?.id) return { roomId: raced.id };
     throw new Error(createErr?.message ?? "Couldn't open the room");
   });
-

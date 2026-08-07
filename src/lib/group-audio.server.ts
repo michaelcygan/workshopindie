@@ -56,10 +56,11 @@ export async function admitToGroupAudio(
       throw new Error(error?.message ?? "Couldn't open Group audio");
     }
 
-    const { data: admitted, error: claimError } = await supabaseAdmin.rpc(
-      "claim_lounge_slot",
-      { _room_id: roomId as string, _user_id: userId, _cap: LOUNGE_CAP } as never,
-    );
+    const { data: admitted, error: claimError } = await supabaseAdmin.rpc("claim_lounge_slot", {
+      _room_id: roomId as string,
+      _user_id: userId,
+      _cap: LOUNGE_CAP,
+    } as never);
     if (claimError) throw new Error(claimError.message);
     if (admitted) return { roomId: roomId as string, groupId };
 
@@ -72,9 +73,5 @@ export async function admitToGroupAudio(
 /** Drop the caller's audio seat and any speaker state for this room. */
 export async function leaveGroupAudioRoom(userId: string, roomId: string) {
   await supabaseAdmin.rpc("release_lounge_audio_slot", { _room_id: roomId } as never);
-  await supabaseAdmin
-    .from("instant_presence")
-    .delete()
-    .eq("room_id", roomId)
-    .eq("user_id", userId);
+  await supabaseAdmin.from("instant_presence").delete().eq("room_id", roomId).eq("user_id", userId);
 }

@@ -10,7 +10,12 @@ import { normalizeUrl } from "@/lib/url-normalize";
 export const listCollabMessages = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
-    z.object({ collabPostId: z.string().uuid(), limit: z.number().int().min(1).max(200).optional() }).parse(input),
+    z
+      .object({
+        collabPostId: z.string().uuid(),
+        limit: z.number().int().min(1).max(200).optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
@@ -39,12 +44,8 @@ export const postCollabMessage = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { sendCollabMessage } = await import("@/lib/messaging/pipeline.server");
-    return sendCollabMessage(
-      { supabase, userId, subjectId: data.collabPostId },
-      data.body,
-    );
+    return sendCollabMessage({ supabase, userId, subjectId: data.collabPostId }, data.body);
   });
-
 
 export const deleteCollabMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -94,17 +95,15 @@ export const setCollabMeetingUrl = createServerFn({ method: "POST" })
     }
 
     // Upsert. RLS restricts writes to the Collab owner.
-    const { error } = await supabase
-      .from("collab_workspace_settings")
-      .upsert(
-        {
-          collab_post_id: data.collabPostId,
-          meeting_url: normalized,
-          updated_at: new Date().toISOString(),
-          updated_by: userId,
-        },
-        { onConflict: "collab_post_id" },
-      );
+    const { error } = await supabase.from("collab_workspace_settings").upsert(
+      {
+        collab_post_id: data.collabPostId,
+        meeting_url: normalized,
+        updated_at: new Date().toISOString(),
+        updated_by: userId,
+      },
+      { onConflict: "collab_post_id" },
+    );
     if (error) throw new Error(error.message);
     return { ok: true as const, meetingUrl: normalized };
   });

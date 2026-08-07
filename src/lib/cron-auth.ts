@@ -20,8 +20,7 @@ function constantTimeEquals(a: string, b: string): boolean {
 
 export function requireCronSecret(request: Request): Response | null {
   const apiKey = request.headers.get("apikey");
-  const expectedKey =
-    process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY ?? "";
+  const expectedKey = process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY ?? "";
   if (apiKey && expectedKey && constantTimeEquals(expectedKey, apiKey)) return null;
 
   const expectedSecret = process.env.CRON_SECRET ?? "";
@@ -30,4 +29,3 @@ export function requireCronSecret(request: Request): Response | null {
 
   return new Response("Forbidden", { status: 403 });
 }
-

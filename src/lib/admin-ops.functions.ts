@@ -1,12 +1,16 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { domainError } from "@/lib/errors";
 import { logAdminAction } from "@/lib/admin-audit.functions";
 
 async function requireAdmin(supabase: any, userId: string) {
   const { data, error } = await supabase
-    .from("user_roles").select("role")
-    .eq("user_id", userId).eq("role", "admin").maybeSingle();
-  if (error || !data) throw new Error("Forbidden: admin only");
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .maybeSingle();
+  if (error || !data) throw domainError("FORBIDDEN", "Forbidden: admin only");
 }
 async function getAdmin() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -26,7 +30,9 @@ export const listFeatureFlags = createServerFn({ method: "GET" })
 
 export const upsertFeatureFlag = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { key: string; enabled: boolean; rollout_pct: number; notes?: string | null }) => d)
+  .inputValidator(
+    (d: { key: string; enabled: boolean; rollout_pct: number; notes?: string | null }) => d,
+  )
   .handler(async ({ data, context }) => {
     await requireAdmin(context.supabase, context.userId);
     const admin = await getAdmin();
@@ -39,7 +45,11 @@ export const upsertFeatureFlag = createServerFn({ method: "POST" })
       updated_by: context.userId,
     });
     if (error) throw error;
-    await logAdminAction(context.supabase, "flag.upsert", "feature_flag", null, { key: data.key, enabled: data.enabled, rollout_pct: data.rollout_pct });
+    await logAdminAction(context.supabase, "flag.upsert", "feature_flag", null, {
+      key: data.key,
+      enabled: data.enabled,
+      rollout_pct: data.rollout_pct,
+    });
     return { ok: true };
   });
 
@@ -57,7 +67,9 @@ export const deleteFeatureFlag = createServerFn({ method: "POST" })
 // ---------- Broadcasts (in-app notifications only) ----------
 export const sendAdminBroadcast = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { title: string; body: string; audience: "all" | "plus" | "active_30d" }) => d)
+  .inputValidator(
+    (d: { title: string; body: string; audience: "all" | "plus" | "active_30d" }) => d,
+  )
   .handler(async ({ data, context }) => {
     await requireAdmin(context.supabase, context.userId);
     const admin = await getAdmin();
@@ -75,7 +87,10 @@ export const sendAdminBroadcast = createServerFn({ method: "POST" })
     } else {
       const since = new Date(Date.now() - 30 * 86400 * 1000).toISOString();
       const { data: users } = await admin
-        .from("profiles").select("id").gte("last_active_at", since).is("deleted_at", null);
+        .from("profiles")
+        .select("id")
+        .gte("last_active_at", since)
+        .is("deleted_at", null);
       userIds = (users ?? []).map((u) => u.id);
     }
     if (userIds.length === 0) return { ok: true, recipients: 0 };
@@ -101,7 +116,9 @@ export const sendAdminBroadcast = createServerFn({ method: "POST" })
       recipients_count: userIds.length,
     });
     await logAdminAction(context.supabase, "broadcast.send", "broadcast", null, {
-      audience: data.audience, recipients: userIds.length, title: data.title,
+      audience: data.audience,
+      recipients: userIds.length,
+      title: data.title,
     });
     return { ok: true, recipients: userIds.length };
   });
@@ -111,6 +128,10 @@ export const listAdminBroadcasts = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await requireAdmin(context.supabase, context.userId);
     const admin = await getAdmin();
-    const { data } = await admin.from("admin_broadcasts").select("*").order("sent_at", { ascending: false }).limit(50);
+    const { data } = await admin
+      .from("admin_broadcasts")
+      .select("*")
+      .order("sent_at", { ascending: false })
+      .limit(50);
     return data ?? [];
   });

@@ -8,15 +8,17 @@
 
 /** Escape a TEXT value per RFC 5545 §3.3.11. */
 export function escapeIcsText(input: string): string {
-  return input
-    .replace(/\\/g, "\\\\")
-    .replace(/;/g, "\\;")
-    .replace(/,/g, "\\,")
-    .replace(/\r\n/g, "\\n")
-    .replace(/[\r\n]/g, "\\n")
-    // Strip control characters calendars reject (tabs included).
-    // eslint-disable-next-line no-control-regex
-    .replace(/[\u0000-\u001f\u007f]/g, " ");
+  return (
+    input
+      .replace(/\\/g, "\\\\")
+      .replace(/;/g, "\\;")
+      .replace(/,/g, "\\,")
+      .replace(/\r\n/g, "\\n")
+      .replace(/[\r\n]/g, "\\n")
+      // Strip control characters calendars reject (tabs included).
+      // eslint-disable-next-line no-control-regex
+      .replace(/[\u0000-\u001f\u007f]/g, " ")
+  );
 }
 
 /**
@@ -51,7 +53,10 @@ export function foldIcsLine(line: string): string {
 /** UTC stamp in the basic format calendars expect: 20260807T013000Z. */
 export function icsUtcStamp(value: string | number | Date): string {
   const d = value instanceof Date ? value : new Date(value);
-  return d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  return d
+    .toISOString()
+    .replace(/[-:]/g, "")
+    .replace(/\.\d{3}/, "");
 }
 
 /** Safe, readable download filename: workshop-open-mic.ics */

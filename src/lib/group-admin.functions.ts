@@ -130,7 +130,6 @@ export const setGroupNewsFeed = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-
 export const deleteGroup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))

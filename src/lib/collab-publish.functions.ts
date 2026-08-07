@@ -3,10 +3,12 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { FREE_PUBLISHED_WORK_CAP } from "@/lib/entitlements";
 
-const httpsUrl = z.string().trim().max(500).url().refine(
-  (u) => u.startsWith("https://") || u.startsWith("http://"),
-  "Must be a valid URL",
-);
+const httpsUrl = z
+  .string()
+  .trim()
+  .max(500)
+  .url()
+  .refine((u) => u.startsWith("https://") || u.startsWith("http://"), "Must be a valid URL");
 
 const publishSchema = z.object({
   collabPostId: z.string().uuid(),
@@ -16,7 +18,12 @@ const publishSchema = z.object({
   primaryUrl: httpsUrl.optional().or(z.literal("")),
   creditedUserIds: z.array(z.string().uuid()).max(50).default([]),
   extraCredits: z
-    .array(z.object({ name: z.string().trim().min(1).max(80), role: z.string().trim().max(80).optional() }))
+    .array(
+      z.object({
+        name: z.string().trim().min(1).max(80),
+        role: z.string().trim().max(80).optional(),
+      }),
+    )
     .max(20)
     .default([]),
 });

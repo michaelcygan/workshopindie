@@ -24,12 +24,20 @@ function getCtx(): AudioContext | null {
 
 export function isNotifySoundMuted(): boolean {
   if (typeof window === "undefined") return true;
-  try { return window.localStorage.getItem("notify:muted") === "1"; } catch { return false; }
+  try {
+    return window.localStorage.getItem("notify:muted") === "1";
+  } catch {
+    return false;
+  }
 }
 
 export function setNotifySoundMuted(muted: boolean): void {
   if (typeof window === "undefined") return;
-  try { window.localStorage.setItem("notify:muted", muted ? "1" : "0"); } catch { /* noop */ }
+  try {
+    window.localStorage.setItem("notify:muted", muted ? "1" : "0");
+  } catch {
+    /* noop */
+  }
 }
 
 /**

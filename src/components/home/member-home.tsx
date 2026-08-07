@@ -109,7 +109,11 @@ export function MemberHome() {
     };
     const channel = supabase
       .channel("member-home-live")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "group_today_posts" }, bump)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "group_today_posts" },
+        bump,
+      )
       .subscribe();
     return () => {
       if (timer) clearTimeout(timer);
@@ -131,10 +135,7 @@ export function MemberHome() {
       {/* Ambient pulse from the groups you belong to. Hides itself when empty. */}
       {data.nowGroups.length > 0 && (
         <div className="mx-auto max-w-7xl pt-5">
-          <GroupNewsTicker
-            slugs={data.nowGroups.map((g) => g.slug)}
-            label="Workshop now"
-          />
+          <GroupNewsTicker slugs={data.nowGroups.map((g) => g.slug)} label="Workshop now" />
         </div>
       )}
 

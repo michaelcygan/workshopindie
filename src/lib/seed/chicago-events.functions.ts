@@ -39,7 +39,8 @@ export const seedChicagoEvents = createServerFn({ method: "POST" })
     await assertAdmin(supabase, userId);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { materializeSeries, zonedPartsToUtc, toZonedParts } = await import("@/lib/event-series.server");
+    const { materializeSeries, zonedPartsToUtc, toZonedParts } =
+      await import("@/lib/event-series.server");
 
     const { data: group } = await supabaseAdmin
       .from("groups")
@@ -191,19 +192,24 @@ export const seedChicagoEvents = createServerFn({ method: "POST" })
           .single();
         if (error) {
           // 23505 = this date already exists. That is the idempotent path.
-          if ((error as { code?: string }).code !== "23505") throw new Error(`${ev.key}: ${error.message}`);
+          if ((error as { code?: string }).code !== "23505")
+            throw new Error(`${ev.key}: ${error.message}`);
           continue;
         }
         if (inserted) {
-          await supabaseAdmin
-            .from("event_groups")
-            .upsert([
+          await supabaseAdmin.from("event_groups").upsert(
+            [
               { event_id: inserted.id as string, group_id: groupId },
-              ...extraGroupsFor(ev).map((gid) => ({ event_id: inserted.id as string, group_id: gid })),
-            ], {
+              ...extraGroupsFor(ev).map((gid) => ({
+                event_id: inserted.id as string,
+                group_id: gid,
+              })),
+            ],
+            {
               onConflict: "event_id,group_id",
               ignoreDuplicates: true,
-            });
+            },
+          );
           added += 1;
         }
       }

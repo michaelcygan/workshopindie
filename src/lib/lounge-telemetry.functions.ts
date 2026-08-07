@@ -29,11 +29,13 @@ const inputSchema = z.object({
 
 export const logLoungeAudioEvent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: {
-    event: (typeof KNOWN_EVENTS)[number];
-    roomId?: string | null;
-    payload?: Record<string, unknown>;
-  }) => inputSchema.parse(input))
+  .inputValidator(
+    (input: {
+      event: (typeof KNOWN_EVENTS)[number];
+      roomId?: string | null;
+      payload?: Record<string, unknown>;
+    }) => inputSchema.parse(input),
+  )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     // Best-effort insert; never let telemetry break the audio path.

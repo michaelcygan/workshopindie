@@ -1,10 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import type { HomeBlogCard } from "@/lib/home-types";
-
-function formatDate(value: string | null) {
-  if (!value) return "";
-  return new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-}
+import { formatDayMonth as formatDate } from "@/lib/format-date";
 
 function BlogRailCard({ post }: { post: HomeBlogCard }) {
   return (

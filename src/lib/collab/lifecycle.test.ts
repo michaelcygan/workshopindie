@@ -26,7 +26,9 @@ describe("collabLifecycleState", () => {
     expect(collabLifecycleState({ ...base, resulting_work_id: "w1" })).toBe("published");
   });
   it("is archived when archived_at is set, even with a Work", () => {
-    expect(collabLifecycleState({ ...base, resulting_work_id: "w1", archived_at: "2026-01-01" })).toBe("archived");
+    expect(
+      collabLifecycleState({ ...base, resulting_work_id: "w1", archived_at: "2026-01-01" }),
+    ).toBe("archived");
   });
   it("maps legacy archived/removed statuses to archived", () => {
     expect(collabLifecycleState({ status: "archived" })).toBe("archived");
@@ -120,10 +122,18 @@ describe("applicationRejectionReason", () => {
     expect(applicationRejectionReason({ ...base }, TODAY)).toBeNull();
   });
   it("rejects archived, published, expired and paused collabs", () => {
-    expect(applicationRejectionReason({ ...base, archived_at: "2026-01-01" }, TODAY)).toMatch(/archived/i);
-    expect(applicationRejectionReason({ ...base, resulting_work_id: "w1" }, TODAY)).toMatch(/published/i);
-    expect(applicationRejectionReason({ ...base, ends_on: "2026-01-01" }, TODAY)).toMatch(/deadline/i);
-    expect(applicationRejectionReason({ ...base, applications_open: false }, TODAY)).toMatch(/not accepting/i);
+    expect(applicationRejectionReason({ ...base, archived_at: "2026-01-01" }, TODAY)).toMatch(
+      /archived/i,
+    );
+    expect(applicationRejectionReason({ ...base, resulting_work_id: "w1" }, TODAY)).toMatch(
+      /published/i,
+    );
+    expect(applicationRejectionReason({ ...base, ends_on: "2026-01-01" }, TODAY)).toMatch(
+      /deadline/i,
+    );
+    expect(applicationRejectionReason({ ...base, applications_open: false }, TODAY)).toMatch(
+      /not accepting/i,
+    );
   });
 });
 

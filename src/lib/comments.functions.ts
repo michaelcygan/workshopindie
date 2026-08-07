@@ -40,7 +40,6 @@ export const postComment = createServerFn({ method: "POST" })
     return { id: inserted.id };
   });
 
-
 export const setCommentHidden = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { commentId: string; hidden: boolean }) => ({

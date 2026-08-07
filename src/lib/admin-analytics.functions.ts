@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { domainError } from "@/lib/errors";
 import { panel, ok, unavailable, type Panel } from "@/lib/analytics/envelope";
 
 async function requireAdmin(supabase: any, userId: string) {
@@ -9,7 +10,7 @@ async function requireAdmin(supabase: any, userId: string) {
     .eq("user_id", userId)
     .eq("role", "admin")
     .maybeSingle();
-  if (error || !data) throw new Error("Forbidden: admin only");
+  if (error || !data) throw domainError("FORBIDDEN", "Forbidden: admin only");
 }
 
 async function getAdmin() {
@@ -28,17 +29,39 @@ export const getAdminPulse = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await requireAdmin(context.supabase, context.userId);
     const admin = await getAdmin();
-    const [kpi, growth, daily, surfaces, cities, countries, revenue, retention] = await Promise.all([
-      panel(v(admin, "vw_kpi_periods").select("*").maybeSingle()),
-      panel(v(admin, "vw_membership_growth").select("*")),
-      panel(v(admin, "vw_dau_daily").select("*")),
-      panel(v(admin, "vw_surface_30d").select("*")),
-      panel(v(admin, "vw_geo_city_stats").select("*").order("members", { ascending: false }).limit(500)),
-      panel(v(admin, "vw_geo_country_stats").select("*").order("members", { ascending: false }).limit(250)),
-      panel(v(admin, "vw_revenue_now").select("*").maybeSingle()),
-      panel(v(admin, "vw_retention_headline").select("*")),
-    ]);
-    return { kpi, growth, daily, surfaces, cities, countries, revenue, retention, fetchedAt: new Date().toISOString() };
+    const [kpi, growth, daily, surfaces, cities, countries, revenue, retention] = await Promise.all(
+      [
+        panel(v(admin, "vw_kpi_periods").select("*").maybeSingle()),
+        panel(v(admin, "vw_membership_growth").select("*")),
+        panel(v(admin, "vw_dau_daily").select("*")),
+        panel(v(admin, "vw_surface_30d").select("*")),
+        panel(
+          v(admin, "vw_geo_city_stats")
+            .select("*")
+            .order("members", { ascending: false })
+            .limit(500),
+        ),
+        panel(
+          v(admin, "vw_geo_country_stats")
+            .select("*")
+            .order("members", { ascending: false })
+            .limit(250),
+        ),
+        panel(v(admin, "vw_revenue_now").select("*").maybeSingle()),
+        panel(v(admin, "vw_retention_headline").select("*")),
+      ],
+    );
+    return {
+      kpi,
+      growth,
+      daily,
+      surfaces,
+      cities,
+      countries,
+      revenue,
+      retention,
+      fetchedAt: new Date().toISOString(),
+    };
   });
 
 export const getAdminGrowth = createServerFn({ method: "GET" })
@@ -54,7 +77,15 @@ export const getAdminGrowth = createServerFn({ method: "GET" })
       panel(v(admin, "vw_retention_headline").select("*")),
       panel(v(admin, "vw_kpi_periods").select("*").maybeSingle()),
     ]);
-    return { funnel, cohorts, referrals, growth, retention, kpi, fetchedAt: new Date().toISOString() };
+    return {
+      funnel,
+      cohorts,
+      referrals,
+      growth,
+      retention,
+      kpi,
+      fetchedAt: new Date().toISOString(),
+    };
   });
 
 export const getAdminEngagement = createServerFn({ method: "GET" })
@@ -77,8 +108,15 @@ export const getAdminGeo = createServerFn({ method: "GET" })
     await requireAdmin(context.supabase, context.userId);
     const admin = await getAdmin();
     const [cities, countries, kpi] = await Promise.all([
-      panel(v(admin, "vw_geo_city_stats").select("*").order("members", { ascending: false }).limit(500)),
-      panel(v(admin, "vw_geo_country_stats").select("*").order("members", { ascending: false }).limit(250)),
+      panel(
+        v(admin, "vw_geo_city_stats").select("*").order("members", { ascending: false }).limit(500),
+      ),
+      panel(
+        v(admin, "vw_geo_country_stats")
+          .select("*")
+          .order("members", { ascending: false })
+          .limit(250),
+      ),
       panel(v(admin, "vw_kpi_periods").select("*").maybeSingle()),
     ]);
     return { cities, countries, kpi, fetchedAt: new Date().toISOString() };
@@ -113,20 +151,31 @@ export const getAdminMarketplace = createServerFn({ method: "GET" })
     const since = new Date(Date.now() - 30 * 86400000).toISOString();
     const prevSince = new Date(Date.now() - 60 * 86400000).toISOString();
 
-    const [collabFunnel, worksFunnel, health, loungeFunnel, posts, apps, guestApps] = await Promise.all([
-      panel(v(admin, "vw_collab_funnel").select("*").maybeSingle()),
-      panel(v(admin, "vw_works_funnel").select("*").maybeSingle()),
-      panel(v(admin, "vw_marketplace_health").select("*").maybeSingle()),
-      panel(v(admin, "vw_lounge_funnel").select("*").maybeSingle()),
-      panel(admin.from("collab_posts").select("id,created_at,lifecycle_state").gte("created_at", prevSince)),
-      panel(
-        admin
-          .from("collab_contact_events")
-          .select("id,collab_post_id,sender_user_id,sent_at,review_status")
-          .gte("sent_at", prevSince),
-      ),
-      panel(admin.from("collab_guest_applications").select("id,collab_post_id,created_at,status").gte("created_at", prevSince)),
-    ]);
+    const [collabFunnel, worksFunnel, health, loungeFunnel, posts, apps, guestApps] =
+      await Promise.all([
+        panel(v(admin, "vw_collab_funnel").select("*").maybeSingle()),
+        panel(v(admin, "vw_works_funnel").select("*").maybeSingle()),
+        panel(v(admin, "vw_marketplace_health").select("*").maybeSingle()),
+        panel(v(admin, "vw_lounge_funnel").select("*").maybeSingle()),
+        panel(
+          admin
+            .from("collab_posts")
+            .select("id,created_at,lifecycle_state")
+            .gte("created_at", prevSince),
+        ),
+        panel(
+          admin
+            .from("collab_contact_events")
+            .select("id,collab_post_id,sender_user_id,sent_at,review_status")
+            .gte("sent_at", prevSince),
+        ),
+        panel(
+          admin
+            .from("collab_guest_applications")
+            .select("id,collab_post_id,created_at,status")
+            .gte("created_at", prevSince),
+        ),
+      ]);
 
     let collabHealth: Panel<any> = unavailable<any>("Collab activity unavailable");
     if (posts.status !== "unavailable" && apps.status !== "unavailable") {
@@ -153,7 +202,14 @@ export const getAdminMarketplace = createServerFn({ method: "GET" })
       });
     }
 
-    return { collabFunnel, worksFunnel, health, loungeFunnel, collabHealth, fetchedAt: new Date().toISOString() };
+    return {
+      collabFunnel,
+      worksFunnel,
+      health,
+      loungeFunnel,
+      collabHealth,
+      fetchedAt: new Date().toISOString(),
+    };
   });
 
 export const getAdminLoungeAudio = createServerFn({ method: "GET" })
@@ -170,7 +226,13 @@ export const getAdminLoungeAudio = createServerFn({ method: "GET" })
     const byDay = new Map<string, any>();
     for (const r of rows) {
       const agg = byDay.get(r.day) ?? {
-        day: r.day, minutes: 0, mic_grabs: 0, queue_abandons: 0, reconnects: 0, mic_denials: 0, speaker_joins: 0,
+        day: r.day,
+        minutes: 0,
+        mic_grabs: 0,
+        queue_abandons: 0,
+        reconnects: 0,
+        mic_denials: 0,
+        speaker_joins: 0,
       };
       agg.minutes += r.minutes;
       agg.mic_grabs += r.mic_grabs;
@@ -190,7 +252,14 @@ export const getAdminLoungeAudio = createServerFn({ method: "GET" })
         mic_denials: acc.mic_denials + d.mic_denials,
         speaker_joins: acc.speaker_joins + d.speaker_joins,
       }),
-      { minutes: 0, mic_grabs: 0, queue_abandons: 0, reconnects: 0, mic_denials: 0, speaker_joins: 0 },
+      {
+        minutes: 0,
+        mic_grabs: 0,
+        queue_abandons: 0,
+        reconnects: 0,
+        mic_denials: 0,
+        speaker_joins: 0,
+      },
     );
     return { daily, totals };
   });
@@ -201,18 +270,40 @@ export const getInvestorSnapshot = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await requireAdmin(context.supabase, context.userId);
     const admin = await getAdmin();
-    const [kpi, growth, retention, cohorts, surfaces, cities, countries, revenue, funnel] = await Promise.all([
-      panel(v(admin, "vw_kpi_periods").select("*").maybeSingle()),
-      panel(v(admin, "vw_membership_growth").select("*")),
-      panel(v(admin, "vw_retention_headline").select("*")),
-      panel(v(admin, "vw_cohort_retention_weekly").select("*")),
-      panel(v(admin, "vw_surface_30d").select("*")),
-      panel(v(admin, "vw_geo_city_stats").select("*").order("members", { ascending: false }).limit(200)),
-      panel(v(admin, "vw_geo_country_stats").select("*").order("members", { ascending: false }).limit(200)),
-      panel(v(admin, "vw_revenue_now").select("*").maybeSingle()),
-      panel(v(admin, "vw_acquisition_funnel").select("*").maybeSingle()),
-    ]);
-    return { kpi, growth, retention, cohorts, surfaces, cities, countries, revenue, funnel, fetchedAt: new Date().toISOString() };
+    const [kpi, growth, retention, cohorts, surfaces, cities, countries, revenue, funnel] =
+      await Promise.all([
+        panel(v(admin, "vw_kpi_periods").select("*").maybeSingle()),
+        panel(v(admin, "vw_membership_growth").select("*")),
+        panel(v(admin, "vw_retention_headline").select("*")),
+        panel(v(admin, "vw_cohort_retention_weekly").select("*")),
+        panel(v(admin, "vw_surface_30d").select("*")),
+        panel(
+          v(admin, "vw_geo_city_stats")
+            .select("*")
+            .order("members", { ascending: false })
+            .limit(200),
+        ),
+        panel(
+          v(admin, "vw_geo_country_stats")
+            .select("*")
+            .order("members", { ascending: false })
+            .limit(200),
+        ),
+        panel(v(admin, "vw_revenue_now").select("*").maybeSingle()),
+        panel(v(admin, "vw_acquisition_funnel").select("*").maybeSingle()),
+      ]);
+    return {
+      kpi,
+      growth,
+      retention,
+      cohorts,
+      surfaces,
+      cities,
+      countries,
+      revenue,
+      funnel,
+      fetchedAt: new Date().toISOString(),
+    };
   });
 
 /**
@@ -239,23 +330,72 @@ export const getAdminDataHealth = createServerFn({ method: "GET" })
       }
     };
 
-    const [latestDay, kpi, members, excluded, noCity, noUsername, softDeleted, activationRows, activated, subsLive, subsSandbox] =
-      await Promise.all([
-        panel<any>(v(admin, "vw_user_activity_day").select("day").order("day", { ascending: false }).limit(1).maybeSingle()),
-        panel<any>(v(admin, "vw_kpi_periods").select("computed_at,members_total").maybeSingle()),
-        countOf(admin.from("profiles").select("id", { count: "exact", head: true })),
-        countOf(admin.from("profiles").select("id", { count: "exact", head: true }).eq("analytics_excluded", true)),
-        countOf(admin.from("profiles").select("id", { count: "exact", head: true }).is("home_city_id", null)),
-        countOf(admin.from("profiles").select("id", { count: "exact", head: true }).is("username", null)),
-        countOf(admin.from("profiles").select("id", { count: "exact", head: true }).not("deleted_at", "is", null)),
-        countOf(v(admin, "vw_user_activation").select("user_id", { count: "exact", head: true })),
-        countOf(v(admin, "vw_user_activation").select("user_id", { count: "exact", head: true }).eq("activated", true)),
-        countOf(admin.from("subscriptions").select("id", { count: "exact", head: true }).eq("environment", "live")),
-        countOf(admin.from("subscriptions").select("id", { count: "exact", head: true }).eq("environment", "sandbox")),
-      ]);
+    const [
+      latestDay,
+      kpi,
+      members,
+      excluded,
+      noCity,
+      noUsername,
+      softDeleted,
+      activationRows,
+      activated,
+      subsLive,
+      subsSandbox,
+    ] = await Promise.all([
+      panel<any>(
+        v(admin, "vw_user_activity_day")
+          .select("day")
+          .order("day", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ),
+      panel<any>(v(admin, "vw_kpi_periods").select("computed_at,members_total").maybeSingle()),
+      countOf(admin.from("profiles").select("id", { count: "exact", head: true })),
+      countOf(
+        admin
+          .from("profiles")
+          .select("id", { count: "exact", head: true })
+          .eq("analytics_excluded", true),
+      ),
+      countOf(
+        admin
+          .from("profiles")
+          .select("id", { count: "exact", head: true })
+          .is("home_city_id", null),
+      ),
+      countOf(
+        admin.from("profiles").select("id", { count: "exact", head: true }).is("username", null),
+      ),
+      countOf(
+        admin
+          .from("profiles")
+          .select("id", { count: "exact", head: true })
+          .not("deleted_at", "is", null),
+      ),
+      countOf(v(admin, "vw_user_activation").select("user_id", { count: "exact", head: true })),
+      countOf(
+        v(admin, "vw_user_activation")
+          .select("user_id", { count: "exact", head: true })
+          .eq("activated", true),
+      ),
+      countOf(
+        admin
+          .from("subscriptions")
+          .select("id", { count: "exact", head: true })
+          .eq("environment", "live"),
+      ),
+      countOf(
+        admin
+          .from("subscriptions")
+          .select("id", { count: "exact", head: true })
+          .eq("environment", "sandbox"),
+      ),
+    ]);
 
     return {
-      latestActivityDay: latestDay.status === "unavailable" ? null : ((latestDay.data as any)?.day ?? null),
+      latestActivityDay:
+        latestDay.status === "unavailable" ? null : ((latestDay.data as any)?.day ?? null),
       spineStatus: latestDay.status,
       kpiComputedAt: (kpi.data as any)?.computed_at ?? null,
       kpiMembers: (kpi.data as any)?.members_total ?? null,

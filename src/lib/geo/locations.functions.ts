@@ -129,4 +129,3 @@ export const ensureLocationAndOfficialGroup = createServerFn({ method: "POST" })
       join: data.join !== false,
     });
   });
-

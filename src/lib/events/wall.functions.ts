@@ -50,7 +50,9 @@ export const listEventWall = createServerFn({ method: "POST" })
     const { requireEventAccess } = await import("@/lib/events/access.server");
     const { access } = await requireEventAccess(supabase, data.event_id, userId);
 
-    const closesAt = access.interactionClosesAt ? new Date(access.interactionClosesAt).toISOString() : null;
+    const closesAt = access.interactionClosesAt
+      ? new Date(access.interactionClosesAt).toISOString()
+      : null;
     const base = {
       can_post: access.canParticipate,
       can_view: access.canSeeRoster,
@@ -82,11 +84,14 @@ export const listEventWall = createServerFn({ method: "POST" })
 
     const paths = photos.map((p) => p.storage_path);
     const signed = paths.length
-      ? (await supabase.storage.from("event-photos").createSignedUrls(paths, SIGNED_URL_TTL)).data ?? []
+      ? ((await supabase.storage.from("event-photos").createSignedUrls(paths, SIGNED_URL_TTL))
+          .data ?? [])
       : [];
     const urlByPath = new Map(signed.map((s) => [s.path ?? "", s.signedUrl ?? null]));
 
-    const ids = Array.from(new Set([...posts.map((p) => p.user_id), ...photos.map((p) => p.uploader_id)]));
+    const ids = Array.from(
+      new Set([...posts.map((p) => p.user_id), ...photos.map((p) => p.uploader_id)]),
+    );
     const { data: profs } = ids.length
       ? await supabase.from("profiles").select("id,display_name,username,avatar_url").in("id", ids)
       : { data: [] };
@@ -94,7 +99,12 @@ export const listEventWall = createServerFn({ method: "POST" })
     const author = (id: string): WallAuthor | null => {
       const p = byId.get(id);
       return p
-        ? { user_id: id, display_name: p.display_name, username: p.username, avatar_url: p.avatar_url }
+        ? {
+            user_id: id,
+            display_name: p.display_name,
+            username: p.username,
+            avatar_url: p.avatar_url,
+          }
         : { user_id: id, display_name: null, username: null, avatar_url: null };
     };
 
@@ -141,11 +151,18 @@ export const postToEventWall = createServerFn({ method: "POST" })
     const { access } = await requireEventAccess(supabase, data.event_id, userId);
     if (!access.canParticipate) {
       throw new Error(
-        access.isAttending ? "Posting has closed for this Event." : "RSVP to post on this Event's Wall.",
+        access.isAttending
+          ? "Posting has closed for this Event."
+          : "RSVP to post on this Event's Wall.",
       );
     }
     const { moderateOrThrow } = await import("@/lib/moderation/service.server");
-    await moderateOrThrow({ text: data.body, surface: "event_wall", userId, subjectId: data.event_id });
+    await moderateOrThrow({
+      text: data.body,
+      surface: "event_wall",
+      userId,
+      subjectId: data.event_id,
+    });
     const body = data.body;
     const { error } = await supabase
       .from("group_event_comments")

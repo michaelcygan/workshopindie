@@ -59,8 +59,6 @@ export const claimAutoUsername = createServerFn({ method: "POST" })
     throw new Error("Couldn't reserve a username. Try setting one in profile settings.");
   });
 
-
-
 /** Read the signed-in user's account-level privacy settings. */
 export const getMyPrivacy = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -106,10 +104,7 @@ export const updateMyPrivacy = createServerFn({ method: "POST" })
     if (data.indexable !== undefined) patch.indexable = data.indexable;
     if (data.showOnline !== undefined) patch.show_online = data.showOnline;
     if (Object.keys(patch).length === 0) return { ok: true };
-    const { error } = await supabaseAdmin
-      .from("profiles")
-      .update(patch)
-      .eq("id", userId);
+    const { error } = await supabaseAdmin.from("profiles").update(patch).eq("id", userId);
     if (error) throw new Error(error.message);
     // Mirror online-visibility into the ephemeral presence tier so the change
     // takes effect on the next friends-list read, not the next heartbeat.
@@ -122,7 +117,6 @@ export const updateMyPrivacy = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-
 /**
  * Permanently delete the signed-in user's account.
  * Soft-deletes the profile (so credits/works keep their FK references)
@@ -130,9 +124,7 @@ export const updateMyPrivacy = createServerFn({ method: "POST" })
  */
 export const deleteMyAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
-    z.object({ confirm: z.literal("DELETE") }).parse(input),
-  )
+  .inputValidator((input) => z.object({ confirm: z.literal("DELETE") }).parse(input))
   .handler(async ({ context }) => {
     const { userId } = context;
 

@@ -35,7 +35,6 @@ export type QuickWorkResult = {
 export { WORK_LIMIT_ERROR } from "@/lib/works-quick.shared";
 import { WORK_LIMIT_ERROR } from "@/lib/works-quick.shared";
 
-
 export async function createQuickWorkServer(
   context: AuthContext,
   input: QuickWorkInput,

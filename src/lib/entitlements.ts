@@ -91,4 +91,3 @@ export function resolveEntitlements(
 
   return isPlus ? PLUS_BUNDLE : FREE_BUNDLE;
 }
-

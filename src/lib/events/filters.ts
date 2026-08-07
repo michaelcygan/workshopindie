@@ -94,14 +94,13 @@ export function collapseSeries<
   return out.filter((r): r is T => r !== null);
 }
 
-
 /**
  * Apply the discovery lifecycle invariants to any PostgREST query builder
  * (browser or server): published, not archived, not soft-deleted, and only
  * discoverable statuses. Keeps client-side rails from drifting from the
  * server discovery artery.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 export function applyDiscoverable<T>(q: T): T {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const b = q as any;
@@ -120,7 +119,5 @@ export function applyCurrentWindow<T>(q: T, nowMs = Date.now()): T {
   const nowIso = new Date(nowMs).toISOString();
   const graceIso = new Date(nowMs - DEFAULT_EVENT_DURATION_MS).toISOString();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (q as any).or(
-    `ends_at.gte.${nowIso},and(ends_at.is.null,starts_at.gte.${graceIso})`,
-  ) as T;
+  return (q as any).or(`ends_at.gte.${nowIso},and(ends_at.is.null,starts_at.gte.${graceIso})`) as T;
 }

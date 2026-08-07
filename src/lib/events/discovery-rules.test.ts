@@ -61,7 +61,10 @@ describe("collapseSeries", () => {
   });
 
   it("leaves one-off events untouched", () => {
-    const rows = [{ id: "a", series_key: null }, { id: "b", series_key: null }];
+    const rows = [
+      { id: "a", series_key: null },
+      { id: "b", series_key: null },
+    ];
     expect(collapseSeries(rows)).toHaveLength(2);
   });
 });

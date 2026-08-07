@@ -10,12 +10,7 @@
  * declared in `plus-access.functions.ts`.
  */
 
-export type PlusAccessSource =
-  | "free"
-  | "paid"
-  | "stripe_trial"
-  | "complimentary"
-  | "lifetime";
+export type PlusAccessSource = "free" | "paid" | "stripe_trial" | "complimentary" | "lifetime";
 
 export type EffectivePlusAccess = {
   isPlus: boolean;

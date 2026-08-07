@@ -2,7 +2,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader } from "@tanstack/react-start/server";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-
 export type SuggestedCity = {
   id: string;
   name: string;
@@ -75,19 +74,16 @@ async function inferFromHeaders(): Promise<SuggestedCity | null> {
   }
 
   return null;
-
 }
 
 /**
  * Anonymous-callable: returns a suggested city for the visitor based on
  * Cloudflare geo headers. Used by onboarding and feed banners.
  */
-export const inferCityFromIp = createServerFn({ method: "GET" }).handler(
-  async () => {
-    const city = await inferFromHeaders();
-    return { city };
-  },
-);
+export const inferCityFromIp = createServerFn({ method: "GET" }).handler(async () => {
+  const city = await inferFromHeaders();
+  return { city };
+});
 
 /**
  * Returns the city the homepage feed should default to: the signed-in user's
@@ -95,40 +91,36 @@ export const inferCityFromIp = createServerFn({ method: "GET" }).handler(
  * Reads the current user from the Authorization bearer token when present
  * (does NOT require auth — anonymous visitors get an IP suggestion).
  */
-export const getDefaultHomeCity = createServerFn({ method: "GET" }).handler(
-  async () => {
-    const auth = getRequestHeader("authorization");
-    const token = auth?.toLowerCase().startsWith("bearer ")
-      ? auth.slice(7).trim()
-      : null;
+export const getDefaultHomeCity = createServerFn({ method: "GET" }).handler(async () => {
+  const auth = getRequestHeader("authorization");
+  const token = auth?.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : null;
 
-    if (token) {
-      const { data: userData } = await supabaseAdmin.auth.getUser(token);
-      const uid = userData.user?.id;
-      if (uid) {
-        const { data: profile } = await supabaseAdmin
-          .from("profiles")
-          .select("home_city_id, cities:home_city_id(id,name,country,slug,latitude,longitude)")
-          .eq("id", uid)
-          .maybeSingle();
-        const c = (profile as { cities?: SuggestedCity | null } | null)?.cities;
-        if (c) {
-          return {
-            city: {
-              id: c.id,
-              name: c.name,
-              country: c.country,
-              slug: c.slug,
-              latitude: c.latitude,
-              longitude: c.longitude,
-              source: "home" as const,
-            } satisfies SuggestedCity,
-          };
-        }
+  if (token) {
+    const { data: userData } = await supabaseAdmin.auth.getUser(token);
+    const uid = userData.user?.id;
+    if (uid) {
+      const { data: profile } = await supabaseAdmin
+        .from("profiles")
+        .select("home_city_id, cities:home_city_id(id,name,country,slug,latitude,longitude)")
+        .eq("id", uid)
+        .maybeSingle();
+      const c = (profile as { cities?: SuggestedCity | null } | null)?.cities;
+      if (c) {
+        return {
+          city: {
+            id: c.id,
+            name: c.name,
+            country: c.country,
+            slug: c.slug,
+            latitude: c.latitude,
+            longitude: c.longitude,
+            source: "home" as const,
+          } satisfies SuggestedCity,
+        };
       }
     }
+  }
 
-    const city = await inferFromHeaders();
-    return { city };
-  },
-);
+  const city = await inferFromHeaders();
+  return { city };
+});

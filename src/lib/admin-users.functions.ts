@@ -1,12 +1,16 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { domainError } from "@/lib/errors";
 import { logAdminAction } from "@/lib/admin-audit.functions";
 
 async function requireAdmin(supabase: any, userId: string) {
   const { data, error } = await supabase
-    .from("user_roles").select("role")
-    .eq("user_id", userId).eq("role", "admin").maybeSingle();
-  if (error || !data) throw new Error("Forbidden: admin only");
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .maybeSingle();
+  if (error || !data) throw domainError("FORBIDDEN", "Forbidden: admin only");
 }
 async function getAdmin() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -22,21 +26,27 @@ export const searchAdminUsers = createServerFn({ method: "POST" })
     const q = data.q.trim();
     if (!q) return [];
     // Search profiles by username/display_name/id
-    let prof = await admin
+    const prof = await admin
       .from("profiles")
-      .select("id,username,display_name,avatar_url,creator_status,home_city_id,created_at,last_active_at,work_count,follower_count")
+      .select(
+        "id,username,display_name,avatar_url,creator_status,home_city_id,created_at,last_active_at,work_count,follower_count",
+      )
       .or(`username.ilike.%${q}%,display_name.ilike.%${q}%`)
       .limit(50);
-    let rows = prof.data ?? [];
+    const rows = prof.data ?? [];
     // Also search auth.users by email (admin)
     if (q.includes("@")) {
       const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 50 });
-      const matched = (list?.users ?? []).filter((u) => u.email?.toLowerCase().includes(q.toLowerCase()));
+      const matched = (list?.users ?? []).filter((u) =>
+        u.email?.toLowerCase().includes(q.toLowerCase()),
+      );
       if (matched.length) {
         const ids = matched.map((u) => u.id);
         const { data: p2 } = await admin
           .from("profiles")
-          .select("id,username,display_name,avatar_url,creator_status,home_city_id,created_at,last_active_at,work_count,follower_count")
+          .select(
+            "id,username,display_name,avatar_url,creator_status,home_city_id,created_at,last_active_at,work_count,follower_count",
+          )
           .in("id", ids);
         const have = new Set(rows.map((r) => r.id));
         for (const p of p2 ?? []) if (!have.has(p.id)) rows.push(p);
@@ -55,18 +65,54 @@ export const getAdminUserDetail = createServerFn({ method: "GET" })
       admin.from("profiles").select("*").eq("id", data.userId).maybeSingle(),
       admin.from("user_roles").select("role").eq("user_id", data.userId),
       admin.auth.admin.getUserById(data.userId),
-      admin.from("subscriptions").select("*").eq("user_id", data.userId).order("created_at", { ascending: false }).limit(5),
+      admin
+        .from("subscriptions")
+        .select("*")
+        .eq("user_id", data.userId)
+        .order("created_at", { ascending: false })
+        .limit(5),
       Promise.all([
-        admin.from("works").select("id", { count: "exact", head: true }).eq("created_by", data.userId),
-        admin.from("collab_posts").select("id", { count: "exact", head: true }).eq("user_id", data.userId),
-        admin.from("instant_rooms").select("id", { count: "exact", head: true }).eq("creator_id", data.userId),
-        admin.from("blog_posts").select("id", { count: "exact", head: true }).eq("created_by", data.userId),
-        admin.from("group_event_rsvps").select("event_id", { count: "exact", head: true }).eq("user_id", data.userId),
-        admin.from("follows").select("follower_user_id", { count: "exact", head: true }).eq("follower_user_id", data.userId),
-        admin.from("reports").select("id", { count: "exact", head: true }).eq("reporter_user_id", data.userId),
+        admin
+          .from("works")
+          .select("id", { count: "exact", head: true })
+          .eq("created_by", data.userId),
+        admin
+          .from("collab_posts")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", data.userId),
+        admin
+          .from("instant_rooms")
+          .select("id", { count: "exact", head: true })
+          .eq("creator_id", data.userId),
+        admin
+          .from("blog_posts")
+          .select("id", { count: "exact", head: true })
+          .eq("created_by", data.userId),
+        admin
+          .from("group_event_rsvps")
+          .select("event_id", { count: "exact", head: true })
+          .eq("user_id", data.userId),
+        admin
+          .from("follows")
+          .select("follower_user_id", { count: "exact", head: true })
+          .eq("follower_user_id", data.userId),
+        admin
+          .from("reports")
+          .select("id", { count: "exact", head: true })
+          .eq("reporter_user_id", data.userId),
       ]),
-      admin.from("reports").select("id,entity_type,entity_id,reason,status,created_at").eq("entity_id", data.userId).order("created_at", { ascending: false }).limit(20),
-      admin.from("reports").select("id,entity_type,entity_id,reason,status,created_at").eq("reporter_user_id", data.userId).order("created_at", { ascending: false }).limit(20),
+      admin
+        .from("reports")
+        .select("id,entity_type,entity_id,reason,status,created_at")
+        .eq("entity_id", data.userId)
+        .order("created_at", { ascending: false })
+        .limit(20),
+      admin
+        .from("reports")
+        .select("id,entity_type,entity_id,reason,status,created_at")
+        .eq("reporter_user_id", data.userId)
+        .order("created_at", { ascending: false })
+        .limit(20),
     ]);
     return {
       profile: profile.data ?? null,
@@ -91,16 +137,26 @@ export const getAdminUserDetail = createServerFn({ method: "GET" })
 
 export const setAdminUserRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { userId: string; role: "admin" | "moderator" | "user"; grant: boolean }) => d)
+  .inputValidator(
+    (d: { userId: string; role: "admin" | "moderator" | "user"; grant: boolean }) => d,
+  )
   .handler(async ({ data, context }) => {
     await requireAdmin(context.supabase, context.userId);
     const admin = await getAdmin();
     if (data.grant) {
-      await admin.from("user_roles").upsert({ user_id: data.userId, role: data.role }, { onConflict: "user_id,role" });
+      await admin
+        .from("user_roles")
+        .upsert({ user_id: data.userId, role: data.role }, { onConflict: "user_id,role" });
     } else {
       await admin.from("user_roles").delete().eq("user_id", data.userId).eq("role", data.role);
     }
-    await logAdminAction(context.supabase, data.grant ? "role.grant" : "role.revoke", "user", data.userId, { role: data.role });
+    await logAdminAction(
+      context.supabase,
+      data.grant ? "role.grant" : "role.revoke",
+      "user",
+      data.userId,
+      { role: data.role },
+    );
     return { ok: true };
   });
 
@@ -110,9 +166,14 @@ export const setAdminUserBadge = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await requireAdmin(context.supabase, context.userId);
     const admin = await getAdmin();
-    const { error } = await admin.from("profiles").update({ creator_status: data.status as any }).eq("id", data.userId);
+    const { error } = await admin
+      .from("profiles")
+      .update({ creator_status: data.status as any })
+      .eq("id", data.userId);
     if (error) throw error;
-    await logAdminAction(context.supabase, "badge.set", "user", data.userId, { status: data.status });
+    await logAdminAction(context.supabase, "badge.set", "user", data.userId, {
+      status: data.status,
+    });
     return { ok: true };
   });
 
@@ -122,7 +183,10 @@ export const softDeleteAdminUser = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await requireAdmin(context.supabase, context.userId);
     const admin = await getAdmin();
-    await admin.from("profiles").update({ deleted_at: new Date().toISOString(), discoverable: false, indexable: false }).eq("id", data.userId);
+    await admin
+      .from("profiles")
+      .update({ deleted_at: new Date().toISOString(), discoverable: false, indexable: false })
+      .eq("id", data.userId);
     await logAdminAction(context.supabase, "user.soft_delete", "user", data.userId, {});
     return { ok: true };
   });
@@ -177,21 +241,33 @@ export const listAdminUsers = createServerFn({ method: "POST" })
     if (q) {
       if (q.includes("@")) {
         const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
-        emailIds = (list?.users ?? []).filter((u) => u.email?.toLowerCase().includes(q.toLowerCase())).map((u) => u.id);
+        emailIds = (list?.users ?? [])
+          .filter((u) => u.email?.toLowerCase().includes(q.toLowerCase()))
+          .map((u) => u.id);
       }
       const or = [`username.ilike.%${q}%`, `display_name.ilike.%${q}%`];
       if (emailIds.length) or.push(`id.in.(${emailIds.join(",")})`);
       query = query.or(or.join(","));
     }
     if (data.cityId) query = query.eq("home_city_id", data.cityId);
-    if (!data.includeExcluded) query = query.or("analytics_excluded.is.null,analytics_excluded.eq.false");
+    if (!data.includeExcluded)
+      query = query.or("analytics_excluded.is.null,analytics_excluded.eq.false");
     if (data.joinedWithinDays)
-      query = query.gte("created_at", new Date(Date.now() - data.joinedWithinDays * 86400000).toISOString());
+      query = query.gte(
+        "created_at",
+        new Date(Date.now() - data.joinedWithinDays * 86400000).toISOString(),
+      );
     if (data.activeWithinDays)
-      query = query.gte("last_active_at", new Date(Date.now() - data.activeWithinDays * 86400000).toISOString());
+      query = query.gte(
+        "last_active_at",
+        new Date(Date.now() - data.activeWithinDays * 86400000).toISOString(),
+      );
 
     if (data.role && data.role !== "any") {
-      const { data: roleRows } = await admin.from("user_roles").select("user_id").eq("role", data.role);
+      const { data: roleRows } = await admin
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", data.role);
       const ids = (roleRows ?? []).map((r: any) => r.user_id);
       if (!ids.length) return { rows: [], total: 0, page, pageSize };
       query = query.in("id", ids);
@@ -199,8 +275,16 @@ export const listAdminUsers = createServerFn({ method: "POST" })
 
     const sort = data.sort ?? "recent";
     const orderCol =
-      sort === "last_active" ? "last_active_at" : sort === "works" ? "work_count" : sort === "followers" ? "follower_count" : "created_at";
-    query = query.order(orderCol, { ascending: false, nullsFirst: false }).range(from, from + pageSize - 1);
+      sort === "last_active"
+        ? "last_active_at"
+        : sort === "works"
+          ? "work_count"
+          : sort === "followers"
+            ? "follower_count"
+            : "created_at";
+    query = query
+      .order(orderCol, { ascending: false, nullsFirst: false })
+      .range(from, from + pageSize - 1);
 
     const { data: rows, count, error } = await query;
     if (error) throw new Error(error.message);
@@ -210,18 +294,28 @@ export const listAdminUsers = createServerFn({ method: "POST" })
 
     const cityIds = Array.from(new Set(profiles.map((p) => p.home_city_id).filter(Boolean)));
     const [activation, subs, roles, cities] = await Promise.all([
-      admin.from("vw_user_activation" as never).select("user_id,activated,first_action_day,first_action_surface").in("user_id", ids),
-      admin.from("subscriptions").select("user_id,tier,status,environment,current_period_end").in("user_id", ids),
+      admin
+        .from("vw_user_activation" as never)
+        .select("user_id,activated,first_action_day,first_action_surface")
+        .in("user_id", ids),
+      admin
+        .from("subscriptions")
+        .select("user_id,tier,status,environment,current_period_end")
+        .in("user_id", ids),
       admin.from("user_roles").select("user_id,role").in("user_id", ids),
       cityIds.length
-        ? admin.from("cities").select("id,name,country").in("id", cityIds as string[])
+        ? admin
+            .from("cities")
+            .select("id,name,country")
+            .in("id", cityIds as string[])
         : Promise.resolve({ data: [] as any[] }),
     ]);
 
     const actMap = new Map((activation.data ?? []).map((a: any) => [a.user_id, a]));
     const cityMap = new Map(((cities as any).data ?? []).map((c: any) => [c.id, c]));
     const roleMap = new Map<string, string[]>();
-    for (const r of (roles.data ?? []) as any[]) roleMap.set(r.user_id, [...(roleMap.get(r.user_id) ?? []), r.role]);
+    for (const r of (roles.data ?? []) as any[])
+      roleMap.set(r.user_id, [...(roleMap.get(r.user_id) ?? []), r.role]);
     const plusSet = new Set(
       ((subs.data ?? []) as any[])
         .filter(
@@ -264,9 +358,14 @@ export const setAnalyticsExcluded = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await requireAdmin(context.supabase, context.userId);
     const admin = await getAdmin();
-    const { error } = await admin.from("profiles").update({ analytics_excluded: data.excluded }).eq("id", data.userId);
+    const { error } = await admin
+      .from("profiles")
+      .update({ analytics_excluded: data.excluded })
+      .eq("id", data.userId);
     if (error) throw new Error(error.message);
-    await logAdminAction(context.supabase, "analytics.exclude", "user", data.userId, { excluded: data.excluded });
+    await logAdminAction(context.supabase, "analytics.exclude", "user", data.userId, {
+      excluded: data.excluded,
+    });
     return { ok: true };
   });
 
@@ -281,7 +380,11 @@ export const listAdminUserCities = createServerFn({ method: "GET" })
       .select("city_id,name,country,members")
       .order("members", { ascending: false })
       .limit(300);
-    return ((data ?? []) as any[]).map((c) => ({ id: c.city_id, label: `${c.name}${c.country ? `, ${c.country}` : ""}`, members: c.members }));
+    return ((data ?? []) as any[]).map((c) => ({
+      id: c.city_id,
+      label: `${c.name}${c.country ? `, ${c.country}` : ""}`,
+      members: c.members,
+    }));
   });
 
 /**
@@ -315,13 +418,23 @@ export const getAdminUserActivity = createServerFn({ method: "GET" })
           .eq("user_id", data.userId)
           .maybeSingle(),
       ),
-      panel<any>(admin.from("profiles").select("home_city_id,analytics_excluded").eq("id", data.userId).maybeSingle()),
+      panel<any>(
+        admin
+          .from("profiles")
+          .select("home_city_id,analytics_excluded")
+          .eq("id", data.userId)
+          .maybeSingle(),
+      ),
     ]);
 
     let city: { name: string; country: string | null } | null = null;
     const cityId = (profile.data as any)?.home_city_id ?? null;
     if (cityId) {
-      const { data: c } = await admin.from("cities").select("name,country").eq("id", cityId).maybeSingle();
+      const { data: c } = await admin
+        .from("cities")
+        .select("name,country")
+        .eq("id", cityId)
+        .maybeSingle();
       if (c) city = { name: (c as any).name, country: (c as any).country ?? null };
     }
 

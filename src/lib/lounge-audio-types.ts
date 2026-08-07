@@ -15,12 +15,7 @@
  * - "offered":    a mic seat is reserved; user must accept to enable it.
  * - "speaker":    publishing audio (may still be muted at the track level).
  */
-export type LoungeRole =
-  | "connecting"
-  | "listener"
-  | "waiting"
-  | "offered"
-  | "speaker";
+export type LoungeRole = "connecting" | "listener" | "waiting" | "offered" | "speaker";
 
 /** Adapter shape for one remote (or local) participant surfaced in UI. */
 export type LoungeParticipant = {
@@ -102,7 +97,6 @@ export type LoungeAudioApi = {
   selectMic?: (deviceId: string) => Promise<void>;
 };
 
-
 /** Provider-neutral analytics event names. */
 export const LOUNGE_AUDIO_EVENTS = [
   "stream_listener_join_ok",
@@ -134,7 +128,6 @@ export function emitLoungeAudioEvent(
   payload: Record<string, unknown> = {},
 ): void {
   try {
-    // eslint-disable-next-line no-console
     console.info(`[lounge-audio] ${name}`, payload);
   } catch {
     // ignore console errors
@@ -157,11 +150,8 @@ export function emitLoungeAudioEvent(
     });
 }
 
-
 /** Sort: dominant/current speaker → other speakers → waiting → listeners. */
-export function sortLoungeParticipants(
-  participants: LoungeParticipant[],
-): LoungeParticipant[] {
+export function sortLoungeParticipants(participants: LoungeParticipant[]): LoungeParticipant[] {
   const rank = (p: LoungeParticipant) => {
     if (p.isDominant) return 0;
     if (p.role === "speaker") return 1;

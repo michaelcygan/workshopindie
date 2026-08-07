@@ -52,12 +52,42 @@ export const SUB_OPTIONS_BY_PARENT: Partial<Record<Category, SubOption[]>> = {
   office_hours: [
     { kind: "flavor", label: "Story", title: "Office Hours · Story notes", medium: "office_hours" },
     { kind: "flavor", label: "Editing", title: "Office Hours · Editing", medium: "office_hours" },
-    { kind: "flavor", label: "Software questions", title: "Office Hours · Software questions", medium: "office_hours" },
-    { kind: "flavor", label: "Code review", title: "Office Hours · Code review", medium: "office_hours" },
-    { kind: "flavor", label: "Distribution", title: "Office Hours · Distribution", medium: "office_hours" },
-    { kind: "flavor", label: "Marketing", title: "Office Hours · Marketing & audience", medium: "office_hours" },
-    { kind: "flavor", label: "Portfolio review", title: "Office Hours · Portfolio review", medium: "office_hours" },
-    { kind: "flavor", label: "Career advice", title: "Office Hours · Career advice", medium: "office_hours" },
+    {
+      kind: "flavor",
+      label: "Software questions",
+      title: "Office Hours · Software questions",
+      medium: "office_hours",
+    },
+    {
+      kind: "flavor",
+      label: "Code review",
+      title: "Office Hours · Code review",
+      medium: "office_hours",
+    },
+    {
+      kind: "flavor",
+      label: "Distribution",
+      title: "Office Hours · Distribution",
+      medium: "office_hours",
+    },
+    {
+      kind: "flavor",
+      label: "Marketing",
+      title: "Office Hours · Marketing & audience",
+      medium: "office_hours",
+    },
+    {
+      kind: "flavor",
+      label: "Portfolio review",
+      title: "Office Hours · Portfolio review",
+      medium: "office_hours",
+    },
+    {
+      kind: "flavor",
+      label: "Career advice",
+      title: "Office Hours · Career advice",
+      medium: "office_hours",
+    },
   ],
   open_mic: [
     { kind: "flavor", label: "Comedy", title: "Open Mic · Comedy", medium: "open_mic" },
@@ -208,9 +238,7 @@ export function getPurposeSuggestions(
   const picked = seededShuffle(pool, `${seed}:${medium ?? "any"}`).slice(0, count);
   return picked.map((p) => ({
     title: p.title,
-    hint:
-      (p.medium && TOPIC_DESCRIPTIONS[p.medium]) ||
-      "Set a direction for the room.",
+    hint: (p.medium && TOPIC_DESCRIPTIONS[p.medium]) || "Set a direction for the room.",
   }));
 }
 
@@ -239,15 +267,12 @@ export function getPurposePool(
     seen.add(p.title);
     out.push({
       title: p.title,
-      hint:
-        (p.medium && TOPIC_DESCRIPTIONS[p.medium]) ||
-        "Set a direction for the room.",
+      hint: (p.medium && TOPIC_DESCRIPTIONS[p.medium]) || "Set a direction for the room.",
     });
     if (out.length >= size) break;
   }
   return out;
 }
-
 
 /**
  * Deal prompts into N rows so each row has a similar mix of "obvious" vs "wild"

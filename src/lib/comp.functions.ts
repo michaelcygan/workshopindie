@@ -2,7 +2,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
-const codeSchema = z.string().trim().min(4).max(64).regex(/^[A-Za-z0-9_-]+$/);
+const codeSchema = z
+  .string()
+  .trim()
+  .min(4)
+  .max(64)
+  .regex(/^[A-Za-z0-9_-]+$/);
 
 /**
  * Legacy comp-code redemption. New comp benefits flow through the

@@ -58,9 +58,7 @@ export const listMutualFollows = createServerFn({ method: "POST" })
 /** People I follow (one direction). Used as override when inviting beyond mutuals. */
 export const listFollowingForLobby = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
-    z.object({ q: z.string().trim().min(1).max(80) }).parse(input ?? {}),
-  )
+  .inputValidator((input) => z.object({ q: z.string().trim().min(1).max(80) }).parse(input ?? {}))
   .handler(async ({ data, context }): Promise<LobbyPerson[]> => {
     const { userId } = context;
     const { data: iFollow } = await supabaseAdmin
@@ -136,7 +134,6 @@ export const createLobby = createServerFn({ method: "POST" })
       }
     }
 
-    
     const { data: ws, error } = await supabaseAdmin
       .from("workshops")
       .insert({
@@ -159,7 +156,10 @@ export const createLobby = createServerFn({ method: "POST" })
     await supabaseAdmin
       .from("workshop_participants")
       .insert({ workshop_id: ws.id, user_id: userId, participant_status: "confirmed" })
-      .then(() => null, () => null);
+      .then(
+        () => null,
+        () => null,
+      );
 
     if (data.inviteeIds.length > 0) {
       await supabaseAdmin
@@ -172,7 +172,10 @@ export const createLobby = createServerFn({ method: "POST" })
             status: "pending",
           })),
         )
-        .then(() => null, () => null);
+        .then(
+          () => null,
+          () => null,
+        );
 
       const { notifyMany } = await import("@/lib/notifications/deliver.server");
       await notifyMany({
@@ -184,7 +187,6 @@ export const createLobby = createServerFn({ method: "POST" })
         preference: "inapp_workshop_updates",
         payload: { workshop_slug: ws.slug, title: data.title, is_lobby: true },
       });
-
     }
 
     return { id: ws.id, slug: ws.slug };
@@ -221,19 +223,31 @@ export const listMyLobbies = createServerFn({ method: "POST" })
         .limit(20),
       supabaseAdmin
         .from("workshop_join_invites")
-        .select("workshop_id, workshops!inner(id, slug, title, prompt, category, host_user_id, is_lobby, lobby_discoverable)")
+        .select(
+          "workshop_id, workshops!inner(id, slug, title, prompt, category, host_user_id, is_lobby, lobby_discoverable)",
+        )
         .eq("invitee_user_id", userId)
         .eq("status", "pending")
         .limit(40),
       supabaseAdmin
         .from("workshop_participants")
-        .select("workshop_id, workshops!inner(id, slug, title, prompt, category, host_user_id, is_lobby, lobby_discoverable)")
+        .select(
+          "workshop_id, workshops!inner(id, slug, title, prompt, category, host_user_id, is_lobby, lobby_discoverable)",
+        )
         .eq("user_id", userId)
         .eq("participant_status", "confirmed")
         .limit(80),
     ]);
 
-    type Row = { id: string; slug: string; title: string; prompt: string | null; category: string; host_user_id: string; lobby_discoverable?: boolean };
+    type Row = {
+      id: string;
+      slug: string;
+      title: string;
+      prompt: string | null;
+      category: string;
+      host_user_id: string;
+      lobby_discoverable?: boolean;
+    };
     const combined = new Map<string, { row: Row; status: LobbyCard["invite_status"] }>();
     for (const row of (hosted.data ?? []) as Row[]) {
       combined.set(row.id, { row, status: "host" });
@@ -256,7 +270,10 @@ export const listMyLobbies = createServerFn({ method: "POST" })
       supabaseAdmin
         .from("profiles")
         .select("id, display_name, username, avatar_url")
-        .in("id", Array.from(new Set(Array.from(combined.values()).map((v) => v.row.host_user_id)))),
+        .in(
+          "id",
+          Array.from(new Set(Array.from(combined.values()).map((v) => v.row.host_user_id))),
+        ),
       supabaseAdmin
         .from("workshop_participants")
         .select("workshop_id")
@@ -295,11 +312,17 @@ export const listDiscoverableLobbies = createServerFn({ method: "POST" })
     const { userId } = context;
 
     const { data: iFollow } = await supabaseAdmin
-      .from("follows").select("followed_user_id").eq("follower_user_id", userId);
+      .from("follows")
+      .select("followed_user_id")
+      .eq("follower_user_id", userId);
     const { data: followMe } = await supabaseAdmin
-      .from("follows").select("follower_user_id").eq("followed_user_id", userId);
+      .from("follows")
+      .select("follower_user_id")
+      .eq("followed_user_id", userId);
     const iFollowSet = new Set((iFollow ?? []).map((r) => r.followed_user_id));
-    const mutuals = Array.from(iFollowSet).filter((id) => (followMe ?? []).some((f) => f.follower_user_id === id));
+    const mutuals = Array.from(iFollowSet).filter((id) =>
+      (followMe ?? []).some((f) => f.follower_user_id === id),
+    );
     if (mutuals.length === 0) return [];
 
     const { data: rows } = await supabaseAdmin
@@ -321,7 +344,10 @@ export const listDiscoverableLobbies = createServerFn({ method: "POST" })
         .from("workshop_participants")
         .select("workshop_id")
         .eq("participant_status", "confirmed")
-        .in("workshop_id", rows.map((r) => r.id)),
+        .in(
+          "workshop_id",
+          rows.map((r) => r.id),
+        ),
     ]);
     const hostMap = new Map((hostsRes.data ?? []).map((p) => [p.id, p]));
     const countMap = new Map<string, number>();
@@ -354,7 +380,7 @@ export const requestToJoinLobby = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ workshopId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { userId } = context;
-    
+
     const { data: ws } = await supabaseAdmin
       .from("workshops")
       .select("id, host_user_id, is_lobby, lobby_discoverable, title, slug")
@@ -363,20 +389,34 @@ export const requestToJoinLobby = createServerFn({ method: "POST" })
     if (!ws || !ws.is_lobby || !ws.lobby_discoverable) throw new Error("Lobby not found.");
 
     const { data: a } = await supabaseAdmin
-      .from("follows").select("follower_user_id").eq("follower_user_id", userId).eq("followed_user_id", ws.host_user_id).maybeSingle();
+      .from("follows")
+      .select("follower_user_id")
+      .eq("follower_user_id", userId)
+      .eq("followed_user_id", ws.host_user_id)
+      .maybeSingle();
     const { data: b } = await supabaseAdmin
-      .from("follows").select("follower_user_id").eq("follower_user_id", ws.host_user_id).eq("followed_user_id", userId).maybeSingle();
+      .from("follows")
+      .select("follower_user_id")
+      .eq("follower_user_id", ws.host_user_id)
+      .eq("followed_user_id", userId)
+      .maybeSingle();
     if (!a || !b) throw new Error("Only mutual follows can request to join.");
 
     await supabaseAdmin
       .from("workshop_join_invites")
-      .upsert({
-        workshop_id: ws.id,
-        invitee_user_id: userId,
-        inviter_user_id: ws.host_user_id,
-        status: "pending",
-      }, { onConflict: "workshop_id,invitee_user_id" })
-      .then(() => null, () => null);
+      .upsert(
+        {
+          workshop_id: ws.id,
+          invitee_user_id: userId,
+          inviter_user_id: ws.host_user_id,
+          status: "pending",
+        },
+        { onConflict: "workshop_id,invitee_user_id" },
+      )
+      .then(
+        () => null,
+        () => null,
+      );
 
     const { notify } = await import("@/lib/notifications/deliver.server");
     await notify({
@@ -388,7 +428,6 @@ export const requestToJoinLobby = createServerFn({ method: "POST" })
       preference: "inapp_workshop_updates",
       payload: { workshop_slug: ws.slug, title: ws.title, is_lobby: true, requested: true },
     });
-
 
     return { ok: true };
   });
@@ -444,7 +483,10 @@ export const scheduleDraft = createServerFn({ method: "POST" })
 
     // Notify everyone invited / participating that it's now scheduled.
     const [{ data: invites }, { data: parts }] = await Promise.all([
-      supabaseAdmin.from("workshop_join_invites").select("invitee_user_id").eq("workshop_id", ws.id),
+      supabaseAdmin
+        .from("workshop_join_invites")
+        .select("invitee_user_id")
+        .eq("workshop_id", ws.id),
       supabaseAdmin.from("workshop_participants").select("user_id").eq("workshop_id", ws.id),
     ]);
     const targets = new Set<string>();
@@ -468,7 +510,6 @@ export const scheduleDraft = createServerFn({ method: "POST" })
         },
       });
     }
-
 
     return { ok: true, slug: ws.slug };
   });

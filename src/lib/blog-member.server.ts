@@ -74,7 +74,12 @@ async function bumpRate(context: AuthContext, action: string, windowS: number, m
   if (ok === false) throw new Error("You're doing that too fast. Try again shortly.");
 }
 
-async function audit(action: string, targetId: string, actor: string, payload: Record<string, unknown> = {}) {
+async function audit(
+  action: string,
+  targetId: string,
+  actor: string,
+  payload: Record<string, unknown> = {},
+) {
   await supabaseAdmin.from("admin_audit_log").insert({
     action,
     target_type: "blog_post",
@@ -112,12 +117,18 @@ function validateMemberContent(body: string) {
   if (images.length > 12) throw new Error("Too many inline images (max 12).");
   for (const url of [...links, ...images]) {
     const lower = url.toLowerCase();
-    if (lower.startsWith("javascript:") || lower.startsWith("data:") || lower.startsWith("vbscript:")) {
+    if (
+      lower.startsWith("javascript:") ||
+      lower.startsWith("data:") ||
+      lower.startsWith("vbscript:")
+    ) {
       throw new Error("Unsafe link protocol detected.");
     }
   }
   // Inline images must live on Workshop storage (covers/blog-images buckets).
-  const supabaseHost = (process.env.SUPABASE_URL ?? "").replace(/^https?:\/\//, "").replace(/\/$/, "");
+  const supabaseHost = (process.env.SUPABASE_URL ?? "")
+    .replace(/^https?:\/\//, "")
+    .replace(/\/$/, "");
   for (const url of images) {
     if (!supabaseHost) continue;
     if (!url.includes(supabaseHost)) {
@@ -169,9 +180,8 @@ async function seedDraftTag(
   userId: string,
   tag: { kind: "work" | "collab" | "group" | "event" | "profile"; id: string },
 ) {
-  const { getBlogPostEntityTagsServer, setBlogPostEntityTagsForOwnerServer } = await import(
-    "./blog-entity-tags.server"
-  );
+  const { getBlogPostEntityTagsServer, setBlogPostEntityTagsForOwnerServer } =
+    await import("./blog-entity-tags.server");
   try {
     const current = await getBlogPostEntityTagsServer(postId, { publicOnly: false });
     const next = current.map((t) => ({ kind: t.kind, id: t.id }));
@@ -231,7 +241,9 @@ export async function createMyBlogDraftServer(
       .select("category")
       .eq("id", seedTag.id)
       .maybeSingle();
-    const slug = blogCategoryFromWorkCategory((work as { category: string | null } | null)?.category);
+    const slug = blogCategoryFromWorkCategory(
+      (work as { category: string | null } | null)?.category,
+    );
     if (slug !== "general") {
       await supabaseAdmin
         .from("blog_posts")
@@ -284,8 +296,11 @@ type MemberUpdateInput = {
   tags?: Array<{ kind: "work" | "collab" | "group" | "event" | "profile"; id: string }>;
 };
 
-
-export async function updateMyBlogPostServer(context: AuthContext, id: string, input: MemberUpdateInput) {
+export async function updateMyBlogPostServer(
+  context: AuthContext,
+  id: string,
+  input: MemberUpdateInput,
+) {
   const current = await assertOwner(id, context.userId);
   const access = await resolveBlogAccess(context.userId);
   if (!access.canEditExisting) throw new Error(access.reason ?? "Editing is disabled.");
@@ -383,7 +398,6 @@ export async function updateMyBlogPostServer(context: AuthContext, id: string, i
   return { ...(data as Record<string, unknown>), entity_tags };
 }
 
-
 export async function publishMyBlogPostServer(context: AuthContext, id: string) {
   const current = await assertOwner(id, context.userId);
   const access = await resolveBlogAccess(context.userId);
@@ -408,7 +422,8 @@ export async function publishMyBlogPostServer(context: AuthContext, id: string) 
     seo_title: string | null;
     seo_description: string | null;
   };
-  if (!p.title.trim() || p.title.trim().length < 3) throw new Error("Give your post a title before publishing.");
+  if (!p.title.trim() || p.title.trim().length < 3)
+    throw new Error("Give your post a title before publishing.");
   if (!p.body_markdown.trim() || p.body_markdown.trim().length < 30) {
     throw new Error("Write a little more before publishing.");
   }
@@ -440,24 +455,31 @@ export async function publishMyBlogPostServer(context: AuthContext, id: string) 
   // Ensure self-attribution.
   await supabaseAdmin
     .from("blog_post_authors")
-    .upsert({ blog_post_id: id, profile_id: context.userId, sort_order: 0 }, { onConflict: "blog_post_id,profile_id" });
+    .upsert(
+      { blog_post_id: id, profile_id: context.userId, sort_order: 0 },
+      { onConflict: "blog_post_id,profile_id" },
+    );
 
   // Slug + generated excerpt are a separate update so the quota RPC only owns
   // the status flip.
   const prePatch: Record<string, unknown> = { author_name: name };
   if (finalSlug !== current.slug) prePatch.slug = finalSlug;
   if (effectiveExcerpt !== p.excerpt) prePatch.excerpt = effectiveExcerpt;
-  await supabaseAdmin.from("blog_posts").update(prePatch as never).eq("id", id);
+  await supabaseAdmin
+    .from("blog_posts")
+    .update(prePatch as never)
+    .eq("id", id);
 
   // For quota-bound tiers (free, lapsed), the RPC atomically re-checks the
   // monthly count under an advisory lock and flips status → published.
   // Unlimited tiers (plus, granted, trial) skip the RPC and take the plain
   // update path.
   if (access.monthlyPublicationLimit != null) {
-    const { data: ok, error: rpcErr } = await supabaseAdmin.rpc(
-      "try_consume_blog_publication",
-      { _user_id: context.userId, _post_id: id, _limit: access.monthlyPublicationLimit },
-    );
+    const { data: ok, error: rpcErr } = await supabaseAdmin.rpc("try_consume_blog_publication", {
+      _user_id: context.userId,
+      _post_id: id,
+      _limit: access.monthlyPublicationLimit,
+    });
     if (rpcErr) throw new Error(rpcErr.message);
     if (ok === false) {
       throw new Error(
@@ -500,10 +522,12 @@ export async function unpublishMyBlogPostServer(context: AuthContext, id: string
 
 export async function deleteMyBlogDraftServer(context: AuthContext, id: string) {
   const current = await assertOwner(id, context.userId);
-  if (current.published_at) throw new Error("Published posts can only be unpublished, not deleted.");
+  if (current.published_at)
+    throw new Error("Published posts can only be unpublished, not deleted.");
   if (current.status !== "draft") throw new Error("Only drafts can be deleted.");
   const access = await resolveBlogAccess(context.userId);
-  if (!access.canEditExisting) throw new Error(access.reason ?? "Your blogging access is inactive.");
+  if (!access.canEditExisting)
+    throw new Error(access.reason ?? "Your blogging access is inactive.");
   const { error } = await supabaseAdmin.from("blog_posts").delete().eq("id", id);
   if (error) throw new Error(error.message);
   await audit("blog.member.delete_draft", id, context.userId);

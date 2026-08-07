@@ -17,7 +17,8 @@ export const getModerationClientBundle = createServerFn({ method: "GET" }).handl
     global: {
       fetch: (input, init) => {
         const h = new Headers(init?.headers);
-        if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`) h.delete("Authorization");
+        if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`)
+          h.delete("Authorization");
         h.set("apikey", key);
         return fetch(input, { ...init, headers: h });
       },
@@ -30,7 +31,10 @@ export const getModerationClientBundle = createServerFn({ method: "GET" }).handl
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const [{ data: v }, { data: rows }] = await Promise.all([
     supabase.from("moderation_lexicon_version").select("version").eq("id", 1).maybeSingle(),
-    supabaseAdmin.from("moderation_terms").select("id, term, kind, severity, category").eq("enabled", true),
+    supabaseAdmin
+      .from("moderation_terms")
+      .select("id, term, kind, severity, category")
+      .eq("enabled", true),
   ]);
   const version = Number(v?.version ?? 0);
   const terms = (rows ?? []) as LexiconTerm[];

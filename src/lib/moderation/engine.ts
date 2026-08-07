@@ -22,31 +22,61 @@ export type Lexicon = { version: number; terms: LexiconTerm[] };
 // whitespace-stripped tight haystack, so digits in normal prose ("in 2020")
 // aren't rewritten and don't cause false positives.
 const CONFUSABLES: Record<string, string> = {
-  "а": "a", "А": "a", "ɑ": "a", "α": "a",
-  "б": "b", "β": "b",
-  "с": "c", "С": "c", "ϲ": "c",
-  "е": "e", "Е": "e", "ε": "e",
-  "һ": "h",
-  "і": "i", "І": "i", "ι": "i",
-  "ј": "j", "Ј": "j",
-  "к": "k", "К": "k",
-  "м": "m", "М": "m",
-  "о": "o", "О": "o", "ο": "o", "Ο": "o",
-  "р": "p", "Р": "p", "ρ": "p",
-  "ԛ": "q",
-  "г": "r",
-  "ѕ": "s", "Ѕ": "s",
-  "т": "t", "Т": "t",
-  "υ": "u",
-  "ν": "v", "ѵ": "v",
-  "ѡ": "w", "ω": "w",
-  "х": "x", "Х": "x",
-  "у": "y", "У": "y",
+  а: "a",
+  А: "a",
+  ɑ: "a",
+  α: "a",
+  б: "b",
+  β: "b",
+  с: "c",
+  С: "c",
+  ϲ: "c",
+  е: "e",
+  Е: "e",
+  ε: "e",
+  һ: "h",
+  і: "i",
+  І: "i",
+  ι: "i",
+  ј: "j",
+  Ј: "j",
+  к: "k",
+  К: "k",
+  м: "m",
+  М: "m",
+  о: "o",
+  О: "o",
+  ο: "o",
+  Ο: "o",
+  р: "p",
+  Р: "p",
+  ρ: "p",
+  ԛ: "q",
+  г: "r",
+  ѕ: "s",
+  Ѕ: "s",
+  т: "t",
+  Т: "t",
+  υ: "u",
+  ν: "v",
+  ѵ: "v",
+  ѡ: "w",
+  ω: "w",
+  х: "x",
+  Х: "x",
+  у: "y",
+  У: "y",
 };
 const LEET: Record<string, string> = {
-  "0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "7": "t", "@": "a", "$": "s",
+  "0": "o",
+  "1": "i",
+  "3": "e",
+  "4": "a",
+  "5": "s",
+  "7": "t",
+  "@": "a",
+  $: "s",
 };
-
 
 const ZERO_WIDTH = /[\u200B-\u200D\uFEFF\u2060\u180E]/g;
 const DIACRITICS = /[\u0300-\u036f]/g;
@@ -80,7 +110,6 @@ export function normalize(input: string): { normalized: string; tight: string } 
   tight = tOut;
   return { normalized: spaced, tight };
 }
-
 
 export type CompiledMatcher = {
   version: number;
@@ -147,7 +176,13 @@ export function compileMatcher(lex: Lexicon): CompiledMatcher {
 
 export type CheckResult =
   | { ok: true }
-  | { ok: false; severity: "block" | "warn"; category: TermCategory; ruleId?: string; termHashInput: string };
+  | {
+      ok: false;
+      severity: "block" | "warn";
+      category: TermCategory;
+      ruleId?: string;
+      termHashInput: string;
+    };
 
 function testRule(r: CompiledRule, spaced: string, tight: string): boolean {
   return r.target === "tight" ? r.regex.test(tight) : r.regex.test(spaced);
@@ -163,18 +198,29 @@ export function check(text: string, m: CompiledMatcher): CheckResult {
   for (const r of m.block) {
     if (testRule(r, spaced, tight)) {
       if (allowed) continue;
-      return { ok: false, severity: "block", category: r.category, ruleId: r.id, termHashInput: r.regex.source };
+      return {
+        ok: false,
+        severity: "block",
+        category: r.category,
+        ruleId: r.id,
+        termHashInput: r.regex.source,
+      };
     }
   }
   for (const r of m.warn) {
     if (testRule(r, spaced, tight)) {
       if (allowed) continue;
-      return { ok: false, severity: "warn", category: r.category, ruleId: r.id, termHashInput: r.regex.source };
+      return {
+        ok: false,
+        severity: "warn",
+        category: r.category,
+        ruleId: r.id,
+        termHashInput: r.regex.source,
+      };
     }
   }
   return { ok: true };
 }
-
 
 // Spam heuristics — deterministic, per-surface thresholds passed in.
 export type SpamOpts = {
@@ -199,7 +245,12 @@ export function checkSpam(text: string, opts: SpamOpts = {}): SpamResult {
   const longestRun = Math.max(0, ...Array.from(t.matchAll(/(.)\1{4,}/g)).map((m) => m[0].length));
 
   if (opts.maxLinks != null && links > opts.maxLinks) {
-    return { ok: false, severity: links > opts.maxLinks * 2 ? "block" : "warn", category: "spam", reason: "links" };
+    return {
+      ok: false,
+      severity: links > opts.maxLinks * 2 ? "block" : "warn",
+      category: "spam",
+      reason: "links",
+    };
   }
   if (opts.maxMentions != null && mentions > opts.maxMentions) {
     return { ok: false, severity: "warn", category: "spam", reason: "mentions" };
@@ -212,12 +263,10 @@ export function checkSpam(text: string, opts: SpamOpts = {}): SpamResult {
 
 // User-facing generic messages. NEVER include the matched term.
 export const MODERATION_MESSAGES: Record<TermCategory, string> = {
-  slur:
-    "This can't be posted because it contains language prohibited by Workshop's community standards. Please revise it and try again.",
+  slur: "This can't be posted because it contains language prohibited by Workshop's community standards. Please revise it and try again.",
   threat:
     "This can't be posted because it contains threatening language. Please revise it and try again.",
   harassment:
     "This can't be posted because it appears to target another person. Please revise it and try again.",
-  spam:
-    "This looks like spam. Please reduce links, mentions, or repeated text and try again.",
+  spam: "This looks like spam. Please reduce links, mentions, or repeated text and try again.",
 };

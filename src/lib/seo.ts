@@ -44,6 +44,8 @@ export function useJsonLd(data: object | null) {
     tag.text = JSON.stringify(data);
     tag.dataset.lovableLd = "1";
     document.head.appendChild(tag);
-    return () => { tag.remove(); };
+    return () => {
+      tag.remove();
+    };
   }, [data]);
 }

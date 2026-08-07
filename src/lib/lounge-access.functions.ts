@@ -46,14 +46,11 @@ export const reserveLoungeMinute = createServerFn({ method: "POST" })
       };
     }
 
-    const { data: reserved, error } = await context.supabase.rpc(
-      "try_reserve_lounge_minute",
-      {
-        _user_id: context.userId,
-        _room_id: (data.roomId ?? null) as string,
-        _limit: access.monthlyLimit,
-      },
-    );
+    const { data: reserved, error } = await context.supabase.rpc("try_reserve_lounge_minute", {
+      _user_id: context.userId,
+      _room_id: (data.roomId ?? null) as string,
+      _limit: access.monthlyLimit,
+    });
 
     if (error) {
       // Fail-open on transient DB errors so the audio path doesn't drop.

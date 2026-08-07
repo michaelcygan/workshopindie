@@ -40,7 +40,8 @@ export const listEventPhotos = createServerFn({ method: "POST" })
 
       const paths = rows.map((r) => r.storage_path);
       const signed = paths.length
-        ? (await supabase.storage.from("event-photos").createSignedUrls(paths, SIGNED_URL_TTL)).data ?? []
+        ? ((await supabase.storage.from("event-photos").createSignedUrls(paths, SIGNED_URL_TTL))
+            .data ?? [])
         : [];
       const urlByPath = new Map(signed.map((s) => [s.path ?? "", s.signedUrl ?? null]));
 
@@ -50,7 +51,14 @@ export const listEventPhotos = createServerFn({ method: "POST" })
             .from("profiles")
             .select("id,display_name,username,avatar_url")
             .in("id", uploaderIds)
-        : { data: [] as { id: string; display_name: string | null; username: string | null; avatar_url: string | null }[] };
+        : {
+            data: [] as {
+              id: string;
+              display_name: string | null;
+              username: string | null;
+              avatar_url: string | null;
+            }[],
+          };
       const profById = new Map((profs ?? []).map((p) => [p.id, p]));
 
       return rows.map((r) => {
@@ -130,7 +138,10 @@ export const deleteEventPhoto = createServerFn({ method: "POST" })
     const { error } = await supabase.from("event_photos").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     if (row?.storage_path) {
-      await supabase.storage.from("event-photos").remove([row.storage_path]).catch(() => {});
+      await supabase.storage
+        .from("event-photos")
+        .remove([row.storage_path])
+        .catch(() => {});
     }
     return { ok: true };
   });

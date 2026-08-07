@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { rpcOutcomeError } from "@/lib/errors";
+import { withOpLog } from "@/lib/obs/log";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 /**
@@ -13,9 +15,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
  */
 export const openWorkshopOnCollab = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
-    z.object({ collabPostId: z.string().uuid() }).parse(input),
-  )
+  .inputValidator((input) => z.object({ collabPostId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { userId, supabase } = context;
     const { collabPostId } = data;
@@ -77,12 +77,10 @@ export const openWorkshopOnCollab = createServerFn({ method: "POST" })
             title: post?.title ?? "",
           },
         });
-
       }
     }
 
     return { workshopId: ws.id, roomId, slug: ws.slug };
-
   });
 
 /**
@@ -92,28 +90,34 @@ export const openWorkshopOnCollab = createServerFn({ method: "POST" })
 export const rsvpToWorkshop = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ workshopId: z.string().uuid() }).parse(input))
-  .handler(async ({ data, context }) => {
-    // Seat reservation happens under a row lock in Postgres, so the cap holds
-    // even when several people tap RSVP in the same second.
-    const { data: outcome, error } = await context.supabase.rpc("reserve_workshop_seat", {
-      _workshop_id: data.workshopId,
-    } as never);
-    if (error) throw new Error(error.message);
-    switch (String(outcome)) {
-      case "joined":
-      case "already_joined":
-        return { ok: true };
-      case "full":
-        throw new Error("This Workshop is full.");
-      case "closed":
-        throw new Error("This Workshop is closed.");
-      case "not_found":
-        throw new Error("Workshop not found.");
-      default:
-        throw new Error("You can't join this Workshop.");
-    }
-  });
-
+  .handler(async ({ data, context }) =>
+    withOpLog(
+      "workshop.seat.reserve",
+      { entity: "workshop", entityId: data.workshopId, authed: true },
+      async () => {
+        // Seat reservation happens under a row lock in Postgres, so the cap holds
+        // even when several people tap RSVP in the same second.
+        const { data: outcome, error } = await context.supabase.rpc("reserve_workshop_seat", {
+          _workshop_id: data.workshopId,
+        } as never);
+        if (error) throw new Error(error.message);
+        const status = String(outcome);
+        switch (status) {
+          case "joined":
+          case "already_joined":
+            return { ok: true };
+          case "full":
+            throw rpcOutcomeError(status, "This Workshop is full.");
+          case "closed":
+            throw rpcOutcomeError(status, "This Workshop is closed.");
+          case "not_found":
+            throw rpcOutcomeError(status, "Workshop not found.");
+          default:
+            throw rpcOutcomeError(status, "You can't join this Workshop.");
+        }
+      },
+    ),
+  );
 
 export const cancelRsvp = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -145,22 +149,31 @@ export const cancelRsvp = createServerFn({ method: "POST" })
 export const createCollabFromRoom = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
-    z.object({
-      roomId: z.string().uuid(),
-      title: z.string().trim().min(1).max(120),
-      pitch: z.string().trim().max(2000).optional(),
-      license: z.enum(["cc_by", "rights_managed_externally", "portfolio_credit_only", "private"]).optional(),
-      licenseCustom: z.string().trim().max(400).optional(),
-    }).parse(input),
+    z
+      .object({
+        roomId: z.string().uuid(),
+        title: z.string().trim().min(1).max(120),
+        pitch: z.string().trim().max(2000).optional(),
+        license: z
+          .enum(["cc_by", "rights_managed_externally", "portfolio_credit_only", "private"])
+          .optional(),
+        licenseCustom: z.string().trim().max(400).optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const { userId, supabase } = context;
     const { roomId, title, pitch, license, licenseCustom } = data;
     const licenseLabel =
-      license === "rights_managed_externally" ? "Rights managed externally"
-      : license === "portfolio_credit_only" ? (licenseCustom?.trim() ? `Credit only — ${licenseCustom.trim()}` : "Credit only")
-      : license === "private" ? "Closed circle (private)"
-      : "CC BY 4.0";
+      license === "rights_managed_externally"
+        ? "Rights managed externally"
+        : license === "portfolio_credit_only"
+          ? licenseCustom?.trim()
+            ? `Credit only — ${licenseCustom.trim()}`
+            : "Credit only"
+          : license === "private"
+            ? "Closed circle (private)"
+            : "CC BY 4.0";
 
     // Same community-standards check every other written surface runs.
     const { moderateFields } = await import("@/lib/moderation/service.server");
@@ -200,15 +213,13 @@ export const createCollabFromRoom = createServerFn({ method: "POST" })
     const ws = { id: result.workshop_id as string, slug: result.workshop_slug as string };
     const collab = { slug: result.collab_slug };
 
-
     // 6b. Copy ephemeral tools forward into the persistent Workshop.
     const { data: srcTools } = await supabaseAdmin
       .from("instant_tools")
       .select("id, tool_type, enabled, created_by_user_id, created_at")
       .eq("room_id", roomId);
     for (const st of srcTools ?? []) {
-      const { data: newTool } = await (supabaseAdmin
-        .from("workshop_tools") as any)
+      const { data: newTool } = await (supabaseAdmin.from("workshop_tools") as any)
         .insert({
           workshop_id: ws.id,
           tool_type: st.tool_type,
@@ -235,7 +246,10 @@ export const createCollabFromRoom = createServerFn({ method: "POST" })
                 created_at: it.created_at,
               })),
           )
-          .then(() => null, () => null);
+          .then(
+            () => null,
+            () => null,
+          );
       }
     }
 
@@ -256,7 +270,10 @@ export const createCollabFromRoom = createServerFn({ method: "POST" })
             created_at: d.created_at,
           })),
         )
-        .then(() => null, () => null);
+        .then(
+          () => null,
+          () => null,
+        );
     }
 
     // 6d. Copy ephemeral Drive links forward into workshop_drive_links.
@@ -279,7 +296,10 @@ export const createCollabFromRoom = createServerFn({ method: "POST" })
               created_at: l.created_at,
             })),
         )
-        .then(() => null, () => null);
+        .then(
+          () => null,
+          () => null,
+        );
     }
 
     // 6e. Promote any List items into workshop_tasks (instant_tools.tool_type='list').
@@ -302,7 +322,10 @@ export const createCollabFromRoom = createServerFn({ method: "POST" })
           created_at: it.created_at,
         }));
       if (tasks.length > 0) {
-        await (supabaseAdmin.from("workshop_tasks") as any).insert(tasks).then(() => null, () => null);
+        await (supabaseAdmin.from("workshop_tasks") as any).insert(tasks).then(
+          () => null,
+          () => null,
+        );
       }
     }
 
@@ -311,9 +334,13 @@ export const createCollabFromRoom = createServerFn({ method: "POST" })
       .from("instant_presence")
       .select("user_id")
       .eq("room_id", roomId);
-    const inviteeIds = Array.from(new Set(
-      (presentList ?? []).map((p) => p.user_id).filter((id): id is string => !!id && id !== userId),
-    ));
+    const inviteeIds = Array.from(
+      new Set(
+        (presentList ?? [])
+          .map((p) => p.user_id)
+          .filter((id): id is string => !!id && id !== userId),
+      ),
+    );
     if (inviteeIds.length > 0) {
       await supabaseAdmin
         .from("workshop_join_invites")
@@ -326,7 +353,10 @@ export const createCollabFromRoom = createServerFn({ method: "POST" })
             status: "pending",
           })),
         )
-        .then(() => null, () => null);
+        .then(
+          () => null,
+          () => null,
+        );
 
       const { notifyMany } = await import("@/lib/notifications/deliver.server");
       await notifyMany({
@@ -338,7 +368,6 @@ export const createCollabFromRoom = createServerFn({ method: "POST" })
         preference: "inapp_workshop_updates",
         payload: { workshop_slug: ws.slug, title, room_id: roomId },
       });
-
     }
 
     return { workshopSlug: ws.slug, collabSlug: collab?.slug ?? null, alreadyPromoted: false };
@@ -358,7 +387,11 @@ export const acceptWorkshopJoinInvite = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!invite) throw new Error("No invite found.");
     if (invite.status === "accepted") {
-      const { data: ws } = await supabaseAdmin.from("workshops").select("slug").eq("id", data.workshopId).maybeSingle();
+      const { data: ws } = await supabaseAdmin
+        .from("workshops")
+        .select("slug")
+        .eq("id", data.workshopId)
+        .maybeSingle();
       return { workshopSlug: ws?.slug ?? null };
     }
     await supabaseAdmin
@@ -368,8 +401,15 @@ export const acceptWorkshopJoinInvite = createServerFn({ method: "POST" })
     await supabaseAdmin
       .from("workshop_participants")
       .insert({ workshop_id: data.workshopId, user_id: userId, participant_status: "confirmed" })
-      .then(() => null, () => null);
-    const { data: ws } = await supabaseAdmin.from("workshops").select("slug").eq("id", data.workshopId).maybeSingle();
+      .then(
+        () => null,
+        () => null,
+      );
+    const { data: ws } = await supabaseAdmin
+      .from("workshops")
+      .select("slug")
+      .eq("id", data.workshopId)
+      .maybeSingle();
     return { workshopSlug: ws?.slug ?? null };
   });
 

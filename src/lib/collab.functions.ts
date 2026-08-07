@@ -16,7 +16,10 @@ const httpsUrl = z.preprocess(
     .trim()
     .max(500, "Link is too long")
     .url("That doesn't look like a web address")
-    .refine((u) => u.startsWith("https://") || u.startsWith("http://"), "That doesn't look like a web address"),
+    .refine(
+      (u) => u.startsWith("https://") || u.startsWith("http://"),
+      "That doesn't look like a web address",
+    ),
 );
 
 const guestSchema = z.object({
@@ -51,7 +54,6 @@ const GUEST_LABELS: Record<string, string> = {
   instagramHandle: "Instagram",
 };
 
-
 function clientIpHash(): string | null {
   const raw =
     getRequestHeader("cf-connecting-ip") ||
@@ -73,14 +75,18 @@ export const submitGuestApplication = createServerFn({ method: "POST" })
       const hit = findHateSlur(f);
       if (hit) {
         // Don't echo the matched word back — generic message.
-        throw new Error("Your message contains language that isn't allowed. Please revise and try again.");
+        throw new Error(
+          "Your message contains language that isn't allowed. Please revise and try again.",
+        );
       }
     }
 
     // 2. Confirm post is real and open.
     const { data: post, error: postErr } = await supabaseAdmin
       .from("collab_posts")
-      .select("id,status,user_id,accepts_suggestions,applications_open,archived_at,resulting_work_id,ends_on")
+      .select(
+        "id,status,user_id,accepts_suggestions,applications_open,archived_at,resulting_work_id,ends_on",
+      )
       .eq("id", data.collabPostId)
       .maybeSingle();
     if (postErr) throw new Error(postErr.message);
@@ -103,7 +109,6 @@ export const submitGuestApplication = createServerFn({ method: "POST" })
       throw new Error("This Collab is only accepting applications for its listed roles.");
     }
 
-
     // 3. Rate-limit by hashed IP — max 5 / hour, 20 / day across the platform.
     const ipHash = clientIpHash();
     if (ipHash) {
@@ -114,7 +119,9 @@ export const submitGuestApplication = createServerFn({ method: "POST" })
         .eq("ip_hash", ipHash)
         .gte("created_at", hourAgo);
       if ((count ?? 0) >= 5) {
-        throw new Error("You've sent a few applications recently — please wait a bit before sending more.");
+        throw new Error(
+          "You've sent a few applications recently — please wait a bit before sending more.",
+        );
       }
     }
 
@@ -183,10 +190,8 @@ export const submitGuestApplication = createServerFn({ method: "POST" })
       },
     });
 
-
     return { ok: true as const, claimToken, applicationId: inserted.id };
   });
-
 
 const shareSchema = z.object({
   collabPostId: z.string().uuid(),
@@ -200,7 +205,10 @@ export const logShareEvent = createServerFn({ method: "POST" })
     await supabaseAdmin
       .from("collab_share_events")
       .insert({ collab_post_id: data.collabPostId, channel: data.channel })
-      .then(() => null, () => null);
+      .then(
+        () => null,
+        () => null,
+      );
     return { ok: true as const };
   });
 
@@ -225,7 +233,9 @@ export const listApplicants = createServerFn({ method: "POST" })
     const [eventsRes, guestsRes] = await Promise.all([
       supabase
         .from("collab_contact_events")
-        .select("id,sent_at,message_preview,collab_role_id,sender_user_id,review_status,is_application")
+        .select(
+          "id,sent_at,message_preview,collab_role_id,sender_user_id,review_status,is_application",
+        )
         .eq("collab_post_id", data.collabPostId)
         .order("sent_at", { ascending: false }),
       supabase
@@ -243,10 +253,19 @@ export const listApplicants = createServerFn({ method: "POST" })
     const events = (eventsRes.data ?? []).filter((e) => e.is_application !== false);
     const guestRows = (guestsRes.data ?? []).filter((g) => !g.matched_user_id);
 
-
     // Hydrate sender profiles in one batched query.
     const senderIds = Array.from(new Set(events.map((e) => e.sender_user_id).filter(Boolean)));
-    let profileMap: Record<string, { id: string; username: string | null; display_name: string | null; avatar_url: string | null; headline: string | null; instagram_handle: string | null }> = {};
+    let profileMap: Record<
+      string,
+      {
+        id: string;
+        username: string | null;
+        display_name: string | null;
+        avatar_url: string | null;
+        headline: string | null;
+        instagram_handle: string | null;
+      }
+    > = {};
     if (senderIds.length > 0) {
       const { data: profs } = await supabase
         .from("profiles")
@@ -308,14 +327,13 @@ export const listApplicants = createServerFn({ method: "POST" })
 
     const guests = guestRows.map((g) => ({
       ...g,
-      review_status: (g.review_status ?? (g.status === "spam" ? "spam" : "new")) as CollabReviewStatus,
+      review_status: (g.review_status ??
+        (g.status === "spam" ? "spam" : "new")) as CollabReviewStatus,
       ...roleInfo(g.collab_role_id),
     }));
 
     return { members, guests };
   });
-
-
 
 /** Owner-only review vocabulary for member applications (collab_contact_events). */
 export const setApplicationReviewStatus = createServerFn({ method: "POST" })
@@ -336,7 +354,8 @@ export const setApplicationReviewStatus = createServerFn({ method: "POST" })
       .select("id,user_id")
       .eq("id", data.collabPostId)
       .maybeSingle();
-    if (!post || post.user_id !== userId) throw new Error("Only the post owner can review applications.");
+    if (!post || post.user_id !== userId)
+      throw new Error("Only the post owner can review applications.");
 
     // No owner-side UPDATE policy exists on collab_contact_events, so write with
     // the admin client after verifying ownership above.
@@ -356,7 +375,9 @@ export const updateGuestApplicationStatus = createServerFn({ method: "POST" })
       .object({
         id: z.string().uuid(),
         status: z.enum(["new", "contacted", "spam", "hidden"]).optional(),
-        reviewStatus: z.enum(["new", "reviewing", "accepted", "declined", "withdrawn", "spam"]).optional(),
+        reviewStatus: z
+          .enum(["new", "reviewing", "accepted", "declined", "withdrawn", "spam"])
+          .optional(),
       })
       .parse(input),
   )
@@ -374,7 +395,12 @@ export const updateGuestApplicationStatus = createServerFn({ method: "POST" })
       patch.review_status = data.reviewStatus;
       if (!data.status) {
         // Keep the legacy text column roughly in sync for older surfaces.
-        patch.status = data.reviewStatus === "spam" ? "spam" : data.reviewStatus === "reviewing" ? "contacted" : "new";
+        patch.status =
+          data.reviewStatus === "spam"
+            ? "spam"
+            : data.reviewStatus === "reviewing"
+              ? "contacted"
+              : "new";
       }
     }
     if (Object.keys(patch).length === 0) return { ok: true as const };
@@ -386,7 +412,6 @@ export const updateGuestApplicationStatus = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true as const };
   });
-
 
 // Helper: ensure allowance row exists, create+seed conversation if new, insert opening message.
 // Uses supabaseAdmin where RLS would otherwise reject (allowance row, notifications).
@@ -408,15 +433,18 @@ async function openCollabDmThread(args: {
   if (blocked === true) throw new Error("This conversation is not available.");
 
   // 2. Upsert allowance (idempotent)
-  await supabaseAdmin
-    .from("collab_dm_allowances")
-    .upsert(
-      { collab_post_id: collabPostId, owner_user_id: ownerUserId, applicant_user_id: applicantUserId },
-      { onConflict: "collab_post_id,owner_user_id,applicant_user_id" },
-    );
+  await supabaseAdmin.from("collab_dm_allowances").upsert(
+    {
+      collab_post_id: collabPostId,
+      owner_user_id: ownerUserId,
+      applicant_user_id: applicantUserId,
+    },
+    { onConflict: "collab_post_id,owner_user_id,applicant_user_id" },
+  );
 
   // 3. Find or create conversation (ordered pair).
-  const [a, b] = applicantUserId < ownerUserId ? [applicantUserId, ownerUserId] : [ownerUserId, applicantUserId];
+  const [a, b] =
+    applicantUserId < ownerUserId ? [applicantUserId, ownerUserId] : [ownerUserId, applicantUserId];
   const { data: existing } = await supabaseAdmin
     .from("conversations")
     .select("id, context_collab_post_id")
@@ -468,7 +496,6 @@ async function openCollabDmThread(args: {
   return { conversationId };
 }
 
-
 const applySchema = z.object({
   collabPostId: z.string().uuid(),
   collabRoleId: z.string().uuid().nullable().optional(),
@@ -482,11 +509,16 @@ export const applyToCollab = createServerFn({ method: "POST" })
     const { userId } = context;
 
     const hit = findHateSlur(data.message);
-    if (hit) throw new Error("Your message contains language that isn't allowed. Please revise and try again.");
+    if (hit)
+      throw new Error(
+        "Your message contains language that isn't allowed. Please revise and try again.",
+      );
 
     const { data: post, error: postErr } = await supabaseAdmin
       .from("collab_posts")
-      .select("id,status,user_id,title,slug,accepts_suggestions,applications_open,archived_at,resulting_work_id,ends_on")
+      .select(
+        "id,status,user_id,title,slug,accepts_suggestions,applications_open,archived_at,resulting_work_id,ends_on",
+      )
       .eq("id", data.collabPostId)
       .maybeSingle();
     if (postErr) throw new Error(postErr.message);
@@ -545,7 +577,6 @@ export const applyToCollab = createServerFn({ method: "POST" })
       },
     });
 
-
     const { conversationId } = await openCollabDmThread({
       collabPostId: data.collabPostId,
       ownerUserId: post.user_id,
@@ -580,14 +611,20 @@ export const claimGuestApplication = createServerFn({ method: "POST" })
       .eq("id", app.collab_post_id)
       .maybeSingle();
     if (!post) throw new Error("This collab no longer exists.");
-    if (post.user_id === userId) throw new Error("You can't claim an application on your own collab.");
+    if (post.user_id === userId)
+      throw new Error("You can't claim an application on your own collab.");
 
     // Mark claimed + clear token. The on-signup backfill also fires this for guest rows whose
     // email matches the new user; this branch covers the explicit /collab/claim/$token flow.
     if (!app.matched_user_id) {
       await supabaseAdmin
         .from("collab_guest_applications")
-        .update({ matched_user_id: userId, matched_at: new Date().toISOString(), claim_token: null, claim_token_expires_at: null })
+        .update({
+          matched_user_id: userId,
+          matched_at: new Date().toISOString(),
+          claim_token: null,
+          claim_token_expires_at: null,
+        })
         .eq("id", app.id);
 
       // Mirror into native contact_events feed (the auto-backfill trigger only fires on
@@ -741,7 +778,9 @@ export const updateCollab = createServerFn({ method: "POST" })
 
     const { data: post, error: postErr } = await supabase
       .from("collab_posts")
-      .select("id,user_id,terms_version,title,description,timeline_mode,starts_on,ends_on,location_mode,city_id,compensation_type,rights_arrangement,status")
+      .select(
+        "id,user_id,terms_version,title,description,timeline_mode,starts_on,ends_on,location_mode,city_id,compensation_type,rights_arrangement,status",
+      )
       .eq("id", data.collabPostId)
       .maybeSingle();
     if (postErr) throw new Error(postErr.message);
@@ -761,7 +800,10 @@ export const updateCollab = createServerFn({ method: "POST" })
     // Detect a scope change.
     let scopeChanged = false;
     for (const k of SCOPE_KEYS) {
-      if (k in patch && (patch as Record<string, unknown>)[k] !== (post as Record<string, unknown>)[k]) {
+      if (
+        k in patch &&
+        (patch as Record<string, unknown>)[k] !== (post as Record<string, unknown>)[k]
+      ) {
         scopeChanged = true;
         break;
       }
@@ -787,7 +829,13 @@ export const updateCollab = createServerFn({ method: "POST" })
         `${r.role_name.trim().toLowerCase()}|${r.quantity}|${(r.description ?? "").trim()}`;
       const a = (existingRoles ?? []).map(norm).join("§");
       const b = patch.roles
-        .map((r) => norm({ role_name: r.role_name, quantity: r.quantity, description: r.description ?? null }))
+        .map((r) =>
+          norm({
+            role_name: r.role_name,
+            quantity: r.quantity,
+            description: r.description ?? null,
+          }),
+        )
         .join("§");
       if (a !== b) {
         scopeChanged = true;
@@ -839,11 +887,14 @@ export const updateCollab = createServerFn({ method: "POST" })
           preference: "inapp_collab_activity",
           payload: { collab_title: post.title },
         });
-
       }
     }
 
-    return { ok: true as const, scopeChanged, termsVersion: row.terms_version ?? post.terms_version };
+    return {
+      ok: true as const,
+      scopeChanged,
+      termsVersion: row.terms_version ?? post.terms_version,
+    };
   });
 
 export const leaveCollab = createServerFn({ method: "POST" })
@@ -857,7 +908,8 @@ export const leaveCollab = createServerFn({ method: "POST" })
       .eq("id", data.collabPostId)
       .maybeSingle();
     if (!post) throw new Error("This collab no longer exists.");
-    if (post.user_id === userId) throw new Error("Owners can't leave their own collab — close it instead.");
+    if (post.user_id === userId)
+      throw new Error("Owners can't leave their own collab — close it instead.");
 
     const { data: rows, error } = await supabase
       .from("collab_invites")
@@ -913,7 +965,11 @@ export const getMyCollabMembership = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const [postRes, inviteRes] = await Promise.all([
-      supabase.from("collab_posts").select("terms_version").eq("id", data.collabPostId).maybeSingle(),
+      supabase
+        .from("collab_posts")
+        .select("terms_version")
+        .eq("id", data.collabPostId)
+        .maybeSingle(),
       supabase
         .from("collab_invites")
         .select("id,status,accepted_terms_version")
@@ -933,7 +989,6 @@ export const getMyCollabMembership = createServerFn({ method: "POST" })
       termsVersion,
     };
   });
-
 
 /* ---------------- Portfolio pinning ---------------- */
 
@@ -1133,7 +1188,6 @@ export const acceptCollabApplicant = createServerFn({ method: "POST" })
       },
     });
 
-
     return { ok: true as const };
   });
 
@@ -1183,8 +1237,11 @@ export const listCollabMembers = createServerFn({ method: "POST" })
     return {
       isOwner,
       ownerId: post.user_id,
-      members: uniqueIds
-        .map((id) => byId[id])
-        .filter(Boolean) as { id: string; username: string | null; display_name: string | null; avatar_url: string | null }[],
+      members: uniqueIds.map((id) => byId[id]).filter(Boolean) as {
+        id: string;
+        username: string | null;
+        display_name: string | null;
+        avatar_url: string | null;
+      }[],
     };
   });

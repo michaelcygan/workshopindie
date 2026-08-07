@@ -43,7 +43,10 @@ export const getMyGroupIds = createServerFn({ method: "POST" })
   });
 
 const tagWorkSchema = z.object({ group_id: z.string().uuid(), work_id: z.string().uuid() });
-const tagCollabSchema = z.object({ group_id: z.string().uuid(), collab_post_id: z.string().uuid() });
+const tagCollabSchema = z.object({
+  group_id: z.string().uuid(),
+  collab_post_id: z.string().uuid(),
+});
 const tagWorkshopSchema = z.object({ group_id: z.string().uuid(), workshop_id: z.string().uuid() });
 
 export const tagWorkInGroup = createServerFn({ method: "POST" })

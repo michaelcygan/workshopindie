@@ -29,11 +29,7 @@ export type GateCopy = {
   cta: string;
 };
 
-export type PlusGateReason =
-  | "work_limit"
-  | "collab_limit"
-  | "blog_limit"
-  | "audio_limit";
+export type PlusGateReason = "work_limit" | "collab_limit" | "blog_limit" | "audio_limit";
 
 export function plusGateCopy(reason: PlusGateReason): { title: string; body: string } {
   switch (reason) {
@@ -114,10 +110,7 @@ export function publishedWorkCapCopy(
 }
 
 /** Open Collabs concurrent cap. */
-export function openCollabCapCopy(
-  used: number,
-  cap: number = FREE_OPEN_COLLAB_CAP,
-): GateCopy {
+export function openCollabCapCopy(used: number, cap: number = FREE_OPEN_COLLAB_CAP): GateCopy {
   return {
     title: `You've hit ${cap} active Collabs`,
     body: `Free can run ${cap} open Collabs at a time. Go Plus for unlimited.`,

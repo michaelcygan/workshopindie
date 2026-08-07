@@ -26,7 +26,10 @@ type CreditRow = {
  * "These same humans also made this together." The first visible payoff
  * of the credit graph on a Work page.
  */
-export async function getCoCreditedWorks(workId: string, currentCreatedBy: string): Promise<WorkCardData[]> {
+export async function getCoCreditedWorks(
+  workId: string,
+  currentCreatedBy: string,
+): Promise<WorkCardData[]> {
   // 1) Who's credited on this work?
   const { data: creditRows } = await supabase
     .from("work_credits")
@@ -51,9 +54,7 @@ export async function getCoCreditedWorks(workId: string, currentCreatedBy: strin
     if (!overlap.has(row.work_id)) overlap.set(row.work_id, new Set());
     overlap.get(row.work_id)!.add(row.user_id);
   }
-  const candidateIds = [...overlap.entries()]
-    .filter(([, set]) => set.size >= 2)
-    .map(([id]) => id);
+  const candidateIds = [...overlap.entries()].filter(([, set]) => set.size >= 2).map(([id]) => id);
   if (candidateIds.length === 0) return [];
 
   // 4) Hydrate those works.
@@ -69,15 +70,33 @@ export async function getCoCreditedWorks(workId: string, currentCreatedBy: strin
     .limit(6);
 
   type Row = {
-    id: string; title: string; slug: string; category: Category;
-    cover_url: string | null; embed_url: string | null; source_type: string;
-    like_count: number; save_count: number; view_count: number;
-    work_credits?: { sort_order: number; display_name: string | null; profiles: { id: string; display_name: string | null; username: string | null } | null }[];
+    id: string;
+    title: string;
+    slug: string;
+    category: Category;
+    cover_url: string | null;
+    embed_url: string | null;
+    source_type: string;
+    like_count: number;
+    save_count: number;
+    view_count: number;
+    work_credits?: {
+      sort_order: number;
+      display_name: string | null;
+      profiles: { id: string; display_name: string | null; username: string | null } | null;
+    }[];
   };
   return ((works ?? []) as Row[]).map<WorkCardData>((r) => ({
-    id: r.id, title: r.title, slug: r.slug, category: r.category,
-    cover_url: r.cover_url, embed_url: r.embed_url, source_type: r.source_type,
-    like_count: r.like_count, save_count: r.save_count, view_count: r.view_count,
+    id: r.id,
+    title: r.title,
+    slug: r.slug,
+    category: r.category,
+    cover_url: r.cover_url,
+    embed_url: r.embed_url,
+    source_type: r.source_type,
+    like_count: r.like_count,
+    save_count: r.save_count,
+    view_count: r.view_count,
     credits: (r.work_credits ?? [])
       .sort((a, b) => a.sort_order - b.sort_order)
       .map((c) => ({
@@ -118,7 +137,10 @@ export async function getFrequentCollaborators(userId: string, limit = 8): Promi
     .in("work_id", workIds)
     .neq("user_id", userId);
 
-  const counts = new Map<string, { profile: NonNullable<CreditRow["profiles"]>; works: Set<string> }>();
+  const counts = new Map<
+    string,
+    { profile: NonNullable<CreditRow["profiles"]>; works: Set<string> }
+  >();
   for (const row of (coCredits ?? []) as unknown as (CreditRow & { work_id: string })[]) {
     if (!row.profiles) continue;
     const existing = counts.get(row.user_id);

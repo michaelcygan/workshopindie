@@ -51,7 +51,8 @@ describe("buildIcsFile", () => {
   const file = buildIcsFile({
     uid: "abc-123",
     title: "Open Mic, Vol. 4",
-    description: "Sign up at 7.\n\nView on Workshop: https://workshopindie.com/g/chicago/e/open-mic",
+    description:
+      "Sign up at 7.\n\nView on Workshop: https://workshopindie.com/g/chicago/e/open-mic",
     location: "Green Mill, 4802 N Broadway, Chicago IL",
     url: "https://workshopindie.com/g/chicago/e/open-mic",
     start: "2026-08-07T01:00:00.000Z",

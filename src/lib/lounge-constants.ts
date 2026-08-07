@@ -38,9 +38,7 @@ export const LOUNGE_AUDIO_ON_ENTRY_KEY = "workshop:lounge-audio-on-entry";
  * Normalize legacy URL / storage `mode` values into the participation vocab.
  * Cameras no longer exist — a stale `mode=video` link becomes chat.
  */
-export function normalizeLoungeMode(
-  raw: string | null | undefined,
-): LoungeParticipation {
+export function normalizeLoungeMode(raw: string | null | undefined): LoungeParticipation {
   if (raw === "audio" || raw === "voice") return "audio";
   return "chat";
 }
@@ -54,15 +52,13 @@ export function normalizeLoungeMode(
 export function isLoungeAudioSupported(): boolean {
   if (typeof window === "undefined") return false;
   const hasRTC =
-    typeof (window as unknown as { RTCPeerConnection?: unknown })
-      .RTCPeerConnection === "function";
+    typeof (window as unknown as { RTCPeerConnection?: unknown }).RTCPeerConnection === "function";
   const hasMedia = !!(
     navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === "function"
   );
   const hasAudio =
-    typeof (window as unknown as { AudioContext?: unknown }).AudioContext ===
-      "function" ||
-    typeof (window as unknown as { webkitAudioContext?: unknown })
-      .webkitAudioContext === "function";
+    typeof (window as unknown as { AudioContext?: unknown }).AudioContext === "function" ||
+    typeof (window as unknown as { webkitAudioContext?: unknown }).webkitAudioContext ===
+      "function";
   return hasRTC && hasMedia && hasAudio;
 }

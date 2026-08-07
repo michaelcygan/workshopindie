@@ -43,12 +43,12 @@ export function isMediumGroupKey(value: string | null | undefined): value is Med
 
 /** The Medium Group for a canonical taxonomy key, if one exists. */
 export function mediumGroupByKey(key: string | null | undefined): MediumGroup | null {
-  return key ? BY_KEY.get(key as MediumGroupKey) ?? null : null;
+  return key ? (BY_KEY.get(key as MediumGroupKey) ?? null) : null;
 }
 
 /** The Medium Group for a `/g/<slug>` route slug, if that slug is system-managed. */
 export function mediumGroupBySlug(slug: string | null | undefined): MediumGroup | null {
-  return slug ? BY_SLUG.get(slug) ?? null : null;
+  return slug ? (BY_SLUG.get(slug) ?? null) : null;
 }
 
 /**
@@ -62,7 +62,9 @@ export function mediumGroupForCategory(category: string | null | undefined): Med
 }
 
 /** Deduplicated Medium Groups for a set of stored category values. */
-export function mediumGroupsForCategories(categories: readonly (string | null | undefined)[]): MediumGroup[] {
+export function mediumGroupsForCategories(
+  categories: readonly (string | null | undefined)[],
+): MediumGroup[] {
   const seen = new Set<string>();
   const out: MediumGroup[] = [];
   for (const c of categories) {

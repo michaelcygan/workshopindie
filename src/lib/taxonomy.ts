@@ -40,9 +40,24 @@ export const CANONICAL_CATEGORIES: CategoryEntry[] = [
   { id: "performance", label: "Performance", className: "bg-cat-standup text-cat-standup-ink" },
   { id: "audio", label: "Audio", className: "bg-cat-listen-party text-cat-listen-party-ink" },
   { id: "design", label: "Design", className: "bg-cat-coworking text-cat-coworking-ink" },
-  { id: "scene_life", label: "Scene & Lifestyle", className: "bg-cat-jam text-cat-jam-ink", community: true },
-  { id: "city", label: "Cities", className: "bg-cat-roundtable text-cat-roundtable-ink", community: true },
-  { id: "language", label: "Languages", className: "bg-cat-office-hours text-cat-office-hours-ink", community: true },
+  {
+    id: "scene_life",
+    label: "Scene & Lifestyle",
+    className: "bg-cat-jam text-cat-jam-ink",
+    community: true,
+  },
+  {
+    id: "city",
+    label: "Cities",
+    className: "bg-cat-roundtable text-cat-roundtable-ink",
+    community: true,
+  },
+  {
+    id: "language",
+    label: "Languages",
+    className: "bg-cat-office-hours text-cat-office-hours-ink",
+    community: true,
+  },
   { id: "other", label: "Other", className: "bg-muted text-ink-soft" },
 ];
 
@@ -128,10 +143,18 @@ export const TOPICS: { id: string; label: string; className: string }[] = [
   { id: "critique", label: "Critique", className: "bg-cat-critique text-cat-critique-ink" },
   { id: "business", label: "Business of Art", className: "bg-cat-business text-cat-business-ink" },
   { id: "coworking", label: "Co-working", className: "bg-cat-coworking text-cat-coworking-ink" },
-  { id: "office_hours", label: "Office Hours", className: "bg-cat-office-hours text-cat-office-hours-ink" },
+  {
+    id: "office_hours",
+    label: "Office Hours",
+    className: "bg-cat-office-hours text-cat-office-hours-ink",
+  },
   { id: "roundtable", label: "Roundtable", className: "bg-cat-roundtable text-cat-roundtable-ink" },
   { id: "pitch", label: "Pitch", className: "bg-cat-pitch text-cat-pitch-ink" },
-  { id: "listen_party", label: "Listen Party", className: "bg-cat-listen-party text-cat-listen-party-ink" },
+  {
+    id: "listen_party",
+    label: "Listen Party",
+    className: "bg-cat-listen-party text-cat-listen-party-ink",
+  },
   { id: "open_mic", label: "Open Mic", className: "bg-cat-open-mic text-cat-open-mic-ink" },
   { id: "jam", label: "Jam", className: "bg-cat-jam text-cat-jam-ink" },
   { id: "standup", label: "Stand-up", className: "bg-cat-standup text-cat-standup-ink" },
@@ -209,7 +232,6 @@ export function workStorageValuesFor(canonical: string): string[] {
 export function canonicalFilterValues(value: string): CanonicalCategory[] {
   return [normalizeCategory(value)];
 }
-
 
 /** Subtypes shown per canonical category (stored free-form on works.subtype). */
 export const CANONICAL_SUBTYPES: Record<string, string[]> = {

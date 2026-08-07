@@ -89,7 +89,6 @@ export const pingPresence = createServerFn({ method: "POST" })
     return { ok: true as const, cameOnline: true };
   });
 
-
 /**
  * Mutual-follow friends list with online indicator.
  * Online is read from the ephemeral tier (`user_presence`), gated by the
@@ -100,12 +99,13 @@ export const getFriends = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<Friend[]> => {
     const { userId } = context;
-    const [{ data: iFollow }, { data: followMe }, { data: blocksMine }, { data: blocksOnMe }] = await Promise.all([
-      supabaseAdmin.from("follows").select("followed_user_id").eq("follower_user_id", userId),
-      supabaseAdmin.from("follows").select("follower_user_id").eq("followed_user_id", userId),
-      supabaseAdmin.from("user_blocks").select("blocked_user_id").eq("blocker_user_id", userId),
-      supabaseAdmin.from("user_blocks").select("blocker_user_id").eq("blocked_user_id", userId),
-    ]);
+    const [{ data: iFollow }, { data: followMe }, { data: blocksMine }, { data: blocksOnMe }] =
+      await Promise.all([
+        supabaseAdmin.from("follows").select("followed_user_id").eq("follower_user_id", userId),
+        supabaseAdmin.from("follows").select("follower_user_id").eq("followed_user_id", userId),
+        supabaseAdmin.from("user_blocks").select("blocked_user_id").eq("blocker_user_id", userId),
+        supabaseAdmin.from("user_blocks").select("blocker_user_id").eq("blocked_user_id", userId),
+      ]);
     const iFollowSet = new Set((iFollow ?? []).map((r) => r.followed_user_id));
     const blocked = new Set<string>([
       ...(blocksMine ?? []).map((r) => r.blocked_user_id),
@@ -155,7 +155,6 @@ export const getFriends = createServerFn({ method: "GET" })
       });
   });
 
-
 /**
  * Live Lounge rooms the signed-in user can invite someone into: rooms they
  * created, or rooms they're currently present in. Used by the invite picker.
@@ -200,14 +199,12 @@ export const listMyLoungeRooms = createServerFn({ method: "GET" })
       id: r.id as string,
       title: (r.title as string | null) ?? "Group audio",
       medium: (r.medium as string | null) ?? null,
-      groupName:
-        ((r as unknown as { groups: { name: string } | null }).groups?.name ?? null) as
-          | string
-          | null,
-      groupSlug:
-        ((r as unknown as { groups: { slug: string } | null }).groups?.slug ?? null) as
-          | string
-          | null,
+      groupName: ((r as unknown as { groups: { name: string } | null }).groups?.name ?? null) as
+        | string
+        | null,
+      groupSlug: ((r as unknown as { groups: { slug: string } | null }).groups?.slug ?? null) as
+        | string
+        | null,
       createdAt: r.created_at as string,
     }));
   });
@@ -236,7 +233,8 @@ export const inviteFriendToLounge = createServerFn({ method: "POST" })
       .eq("id", data.roomId)
       .maybeSingle();
     if (!room || room.status !== "active") throw new Error("That Group audio is no longer live.");
-    const groupSlug = (room as unknown as { groups?: { slug: string } | null }).groups?.slug ?? null;
+    const groupSlug =
+      (room as unknown as { groups?: { slug: string } | null }).groups?.slug ?? null;
 
     // Require mutual follow.
     const [{ data: a }, { data: b }] = await Promise.all([
@@ -267,7 +265,10 @@ export const inviteFriendToLounge = createServerFn({ method: "POST" })
         },
         { onConflict: "room_id,invitee_user_id" },
       )
-      .then(() => null, () => null);
+      .then(
+        () => null,
+        () => null,
+      );
 
     const { data: inviter } = await supabaseAdmin
       .from("profiles")
@@ -292,7 +293,6 @@ export const inviteFriendToLounge = createServerFn({ method: "POST" })
         group_slug: groupSlug,
       },
     });
-
 
     return { ok: true, roomId: room.id };
   });
@@ -331,11 +331,17 @@ export const listMyLoungeInvites = createServerFn({ method: "GET" })
       supabaseAdmin
         .from("instant_rooms")
         .select("id,title,medium,status")
-        .in("id", rows.map((r) => r.room_id as string)),
+        .in(
+          "id",
+          rows.map((r) => r.room_id as string),
+        ),
       supabaseAdmin
         .from("profiles")
         .select("id,display_name,username,avatar_url")
-        .in("id", rows.map((r) => r.inviter_user_id as string)),
+        .in(
+          "id",
+          rows.map((r) => r.inviter_user_id as string),
+        ),
     ]);
 
     const roomById = new Map((rooms ?? []).map((r) => [r.id as string, r]));
@@ -345,15 +351,17 @@ export const listMyLoungeInvites = createServerFn({ method: "GET" })
       const room = roomById.get(r.room_id as string);
       if (!room || room.status !== "active") return [];
       const p = profById.get(r.inviter_user_id as string);
-      return [{
-        id: r.id as string,
-        roomId: room.id as string,
-        title: (room.title as string | null) ?? "Lounge",
-        medium: (room.medium as string | null) ?? null,
-        inviterName: (p?.display_name as string | null) ?? (p?.username as string | null) ?? null,
-        inviterAvatar: (p?.avatar_url as string | null) ?? null,
-        expiresAt: r.expires_at as string,
-      }];
+      return [
+        {
+          id: r.id as string,
+          roomId: room.id as string,
+          title: (room.title as string | null) ?? "Lounge",
+          medium: (room.medium as string | null) ?? null,
+          inviterName: (p?.display_name as string | null) ?? (p?.username as string | null) ?? null,
+          inviterAvatar: (p?.avatar_url as string | null) ?? null,
+          expiresAt: r.expires_at as string,
+        },
+      ];
     });
   });
 
@@ -379,5 +387,3 @@ export const respondToLoungeInvite = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true, roomId: (row?.room_id as string | undefined) ?? null };
   });
-
-
