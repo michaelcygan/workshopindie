@@ -2,6 +2,8 @@ import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import type { HomeWorkStory } from "@/lib/home-types";
 import { HOME_STORY_LABEL_TEXT } from "@/lib/home-types";
+import { CategoryPlaceholder } from "@/components/home/category-placeholder";
+
 
 /**
  * Public presentation of the trusted Work ↔ Blog composites.
