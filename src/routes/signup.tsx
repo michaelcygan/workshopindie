@@ -49,13 +49,15 @@ export const Route = createFileRoute("/signup")({
 
 function Signup() {
   const search = Route.useSearch();
+  const navigate = useNavigate();
   const { user: signedInUser, loading: authLoading } = useAuth();
 
   const [firstName, setFirstName] = useState(search.first ?? "");
   const [lastName, setLastName] = useState(search.last ?? "");
   const [instagram, setInstagram] = useState(search.ig ?? "");
   const [email, setEmail] = useState(search.email ?? "");
-  const [password, setPassword] = useState("");
+  const [password, setPassword] = useState(() => takeHandoffPassword());
+
   const [loading, setLoading] = useState(false);
   const fromGuest = search.from === "guest_apply";
 
