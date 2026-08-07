@@ -5519,6 +5519,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_presence: {
+        Row: {
+          created_at: string
+          last_seen_at: string
+          show_online: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          last_seen_at?: string
+          show_online?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          last_seen_at?: string
+          show_online?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -8981,6 +9005,7 @@ export type Database = {
       start_host_claim: { Args: { _room_id: string }; Returns: undefined }
       sweep_stale_lounge_speakers: { Args: never; Returns: number }
       sweep_stale_lounges: { Args: never; Returns: undefined }
+      sweep_stale_presence: { Args: never; Returns: number }
       sync_blog_medium_groups: {
         Args: { _post_id: string }
         Returns: undefined
@@ -9008,6 +9033,14 @@ export type Database = {
           liked: boolean
           save_count: number
           saved: boolean
+        }[]
+      }
+      touch_presence: {
+        Args: never
+        Returns: {
+          durable_written: boolean
+          prev_seen_at: string
+          show_online: boolean
         }[]
       }
       try_consume_blog_publication: {

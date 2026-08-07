@@ -111,8 +111,17 @@ export const updateMyPrivacy = createServerFn({ method: "POST" })
       .update(patch)
       .eq("id", userId);
     if (error) throw new Error(error.message);
+    // Mirror online-visibility into the ephemeral presence tier so the change
+    // takes effect on the next friends-list read, not the next heartbeat.
+    if (patch.show_online !== undefined) {
+      await supabaseAdmin
+        .from("user_presence")
+        .update({ show_online: patch.show_online })
+        .eq("user_id", userId);
+    }
     return { ok: true };
   });
+
 
 /**
  * Permanently delete the signed-in user's account.

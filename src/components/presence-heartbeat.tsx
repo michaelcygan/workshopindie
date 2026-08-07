@@ -2,13 +2,15 @@ import { useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
 import { pingPresence } from "@/lib/friends.functions";
-
-const INTERVAL_MS = 60_000;
+import { HEARTBEAT_INTERVAL_MS } from "@/lib/presence/policy";
 
 /**
- * Lightweight global online signal: updates profiles.last_active_at every
- * minute while the user is signed in and the tab is visible. No realtime,
- * no subscriptions — just a heartbeat the friends list reads.
+ * Global online signal. Beats once per interval while signed in and the tab is
+ * visible, pauses while hidden, resumes on focus, stops on sign-out.
+ *
+ * The write target is the ephemeral presence tier — see @/lib/presence/policy.
+ * profiles.last_active_at is only refreshed on a coarse throttle server-side,
+ * so open tabs no longer amplify writes onto a table the whole app reads.
  */
 export function PresenceHeartbeat() {
   const { user } = useAuth();
@@ -26,7 +28,7 @@ export function PresenceHeartbeat() {
     };
 
     beat();
-    timer = setInterval(beat, INTERVAL_MS);
+    timer = setInterval(beat, HEARTBEAT_INTERVAL_MS);
     const onVis = () => {
       if (document.visibilityState === "visible") beat();
     };
