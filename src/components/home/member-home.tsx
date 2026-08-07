@@ -126,7 +126,18 @@ export function MemberHome() {
         isFallback={data.featuredIsFallback}
       />
 
+      {/* Ambient pulse from the groups you belong to. Hides itself when empty. */}
+      {data.nowGroups.length > 0 && (
+        <div className="mx-auto max-w-7xl pt-5">
+          <GroupNewsTicker
+            slugs={data.nowGroups.map((g) => g.slug)}
+            label="Workshop now"
+          />
+        </div>
+      )}
+
       {/* Now — departures board on desktop, compact module on small screens. */}
+
       <div className="mx-auto hidden max-w-7xl px-4 pt-6 md:px-6 lg:block">
         <NowBoardDesktop data={data} />
       </div>
