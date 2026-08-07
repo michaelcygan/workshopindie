@@ -582,7 +582,7 @@ function EditProfile() {
                     placeholder="your-handle"
                   />
                   {usernameError ? (
-                    <p className="text-xs text-danger">{usernameError}</p>
+                    <p className="text-xs text-destructive">{usernameError}</p>
                   ) : (
                     <p className="text-xs text-ink-muted">
                       Your public @handle — used in your profile URL.
