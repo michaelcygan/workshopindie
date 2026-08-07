@@ -735,8 +735,13 @@ function CollabDetail() {
             {resultingWork.cover_url ? (
               <img src={resultingWork.cover_url} alt={resultingWork.title} className="aspect-video w-full object-cover" />
             ) : (
-              <div className="aspect-video w-full bg-secondary" />
+              <CategoryPlaceholder
+                size="cover"
+                category={resultingWork.category}
+                className="aspect-video w-full"
+              />
             )}
+
             <div className="flex items-center gap-3 p-4">
               <div className="min-w-0 flex-1">
                 <p className="text-[11px] uppercase tracking-wide text-ink-muted">From this Collab</p>
