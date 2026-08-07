@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { CategoryChip } from "@/components/category-chip";
+import { CategoryPlaceholder } from "@/components/home/category-placeholder";
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ReportDialog } from "@/components/report-dialog";
 import { ShareCollabSheet } from "@/components/share-collab-sheet";
