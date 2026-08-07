@@ -308,9 +308,13 @@ function EventPage() {
               })}
             </span>
 
-            <a href={`/api/public/events/${ev.id}/ics`} className="text-xs text-primary hover:underline">
+            <a
+              href={`/api/public/events/${ev.id}/ics`}
+              className="-my-1 inline-flex min-h-8 items-center py-1 text-xs text-primary hover:underline"
+            >
               Add to calendar
             </a>
+
           </div>
 
           <div className="mt-4 flex items-center justify-between">
