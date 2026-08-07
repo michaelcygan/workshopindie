@@ -4,12 +4,13 @@ import { createHash } from "crypto";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { domainError } from "@/lib/errors";
 
 async function requireAdmin(supabase: any, userId: string) {
   const { data, error } = await supabase
     .from("user_roles").select("role")
     .eq("user_id", userId).eq("role", "admin").maybeSingle();
-  if (error || !data) throw new Error("Forbidden: admin only");
+  if (error || !data) throw domainError("FORBIDDEN", "Forbidden: admin only");
 }
 
 function clientIpHash(): string | null {

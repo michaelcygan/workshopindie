@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { setResponseHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { domainError } from "@/lib/errors";
 import { MAX_BLOG_ENTITY_TAGS } from "@/lib/blog-entity-tags";
 
 const kindSchema = z.enum(["work", "collab", "group", "event", "profile"]);
@@ -29,7 +30,7 @@ export const getBlogPostEntityTagsForOwner = createServerFn({ method: "GET" })
     const isOwner = p.created_by === context.userId;
     if (!isOwner) {
       const { data: isAdmin } = await supabaseAdmin.from("user_roles").select("role").eq("user_id", context.userId).eq("role", "admin").maybeSingle();
-      if (!isAdmin) throw new Error("Forbidden.");
+      if (!isAdmin) throw domainError("FORBIDDEN", "Forbidden.");
     }
     return getBlogPostEntityTagsServer(data.postId, { publicOnly: false });
   });

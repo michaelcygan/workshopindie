@@ -1,12 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { domainError } from "@/lib/errors";
 import { logAdminAction } from "@/lib/admin-audit.functions";
 
 async function requireAdmin(supabase: any, userId: string) {
   const { data, error } = await supabase
     .from("user_roles").select("role")
     .eq("user_id", userId).eq("role", "admin").maybeSingle();
-  if (error || !data) throw new Error("Forbidden: admin only");
+  if (error || !data) throw domainError("FORBIDDEN", "Forbidden: admin only");
 }
 
 async function getAdmin() {

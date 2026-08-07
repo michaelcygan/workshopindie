@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { domainError } from "@/lib/errors";
 
 const CATEGORIES = ["film", "music", "writing", "build", "visual", "critique", "business", "coworking"] as const;
 
@@ -20,7 +21,7 @@ async function ensureAdmin(supabase: any, userId: string) {
     .eq("user_id", userId)
     .eq("role", "admin")
     .maybeSingle();
-  if (error || !data) throw new Error("Forbidden");
+  if (error || !data) throw domainError("FORBIDDEN", "Forbidden");
 }
 
 export const createWorkshopLink = createServerFn({ method: "POST" })
