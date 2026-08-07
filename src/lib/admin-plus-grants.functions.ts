@@ -32,15 +32,17 @@ async function notifyPlus(
   kind: "plus_granted" | "plus_revoked",
   payload: Record<string, unknown>,
 ) {
-  const admin = await getAdmin();
-  await admin.from("notifications").insert({
-    user_id: targetUserId,
+  const { notify } = await import("@/lib/notifications/deliver.server");
+  // Account-status notices bypass preference muting on purpose.
+  await notify({
+    recipientId: targetUserId,
     kind,
-    entity_type: "plus_access_grant",
-    entity_id: (payload.grantId as string) ?? null,
+    entityType: "plus_access_grant",
+    entityId: (payload.grantId as string) ?? null,
     payload,
-  } as never);
+  });
 }
+
 
 export const listUserPlusGrants = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
