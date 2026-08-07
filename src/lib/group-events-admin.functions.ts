@@ -390,15 +390,16 @@ export const cancelEvent = createServerFn({ method: "POST" })
       type EvShape = { title: string; slug: string; group: { slug: string } };
       const e = ev as unknown as EvShape;
       const payload = { event_title: e.title, event_slug: e.slug, group_slug: e.group.slug, reason: data.reason ?? null };
-      const rows = rsvps.map((r) => ({
-        user_id: r.user_id as string,
+      const { notifyMany } = await import("@/lib/notifications/deliver.server");
+      await notifyMany({
+        recipientIds: rsvps.map((r) => r.user_id as string),
+        actorUserId: userId,
         kind: "event_canceled",
-        actor_user_id: userId,
-        entity_type: "group_event",
-        entity_id: data.id,
+        entityType: "group_event",
+        entityId: data.id,
         payload,
-      }));
-      await supabase.from("notifications").insert(rows);
+      });
+
     }
     return { ok: true };
   });
