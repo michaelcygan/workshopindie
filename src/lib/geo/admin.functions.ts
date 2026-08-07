@@ -372,7 +372,6 @@ export const runCityLaunchBatch = createServerFn({ method: "POST" })
     const { LAUNCH_MANIFEST, TARGET_NEW_CITIES, matchesManifest } = await import(
       "@/lib/geo/city-launch-manifest"
     );
-    const admin = await adminClient();
 
     let cursor = data.cursor ?? 0;
     let created = data.createdSoFar ?? 0;
