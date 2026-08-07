@@ -83,18 +83,20 @@ async function maybeGrantReferralReward(
     (profile?.display_name as string | null) ||
     (profile?.username as string | null) ||
     "Someone you referred";
-  await supabaseAdmin.from("notifications").insert({
-    user_id: referrerId,
+  const { notify } = await import("@/lib/notifications/deliver.server");
+  await notify({
+    recipientId: referrerId,
+    actorUserId: subscriberUserId,
     kind: "referral_reward_earned",
-    actor_user_id: subscriberUserId,
-    entity_type: "profile",
-    entity_id: subscriberUserId,
+    entityType: "profile",
+    entityId: subscriberUserId,
     payload: {
       actor_name: actorName,
       actor_username: (profile?.username as string | null) ?? null,
       status,
     },
   });
+
 }
 
 function priceLookupKey(item: Stripe.SubscriptionItem | undefined): string | null {
