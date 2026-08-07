@@ -120,7 +120,7 @@ export function MemberHome() {
       {/* Ambient pulse from the groups you belong to. Hides itself when empty. */}
       {data.nowGroups.length > 0 && (
         <div className="mx-auto max-w-7xl pt-5">
-          <GroupNewsTicker slugs={data.nowGroups.map((g) => g.slug)} label="Workshop now" />
+          <GroupNewsTicker slugs={data.nowGroups.map((g) => g.slug)} label="Latest" />
         </div>
       )}
 
@@ -130,7 +130,7 @@ export function MemberHome() {
         <NowBoardDesktop data={data} />
       </div>
       <div className="lg:hidden">
-        <HomeSection title="Now" divider={false} tone="quiet" density="compact">
+        <HomeSection title="Workshop Now" divider={false} tone="quiet" density="compact">
           <NowBoardMobile data={data} />
         </HomeSection>
       </div>

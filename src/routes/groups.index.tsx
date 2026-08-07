@@ -42,7 +42,7 @@ const KIND_LABELS: Record<GroupCardData["kind"], string> = {
   scene: "Scene",
 };
 
-const SORT_VALUES = ["featured", "members", "content", "az"] as const;
+export const SORT_VALUES = ["featured", "members", "content", "az"] as const;
 type Sort = (typeof SORT_VALUES)[number];
 
 const SORT_LABELS: Record<Sort, string> = {
