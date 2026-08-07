@@ -129,6 +129,34 @@ function EditProfile() {
     return `${origin}/${form.username}`;
   }, [form.username]);
 
+  const usernameCheck = useMemo(
+    () => (form.username ? validateUsername(form.username) : null),
+    [form.username],
+  );
+
+  // Availability is confirmed against the database; the unique index is the
+  // authoritative guard at save time.
+  const { data: usernameTaken } = useQuery({
+    queryKey: ["username-available", form.username, user?.id],
+    enabled: !!user?.id && !!usernameCheck?.ok,
+    staleTime: 10_000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("username", form.username)
+        .maybeSingle();
+      return !!data && data.id !== user!.id;
+    },
+  });
+
+  const usernameError = usernameCheck && !usernameCheck.ok
+    ? usernameCheck.message
+    : usernameTaken
+      ? "That username is already taken."
+      : null;
+
+
   async function copyBioLink() {
     if (!bioLinkUrl) return;
     try {
