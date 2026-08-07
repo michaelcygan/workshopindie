@@ -49,7 +49,7 @@ type Row = {
 async function main() {
   const userId = await adminUserId();
   const rows: Row[] = [];
-  let created = 0;
+  let created = 0; // manifest slots filled (new or already existing)
 
   for (const entry of LAUNCH_MANIFEST) {
     if (created >= TARGET_NEW_CITIES) break;
@@ -107,7 +107,9 @@ async function main() {
         .from("city_launch_queue")
         .update({ status: "launched", city_id: ensured.cityId, error: null })
         .eq("id", queued.id);
-      if (ensured.created) created += 1;
+      // A successful launch fills a manifest slot whether the locality was
+      // created now or on an earlier run — reruns must not walk into reserves.
+      created += 1;
       rows.push({
         ...base,
         canonical: ensured.name,
