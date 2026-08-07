@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { domainError } from "@/lib/errors";
+import { withOpLog } from "@/lib/obs/log";
 import type { Database } from "@/integrations/supabase/types";
 
 function publicClient() {
@@ -46,7 +48,7 @@ export const getLineupForEvent = createServerFn({ method: "POST" })
       .eq("id", data.event_id)
       .maybeSingle();
     if (evErr) throw new Error(evErr.message);
-    if (!ev) throw new Error("Event not found");
+    if (!ev) throw domainError("NOT_FOUND", "Event not found");
 
     const { data: signups, error } = await supabase
       .from("event_lineup_signups")
@@ -78,50 +80,55 @@ export const signUpForLineup = createServerFn({ method: "POST" })
       note: z.string().trim().max(80).nullable().optional(),
     }).parse(i),
   )
-  .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+  .handler(async ({ data, context }) =>
+    withOpLog("lineup.signup", { entity: "event", entityId: data.event_id, authed: true }, async () => {
+      const { supabase, userId } = context;
 
-    const { data: ev } = await supabase
-      .from("group_events")
-      .select("id,starts_at,ends_at,lineup_capacity")
-      .eq("id", data.event_id)
-      .maybeSingle();
-    if (!ev) throw new Error("Event not found");
-    const e = ev as { starts_at: string; ends_at: string; lineup_capacity: number | null };
-    if (e.lineup_capacity == null) throw new Error("This event isn't taking lineup signups.");
-    if (new Date(e.ends_at).getTime() < Date.now()) throw new Error("This event is over.");
+      const { data: ev } = await supabase
+        .from("group_events")
+        .select("id,starts_at,ends_at,lineup_capacity")
+        .eq("id", data.event_id)
+        .maybeSingle();
+      if (!ev) throw new Error("Event not found");
+      const e = ev as { starts_at: string; ends_at: string; lineup_capacity: number | null };
+      if (e.lineup_capacity == null)
+        throw domainError("CLOSED", "This event isn't taking lineup signups.");
+      if (new Date(e.ends_at).getTime() < Date.now())
+        throw domainError("CLOSED", "This event is over.");
 
-    // One row per (event, person) is enforced by a unique index, so a released
-    // slot has to be cleared before the person can sign up again.
-    const { data: existing } = await supabase
-      .from("event_lineup_signups")
-      .select("id,status")
-      .eq("event_id", data.event_id)
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (existing) {
-      const row = existing as { id: string; status: string };
-      if (row.status !== "released") throw new Error("You're already on this lineup.");
-      await supabase.from("event_lineup_signups").delete().eq("id", row.id);
-    }
+      // One row per (event, person) is enforced by a unique index, so a released
+      // slot has to be cleared before the person can sign up again.
+      const { data: existing } = await supabase
+        .from("event_lineup_signups")
+        .select("id,status")
+        .eq("event_id", data.event_id)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (existing) {
+        const row = existing as { id: string; status: string };
+        if (row.status !== "released")
+          throw domainError("ALREADY_EXISTS", "You're already on this lineup.");
+        await supabase.from("event_lineup_signups").delete().eq("id", row.id);
+      }
 
-    const { error } = await supabase
-      .from("event_lineup_signups")
-      .insert({
-        event_id: data.event_id,
-        user_id: userId,
-        note: data.note?.trim() || null,
-        // position + status are set by trigger
-        position: 0,
-      } as never);
-    // Two concurrent taps race here; the loser hits the unique index.
-    if (error) {
-      if (error.code === "23505") return { ok: true };
-      throw new Error(error.message);
-    }
-    return { ok: true };
+      const { error } = await supabase
+        .from("event_lineup_signups")
+        .insert({
+          event_id: data.event_id,
+          user_id: userId,
+          note: data.note?.trim() || null,
+          // position + status are set by trigger
+          position: 0,
+        } as never);
+      // Two concurrent taps race here; the loser hits the unique index.
+      if (error) {
+        if (error.code === "23505") return { ok: true };
+        throw new Error(error.message);
+      }
+      return { ok: true };
 
-  });
+    }),
+  );
 
 export const updateMyLineupNote = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
