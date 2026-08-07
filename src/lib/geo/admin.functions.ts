@@ -288,7 +288,17 @@ async function launchQueueEntry(queueId: string, userId: string) {
       .from("city_launch_queue")
       .update({ status: "launched", city_id: ensured.cityId, error: null })
       .eq("id", queueId);
-    return { ok: true, launched: true, id: queueId, cityId: ensured.cityId, name: ensured.name };
+    return {
+      ok: true,
+      launched: true,
+      id: queueId,
+      cityId: ensured.cityId,
+      citySlug: ensured.citySlug,
+      groupId: ensured.groupId,
+      groupSlug: ensured.groupSlug,
+      created: ensured.created,
+      name: ensured.name,
+    };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Launch failed";
     await admin
