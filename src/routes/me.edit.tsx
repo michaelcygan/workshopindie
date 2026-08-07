@@ -344,6 +344,9 @@ function EditProfile() {
   async function onSubmit(e?: React.FormEvent) {
     e?.preventDefault();
     if (!user) return;
+    if (usernameError) {
+      return toast.error(usernameError);
+    }
     const first = form.firstName.trim();
     const last = form.lastName.trim();
     if (!first || !last) {
