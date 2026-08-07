@@ -2958,54 +2958,6 @@ export type Database = {
         }
         Relationships: []
       }
-      instant_board_items: {
-        Row: {
-          content: Json
-          created_at: string
-          h: number
-          id: string
-          kind: string
-          room_id: string
-          rotation: number
-          updated_at: string
-          user_id: string
-          w: number
-          x: number
-          y: number
-          z: number
-        }
-        Insert: {
-          content?: Json
-          created_at?: string
-          h?: number
-          id?: string
-          kind: string
-          room_id: string
-          rotation?: number
-          updated_at?: string
-          user_id: string
-          w?: number
-          x?: number
-          y?: number
-          z?: number
-        }
-        Update: {
-          content?: Json
-          created_at?: string
-          h?: number
-          id?: string
-          kind?: string
-          room_id?: string
-          rotation?: number
-          updated_at?: string
-          user_id?: string
-          w?: number
-          x?: number
-          y?: number
-          z?: number
-        }
-        Relationships: []
-      }
       instant_doc_comments: {
         Row: {
           anchor: Json | null
@@ -8676,6 +8628,16 @@ export type Database = {
       }
       finalize_host_claim: { Args: { _room_id: string }; Returns: undefined }
       gen_event_short_code: { Args: never; Returns: string }
+      get_or_create_conversation: {
+        Args: {
+          _context_collab_post_id?: string
+          _context_comment_id?: string
+          _context_work_id?: string
+          _context_workshop_id?: string
+          _other: string
+        }
+        Returns: string
+      }
       get_referral_stats: {
         Args: { _user_id: string }
         Returns: {
@@ -8769,6 +8731,7 @@ export type Database = {
         }
         Returns: string
       }
+      join_instant_room: { Args: { _room_id: string }; Returns: string }
       join_link_workshop: {
         Args: { _exclude_room_ids?: string[]; _token: string; _user_id: string }
         Returns: string
@@ -8945,6 +8908,16 @@ export type Database = {
         Returns: undefined
       }
       request_lounge_audio_slot: { Args: { _room_id: string }; Returns: Json }
+      reserve_event_rsvp: {
+        Args: {
+          _event_id: string
+          _note?: string
+          _plus_ones?: number
+          _status: string
+        }
+        Returns: string
+      }
+      reserve_workshop_seat: { Args: { _workshop_id: string }; Returns: string }
       resolve_group_seed_link: {
         Args: { _token: string }
         Returns: {

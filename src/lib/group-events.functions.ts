@@ -249,44 +249,21 @@ export const rsvp = createServerFn({ method: "POST" })
       if (!access.canRsvp) throw new Error("RSVPs are closed for this Event.");
     }
 
-    // Capacity / waitlist is decided here, never by the client.
-    let effectiveStatus: string = data.status;
-    if (attending) {
-      const { capacity, waitlist_enabled } = (await supabase
-        .from("group_events")
-        .select("capacity,waitlist_enabled")
-        .eq("id", data.event_id)
-        .maybeSingle()).data as { capacity: number | null; waitlist_enabled: boolean | null } ?? {
-        capacity: null,
-        waitlist_enabled: false,
-      };
-      if (capacity && access.rsvpStatus !== "going" && access.rsvpStatus !== "maybe") {
-        const { count } = await supabase
-          .from("group_event_rsvps")
-          .select("user_id", { count: "exact", head: true })
-          .eq("event_id", data.event_id)
-          .in("status", ["going", "maybe"]);
-        if ((count ?? 0) >= capacity) {
-          if (!waitlist_enabled) throw new Error("This Event is full.");
-          effectiveStatus = "waitlist";
-        }
-      }
-    }
-
-    const row = {
-      event_id: data.event_id,
-      user_id: userId,
-      status: effectiveStatus,
-      plus_ones: data.plus_ones ?? 0,
-      note: data.note ?? null,
-      // Undoing an RSVP relocks participation immediately — including a live
-      // check-in. Posts and photos are never deleted.
-      ...(attending ? {} : { checked_in_at: null }),
-    };
-    const { error } = await supabase
-      .from("group_event_rsvps")
-      .upsert(row as never, { onConflict: "event_id,user_id" });
+    // Capacity/waitlist is settled inside one Postgres transaction, so two
+    // people taking the last seat at the same instant can never both win.
+    const { data: outcome, error } = await supabase.rpc("reserve_event_rsvp", {
+      _event_id: data.event_id,
+      _status: data.status,
+      _plus_ones: data.plus_ones ?? 0,
+      _note: data.note ?? null,
+    } as never);
     if (error) throw new Error(error.message);
+
+    const effectiveStatus = String(outcome);
+    if (effectiveStatus === "full") throw new Error("This Event is full.");
+    if (effectiveStatus === "closed") throw new Error("RSVPs are closed for this Event.");
+    if (effectiveStatus === "not_found") throw new Error("Event not found");
+    if (effectiveStatus === "forbidden") throw new Error("Please sign in to RSVP.");
 
     // Auto-join host group when the user is attending. Best-effort —
     // any failure here must not block the RSVP itself.
@@ -301,6 +278,7 @@ export const rsvp = createServerFn({ method: "POST" })
 
     return { ok: true, status: effectiveStatus };
   });
+
 
 export const getMyRsvp = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

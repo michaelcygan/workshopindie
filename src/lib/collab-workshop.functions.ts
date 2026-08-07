@@ -155,23 +155,27 @@ export const rsvpToWorkshop = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ workshopId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { userId } = context;
-    const { data: ws } = await supabaseAdmin
-      .from("workshops")
-      .select("id,status,participant_cap,confirmed_count")
-      .eq("id", data.workshopId)
-      .maybeSingle();
-    if (!ws) throw new Error("Workshop not found.");
-    if (ws.status === "archived" || ws.status === "canceled") throw new Error("This Workshop is closed.");
-    if (ws.participant_cap && ws.confirmed_count >= ws.participant_cap) {
-      throw new Error("This Workshop is full.");
+    // Seat reservation happens under a row lock in Postgres, so the cap holds
+    // even when several people tap RSVP in the same second.
+    const { data: outcome, error } = await context.supabase.rpc("reserve_workshop_seat", {
+      _workshop_id: data.workshopId,
+    } as never);
+    if (error) throw new Error(error.message);
+    switch (String(outcome)) {
+      case "joined":
+      case "already_joined":
+        return { ok: true };
+      case "full":
+        throw new Error("This Workshop is full.");
+      case "closed":
+        throw new Error("This Workshop is closed.");
+      case "not_found":
+        throw new Error("Workshop not found.");
+      default:
+        throw new Error("You can't join this Workshop.");
     }
-    const { error } = await supabaseAdmin
-      .from("workshop_participants")
-      .insert({ workshop_id: data.workshopId, user_id: userId, participant_status: "confirmed" });
-    if (error && !/duplicate key/i.test(error.message)) throw new Error(error.message);
-    return { ok: true };
   });
+
 
 export const cancelRsvp = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -422,40 +426,6 @@ export const createCollabFromRoom = createServerFn({ method: "POST" })
         await (supabaseAdmin.from("workshop_tasks") as any).insert(tasks).then(() => null, () => null);
       }
     }
-
-    // 6f. Copy board items forward (instant_board_items -> workshop_board_items).
-    // Note: image content URLs that point to the ephemeral 'instant-whiteboard' bucket
-    // stay as-is — they remain reachable after promotion since that bucket is public.
-    const { data: srcBoardItems } = await supabaseAdmin
-      .from("instant_board_items")
-      .select("user_id, kind, content, x, y, w, h, z, rotation, created_at")
-      .eq("room_id", roomId);
-    if (srcBoardItems && srcBoardItems.length > 0) {
-      await ((supabaseAdmin as any).from("workshop_board_items") as any)
-        .insert(
-          srcBoardItems
-            .filter((b) => !!b.user_id)
-            .map((b) => ({
-              workshop_id: ws.id,
-              user_id: b.user_id,
-              kind: b.kind,
-              content: b.content,
-              x: b.x,
-              y: b.y,
-              w: b.w,
-              h: b.h,
-              z: b.z,
-              rotation: b.rotation,
-              created_at: b.created_at,
-            })),
-        )
-        .then(() => null, () => null);
-    }
-
-
-
-
-
 
     // 7. Opt-in invites for everyone else currently present.
     const { data: presentList } = await supabaseAdmin

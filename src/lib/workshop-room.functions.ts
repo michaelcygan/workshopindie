@@ -53,6 +53,17 @@ export const ensureWorkshopRoom = createServerFn({ method: "POST" })
       })
       .select("id")
       .single();
-    if (createErr || !created) throw new Error(createErr?.message ?? "Couldn't open the room");
-    return { roomId: created.id };
+    if (created?.id) return { roomId: created.id };
+
+    // A unique index guarantees one live room per Workshop: if another
+    // request won the race, adopt the room it created instead of failing.
+    const { data: raced } = await supabaseAdmin
+      .from("instant_rooms")
+      .select("id")
+      .eq("workshop_id", workshopId)
+      .eq("status", "active")
+      .maybeSingle();
+    if (raced?.id) return { roomId: raced.id };
+    throw new Error(createErr?.message ?? "Couldn't open the room");
   });
+
