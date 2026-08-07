@@ -162,6 +162,11 @@ export function SiteFooter() {
                     Groups
                   </Link>
                 </li>
+                <li>
+                  <Link to="/events" className="text-ink-soft hover:text-ink">
+                    Events
+                  </Link>
+                </li>
               </ul>
             </div>
             <div>
