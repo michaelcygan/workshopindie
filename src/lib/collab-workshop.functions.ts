@@ -43,40 +43,48 @@ export const openWorkshopOnCollab = createServerFn({ method: "POST" })
     }
 
     const ws = { id: result.workshop_id as string, slug: result.workshop_slug as string };
-    const room = { id: result.room_id as string };
-    const post = { id: collabPostId, title: "" };
-    const created = result.created;
+    const roomId = result.room_id as string;
 
-
-    // 7. Notify confirmed applicants — anyone who sent a contact event on this Collab.
-    const { data: contacts } = await supabaseAdmin
-      .from("collab_contact_events")
-      .select("sender_user_id")
-      .eq("collab_post_id", post.id);
-    const senderIds = Array.from(
-      new Set((contacts ?? []).map((c) => c.sender_user_id).filter((id): id is string => !!id && id !== userId)),
-    );
-    if (senderIds.length > 0) {
-      await supabaseAdmin
-        .from("notifications")
-        .insert(
-          senderIds.map((uid) => ({
-            user_id: uid,
-            kind: "collab_workshop_live",
-            actor_user_id: userId,
-            entity_type: "workshop",
-            entity_id: ws.id,
-            payload: {
-              collab_post_id: post.id,
-              workshop_slug: ws.slug,
-              title: post.title,
-            },
-          })),
-        )
-        .then(() => null, () => null);
+    // Notify people who reached out on this Collab — best-effort, and only the
+    // first time the Workshop actually opens.
+    if (result.created) {
+      const [{ data: contacts }, { data: post }] = await Promise.all([
+        supabaseAdmin
+          .from("collab_contact_events")
+          .select("sender_user_id")
+          .eq("collab_post_id", collabPostId),
+        supabaseAdmin.from("collab_posts").select("title").eq("id", collabPostId).maybeSingle(),
+      ]);
+      const senderIds = Array.from(
+        new Set(
+          (contacts ?? [])
+            .map((c) => c.sender_user_id)
+            .filter((id): id is string => !!id && id !== userId),
+        ),
+      );
+      if (senderIds.length > 0) {
+        await supabaseAdmin
+          .from("notifications")
+          .insert(
+            senderIds.map((uid) => ({
+              user_id: uid,
+              kind: "collab_workshop_live",
+              actor_user_id: userId,
+              entity_type: "workshop",
+              entity_id: ws.id,
+              payload: {
+                collab_post_id: collabPostId,
+                workshop_slug: ws.slug,
+                title: post?.title ?? "",
+              },
+            })),
+          )
+          .then(() => null, () => null);
+      }
     }
 
-    return { workshopId: ws.id, roomId: room.id, slug: ws.slug };
+    return { workshopId: ws.id, roomId, slug: ws.slug };
+
   });
 
 /**
