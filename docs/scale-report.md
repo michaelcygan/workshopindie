@@ -131,3 +131,76 @@ heads, the reservation routine needs to sum `1 + plus_ones` against capacity.
 - Duplicate detection: group `pg_index` by `(indrelid, indkey, indpred IS NOT NULL)`
   and look for `count(*) > 1`.
 - Before dropping any index, confirm it is not backing a UNIQUE constraint.
+
+---
+
+# Stage C — realtime, presence, rollbacks, first measured run (2026-08-07)
+
+## Realtime fan-out: fixed
+
+Every signed-in session used to open four always-on channels; two of them
+subscribed to `messages`/`conversations` with **no server-side filter**, so the
+realtime server evaluated every message insert in the app against every
+connected session — O(sessions x messages).
+
+All four collapsed into one per-session channel,
+`notifications:<uid>` (`src/hooks/use-realtime-notifications.tsx`), filtered
+`user_id=eq.<uid>`. The DM badge now rides the existing `dm` notification kind,
+which is already written per recipient. Net: 4 channels -> 1, and the app-wide
+`messages` fan-out is gone.
+
+## Presence write load
+
+`PresenceHeartbeat` beats once per 60s, pauses on hidden tabs, and calls a
+single `touch_presence` RPC that writes the ephemeral `user_presence` row and
+only refreshes the durable `profiles.last_active_at` every 10 minutes. At 10k
+concurrent visible tabs that is ~167 RPC/s, dominated by cheap upserts.
+
+Added in this stage: a random 0-15s offset before the first beat, so sessions
+that start in the same second stop beating in lockstep. Interval, online
+window, and policy constants unchanged.
+
+## Rolled-back transactions: benign, historical
+
+`pg_stat_database` showed 211,012 rollbacks. Sampled over 60 seconds:
+
+```text
+21:02:31  commits 7,589,170  rollbacks 211,012
+21:02:52  commits 7,589,175  rollbacks 211,012
+21:03:13  commits 7,589,223  rollbacks 211,012
+```
+
+Rollbacks are **flat** while commits advance. The counter is cumulative since
+the stats reset on 2026-05-07 (92 days) and reflects a historical burst, not an
+ongoing rate — 2.7% of all transactions, none of it recent. No deadlocks, no
+conflicts. Treat the raw number as noise; alert on the *rate*, not the total.
+
+## First measured load run
+
+The full profile (400 VU ramp) could not run against a hosted target: the
+preview deployment returns 403 to unauthenticated load traffic, and production
+is off-limits. A `SMOKE=1` mode was added to the same script and run against
+the local dev server, which shares the real database.
+
+```text
+SMOKE=1 BASE_URL=http://localhost:8080 k6 run scripts/scale/load-profile.js
+
+http_req_failed   0.00%  (0 of 310)
+t_anon_browse     med 50ms   p95 590ms   max 970ms
+t_event_read      med 45ms   p95 54ms    max 157ms
+```
+
+Zero failures. The anon-browse tail is dev-server SSR cost (unminified, no
+edge cache), not database time — the events read, which touches the same
+database through a narrower render, sits at p95 54ms. This validates the
+harness and the query paths; it does **not** establish a production p95. That
+still needs the full profile against a scratch project seeded with
+`seed-corpus.sql`.
+
+## Still open
+
+- Full 400-VU profile against a seeded scratch project.
+- Signed-in realtime verification (one channel per session, live DM badge) —
+  see the manual check in `docs/ops-runbook.md`.
+- Compute sizing decision, deferred to the full load run.
+- ~100 zero-scan indexes awaiting case-by-case review.
