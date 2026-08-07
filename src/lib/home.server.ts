@@ -11,7 +11,8 @@ import { NON_PUBLIC_STATUSES, RECRUITING_DEADLINE_OR } from "@/lib/collab/query"
  * transform strips sibling module-scope declarations from that module.
  */
 
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { supabaseAdmin as rawSupabaseAdmin } from "@/integrations/supabase/client.server";
+import { span, traceClient } from "@/lib/perf/query-trace.server";
 import { DISCOVERABLE_STATUSES } from "@/lib/events/filters";
 import type {
   HomeBlogCard,
