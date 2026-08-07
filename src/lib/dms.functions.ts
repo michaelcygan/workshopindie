@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { domainError } from "@/lib/errors";
+import { withOpLog } from "@/lib/obs/log";
 import { z } from "zod";
 
 const uuidSchema = z.string().uuid();
@@ -27,22 +29,25 @@ export const openOrCreateConversation = createServerFn({ method: "POST" })
     contextWorkId: d.contextWorkId ? uuidSchema.parse(d.contextWorkId) : null,
     contextCommentId: d.contextCommentId ? uuidSchema.parse(d.contextCommentId) : null,
   }))
-  .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-    if (userId === data.otherUserId) throw new Error("Cannot message yourself");
+  .handler(async ({ data, context }) =>
+    withOpLog("dm.open", { entity: "profile", entityId: data.otherUserId, authed: true }, async () => {
+      const { supabase, userId } = context;
+      if (userId === data.otherUserId)
+        throw domainError("INVALID_INPUT", "Cannot message yourself");
 
-    // Atomic get-or-create: opening the same thread from both sides at the
-    // same moment returns the one canonical conversation instead of racing.
-    const { data: conversationId, error } = await supabase.rpc("get_or_create_conversation", {
-      _other: data.otherUserId,
-      _context_collab_post_id: data.contextCollabPostId,
-      _context_workshop_id: data.contextWorkshopId,
-      _context_work_id: data.contextWorkId,
-      _context_comment_id: data.contextCommentId,
-    } as never);
-    if (error) throw new Error(error.message);
-    return { conversationId: conversationId as unknown as string };
-  });
+      // Atomic get-or-create: opening the same thread from both sides at the
+      // same moment returns the one canonical conversation instead of racing.
+      const { data: conversationId, error } = await supabase.rpc("get_or_create_conversation", {
+        _other: data.otherUserId,
+        _context_collab_post_id: data.contextCollabPostId,
+        _context_workshop_id: data.contextWorkshopId,
+        _context_work_id: data.contextWorkId,
+        _context_comment_id: data.contextCommentId,
+      } as never);
+      if (error) throw new Error(error.message);
+      return { conversationId: conversationId as unknown as string };
+    }),
+  );
 
 
 
