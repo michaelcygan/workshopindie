@@ -37,7 +37,7 @@ write cannot be separated by another transaction.
 | Redeem a Plus offer | `claim_plus_offer` | `SELECT ... FOR UPDATE` on the offer link, redemption uniqueness enforced by index |
 
 **Verification.** `src/lib/concurrency/atomic-rpcs.test.ts` races eight signed-in
-clients at a capacity-1 event, a cap-2 room, and a simultaneous двух-way DM open,
+clients at a capacity-1 event, a cap-2 room, and a simultaneous two-way DM open,
 and asserts both the RPC return values and the resulting row counts. It hits a
 real database, so it is opt-in and skipped by default:
 
