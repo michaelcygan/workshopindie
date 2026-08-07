@@ -294,19 +294,17 @@ async function notifyMembers(
     new Set([...(parts ?? []).map((p) => p.user_id), ws?.host_user_id].filter(Boolean)),
   ) as string[];
   if (recipients.length === 0) return;
-  await supabaseAdmin
-    .from("notifications")
-    .insert(
-      recipients.map((uid) => ({
-        user_id: uid,
-        kind,
-        entity_type: "workshop",
-        entity_id: workshopId,
-        payload: payload as any,
-      })),
-    )
-    .then(() => null, () => null);
+  const { notifyMany } = await import("@/lib/notifications/deliver.server");
+  await notifyMany({
+    recipientIds: recipients,
+    kind,
+    entityType: "workshop",
+    entityId: workshopId,
+    preference: "inapp_workshop_updates",
+    payload: payload as Record<string, unknown>,
+  });
 }
+
 
 async function clearStudio(workshopId: string) {
   // Delete tool data. Storage objects for drive files are best-effort cleaned;
