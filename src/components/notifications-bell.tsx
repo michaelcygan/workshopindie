@@ -5,6 +5,7 @@ import { Bell, Mail, UserPlus, MessageCircle, CreditCard, Sparkles, Radio, Gift,
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { playNotifySound } from "@/lib/notify-sound";
+import { useNotificationEvents } from "@/hooks/use-realtime-notifications";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { markAllNotificationsRead } from "@/lib/notifications.functions";
 import { formatRoomTitle } from "@/lib/instant";
@@ -226,31 +227,21 @@ export function NotificationsBell() {
 
   useEffect(() => { didInitialLoadRef.current = false; load(); }, [user?.id]);
 
-  useEffect(() => {
-    if (!user) return;
-    const uid = (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2));
-    const channel = supabase
-      .channel(`notifs:${user.id}:${uid}`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
-        (payload) => {
-          setItems((prev) => {
-            const row = payload.new as Row;
-            if (prev.some((p) => p.id === row.id)) return prev;
-            return [row, ...prev].slice(0, 30);
-          });
-          // Only chime + pulse for genuinely new arrivals (not the initial load).
-          if (didInitialLoadRef.current) {
-            playNotifySound();
-            setPulse(true);
-            setTimeout(() => setPulse(false), 600);
-          }
-        },
-      )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [user?.id]);
+  // Rides the shared per-session notifications channel instead of opening
+  // its own duplicate subscription. See use-realtime-notifications.
+  useNotificationEvents((row, change) => {
+    if (change !== "INSERT") return;
+    setItems((prev) => {
+      if (prev.some((p) => p.id === row.id)) return prev;
+      return [row as Row, ...prev].slice(0, 30);
+    });
+    // Only chime + pulse for genuinely new arrivals (not the initial load).
+    if (didInitialLoadRef.current) {
+      playNotifySound();
+      setPulse(true);
+      setTimeout(() => setPulse(false), 600);
+    }
+  });
 
   useEffect(() => {
     if (open && items.some((i) => !i.read_at)) {

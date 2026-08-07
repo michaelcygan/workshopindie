@@ -1,23 +1,30 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Mail } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { playNotifySound } from "@/lib/notify-sound";
+import { useNotificationEvents } from "@/hooks/use-realtime-notifications";
 
 /**
  * Envelope inbox button — pairs visually with NotificationsBell.
  * Shows the count of conversations with any unread inbound message (capped 9+).
  *
- * Realtime is scoped to the viewer's own conversation IDs to avoid a global
- * fanout subscription that would refire on every message in the system.
- * Reloads are debounced and the count refreshes on tab focus.
+ * Realtime arrives via the shared per-session notifications channel: a new DM
+ * writes a `dm` notification row for the recipient, which is already filtered
+ * server-side by user_id. This component previously subscribed to the whole
+ * `messages` table with no filter, which made every DM in the app fan out to
+ * every connected session. See use-realtime-notifications.
+ *
+ * The signal only tells us "something changed" — the count itself is still a
+ * real query, debounced, and also refreshed on tab focus and on `dm:read`.
  */
 export function MessagesInboxButton() {
   const { user } = useAuth();
   const [unread, setUnread] = useState(0);
   const [pulse, setPulse] = useState(false);
   const lastUnreadRef = useRef(0);
+  const reloadRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     if (!user) {
@@ -27,11 +34,20 @@ export function MessagesInboxButton() {
     let cancelled = false;
     let convIds: string[] = [];
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-    let channel: ReturnType<typeof supabase.channel> | null = null;
 
     async function loadUnread() {
-      if (cancelled || !convIds.length) {
-        if (!cancelled) setUnread(0);
+      if (cancelled) return;
+      // Re-read the conversation set each time: a brand-new thread must be
+      // counted, and we no longer watch `conversations` over realtime.
+      const { data: convs } = await supabase
+        .from("conversations")
+        .select("id")
+        .or(`user_a.eq.${user!.id},user_b.eq.${user!.id}`);
+      if (cancelled) return;
+      convIds = (convs ?? []).map((c) => c.id);
+      if (!convIds.length) {
+        setUnread(0);
+        lastUnreadRef.current = 0;
         return;
       }
       const { data: msgs } = await supabase
@@ -41,8 +57,7 @@ export function MessagesInboxButton() {
         .neq("sender_id", user!.id)
         .is("read_at", null);
       if (cancelled) return;
-      const distinct = new Set((msgs ?? []).map((m) => m.conversation_id));
-      const next = distinct.size;
+      const next = new Set((msgs ?? []).map((m) => m.conversation_id)).size;
       setUnread(next);
       if (next > lastUnreadRef.current) {
         setPulse(true);
@@ -56,55 +71,11 @@ export function MessagesInboxButton() {
       if (debounceTimer) clearTimeout(debounceTimer);
       debounceTimer = setTimeout(loadUnread, 250);
     }
+    reloadRef.current = scheduleReload;
 
-    async function bootstrap() {
-      const { data: convs } = await supabase
-        .from("conversations")
-        .select("id")
-        .or(`user_a.eq.${user!.id},user_b.eq.${user!.id}`);
-      if (cancelled) return;
-      convIds = (convs ?? []).map((c) => c.id);
-      await loadUnread();
-
-      // Scope realtime to *our* conversations only. We listen for any
-      // INSERT/UPDATE on messages and filter client-side via the `in` set —
-      // postgres_changes doesn't accept an `in (...)` server filter, so the
-      // narrow channel keeps the event volume manageable + debounced.
-      if (!convIds.length) return;
-      channel = supabase
-        .channel(`dm-inbox:${user!.id}`)
-        .on(
-          "postgres_changes",
-          { event: "INSERT", schema: "public", table: "messages" },
-          (payload) => {
-            const m = payload.new as { conversation_id: string };
-            if (convIds.includes(m.conversation_id)) scheduleReload();
-          },
-        )
-        .on(
-          "postgres_changes",
-          { event: "UPDATE", schema: "public", table: "messages" },
-          (payload) => {
-            const m = payload.new as { conversation_id: string };
-            if (convIds.includes(m.conversation_id)) scheduleReload();
-          },
-        )
-        // Pick up freshly-created conversations so the badge stays accurate.
-        .on(
-          "postgres_changes",
-          { event: "INSERT", schema: "public", table: "conversations" },
-          (payload) => {
-            const c = payload.new as { id: string; user_a: string; user_b: string };
-            if (c.user_a === user!.id || c.user_b === user!.id) {
-              convIds = [...convIds, c.id];
-              scheduleReload();
-            }
-          },
-        )
-        .subscribe();
-    }
-
-    bootstrap().catch(() => { if (!cancelled) setUnread(0); });
+    loadUnread().catch(() => {
+      if (!cancelled) setUnread(0);
+    });
 
     function onFocus() { scheduleReload(); }
     document.addEventListener("visibilitychange", onFocus);
@@ -113,13 +84,20 @@ export function MessagesInboxButton() {
 
     return () => {
       cancelled = true;
+      reloadRef.current = () => {};
       if (debounceTimer) clearTimeout(debounceTimer);
-      if (channel) supabase.removeChannel(channel);
       document.removeEventListener("visibilitychange", onFocus);
       window.removeEventListener("focus", onFocus);
       window.removeEventListener("dm:read", onFocus);
     };
   }, [user?.id]);
+
+  const onNotification = useCallback((row: { kind: string }) => {
+    if (row.kind !== "dm") return;
+    reloadRef.current();
+  }, []);
+  useNotificationEvents(onNotification);
+
 
   if (!user) return null;
 
