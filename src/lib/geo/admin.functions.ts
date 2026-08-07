@@ -434,25 +434,12 @@ export const runCityLaunchBatch = createServerFn({ method: "POST" })
         await sleep(PROVIDER_GAP_MS);
         const launched = await launchQueueEntry(queued.id, context.userId);
 
-        const { data: city } = await admin
-          .from("cities")
-          .select("id,name,slug,official_group_id")
-          .eq("id", launched.cityId)
-          .maybeSingle();
-        const { data: group } = city?.official_group_id
-          ? await admin.from("groups").select("id,slug").eq("id", city.official_group_id).maybeSingle()
-          : { data: null };
+        // A successful launch fills the manifest slot whether the locality was
+        // created now or on an earlier run — that is what makes reruns a no-op
+        // instead of walking into the reserve list.
+        const isNew = launched.created;
+        created += 1;
 
-        // `created` counts only localities this operation brought into Workshop.
-        const wasNew = !!launched.cityId;
-        const { data: audit } = await admin
-          .from("admin_audit_log")
-          .select("id")
-          .eq("target_id", launched.cityId)
-          .eq("action", "locality.provisioned")
-          .limit(1);
-        const isNew = (audit ?? []).length > 0;
-        if (wasNew && isNew) created += 1;
 
         results.push({
           ...base,
