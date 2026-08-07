@@ -8813,6 +8813,16 @@ export type Database = {
       }
       next_local_midnight_utc: { Args: { _tz: string }; Returns: string }
       object_host_claim: { Args: { _room_id: string }; Returns: undefined }
+      open_workshop_on_collab: {
+        Args: { _collab_post_id: string }
+        Returns: {
+          created: boolean
+          outcome: string
+          room_id: string
+          workshop_id: string
+          workshop_slug: string
+        }[]
+      }
       profile_published_blog_count: {
         Args: { _profile_id: string }
         Returns: number
@@ -8820,6 +8830,21 @@ export type Database = {
       promote_next_lounge_listener: {
         Args: { _room_id: string }
         Returns: undefined
+      }
+      promote_room_to_collab: {
+        Args: {
+          _license_label: string
+          _pitch: string
+          _room_id: string
+          _title: string
+        }
+        Returns: {
+          collab_slug: string
+          created: boolean
+          outcome: string
+          workshop_id: string
+          workshop_slug: string
+        }[]
       }
       provision_locality: {
         Args: {

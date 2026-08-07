@@ -17,134 +17,74 @@ export const openWorkshopOnCollab = createServerFn({ method: "POST" })
     z.object({ collabPostId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { userId } = context;
+    const { userId, supabase } = context;
     const { collabPostId } = data;
 
-    // 1. Verify caller owns the collab post.
-    // NOTE: Only the Collab owner can open a Workshop on this post, and the owner
-    // is always the Workshop host (host_user_id = userId below). Do not relax.
-    const { data: post, error: postErr } = await supabaseAdmin
-      .from("collab_posts")
-      .select("id,title,user_id,category,live_workshop_id,location_mode,city_id,also_cities")
-      .eq("id", collabPostId)
-      .maybeSingle();
-    if (postErr) throw new Error(postErr.message);
-    if (!post) throw new Error("Collab not found.");
-    if (post.user_id !== userId) throw new Error("Only the collab owner can open a Workshop.");
-
-    // 2. If an active linked workshop already exists, reuse it.
-    if (post.live_workshop_id) {
-      const { data: existingWs } = await supabaseAdmin
-        .from("workshops")
-        .select("id,slug,status")
-        .eq("id", post.live_workshop_id)
-        .maybeSingle();
-      if (existingWs && existingWs.status !== "archived" && existingWs.status !== "canceled") {
-        const { data: existingRoom } = await supabaseAdmin
-          .from("instant_rooms")
-          .select("id")
-          .eq("workshop_id", existingWs.id)
-          .maybeSingle();
-        if (existingRoom?.id) {
-          return { workshopId: existingWs.id, roomId: existingRoom.id, slug: existingWs.slug };
+    // Everything that must hold together — Workshop, backlink, host seat and
+    // paired room — happens inside one Postgres transaction. Repeat taps
+    // return the same Workshop instead of forking a second one.
+    const { data: rows, error } = await supabase.rpc("open_workshop_on_collab", {
+      _collab_post_id: collabPostId,
+    } as never);
+    if (error) throw new Error(error.message);
+    const result = (Array.isArray(rows) ? rows[0] : rows) as
+      | {
+          outcome: string;
+          workshop_id: string | null;
+          workshop_slug: string | null;
+          room_id: string | null;
+          created: boolean;
         }
+      | undefined;
+    if (!result) throw new Error("Couldn't open the Workshop.");
+    if (result.outcome === "not_found") throw new Error("Collab not found.");
+    if (result.outcome === "forbidden") {
+      throw new Error("Only the collab owner can open a Workshop.");
+    }
+
+    const ws = { id: result.workshop_id as string, slug: result.workshop_slug as string };
+    const roomId = result.room_id as string;
+
+    // Notify people who reached out on this Collab — best-effort, and only the
+    // first time the Workshop actually opens.
+    if (result.created) {
+      const [{ data: contacts }, { data: post }] = await Promise.all([
+        supabaseAdmin
+          .from("collab_contact_events")
+          .select("sender_user_id")
+          .eq("collab_post_id", collabPostId),
+        supabaseAdmin.from("collab_posts").select("title").eq("id", collabPostId).maybeSingle(),
+      ]);
+      const senderIds = Array.from(
+        new Set(
+          (contacts ?? [])
+            .map((c) => c.sender_user_id)
+            .filter((id): id is string => !!id && id !== userId),
+        ),
+      );
+      if (senderIds.length > 0) {
+        await supabaseAdmin
+          .from("notifications")
+          .insert(
+            senderIds.map((uid) => ({
+              user_id: uid,
+              kind: "collab_workshop_live",
+              actor_user_id: userId,
+              entity_type: "workshop",
+              entity_id: ws.id,
+              payload: {
+                collab_post_id: collabPostId,
+                workshop_slug: ws.slug,
+                title: post?.title ?? "",
+              },
+            })),
+          )
+          .then(() => null, () => null);
       }
     }
 
-    // City-scope: if the Collab is in_person with a city, restrict the Workshop's
-    // discovery audience to that city (+ any "also open to" cities).
-    const isInPerson = post.location_mode === "in_person" && !!post.city_id;
-    const audienceCityIds = isInPerson
-      ? Array.from(new Set<string>([post.city_id as string, ...((post.also_cities as string[] | null) ?? [])]))
-      : [];
+    return { workshopId: ws.id, roomId, slug: ws.slug };
 
-    // 3. Create the live Workshop. The DB trigger will fill in `slug`.
-    const now = new Date();
-    const endsAt = new Date(now.getTime() + 2 * 60 * 60 * 1000); // 2h default
-    const { data: ws, error: wsErr } = await supabaseAdmin
-      .from("workshops")
-      .insert({
-        title: post.title,
-        slug: "",
-        category: post.category,
-        host_user_id: userId,
-        mode: "instant_spawned",
-        status: "active",
-        starts_at: now.toISOString(),
-        ends_at: endsAt.toISOString(),
-        location_type: isInPerson ? "in_person" : "online",
-        city_id: isInPerson ? post.city_id : null,
-        audience_city_ids: audienceCityIds,
-        participant_cap: 5,
-        topic_collab_post_id: post.id,
-        prompt: `Live working session on Collab: ${post.title}`,
-        visibility: "public",
-      })
-      .select("id,slug")
-      .single();
-    if (wsErr || !ws) throw new Error(wsErr?.message ?? "Couldn't open the Workshop.");
-
-    // 4. Link the Collab back.
-    await supabaseAdmin
-      .from("collab_posts")
-      .update({ live_workshop_id: ws.id })
-      .eq("id", post.id);
-
-    // 5. Ensure host is a confirmed participant (so RLS lets them into the room).
-    await supabaseAdmin
-      .from("workshop_participants")
-      .insert({
-        workshop_id: ws.id,
-        user_id: userId,
-        participant_status: "confirmed",
-      })
-      .then(() => null, () => null); // ignore duplicates if trigger already did it
-
-    // 6. Pair a workshop room.
-    const { data: room, error: roomErr } = await supabaseAdmin
-      .from("instant_rooms")
-      .insert({
-        kind: "workshop",
-        title: post.title,
-        status: "active",
-        participant_cap: 5,
-        creator_id: userId,
-        category: post.category,
-        workshop_id: ws.id,
-      })
-      .select("id")
-      .single();
-    if (roomErr || !room) throw new Error(roomErr?.message ?? "Couldn't open the room.");
-
-    // 7. Notify confirmed applicants — anyone who sent a contact event on this Collab.
-    const { data: contacts } = await supabaseAdmin
-      .from("collab_contact_events")
-      .select("sender_user_id")
-      .eq("collab_post_id", post.id);
-    const senderIds = Array.from(
-      new Set((contacts ?? []).map((c) => c.sender_user_id).filter((id): id is string => !!id && id !== userId)),
-    );
-    if (senderIds.length > 0) {
-      await supabaseAdmin
-        .from("notifications")
-        .insert(
-          senderIds.map((uid) => ({
-            user_id: uid,
-            kind: "collab_workshop_live",
-            actor_user_id: userId,
-            entity_type: "workshop",
-            entity_id: ws.id,
-            payload: {
-              collab_post_id: post.id,
-              workshop_slug: ws.slug,
-              title: post.title,
-            },
-          })),
-        )
-        .then(() => null, () => null);
-    }
-
-    return { workshopId: ws.id, roomId: room.id, slug: ws.slug };
   });
 
 /**
@@ -216,7 +156,7 @@ export const createCollabFromRoom = createServerFn({ method: "POST" })
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { userId } = context;
+    const { userId, supabase } = context;
     const { roomId, title, pitch, license, licenseCustom } = data;
     const licenseLabel =
       license === "rights_managed_externally" ? "Rights managed externally"
@@ -224,103 +164,44 @@ export const createCollabFromRoom = createServerFn({ method: "POST" })
       : license === "private" ? "Closed circle (private)"
       : "CC BY 4.0";
 
-    // 1. Load the source room.
-    const { data: room, error: roomErr } = await supabaseAdmin
-      .from("instant_rooms")
-      .select("id, title, kind, medium, category, host_user_id, promoted_at, source_workshop_id")
-      .eq("id", roomId)
-      .maybeSingle();
-    if (roomErr) throw new Error(roomErr.message);
-    if (!room) throw new Error("Room not found.");
+    // Same community-standards check every other written surface runs.
+    const { moderateFields } = await import("@/lib/moderation/service.server");
+    await moderateFields(userId, "collab.from_room", { title, pitch: pitch ?? null });
 
-    // Idempotent: if already promoted, just return existing pointers.
-    if (room.promoted_at && room.source_workshop_id) {
-      const { data: existingWs } = await supabaseAdmin
-        .from("workshops")
-        .select("id, slug, topic_collab_post_id")
-        .eq("id", room.source_workshop_id)
-        .maybeSingle();
-      if (existingWs) {
-        const { data: collab } = await supabaseAdmin
-          .from("collab_posts")
-          .select("slug")
-          .eq("id", existingWs.topic_collab_post_id ?? "00000000-0000-0000-0000-000000000000")
-          .maybeSingle();
-        return { workshopSlug: existingWs.slug, collabSlug: collab?.slug ?? null, alreadyPromoted: true };
-      }
+    // Workshop + paired Collab + backlink + promotion stamp + host seat all
+    // land together, or none of them do.
+    const { data: rows, error } = await supabase.rpc("promote_room_to_collab", {
+      _room_id: roomId,
+      _title: title,
+      _pitch: pitch ?? null,
+      _license_label: licenseLabel,
+    } as never);
+    if (error) throw new Error(error.message);
+    const result = (Array.isArray(rows) ? rows[0] : rows) as
+      | {
+          outcome: string;
+          workshop_id: string | null;
+          workshop_slug: string | null;
+          collab_slug: string | null;
+          created: boolean;
+        }
+      | undefined;
+    if (!result) throw new Error("Couldn't create the Workshop.");
+    if (result.outcome === "not_found") throw new Error("Room not found.");
+    if (result.outcome === "forbidden") {
+      throw new Error("You need to be in the room to create a Collab from it.");
+    }
+    if (!result.created) {
+      return {
+        workshopSlug: result.workshop_slug,
+        collabSlug: result.collab_slug,
+        alreadyPromoted: true,
+      };
     }
 
-    // 2. Authorize: host OR currently present.
-    const isHost = room.host_user_id === userId;
-    if (!isHost) {
-      const { data: pres } = await supabaseAdmin
-        .from("instant_presence")
-        .select("user_id")
-        .eq("room_id", roomId)
-        .eq("user_id", userId)
-        .maybeSingle();
-      if (!pres) throw new Error("You need to be in the room to create a Collab from it.");
-    }
+    const ws = { id: result.workshop_id as string, slug: result.workshop_slug as string };
+    const collab = { slug: result.collab_slug };
 
-    // 3. Create the persistent Workshop.
-    const category = (room.category ?? room.medium ?? "coworking") as
-      | "film" | "music" | "writing" | "build" | "visual" | "critique" | "business" | "coworking";
-    const { data: ws, error: wsErr } = await supabaseAdmin
-      .from("workshops")
-      .insert({
-        title,
-        slug: "",
-        category,
-        host_user_id: userId,
-        mode: "instant_spawned",
-        status: "active",
-        location_type: "online",
-        participant_cap: 12,
-        prompt: `License: ${licenseLabel}\n\n${pitch || `Forked from a live Workshop: ${room.title}`}`,
-        visibility: "public",
-        source_instant_room_id: roomId,
-      })
-      .select("id, slug")
-      .single();
-    if (wsErr || !ws) throw new Error(wsErr?.message ?? "Couldn't create the Workshop.");
-
-    // 4. Create the paired Collab post.
-    const { data: collab, error: collabErr } = await supabaseAdmin
-      .from("collab_posts")
-      .insert({
-        user_id: userId,
-        title,
-        slug: "",
-        category,
-        description: pitch || `Forked from a live Workshop: ${room.title}`,
-        live_workshop_id: ws.id,
-        location_mode: "online",
-        status: "open",
-      })
-      .select("id, slug")
-      .single();
-    // Non-fatal: workshop can exist without collab if the collab schema rejects.
-    if (collabErr) console.error("[createCollabFromRoom] collab insert failed:", collabErr.message);
-
-    // Backlink Workshop → Collab post if created.
-    if (collab?.id) {
-      await supabaseAdmin
-        .from("workshops")
-        .update({ topic_collab_post_id: collab.id })
-        .eq("id", ws.id);
-    }
-
-    // 5. Stamp source room as promoted.
-    await supabaseAdmin
-      .from("instant_rooms")
-      .update({ promoted_at: new Date().toISOString(), source_workshop_id: ws.id })
-      .eq("id", roomId);
-
-    // 6. Initiator → confirmed host participant.
-    await supabaseAdmin
-      .from("workshop_participants")
-      .insert({ workshop_id: ws.id, user_id: userId, participant_status: "confirmed" })
-      .then(() => null, () => null);
 
     // 6b. Copy ephemeral tools forward into the persistent Workshop.
     const { data: srcTools } = await supabaseAdmin
