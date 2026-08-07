@@ -1348,10 +1348,13 @@ export async function getMemberHomeServer(userId: string): Promise<MemberHomePay
       : { posts: [] as HomeBlogCard[], isFallback: false };
   const mine = mineR.status === "fulfilled" ? mineR.value : [];
 
-  const blogRail = await blogRailServer([
-    ...featured.posts.map((p) => p.id),
-    ...mine.filter((m) => m.kind === "blog").map((m) => m.id),
-  ]).catch(() => [] as HomeBlogCard[]);
+  const blogRail = await span("blogRail", () =>
+    blogRailServer([
+      ...featured.posts.map((p) => p.id),
+      ...mine.filter((m) => m.kind === "blog").map((m) => m.id),
+    ]).catch(() => [] as HomeBlogCard[]),
+  );
+
 
   // Prefer a Group with Today activity for the "open a Lounge" fallback.
   const fallbackGroup =
