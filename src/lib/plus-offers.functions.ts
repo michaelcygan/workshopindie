@@ -75,13 +75,19 @@ export const adminCreatePlusOfferLink = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
 
-    await logAdminAction(context.supabase, "plus_offer_create", "plus_offer_link", (row as any).id, {
-      name: data.name,
-      benefitType: data.benefitType,
-      durationMonths: data.durationMonths ?? null,
-      maxRedemptions: data.maxRedemptions ?? null,
-      expiresAt: data.expiresAt ?? null,
-    });
+    await logAdminAction(
+      context.supabase,
+      "plus_offer_create",
+      "plus_offer_link",
+      (row as any).id,
+      {
+        name: data.name,
+        benefitType: data.benefitType,
+        durationMonths: data.durationMonths ?? null,
+        maxRedemptions: data.maxRedemptions ?? null,
+        expiresAt: data.expiresAt ?? null,
+      },
+    );
 
     return { id: (row as any).id, token };
   });

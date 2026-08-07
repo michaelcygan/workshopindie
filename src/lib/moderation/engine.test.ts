@@ -61,10 +61,9 @@ assert(check("Привет мир", matcher).ok === true, "cyrillic OK");
 // spam heuristics
 assert(checkSpam("a".repeat(200), { maxRepeatChars: 30 }).ok === false, "repetition flagged");
 assert(
-  checkSpam(
-    "http://a.com http://b.com http://c.com http://d.com http://e.com http://f.com",
-    { maxLinks: 4 },
-  ).ok === false,
+  checkSpam("http://a.com http://b.com http://c.com http://d.com http://e.com http://f.com", {
+    maxLinks: 4,
+  }).ok === false,
   "too many links flagged",
 );
 assert(checkSpam("hi https://portfolio.example.com", { maxLinks: 4 }).ok === true, "one link OK");

@@ -36,9 +36,7 @@ export async function applyComplimentaryPlusBenefit(
 ): Promise<PlusBenefitResult> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-  const env =
-    input.environment ??
-    (process.env.NODE_ENV === "production" ? "live" : "sandbox");
+  const env = input.environment ?? (process.env.NODE_ENV === "production" ? "live" : "sandbox");
 
   if (input.benefitType === "lifetime") {
     // Reject if user already has an active lifetime grant.
@@ -80,7 +78,8 @@ export async function applyComplimentaryPlusBenefit(
   }
 
   const months = input.durationMonths ?? 0;
-  if (!months || months < 1) throw new Error("durationMonths is required for month-based benefits.");
+  if (!months || months < 1)
+    throw new Error("durationMonths is required for month-based benefits.");
 
   // Stack after the furthest still-active timed grant's end.
   const { data: latest } = await supabaseAdmin

@@ -13,9 +13,7 @@ import { isBlockedUrl } from "@/lib/moderation/url-blocklist";
 
 export type UrlSafetyReason = "invalid" | "scheme" | "private" | "blocked";
 
-export type UrlSafetyResult =
-  | { ok: true; url: URL }
-  | { ok: false; reason: UrlSafetyReason };
+export type UrlSafetyResult = { ok: true; url: URL } | { ok: false; reason: UrlSafetyReason };
 
 const PRIVATE_HOSTNAMES = new Set([
   "localhost",

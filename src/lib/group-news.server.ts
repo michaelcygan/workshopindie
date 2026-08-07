@@ -86,8 +86,7 @@ export async function fetchFeedItems(
         headers: {
           "user-agent":
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
-          accept:
-            "application/rss+xml, application/atom+xml, application/xml, text/xml, */*;q=0.5",
+          accept: "application/rss+xml, application/atom+xml, application/xml, text/xml, */*;q=0.5",
           "accept-language": "en-US,en;q=0.9",
         },
         signal: AbortSignal.timeout(8000),

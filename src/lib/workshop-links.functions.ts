@@ -3,7 +3,16 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { domainError } from "@/lib/errors";
 
-const CATEGORIES = ["film", "music", "writing", "build", "visual", "critique", "business", "coworking"] as const;
+const CATEGORIES = [
+  "film",
+  "music",
+  "writing",
+  "build",
+  "visual",
+  "critique",
+  "business",
+  "coworking",
+] as const;
 
 function randToken(len = 8) {
   const alphabet = "abcdefghijkmnpqrstuvwxyz23456789";
@@ -27,13 +36,15 @@ async function ensureAdmin(supabase: any, userId: string) {
 export const createWorkshopLink = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({
-      title: z.string().trim().min(1).max(120),
-      prompt: z.string().trim().max(2000).optional().nullable(),
-      category: z.enum(CATEGORIES).optional().nullable(),
-      cover_url: z.string().url().optional().nullable(),
-      participant_cap: z.number().int().min(2).max(12).default(5),
-    }).parse(input),
+    z
+      .object({
+        title: z.string().trim().min(1).max(120),
+        prompt: z.string().trim().max(2000).optional().nullable(),
+        category: z.enum(CATEGORIES).optional().nullable(),
+        cover_url: z.string().url().optional().nullable(),
+        participant_cap: z.number().int().min(2).max(12).default(5),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -95,29 +106,37 @@ export const listWorkshopLinks = createServerFn({ method: "GET" })
         }
         for (const r of rooms ?? []) {
           const c = liveByRoom.get(r.id as string) ?? 0;
-          liveByToken.set(r.link_token as string, (liveByToken.get(r.link_token as string) ?? 0) + c);
+          liveByToken.set(
+            r.link_token as string,
+            (liveByToken.get(r.link_token as string) ?? 0) + c,
+          );
         }
       }
     }
     return {
-      links: (links ?? []).map((l: any) => ({ ...l, live_count: liveByToken.get(l.token as string) ?? 0 })),
+      links: (links ?? []).map((l: any) => ({
+        ...l,
+        live_count: liveByToken.get(l.token as string) ?? 0,
+      })),
     };
   });
 
 export const updateWorkshopLink = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({
-      id: z.string().uuid(),
-      patch: z.object({
-        title: z.string().trim().min(1).max(120).optional(),
-        prompt: z.string().trim().max(2000).nullable().optional(),
-        category: z.enum(CATEGORIES).nullable().optional(),
-        cover_url: z.string().url().nullable().optional(),
-        participant_cap: z.number().int().min(2).max(12).optional(),
-        is_active: z.boolean().optional(),
-      }),
-    }).parse(input),
+    z
+      .object({
+        id: z.string().uuid(),
+        patch: z.object({
+          title: z.string().trim().min(1).max(120).optional(),
+          prompt: z.string().trim().max(2000).nullable().optional(),
+          category: z.enum(CATEGORIES).nullable().optional(),
+          cover_url: z.string().url().nullable().optional(),
+          participant_cap: z.number().int().min(2).max(12).optional(),
+          is_active: z.boolean().optional(),
+        }),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -162,11 +181,9 @@ export const peekLinkWorkshop = createServerFn({ method: "GET" })
   .inputValidator((input: unknown) => z.object({ token: z.string().min(1).max(40) }).parse(input))
   .handler(async ({ data }): Promise<PeekResult> => {
     const { createClient } = await import("@supabase/supabase-js");
-    const sb = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_PUBLISHABLE_KEY!,
-      { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-    );
+    const sb = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
+      auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+    });
     const { data: link } = await sb
       .from("workshop_links")
       .select("token, title, prompt, category, cover_url, participant_cap, is_active")
@@ -201,10 +218,12 @@ export const peekLinkWorkshop = createServerFn({ method: "GET" })
 export const joinFromLink = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({
-      token: z.string().min(1).max(40),
-      excludeRoomIds: z.array(z.string().uuid()).max(20).optional(),
-    }).parse(input),
+    z
+      .object({
+        token: z.string().min(1).max(40),
+        excludeRoomIds: z.array(z.string().uuid()).max(20).optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

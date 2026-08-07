@@ -35,39 +35,117 @@ async function resolveTags(rows: Row[], opts: { publicOnly: boolean }): Promise<
             "id,slug,title,category,categories,subtype,excerpt,cover_url,cover_aspect,cover_focal_x,cover_focal_y,visibility,status",
           )
           .in("id", workIds)
-      : Promise.resolve({ data: [] as Array<{ id: string; slug: string; title: string; category: string | null; categories: string[] | null; subtype: string | null; excerpt: string | null; cover_url: string | null; cover_aspect: string | null; cover_focal_x: number | null; cover_focal_y: number | null; visibility: string; status: string }> }),
+      : Promise.resolve({
+          data: [] as Array<{
+            id: string;
+            slug: string;
+            title: string;
+            category: string | null;
+            categories: string[] | null;
+            subtype: string | null;
+            excerpt: string | null;
+            cover_url: string | null;
+            cover_aspect: string | null;
+            cover_focal_x: number | null;
+            cover_focal_y: number | null;
+            visibility: string;
+            status: string;
+          }>,
+        }),
 
     collabIds.length
       ? supabaseAdmin
           .from("collab_posts")
           .select("id,slug,title,description,status,archived_at,resulting_work_id")
           .in("id", collabIds)
-      : Promise.resolve({ data: [] as Array<{ id: string; slug: string; title: string; description: string | null; status: string; archived_at: string | null; resulting_work_id: string | null }> }),
+      : Promise.resolve({
+          data: [] as Array<{
+            id: string;
+            slug: string;
+            title: string;
+            description: string | null;
+            status: string;
+            archived_at: string | null;
+            resulting_work_id: string | null;
+          }>,
+        }),
     groupIds.length
       ? supabaseAdmin
           .from("groups")
           .select("id,slug,name,tagline,avatar_url,visibility,deleted_at")
           .in("id", groupIds)
-      : Promise.resolve({ data: [] as Array<{ id: string; slug: string; name: string; tagline: string | null; avatar_url: string | null; visibility: string; deleted_at: string | null }> }),
+      : Promise.resolve({
+          data: [] as Array<{
+            id: string;
+            slug: string;
+            name: string;
+            tagline: string | null;
+            avatar_url: string | null;
+            visibility: string;
+            deleted_at: string | null;
+          }>,
+        }),
     eventIds.length
       ? supabaseAdmin
           .from("group_events")
-          .select("id,slug,title,tagline,cover_url,starts_at,visibility,deleted_at,group:groups!group_events_group_id_fkey(slug,name,visibility,deleted_at)")
+          .select(
+            "id,slug,title,tagline,cover_url,starts_at,visibility,deleted_at,group:groups!group_events_group_id_fkey(slug,name,visibility,deleted_at)",
+          )
           .in("id", eventIds)
-      : Promise.resolve({ data: [] as Array<{ id: string; slug: string; title: string; tagline: string | null; cover_url: string | null; starts_at: string; visibility: string; deleted_at: string | null; group: { slug: string; name: string; visibility: string; deleted_at: string | null } | null }> }),
+      : Promise.resolve({
+          data: [] as Array<{
+            id: string;
+            slug: string;
+            title: string;
+            tagline: string | null;
+            cover_url: string | null;
+            starts_at: string;
+            visibility: string;
+            deleted_at: string | null;
+            group: {
+              slug: string;
+              name: string;
+              visibility: string;
+              deleted_at: string | null;
+            } | null;
+          }>,
+        }),
     profileIds.length
       ? supabaseAdmin
           .from("profiles")
           .select("id,username,display_name,avatar_url,headline,discoverable")
           .in("id", profileIds)
-      : Promise.resolve({ data: [] as Array<{ id: string; username: string | null; display_name: string | null; avatar_url: string | null; headline: string | null; discoverable: boolean }> }),
+      : Promise.resolve({
+          data: [] as Array<{
+            id: string;
+            username: string | null;
+            display_name: string | null;
+            avatar_url: string | null;
+            headline: string | null;
+            discoverable: boolean;
+          }>,
+        }),
     workIds.length
       ? supabaseAdmin
           .from("work_credits")
-          .select("work_id,user_id,role_label,sort_order,profiles(id,username,display_name,avatar_url)")
+          .select(
+            "work_id,user_id,role_label,sort_order,profiles(id,username,display_name,avatar_url)",
+          )
           .in("work_id", workIds)
           .order("sort_order", { ascending: true })
-      : Promise.resolve({ data: [] as Array<{ work_id: string; user_id: string | null; role_label: string | null; profiles: { id: string; username: string | null; display_name: string | null; avatar_url: string | null } | null }> }),
+      : Promise.resolve({
+          data: [] as Array<{
+            work_id: string;
+            user_id: string | null;
+            role_label: string | null;
+            profiles: {
+              id: string;
+              username: string | null;
+              display_name: string | null;
+              avatar_url: string | null;
+            } | null;
+          }>,
+        }),
   ]);
 
   const workMap = new Map((works.data ?? []).map((w) => [w.id, w]));
@@ -80,10 +158,15 @@ async function resolveTags(rows: Row[], opts: { publicOnly: boolean }): Promise<
     work_id: string;
     user_id: string | null;
     role_label: string | null;
-    profiles: { id: string; username: string | null; display_name: string | null; avatar_url: string | null } | null;
+    profiles: {
+      id: string;
+      username: string | null;
+      display_name: string | null;
+      avatar_url: string | null;
+    } | null;
   };
   const creditsByWork = new Map<string, CreditRow[]>();
-  for (const c of ((workCredits.data ?? []) as unknown as CreditRow[])) {
+  for (const c of (workCredits.data ?? []) as unknown as CreditRow[]) {
     const arr = creditsByWork.get(c.work_id) ?? [];
     arr.push(c);
     creditsByWork.set(c.work_id, arr);
@@ -106,7 +189,11 @@ async function resolveTags(rows: Row[], opts: { publicOnly: boolean }): Promise<
         work: isPublic
           ? {
               excerpt: w.excerpt ?? null,
-              categories: (w.categories ?? []).length ? (w.categories as string[]) : w.category ? [w.category] : [],
+              categories: (w.categories ?? []).length
+                ? (w.categories as string[])
+                : w.category
+                  ? [w.category]
+                  : [],
               subtype: w.subtype ?? null,
               cover_url: w.cover_url ?? null,
               cover_aspect: w.cover_aspect ?? null,
@@ -131,28 +218,57 @@ async function resolveTags(rows: Row[], opts: { publicOnly: boolean }): Promise<
       // A finished or closed Collab is still valid editorial context; an
       // archived or legacy-draft one is not public and must not resolve.
       if (opts.publicOnly && !isCollabPubliclyReferenceable(c)) continue;
-      out.push({ kind: "collab", id: c.id, slug: c.slug, label: c.title, sublabel: c.description ?? null, image: null });
+      out.push({
+        kind: "collab",
+        id: c.id,
+        slug: c.slug,
+        label: c.title,
+        sublabel: c.description ?? null,
+        image: null,
+      });
       continue;
     }
     if (r.group_id) {
       const g = groupMap.get(r.group_id);
       if (!g) continue;
       if (opts.publicOnly && !isGroupPubliclyReferenceable(g)) continue;
-      out.push({ kind: "group", id: g.id, slug: g.slug, label: g.name, sublabel: g.tagline ?? null, image: g.avatar_url });
+      out.push({
+        kind: "group",
+        id: g.id,
+        slug: g.slug,
+        label: g.name,
+        sublabel: g.tagline ?? null,
+        image: g.avatar_url,
+      });
       continue;
     }
     if (r.group_event_id) {
       const e = eventMap.get(r.group_event_id);
       if (!e || !e.group?.slug) continue;
       if (opts.publicOnly && !isEventPubliclyReferenceable(e, e.group)) continue;
-      out.push({ kind: "event", id: e.id, slug: e.slug, groupSlug: e.group.slug, label: e.title, sublabel: e.group.name, image: e.cover_url });
+      out.push({
+        kind: "event",
+        id: e.id,
+        slug: e.slug,
+        groupSlug: e.group.slug,
+        label: e.title,
+        sublabel: e.group.name,
+        image: e.cover_url,
+      });
       continue;
     }
     if (r.profile_id) {
       const p = profileMap.get(r.profile_id);
       if (!p || !p.username) continue;
       if (opts.publicOnly && !isProfilePubliclyReferenceable(p)) continue;
-      out.push({ kind: "profile", id: p.id, username: p.username, label: p.display_name || p.username, sublabel: p.headline ?? `@${p.username}`, image: p.avatar_url });
+      out.push({
+        kind: "profile",
+        id: p.id,
+        username: p.username,
+        label: p.display_name || p.username,
+        sublabel: p.headline ?? `@${p.username}`,
+        image: p.avatar_url,
+      });
       continue;
     }
   }
@@ -196,26 +312,76 @@ export async function getBlogPostEntityTagsBulkServer(
   return out;
 }
 
-
 async function validateEntitiesExist(inputs: EntityInput[]) {
-  const byKind: Record<BlogEntityKind, string[]> = { work: [], collab: [], group: [], event: [], profile: [] };
+  const byKind: Record<BlogEntityKind, string[]> = {
+    work: [],
+    collab: [],
+    group: [],
+    event: [],
+    profile: [],
+  };
   for (const t of inputs) byKind[t.kind].push(t.id);
 
   const checks: Array<PromiseLike<{ kind: BlogEntityKind; found: Set<string> }>> = [];
   if (byKind.work.length) {
-    checks.push(supabaseAdmin.from("works").select("id").in("id", byKind.work).then(({ data }) => ({ kind: "work" as BlogEntityKind, found: new Set((data ?? []).map((r) => r.id)) })));
+    checks.push(
+      supabaseAdmin
+        .from("works")
+        .select("id")
+        .in("id", byKind.work)
+        .then(({ data }) => ({
+          kind: "work" as BlogEntityKind,
+          found: new Set((data ?? []).map((r) => r.id)),
+        })),
+    );
   }
   if (byKind.collab.length) {
-    checks.push(supabaseAdmin.from("collab_posts").select("id").in("id", byKind.collab).then(({ data }) => ({ kind: "collab" as BlogEntityKind, found: new Set((data ?? []).map((r) => r.id)) })));
+    checks.push(
+      supabaseAdmin
+        .from("collab_posts")
+        .select("id")
+        .in("id", byKind.collab)
+        .then(({ data }) => ({
+          kind: "collab" as BlogEntityKind,
+          found: new Set((data ?? []).map((r) => r.id)),
+        })),
+    );
   }
   if (byKind.group.length) {
-    checks.push(supabaseAdmin.from("groups").select("id").in("id", byKind.group).then(({ data }) => ({ kind: "group" as BlogEntityKind, found: new Set((data ?? []).map((r) => r.id)) })));
+    checks.push(
+      supabaseAdmin
+        .from("groups")
+        .select("id")
+        .in("id", byKind.group)
+        .then(({ data }) => ({
+          kind: "group" as BlogEntityKind,
+          found: new Set((data ?? []).map((r) => r.id)),
+        })),
+    );
   }
   if (byKind.event.length) {
-    checks.push(supabaseAdmin.from("group_events").select("id").in("id", byKind.event).then(({ data }) => ({ kind: "event" as BlogEntityKind, found: new Set((data ?? []).map((r) => r.id)) })));
+    checks.push(
+      supabaseAdmin
+        .from("group_events")
+        .select("id")
+        .in("id", byKind.event)
+        .then(({ data }) => ({
+          kind: "event" as BlogEntityKind,
+          found: new Set((data ?? []).map((r) => r.id)),
+        })),
+    );
   }
   if (byKind.profile.length) {
-    checks.push(supabaseAdmin.from("profiles").select("id").in("id", byKind.profile).then(({ data }) => ({ kind: "profile" as BlogEntityKind, found: new Set((data ?? []).map((r) => r.id)) })));
+    checks.push(
+      supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .in("id", byKind.profile)
+        .then(({ data }) => ({
+          kind: "profile" as BlogEntityKind,
+          found: new Set((data ?? []).map((r) => r.id)),
+        })),
+    );
   }
   const results = await Promise.all(checks);
   const foundByKind = new Map(results.map((r) => [r.kind, r.found]));
@@ -264,7 +430,12 @@ export async function setBlogPostEntityTagsForOwnerServer(
   if (error) throw new Error(error.message);
   if (!post) throw new Error("Post not found.");
   if (post.created_by !== userId) {
-    const { data: isAdmin } = await supabaseAdmin.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle();
+    const { data: isAdmin } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
     if (!isAdmin) throw new Error("Forbidden.");
   }
   return replaceTagsRaw(postId, userId, inputs);
@@ -296,7 +467,9 @@ export async function assertTaggedEntitiesPubliclyVisibleServer(postId: string):
   const publicTags = await resolveTags((rows.data ?? []) as Row[], { publicOnly: true });
   const allTags = await resolveTags((rows.data ?? []) as Row[], { publicOnly: false });
   if (publicTags.length < allTags.length) {
-    throw new Error("One of the entities connected to this post is no longer public. Remove it before publishing.");
+    throw new Error(
+      "One of the entities connected to this post is no longer public. Remove it before publishing.",
+    );
   }
 }
 
@@ -362,7 +535,10 @@ export async function resolveTrustedAuthorIds(
       supabaseAdmin.from("work_credits").select("user_id,role_label").eq("work_id", entityId),
     ]);
     add((work as { created_by: string | null } | null)?.created_by ?? null);
-    for (const c of (creditRows ?? []) as Array<{ user_id: string | null; role_label: string | null }>) {
+    for (const c of (creditRows ?? []) as Array<{
+      user_id: string | null;
+      role_label: string | null;
+    }>) {
       if (!c.user_id) continue;
       trusted.add(c.user_id);
       if (c.role_label) creditRole.set(c.user_id, c.role_label);
@@ -381,7 +557,8 @@ export async function resolveTrustedAuthorIds(
         .eq("status", "accepted"),
     ]);
     add((collab as { user_id: string | null } | null)?.user_id ?? null);
-    for (const i of (invites ?? []) as Array<{ invitee_user_id: string | null }>) add(i.invitee_user_id);
+    for (const i of (invites ?? []) as Array<{ invitee_user_id: string | null }>)
+      add(i.invitee_user_id);
     return { trusted, creditRole };
   }
 
@@ -449,7 +626,9 @@ export async function listBlogPostsForEntityServer(
     .select("blog_post_id")
     .eq(column[kind], entityId);
   if (tagErr) throw new Error(tagErr.message);
-  const postIds = Array.from(new Set((tagRows ?? []).map((r) => (r as { blog_post_id: string }).blog_post_id)));
+  const postIds = Array.from(
+    new Set((tagRows ?? []).map((r) => (r as { blog_post_id: string }).blog_post_id)),
+  );
   if (!postIds.length) return [];
 
   const { data, error } = await supabaseAdmin
@@ -475,7 +654,9 @@ export async function listBlogPostsForEntityServer(
   // Attributed authors (with role labels) for every candidate post.
   const { data: authorRows } = await supabaseAdmin
     .from("blog_post_authors")
-    .select("blog_post_id,profile_id,role_label,sort_order,profiles(id,username,display_name,avatar_url)")
+    .select(
+      "blog_post_id,profile_id,role_label,sort_order,profiles(id,username,display_name,avatar_url)",
+    )
     .in(
       "blog_post_id",
       rows.map((r) => r.id),
@@ -485,7 +666,12 @@ export async function listBlogPostsForEntityServer(
     blog_post_id: string;
     profile_id: string;
     role_label: string | null;
-    profiles: { id: string; username: string | null; display_name: string | null; avatar_url: string | null } | null;
+    profiles: {
+      id: string;
+      username: string | null;
+      display_name: string | null;
+      avatar_url: string | null;
+    } | null;
   };
   const authorsByPost = new Map<string, AuthorRow[]>();
   for (const a of (authorRows ?? []) as unknown as AuthorRow[]) {
@@ -531,9 +717,11 @@ export async function listBlogPostsForEntityServer(
   }));
 }
 
-
 /** Rank related posts: prefer those that share tagged entities with `postId`, then fill by recency. */
-export async function getRelatedPostsRankedServer(postId: string, limit: number): Promise<PublicPostSummary[]> {
+export async function getRelatedPostsRankedServer(
+  postId: string,
+  limit: number,
+): Promise<PublicPostSummary[]> {
   // 1) Find this post's tagged entities.
   const { data: myRows } = await supabaseAdmin
     .from("blog_post_entity_tags")
@@ -554,7 +742,13 @@ export async function getRelatedPostsRankedServer(postId: string, limit: number)
   }
 
   const overlap = new Map<string, number>(); // post_id -> shared-entity count
-  if (workIds.length || collabIds.length || groupIds.length || eventIds.length || profileIds.length) {
+  if (
+    workIds.length ||
+    collabIds.length ||
+    groupIds.length ||
+    eventIds.length ||
+    profileIds.length
+  ) {
     let q = supabaseAdmin.from("blog_post_entity_tags").select("blog_post_id");
     const orParts: string[] = [];
     if (workIds.length) orParts.push(`work_id.in.(${workIds.join(",")})`);
@@ -570,20 +764,22 @@ export async function getRelatedPostsRankedServer(postId: string, limit: number)
     }
   }
 
-  const rankedIds = [...overlap.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .map(([id]) => id);
+  const rankedIds = [...overlap.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id);
 
   const out: PublicPostSummary[] = [];
   if (rankedIds.length) {
     const { data } = await supabaseAdmin
       .from("blog_posts")
-      .select("id,slug,title,excerpt,cover_image_url,cover_image_alt,author_name,published_at,status,show_in_blog_index")
+      .select(
+        "id,slug,title,excerpt,cover_image_url,cover_image_alt,author_name,published_at,status,show_in_blog_index",
+      )
       .in("id", rankedIds.slice(0, limit * 2))
       .eq("status", "published")
       .eq("show_in_blog_index", true)
       .lte("published_at", new Date().toISOString());
-    const byId = new Map((data ?? []).map((r) => [(r as PublicPostSummary).id, r as PublicPostSummary]));
+    const byId = new Map(
+      (data ?? []).map((r) => [(r as PublicPostSummary).id, r as PublicPostSummary]),
+    );
     for (const id of rankedIds) {
       const row = byId.get(id);
       if (row) out.push(row);
@@ -595,7 +791,9 @@ export async function getRelatedPostsRankedServer(postId: string, limit: number)
     const excludeIds = [postId, ...out.map((p) => p.id)];
     const { data } = await supabaseAdmin
       .from("blog_posts")
-      .select("id,slug,title,excerpt,cover_image_url,cover_image_alt,author_name,published_at,status,show_in_blog_index")
+      .select(
+        "id,slug,title,excerpt,cover_image_url,cover_image_alt,author_name,published_at,status,show_in_blog_index",
+      )
       .eq("status", "published")
       .eq("show_in_blog_index", true)
       .lte("published_at", new Date().toISOString())

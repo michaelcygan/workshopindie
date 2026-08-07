@@ -13,14 +13,43 @@ export type MyGroupsFeedItem = {
 
 type CollabRow = {
   collab_post_id: string;
-  groups: { id: string; slug: string; name: string; accent_color: string | null; deleted_at: string | null } | null;
-  collab_posts: { id: string; slug: string; title: string; description: string | null; status: string; resulting_work_id: string | null; created_at: string } | null;
+  groups: {
+    id: string;
+    slug: string;
+    name: string;
+    accent_color: string | null;
+    deleted_at: string | null;
+  } | null;
+  collab_posts: {
+    id: string;
+    slug: string;
+    title: string;
+    description: string | null;
+    status: string;
+    resulting_work_id: string | null;
+    created_at: string;
+  } | null;
 };
 
 type WorkshopRow = {
   workshop_id: string;
-  groups: { id: string; slug: string; name: string; accent_color: string | null; deleted_at: string | null } | null;
-  workshops: { id: string; slug: string; title: string; prompt: string | null; status: string; visibility: string; starts_at: string | null; ends_at: string | null } | null;
+  groups: {
+    id: string;
+    slug: string;
+    name: string;
+    accent_color: string | null;
+    deleted_at: string | null;
+  } | null;
+  workshops: {
+    id: string;
+    slug: string;
+    title: string;
+    prompt: string | null;
+    status: string;
+    visibility: string;
+    starts_at: string | null;
+    ends_at: string | null;
+  } | null;
 };
 
 /**
@@ -66,7 +95,7 @@ export const listOpenForMyGroups = createServerFn({ method: "GET" })
     const seen = new Set<string>();
     const nowMs = Date.now();
 
-    for (const row of ((collabsRes.data ?? []) as unknown as CollabRow[])) {
+    for (const row of (collabsRes.data ?? []) as unknown as CollabRow[]) {
       const g = row.groups;
       const c = row.collab_posts;
       if (!g || g.deleted_at || !c) continue;
@@ -85,7 +114,7 @@ export const listOpenForMyGroups = createServerFn({ method: "GET" })
       });
     }
 
-    for (const row of ((workshopsRes.data ?? []) as unknown as WorkshopRow[])) {
+    for (const row of (workshopsRes.data ?? []) as unknown as WorkshopRow[]) {
       const g = row.groups;
       const w = row.workshops;
       if (!g || g.deleted_at || !w) continue;

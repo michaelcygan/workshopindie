@@ -5,8 +5,11 @@ import { logAdminAction } from "@/lib/admin-audit.functions";
 
 async function requireAdmin(supabase: any, userId: string) {
   const { data, error } = await supabase
-    .from("user_roles").select("role")
-    .eq("user_id", userId).eq("role", "admin").maybeSingle();
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .maybeSingle();
   if (error || !data) throw domainError("FORBIDDEN", "Forbidden: admin only");
 }
 
@@ -25,13 +28,15 @@ function newToken(len = 8) {
 
 export const createGroupSeedLink = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: {
-    group_id: string;
-    label?: string | null;
-    utm_source?: string | null;
-    utm_medium?: string | null;
-    utm_campaign?: string | null;
-  }) => d)
+  .inputValidator(
+    (d: {
+      group_id: string;
+      label?: string | null;
+      utm_source?: string | null;
+      utm_medium?: string | null;
+      utm_campaign?: string | null;
+    }) => d,
+  )
   .handler(async ({ data, context }) => {
     await requireAdmin(context.supabase, context.userId);
     const admin = await getAdmin();
@@ -63,13 +68,10 @@ export const createGroupSeedLink = createServerFn({ method: "POST" })
       .single();
     if (error) throw error;
 
-    await logAdminAction(
-      context.supabase,
-      "group_seed_link.create",
-      "group",
-      data.group_id,
-      { token, label: row.label },
-    );
+    await logAdminAction(context.supabase, "group_seed_link.create", "group", data.group_id, {
+      token,
+      label: row.label,
+    });
 
     return { link: row };
   });
@@ -98,16 +100,18 @@ export const listGroupSeedLinks = createServerFn({ method: "GET" })
 
 export const updateGroupSeedLink = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: {
-    id: string;
-    patch: Partial<{
-      label: string | null;
-      utm_source: string | null;
-      utm_medium: string | null;
-      utm_campaign: string | null;
-      is_active: boolean;
-    }>;
-  }) => d)
+  .inputValidator(
+    (d: {
+      id: string;
+      patch: Partial<{
+        label: string | null;
+        utm_source: string | null;
+        utm_medium: string | null;
+        utm_campaign: string | null;
+        is_active: boolean;
+      }>;
+    }) => d,
+  )
   .handler(async ({ data, context }) => {
     await requireAdmin(context.supabase, context.userId);
     const admin = await getAdmin();
@@ -118,7 +122,13 @@ export const updateGroupSeedLink = createServerFn({ method: "POST" })
       .select("*")
       .single();
     if (error) throw error;
-    await logAdminAction(context.supabase, "group_seed_link.update", "group_seed_link", data.id, data.patch);
+    await logAdminAction(
+      context.supabase,
+      "group_seed_link.update",
+      "group_seed_link",
+      data.id,
+      data.patch,
+    );
     return { link: row };
   });
 
@@ -130,7 +140,13 @@ export const deleteGroupSeedLink = createServerFn({ method: "POST" })
     const admin = await getAdmin();
     const { error } = await admin.from("group_seed_links").delete().eq("id", data.id);
     if (error) throw error;
-    await logAdminAction(context.supabase, "group_seed_link.delete", "group_seed_link", data.id, {});
+    await logAdminAction(
+      context.supabase,
+      "group_seed_link.delete",
+      "group_seed_link",
+      data.id,
+      {},
+    );
     return { ok: true };
   });
 
@@ -166,11 +182,9 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
 function publicClient() {
-  return createClient<Database>(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_PUBLISHABLE_KEY!,
-    { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-  );
+  return createClient<Database>(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
+    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+  });
 }
 
 export const resolveGroupSeedLink = createServerFn({ method: "POST" })

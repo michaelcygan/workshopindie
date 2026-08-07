@@ -5,7 +5,8 @@ import { z } from "zod";
 export default defineTool({
   name: "search_works",
   title: "Search Works",
-  description: "Search published creative Works on Workshop by title. Returns public works only, scoped by the caller's Workshop permissions.",
+  description:
+    "Search published creative Works on Workshop by title. Returns public works only, scoped by the caller's Workshop permissions.",
   inputSchema: {
     query: z.string().trim().min(1).describe("Text to match against work titles."),
     limit: z.number().int().min(1).max(50).optional().describe("Max results (default 20)."),

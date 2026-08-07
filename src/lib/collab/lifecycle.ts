@@ -22,7 +22,10 @@ export type CollabLifecycleRecord = {
 export const LEGACY_ARCHIVED_STATUSES = ["archived", "removed"] as const;
 
 export function collabLifecycleState(post: CollabLifecycleRecord): CollabLifecycleState {
-  if (post.archived_at || (post.status && (LEGACY_ARCHIVED_STATUSES as readonly string[]).includes(post.status))) {
+  if (
+    post.archived_at ||
+    (post.status && (LEGACY_ARCHIVED_STATUSES as readonly string[]).includes(post.status))
+  ) {
     return "archived";
   }
   if (post.resulting_work_id) return "published";
@@ -88,9 +91,17 @@ export function shouldIndex(post: CollabLifecycleRecord): boolean {
   return isPubliclyVisible(post);
 }
 
-export type RecruitmentState = "accepting" | "paused" | "deadline_passed" | "published" | "archived";
+export type RecruitmentState =
+  | "accepting"
+  | "paused"
+  | "deadline_passed"
+  | "published"
+  | "archived";
 
-export function recruitmentState(post: CollabLifecycleRecord, today = todayISO()): RecruitmentState {
+export function recruitmentState(
+  post: CollabLifecycleRecord,
+  today = todayISO(),
+): RecruitmentState {
   const state = collabLifecycleState(post);
   if (state === "archived") return "archived";
   if (state === "published") return "published";

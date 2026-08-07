@@ -18,8 +18,13 @@ export const extractWorkFromUrl = createServerFn({ method: "POST" })
     if (resolved) return resolved;
     const cleaned = cleanUrl(data.url);
     return {
-      provider: "generic", title: null, description: null,
-      cover_url: null, embed_url: null, primary_url: cleaned,
-      suggested_category: null, author_name: null,
+      provider: "generic",
+      title: null,
+      description: null,
+      cover_url: null,
+      embed_url: null,
+      primary_url: cleaned,
+      suggested_category: null,
+      author_name: null,
     };
   });

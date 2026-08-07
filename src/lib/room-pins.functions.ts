@@ -109,10 +109,7 @@ export const unpinCollab = createServerFn({ method: "POST" })
     if (!isHost && pin.pinned_by_user_id !== context.userId) {
       throw new Error("Not allowed");
     }
-    const { error } = await supabaseAdmin
-      .from("instant_room_pins")
-      .delete()
-      .eq("id", data.pinId);
+    const { error } = await supabaseAdmin.from("instant_room_pins").delete().eq("id", data.pinId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -120,7 +117,8 @@ export const unpinCollab = createServerFn({ method: "POST" })
 export const reorderHostPins = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: ReorderInput) => {
-    if (!input?.roomId || !Array.isArray(input?.orderedIds)) throw new Error("roomId and orderedIds required");
+    if (!input?.roomId || !Array.isArray(input?.orderedIds))
+      throw new Error("roomId and orderedIds required");
     return input;
   })
   .handler(async ({ data, context }) => {

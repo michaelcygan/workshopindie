@@ -32,17 +32,14 @@ export const createStreamUploadUrl = createServerFn({ method: "POST" })
     }).parse,
   )
   .handler(async ({ data }) => {
-    const res = await fetch(
-      `${CF_BASE}/accounts/${accountId()}/stream/direct_upload`,
-      {
-        method: "POST",
-        headers: cfHeaders(),
-        body: JSON.stringify({
-          maxDurationSeconds: data.maxDurationSeconds,
-          requireSignedURLs: false,
-        }),
-      },
-    );
+    const res = await fetch(`${CF_BASE}/accounts/${accountId()}/stream/direct_upload`, {
+      method: "POST",
+      headers: cfHeaders(),
+      body: JSON.stringify({
+        maxDurationSeconds: data.maxDurationSeconds,
+        requireSignedURLs: false,
+      }),
+    });
     const json = (await res.json()) as {
       success: boolean;
       errors?: Array<{ message: string }>;

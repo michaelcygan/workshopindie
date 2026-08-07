@@ -28,7 +28,6 @@ export const checkEmailExists = createServerFn({ method: "POST" })
       // Empty result means the filter ran and matched nothing. A non-empty result
       // with no match means the server ignored the filter — don't guess.
       return { exists: users.length === 0 ? false : (null as boolean | null) };
-
     } catch {
       return { exists: null as boolean | null };
     }

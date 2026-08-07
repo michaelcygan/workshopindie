@@ -48,31 +48,31 @@ export function PublicOpenCollabs({ collabs }: { collabs: PublicCollabCall[] }) 
                   className="mt-0.5 h-16 w-16 shrink-0 md:h-24 md:w-24"
                 />
                 <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] uppercase tracking-[0.1em] text-ink-muted">
-                  <span className="text-destructive">Open</span>
-                  <span aria-hidden>·</span>
-                  <span>{CATEGORY_LABELS[c.category as Category] ?? c.category}</span>
-                  <span aria-hidden>·</span>
-                  <span>{c.locationLabel}</span>
-                  {c.timeline ? (
-                    <>
-                      <span aria-hidden>·</span>
-                      <span>{c.timeline}</span>
-                    </>
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] uppercase tracking-[0.1em] text-ink-muted">
+                    <span className="text-destructive">Open</span>
+                    <span aria-hidden>·</span>
+                    <span>{CATEGORY_LABELS[c.category as Category] ?? c.category}</span>
+                    <span aria-hidden>·</span>
+                    <span>{c.locationLabel}</span>
+                    {c.timeline ? (
+                      <>
+                        <span aria-hidden>·</span>
+                        <span>{c.timeline}</span>
+                      </>
+                    ) : null}
+                  </div>
+                  <h3 className="mt-1.5 font-display text-[20px] leading-snug text-ink transition-colors group-hover:text-primary md:text-[24px]">
+                    {c.title}
+                  </h3>
+                  {c.creatorName ? (
+                    <p className="mt-1 text-sm text-ink-soft">by {c.creatorName}</p>
                   ) : null}
-                </div>
-                <h3 className="mt-1.5 font-display text-[20px] leading-snug text-ink transition-colors group-hover:text-primary md:text-[24px]">
-                  {c.title}
-                </h3>
-                {c.creatorName ? (
-                  <p className="mt-1 text-sm text-ink-soft">by {c.creatorName}</p>
-                ) : null}
-                {c.roles.length > 0 ? (
-                  <p className="mt-2 text-sm text-ink-soft">
-                    Looking for {c.roles.join(", ")}
-                    {c.extraRoles > 0 ? ` +${c.extraRoles} more` : ""}
-                  </p>
-                ) : null}
+                  {c.roles.length > 0 ? (
+                    <p className="mt-2 text-sm text-ink-soft">
+                      Looking for {c.roles.join(", ")}
+                      {c.extraRoles > 0 ? ` +${c.extraRoles} more` : ""}
+                    </p>
+                  ) : null}
                 </div>
               </Link>
             </li>

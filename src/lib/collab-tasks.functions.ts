@@ -22,9 +22,7 @@ const TASK_COLS =
 
 export const listCollabTasks = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
-    z.object({ collabPostId: z.string().uuid() }).parse(input),
-  )
+  .inputValidator((input) => z.object({ collabPostId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { data: rows, error } = await supabase
@@ -173,15 +171,10 @@ export const reorderCollabTasks = createServerFn({ method: "POST" })
 
 export const deleteCollabTask = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
-    z.object({ taskId: z.string().uuid() }).parse(input),
-  )
+  .inputValidator((input) => z.object({ taskId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { error } = await supabase
-      .from("collab_tasks")
-      .delete()
-      .eq("id", data.taskId);
+    const { error } = await supabase.from("collab_tasks").delete().eq("id", data.taskId);
     if (error) throw new Error(error.message);
     return { ok: true as const };
   });

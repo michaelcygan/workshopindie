@@ -1,6 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { RESERVED_USERNAMES, normalizeUsername, validateUsername, profilePath, profileUrl } from "./usernames";
+import {
+  RESERVED_USERNAMES,
+  normalizeUsername,
+  validateUsername,
+  profilePath,
+  profileUrl,
+} from "./usernames";
 
 describe("username namespace", () => {
   it("normalizes to the allowed character set", () => {

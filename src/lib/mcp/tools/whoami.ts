@@ -4,7 +4,8 @@ import { createClient } from "@supabase/supabase-js";
 export default defineTool({
   name: "whoami",
   title: "Who am I",
-  description: "Return the signed-in Workshop user's profile (id, username, display name, city, headline).",
+  description:
+    "Return the signed-in Workshop user's profile (id, username, display name, city, headline).",
   inputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async (_input, ctx) => {

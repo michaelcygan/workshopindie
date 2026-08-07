@@ -70,10 +70,7 @@ export async function runMessagePolicy(
       _max: policy.rateLimit.max,
     });
     if (ok === false) {
-      throw new DomainError(
-        "RATE_LIMITED",
-        "You're sending messages too fast. Slow down a sec.",
-      );
+      throw new DomainError("RATE_LIMITED", "You're sending messages too fast. Slow down a sec.");
     }
   }
 
@@ -136,12 +133,14 @@ export async function sendRoomMessage(
 
   // Chat-only participants (and expired presence rows) need a presence row for
   // the RLS WITH CHECK on instant_messages to pass.
-  await ctx.supabase
-    .from("instant_presence")
-    .upsert(
-      { room_id: ctx.subjectId, user_id: ctx.userId, last_seen_at: new Date().toISOString() } as never,
-      { onConflict: "room_id,user_id" },
-    );
+  await ctx.supabase.from("instant_presence").upsert(
+    {
+      room_id: ctx.subjectId,
+      user_id: ctx.userId,
+      last_seen_at: new Date().toISOString(),
+    } as never,
+    { onConflict: "room_id,user_id" },
+  );
 
   const { data, error } = await ctx.supabase
     .from("instant_messages")
@@ -210,8 +209,16 @@ async function notifyRoomMentions(
     const { notifyMany } = await import("@/lib/notifications/deliver.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const [{ data: actorProfile }, { data: room }] = await Promise.all([
-      supabaseAdmin.from("profiles").select("display_name, username").eq("id", ctx.userId).maybeSingle(),
-      supabaseAdmin.from("instant_rooms").select("title, medium").eq("id", ctx.subjectId).maybeSingle(),
+      supabaseAdmin
+        .from("profiles")
+        .select("display_name, username")
+        .eq("id", ctx.userId)
+        .maybeSingle(),
+      supabaseAdmin
+        .from("instant_rooms")
+        .select("title, medium")
+        .eq("id", ctx.subjectId)
+        .maybeSingle(),
     ]);
     await notifyMany({
       recipientIds: mentions,

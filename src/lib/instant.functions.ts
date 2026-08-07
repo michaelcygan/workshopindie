@@ -5,7 +5,24 @@ import { rpcOutcomeError } from "@/lib/errors";
 import { withOpLog } from "@/lib/obs/log";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-const MEDIUMS = ["film", "music", "writing", "writing_book", "build", "visual", "critique", "business", "coworking", "office_hours", "roundtable", "pitch", "listen_party", "open_mic", "jam", "standup"] as const;
+const MEDIUMS = [
+  "film",
+  "music",
+  "writing",
+  "writing_book",
+  "build",
+  "visual",
+  "critique",
+  "business",
+  "coworking",
+  "office_hours",
+  "roundtable",
+  "pitch",
+  "listen_party",
+  "open_mic",
+  "jam",
+  "standup",
+] as const;
 const mediumSchema = z.enum(MEDIUMS);
 const VISIBILITIES = ["open", "mutuals", "invite"] as const;
 const visibilitySchema = z.enum(VISIBILITIES);
@@ -76,7 +93,6 @@ async function notifyMutualsOnHost(opts: {
         visibility: opts.visibility,
       },
     });
-
   } catch {
     // best effort; never block the host flow
   }
@@ -90,16 +106,23 @@ async function notifyMutualsOnHost(opts: {
  */
 export const hostInstantWorkshop = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: {
-    medium?: (typeof MEDIUMS)[number] | null;
-    title?: string | null;
-    visibility?: RoomVisibility;
-  } | undefined) =>
-    z.object({
-      medium: mediumSchema.nullish(),
-      title: z.string().trim().min(1).max(120).nullish(),
-      visibility: visibilitySchema.default("open"),
-    }).parse(input ?? {}),
+  .inputValidator(
+    (
+      input:
+        | {
+            medium?: (typeof MEDIUMS)[number] | null;
+            title?: string | null;
+            visibility?: RoomVisibility;
+          }
+        | undefined,
+    ) =>
+      z
+        .object({
+          medium: mediumSchema.nullish(),
+          title: z.string().trim().min(1).max(120).nullish(),
+          visibility: visibilitySchema.default("open"),
+        })
+        .parse(input ?? {}),
   )
   .handler(async ({ data, context }) => {
     const { userId } = context;
@@ -151,10 +174,12 @@ export const hostInstantWorkshop = createServerFn({ method: "POST" })
 export const renameLounge = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { roomId: string; title: string }) =>
-    z.object({
-      roomId: z.string().uuid(),
-      title: z.string().trim().min(1).max(80),
-    }).parse(input),
+    z
+      .object({
+        roomId: z.string().uuid(),
+        title: z.string().trim().min(1).max(80),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const { userId } = context;
@@ -235,7 +260,9 @@ export const getInstantRoom = createServerFn({ method: "GET" })
     const { userId } = context;
     const { data: room } = await supabaseAdmin
       .from("instant_rooms")
-      .select("id, title, kind, medium, category, host_user_id, promoted_at, source_workshop_id, status, focus_message, locked, ended_by_user_id, workshop_id, claim_user_id, claim_started_at, claim_vetoed, group_id, collab_id")
+      .select(
+        "id, title, kind, medium, category, host_user_id, promoted_at, source_workshop_id, status, focus_message, locked, ended_by_user_id, workshop_id, claim_user_id, claim_started_at, claim_vetoed, group_id, collab_id",
+      )
       .eq("id", data.roomId)
       .maybeSingle();
     const groupId = (room as any)?.group_id as string | null | undefined;
@@ -321,45 +348,49 @@ export const joinSpecificInstantRoom = createServerFn({ method: "POST" })
     z.object({ roomId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) =>
-    withOpLog("room.join", { entity: "instant_room", entityId: data.roomId, authed: true }, async () => {
-      const { supabase } = context;
-      // Admission is decided in one Postgres transaction: status, lock,
-      // removal cooldown and capacity are all checked under a row lock, so
-      // simultaneous joiners can't both slip into the final slot.
-      const { data: outcome, error } = await supabase.rpc("join_instant_room", {
-        _room_id: data.roomId,
-      } as never);
-      if (error) throw new Error(error.message);
-      const status = String(outcome);
-      switch (status) {
-        case "joined":
-        case "already_joined":
-          return { roomId: data.roomId };
-        case "not_found":
-          throw rpcOutcomeError(status, "That room no longer exists");
-        case "full":
-          throw rpcOutcomeError(status, "Room is full");
-        case "forbidden":
-          throw rpcOutcomeError(status, "You were removed from this Workshop. Try again later.");
-        case "locked":
-          throw rpcOutcomeError(status, "This Workshop is locked");
-        case "closed":
-        default:
-          throw rpcOutcomeError(status, "That room isn't live anymore");
-
-      }
-    }),
+    withOpLog(
+      "room.join",
+      { entity: "instant_room", entityId: data.roomId, authed: true },
+      async () => {
+        const { supabase } = context;
+        // Admission is decided in one Postgres transaction: status, lock,
+        // removal cooldown and capacity are all checked under a row lock, so
+        // simultaneous joiners can't both slip into the final slot.
+        const { data: outcome, error } = await supabase.rpc("join_instant_room", {
+          _room_id: data.roomId,
+        } as never);
+        if (error) throw new Error(error.message);
+        const status = String(outcome);
+        switch (status) {
+          case "joined":
+          case "already_joined":
+            return { roomId: data.roomId };
+          case "not_found":
+            throw rpcOutcomeError(status, "That room no longer exists");
+          case "full":
+            throw rpcOutcomeError(status, "Room is full");
+          case "forbidden":
+            throw rpcOutcomeError(status, "You were removed from this Workshop. Try again later.");
+          case "locked":
+            throw rpcOutcomeError(status, "This Workshop is locked");
+          case "closed":
+          default:
+            throw rpcOutcomeError(status, "That room isn't live anymore");
+        }
+      },
+    ),
   );
-
 
 /** Matchmaker for medium-specific Instant Workshops (Film, Music, Writing, Build, Visual). */
 export const joinMediumLounge = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { medium: (typeof MEDIUMS)[number]; excludeRoomIds?: string[] }) =>
-    z.object({
-      medium: mediumSchema,
-      excludeRoomIds: z.array(z.string().uuid()).max(20).optional(),
-    }).parse(input),
+    z
+      .object({
+        medium: mediumSchema,
+        excludeRoomIds: z.array(z.string().uuid()).max(20).optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const { userId } = context;
@@ -397,7 +428,9 @@ export const listActiveInstantRooms = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { userId } = context;
-    const { data, error } = await supabaseAdmin.rpc("list_active_instant_rooms", { _viewer: userId });
+    const { data, error } = await supabaseAdmin.rpc("list_active_instant_rooms", {
+      _viewer: userId,
+    });
     if (error) throw new Error(error.message);
     const rows = (data ?? []) as Omit<ActiveInstantRoom, "participants">[];
     if (rows.length === 0) return { rooms: [] as ActiveInstantRoom[] };
@@ -438,7 +471,10 @@ export const listActiveInstantRooms = createServerFn({ method: "GET" })
     }
 
     return {
-      rooms: rows.map((r) => ({ ...r, participants: byRoom.get(r.id) ?? [] })) as ActiveInstantRoom[],
+      rooms: rows.map((r) => ({
+        ...r,
+        participants: byRoom.get(r.id) ?? [],
+      })) as ActiveInstantRoom[],
     };
   });
 
@@ -508,11 +544,9 @@ export const joinGroupLounge = createServerFn({ method: "POST" })
     return { roomId: roomId as string };
   });
 
-
 // joinCollabLounge retired in v1 — Lounges are no longer scoped to Collab posts.
 // Existing rooms with a `collab_id` still work if someone has the /lounge/$id link,
 // but new Collab-scoped Lounges can no longer be created.
-
 
 export type MyGroupLounge = {
   roomId: string;
@@ -555,7 +589,10 @@ export const listMyGroupLounges = createServerFn({ method: "GET" })
       supabaseAdmin
         .from("instant_presence")
         .select("room_id")
-        .in("room_id", roomRows.map((r) => r.id as string))
+        .in(
+          "room_id",
+          roomRows.map((r) => r.id as string),
+        )
         .gt("last_seen_at", since)
         .limit(500),
     ]);
@@ -571,15 +608,17 @@ export const listMyGroupLounges = createServerFn({ method: "GET" })
       .flatMap((r) => {
         const g = groupById.get(r.group_id as string);
         if (!g) return [];
-        return [{
-          roomId: r.id as string,
-          title: (r.title as string | null) ?? "Lounge",
-          medium: (r.medium as string | null) ?? null,
-          groupId: g.id as string,
-          groupName: g.name as string,
-          groupSlug: g.slug as string,
-          liveCount: counts.get(r.id as string) ?? 0,
-        }];
+        return [
+          {
+            roomId: r.id as string,
+            title: (r.title as string | null) ?? "Lounge",
+            medium: (r.medium as string | null) ?? null,
+            groupId: g.id as string,
+            groupName: g.name as string,
+            groupSlug: g.slug as string,
+            liveCount: counts.get(r.id as string) ?? 0,
+          },
+        ];
       })
       .sort((a, b) => b.liveCount - a.liveCount)
       .slice(0, 8);

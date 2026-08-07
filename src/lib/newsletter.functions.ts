@@ -8,8 +8,11 @@ import { domainError } from "@/lib/errors";
 
 async function requireAdmin(supabase: any, userId: string) {
   const { data, error } = await supabase
-    .from("user_roles").select("role")
-    .eq("user_id", userId).eq("role", "admin").maybeSingle();
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .maybeSingle();
   if (error || !data) throw domainError("FORBIDDEN", "Forbidden: admin only");
 }
 
@@ -63,20 +66,22 @@ export const subscribeToNewsletter = createServerFn({ method: "POST" })
       if (existing.status === "unsubscribed") {
         await supabaseAdmin
           .from("newsletter_subscribers")
-          .update({ status: "subscribed", unsubscribed_at: null, subscribed_at: new Date().toISOString() })
+          .update({
+            status: "subscribed",
+            unsubscribed_at: null,
+            subscribed_at: new Date().toISOString(),
+          })
           .eq("id", existing.id);
       }
       // Already subscribed — generic success (don't reveal presence).
       return { ok: true };
     }
 
-    await supabaseAdmin
-      .from("newsletter_subscribers")
-      .insert({
-        email: data.email,
-        status: "subscribed",
-        source: data.source?.trim() || "footer",
-      });
+    await supabaseAdmin.from("newsletter_subscribers").insert({
+      email: data.email,
+      status: "subscribed",
+      source: data.source?.trim() || "footer",
+    });
 
     return { ok: true };
   });

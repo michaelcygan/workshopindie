@@ -216,7 +216,11 @@ export function buildNowBoard(
     for (const i of picked) used.add(i.id);
     board[lane] = picked.length
       ? picked
-      : orderLane(suggestions.filter((i) => i.lane === lane), seed, new Set()).slice(0, 4);
+      : orderLane(
+          suggestions.filter((i) => i.lane === lane),
+          seed,
+          new Set(),
+        ).slice(0, 4);
   }
 
   return board;

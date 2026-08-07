@@ -43,7 +43,6 @@ import type {
  */
 const supabaseAdmin = traceClient(rawSupabaseAdmin);
 
-
 const POST_SCAN_LIMIT = 40;
 const MAX_WORK_STORIES = 8;
 const MAX_STORIES_PER_WORK = 3;
@@ -649,7 +648,11 @@ export async function continueActionsServer(
       .from("collab_posts")
       .select("id,slug,title")
       .eq("user_id", userId)
-      .is("archived_at", null).not("status", "in", NON_PUBLIC_STATUSES).is("resulting_work_id", null).eq("applications_open", true).or(RECRUITING_DEADLINE_OR())
+      .is("archived_at", null)
+      .not("status", "in", NON_PUBLIC_STATUSES)
+      .is("resulting_work_id", null)
+      .eq("applications_open", true)
+      .or(RECRUITING_DEADLINE_OR())
       .limit(10),
     supabaseAdmin
       .from("profiles")
@@ -921,7 +924,11 @@ export async function circleStoriesServer(
           .from("collab_posts")
           .select("id,slug,title,description,category,user_id,created_at")
           .in("user_id", peopleIds)
-          .is("archived_at", null).not("status", "in", NON_PUBLIC_STATUSES).is("resulting_work_id", null).eq("applications_open", true).or(RECRUITING_DEADLINE_OR())
+          .is("archived_at", null)
+          .not("status", "in", NON_PUBLIC_STATUSES)
+          .is("resulting_work_id", null)
+          .eq("applications_open", true)
+          .or(RECRUITING_DEADLINE_OR())
           .order("created_at", { ascending: false })
           .limit(12)
       : Promise.resolve({ data: [] }),
@@ -1298,9 +1305,7 @@ export async function getMemberHomeServer(userId: string): Promise<MemberHomePay
         : groupSuggestionsServer(homeCityId, mediums),
     ),
     span("circle", () => circleStoriesServer(userId, groups, blocked)),
-    span("people", () =>
-      peopleSuggestionsServer(userId, groups, blocked, homeCityId, mediums),
-    ),
+    span("people", () => peopleSuggestionsServer(userId, groups, blocked, homeCityId, mediums)),
     span("disciplines", () => disciplineItemsServer(mediums)),
     span("coverWork", async () =>
       profile?.cover_work_id
@@ -1338,7 +1343,6 @@ export async function getMemberHomeServer(userId: string): Promise<MemberHomePay
     span("blogRail", () => blogRailRowsServer().catch(() => [] as BlogCardRow[])),
   ]);
 
-
   const lounges = loungesR.status === "fulfilled" ? loungesR.value : [];
   const upcomingEvents = eventsR.status === "fulfilled" ? eventsR.value : [];
   const cont =
@@ -1353,7 +1357,6 @@ export async function getMemberHomeServer(userId: string): Promise<MemberHomePay
     ...featured.posts.map((p) => p.id),
     ...mine.filter((m) => m.kind === "blog").map((m) => m.id),
   ]);
-
 
   // Prefer a Group with Today activity for the "open a Lounge" fallback.
   const fallbackGroup =
@@ -1515,7 +1518,11 @@ export async function myWorkshopServer(userId: string): Promise<HomeMineItem[]> 
       .from("collab_posts")
       .select("id,slug,title,description,created_at")
       .eq("user_id", userId)
-      .is("archived_at", null).not("status", "in", NON_PUBLIC_STATUSES).is("resulting_work_id", null).eq("applications_open", true).or(RECRUITING_DEADLINE_OR())
+      .is("archived_at", null)
+      .not("status", "in", NON_PUBLIC_STATUSES)
+      .is("resulting_work_id", null)
+      .eq("applications_open", true)
+      .or(RECRUITING_DEADLINE_OR())
       .order("created_at", { ascending: false })
       .limit(6),
   ]);
@@ -1723,7 +1730,11 @@ async function buildPublicHomeServer(): Promise<PublicHomePayload> {
         "city:cities!collab_posts_city_id_fkey(name)," +
         "roles:collab_roles(id,role_name,sort_order)",
     )
-    .is("archived_at", null).not("status", "in", NON_PUBLIC_STATUSES).is("resulting_work_id", null).eq("applications_open", true).or(RECRUITING_DEADLINE_OR())
+    .is("archived_at", null)
+    .not("status", "in", NON_PUBLIC_STATUSES)
+    .is("resulting_work_id", null)
+    .eq("applications_open", true)
+    .or(RECRUITING_DEADLINE_OR())
     .or(`ends_on.is.null,ends_on.gte.${today}`)
     .order("created_at", { ascending: false })
     .limit(6);
@@ -1757,7 +1768,6 @@ async function buildPublicHomeServer(): Promise<PublicHomePayload> {
     span("publicGroups", async () => await groupsPromise),
     span("publicWorks", async () => await worksPromise),
   ]);
-
 
   if (postsRes.error) throw postsRes.error;
   const allPosts = ((postsRes.data ?? []) as unknown as PublicBlogRow[]).map(toPublicBlogCard);

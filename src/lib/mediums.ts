@@ -77,8 +77,10 @@ const EXTRA_LABELS: Record<ExtraMedium, string> = {
   code: "Code",
 };
 
-export const EXTRA_MEDIUMS: { id: ExtraMedium; label: string }[] =
-  EXTRA_MEDIUM_IDS.map((id) => ({ id, label: EXTRA_LABELS[id] }));
+export const EXTRA_MEDIUMS: { id: ExtraMedium; label: string }[] = EXTRA_MEDIUM_IDS.map((id) => ({
+  id,
+  label: EXTRA_LABELS[id],
+}));
 
 export function isExtraMedium(id: string): id is ExtraMedium {
   return (EXTRA_MEDIUM_IDS as readonly string[]).includes(id);

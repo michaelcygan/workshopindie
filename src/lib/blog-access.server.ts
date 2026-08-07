@@ -5,13 +5,7 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { FREE_BLOG_PUBLICATIONS_PER_MONTH } from "@/lib/entitlements";
 
-export type BlogAccessMode =
-  | "free"
-  | "trial"
-  | "plus"
-  | "granted"
-  | "lapsed"
-  | "suspended";
+export type BlogAccessMode = "free" | "trial" | "plus" | "granted" | "lapsed" | "suspended";
 
 export type BlogAccess = {
   mode: BlogAccessMode;
@@ -48,10 +42,9 @@ function currentMonthLabel(): string {
 }
 
 async function fetchPublicationsThisMonth(userId: string): Promise<number> {
-  const { data, error } = await supabaseAdmin.rpc(
-    "blog_member_publications_this_month",
-    { _user_id: userId },
-  );
+  const { data, error } = await supabaseAdmin.rpc("blog_member_publications_this_month", {
+    _user_id: userId,
+  });
   if (error) return 0;
   return typeof data === "number" ? data : 0;
 }

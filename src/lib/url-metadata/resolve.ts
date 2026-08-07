@@ -11,8 +11,17 @@ import { checkUrlSafety, safeImageUrl } from "./safety";
 import type { ExtractedWork, Provider } from "./types";
 
 const TRACKING_PARAMS = [
-  "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
-  "fbclid", "gclid", "mc_cid", "mc_eid", "si", "feature",
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_term",
+  "utm_content",
+  "fbclid",
+  "gclid",
+  "mc_cid",
+  "mc_eid",
+  "si",
+  "feature",
 ];
 
 export function cleanUrl(raw: string): string {
@@ -27,7 +36,8 @@ export function cleanUrl(raw: string): string {
 
 export function detectProvider(u: URL): Provider {
   const h = u.hostname.replace(/^www\./, "");
-  if (h.endsWith("youtube.com") || h === "youtu.be" || h.endsWith("youtube-nocookie.com")) return "youtube";
+  if (h.endsWith("youtube.com") || h === "youtu.be" || h.endsWith("youtube-nocookie.com"))
+    return "youtube";
   if (h.endsWith("vimeo.com")) return "vimeo";
   if (h.endsWith("soundcloud.com")) return "soundcloud";
   if (h.endsWith("spotify.com")) return "spotify";
@@ -42,7 +52,13 @@ export function detectProvider(u: URL): Provider {
   if (h.endsWith("substack.com")) return "substack";
   if (h.endsWith("medium.com")) return "medium";
   // Books
-  if (h === "amazon.com" || h.endsWith(".amazon.com") || /(^|\.)amazon\.[a-z.]+$/.test(h) || h === "a.co") return "amazon";
+  if (
+    h === "amazon.com" ||
+    h.endsWith(".amazon.com") ||
+    /(^|\.)amazon\.[a-z.]+$/.test(h) ||
+    h === "a.co"
+  )
+    return "amazon";
   if (h.endsWith("goodreads.com")) return "goodreads";
   if (h.endsWith("bookshop.org")) return "bookshop";
   if (h === "books.apple.com") return "apple_books";
@@ -52,14 +68,32 @@ export function detectProvider(u: URL): Provider {
 
 export function categoryFor(p: Provider): Category | null {
   switch (p) {
-    case "youtube": case "vimeo": case "tiktok": return "film";
-    case "soundcloud": case "spotify": case "bandcamp": return "music";
-    case "github": return "build";
-    case "behance": case "dribbble": case "instagram": case "arena": return "visual";
-    case "substack": case "medium": return "writing";
-    case "amazon": case "goodreads": case "bookshop": case "apple_books": case "google_books":
+    case "youtube":
+    case "vimeo":
+    case "tiktok":
+      return "film";
+    case "soundcloud":
+    case "spotify":
+    case "bandcamp":
+      return "music";
+    case "github":
+      return "build";
+    case "behance":
+    case "dribbble":
+    case "instagram":
+    case "arena":
+      return "visual";
+    case "substack":
+    case "medium":
+      return "writing";
+    case "amazon":
+    case "goodreads":
+    case "bookshop":
+    case "apple_books":
+    case "google_books":
       return "writing_book";
-    default: return null;
+    default:
+      return null;
   }
 }
 
@@ -76,7 +110,9 @@ function isBookProvider(p: Provider): boolean {
 }
 
 function pickJsonLdAuthor(html: string): string | null {
-  const blocks = html.match(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
+  const blocks = html.match(
+    /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi,
+  );
   if (!blocks) return null;
   for (const block of blocks) {
     const inner = block.replace(/^<script[^>]*>/i, "").replace(/<\/script>$/i, "");
@@ -94,7 +130,9 @@ function pickJsonLdAuthor(html: string): string | null {
           if (a?.name) return String(a.name);
         }
       }
-    } catch { /* skip malformed */ }
+    } catch {
+      /* skip malformed */
+    }
   }
   return null;
 }
@@ -262,7 +300,10 @@ async function scrapeOpenGraph(url: string): Promise<string | null> {
   reader.cancel().catch(() => {});
   const buf = new Uint8Array(total);
   let off = 0;
-  for (const c of chunks) { buf.set(c, off); off += c.length; }
+  for (const c of chunks) {
+    buf.set(c, off);
+    off += c.length;
+  }
   return new TextDecoder("utf-8").decode(buf);
 }
 
@@ -311,13 +352,24 @@ export async function resolveUrlMetadata(rawUrl: string): Promise<ExtractedWork 
   if (!oembed || !base.cover_url || !base.description || isBookProvider(provider)) {
     html = await scrapeOpenGraph(cleaned);
     if (html) {
-      const ogTitle = pickMeta(html, "og:title") ?? pickMeta(html, "twitter:title") ?? pickTitle(html);
-      const ogDesc = pickMeta(html, "og:description") ?? pickMeta(html, "twitter:description") ?? pickMeta(html, "description");
-      const ogImg = pickMeta(html, "og:image") ?? pickMeta(html, "twitter:image") ?? pickMeta(html, "og:image:url");
+      const ogTitle =
+        pickMeta(html, "og:title") ?? pickMeta(html, "twitter:title") ?? pickTitle(html);
+      const ogDesc =
+        pickMeta(html, "og:description") ??
+        pickMeta(html, "twitter:description") ??
+        pickMeta(html, "description");
+      const ogImg =
+        pickMeta(html, "og:image") ??
+        pickMeta(html, "twitter:image") ??
+        pickMeta(html, "og:image:url");
       if (ogTitle && (!oembed || !oembed.title)) base.title = ogTitle;
       if (ogDesc && !base.description) base.description = ogDesc;
       if (ogImg && !base.cover_url) {
-        try { base.cover_url = safeImageUrl(new URL(ogImg, cleaned).toString()); } catch { /* ignore */ }
+        try {
+          base.cover_url = safeImageUrl(new URL(ogImg, cleaned).toString());
+        } catch {
+          /* ignore */
+        }
       }
     }
   }
@@ -348,9 +400,13 @@ export async function resolveUrlMetadata(rawUrl: string): Promise<ExtractedWork 
       );
       if (res && res.ok) {
         try {
-          const j = await res.json() as {
-            name?: string; full_name?: string; description?: string | null;
-            stargazers_count?: number; language?: string | null; homepage?: string | null;
+          const j = (await res.json()) as {
+            name?: string;
+            full_name?: string;
+            description?: string | null;
+            stargazers_count?: number;
+            language?: string | null;
+            homepage?: string | null;
           };
           base.title = j.name ?? j.full_name ?? base.title;
           if (j.description) base.description = j.description;
@@ -360,7 +416,9 @@ export async function resolveUrlMetadata(rawUrl: string): Promise<ExtractedWork 
           if (bits.length && base.description && !base.description.includes("★")) {
             base.description = `${bits.join(" · ")}\n\n${base.description}`;
           }
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
       }
       base.cover_url = `https://opengraph.githubassets.com/1/${owner}/${repo}`;
       base.embed_url = null;
@@ -371,10 +429,11 @@ export async function resolveUrlMetadata(rawUrl: string): Promise<ExtractedWork 
   if (isBookProvider(provider)) {
     let author: string | null = null;
     if (html) {
-      author = pickJsonLdAuthor(html)
-        ?? pickMeta(html, "books:author")
-        ?? pickMeta(html, "book:author")
-        ?? null;
+      author =
+        pickJsonLdAuthor(html) ??
+        pickMeta(html, "books:author") ??
+        pickMeta(html, "book:author") ??
+        null;
     }
     if (!author && provider === "goodreads" && base.title?.includes(" by ")) {
       const parts = base.title.split(" by ");

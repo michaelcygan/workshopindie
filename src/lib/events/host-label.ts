@@ -36,5 +36,10 @@ export function resolveEventHost(input: {
     return { kind: "group", label: group!.name as string, href: null, group: group! };
   }
 
-  return { kind: "self", label: input.title?.trim() || group?.name || "the organizer", href: null, group: null };
+  return {
+    kind: "self",
+    label: input.title?.trim() || group?.name || "the organizer",
+    href: null,
+    group: null,
+  };
 }

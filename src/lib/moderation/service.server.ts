@@ -113,10 +113,10 @@ export async function moderateOrThrow(input: ModerateInput): Promise<void> {
 
   // Repeat-abuse cooldown: 5+ blocks in the last 10 minutes → 5-min soft ban.
   if (input.userId) {
-    const { data: recentBlocks } = await supabaseAdmin.rpc(
-      "moderation_recent_block_count",
-      { _user: input.userId, _window_s: 600 },
-    );
+    const { data: recentBlocks } = await supabaseAdmin.rpc("moderation_recent_block_count", {
+      _user: input.userId,
+      _window_s: 600,
+    });
     if (typeof recentBlocks === "number" && recentBlocks >= 5) {
       await logEvent({
         userId: input.userId,

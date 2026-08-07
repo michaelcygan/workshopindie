@@ -2,35 +2,62 @@
 // Centralized so EmbedPlayer's iframe sandbox and the Player tool stay in sync.
 
 export type MediaProvider =
-  | "youtube" | "vimeo" | "tiktok" | "dailymotion" | "twitch" | "loom" | "wistia"
-  | "bilibili" | "niconico" | "facebook" | "instagram" | "threads" | "twitter"
-  | "soundcloud" | "spotify" | "bandcamp" | "applemusic" | "deezer" | "mixcloud"
-  | "audius" | "tidal" | "ted";
+  | "youtube"
+  | "vimeo"
+  | "tiktok"
+  | "dailymotion"
+  | "twitch"
+  | "loom"
+  | "wistia"
+  | "bilibili"
+  | "niconico"
+  | "facebook"
+  | "instagram"
+  | "threads"
+  | "twitter"
+  | "soundcloud"
+  | "spotify"
+  | "bandcamp"
+  | "applemusic"
+  | "deezer"
+  | "mixcloud"
+  | "audius"
+  | "tidal"
+  | "ted";
 
 /** Strict hostname allowlist used by EmbedPlayer to decide whether to iframe a URL. */
 export const ALLOWED_EMBED_HOSTS: ReadonlySet<string> = new Set([
   // Video
-  "www.youtube.com", "youtube.com", "www.youtube-nocookie.com", "youtube-nocookie.com",
+  "www.youtube.com",
+  "youtube.com",
+  "www.youtube-nocookie.com",
+  "youtube-nocookie.com",
   "player.vimeo.com",
   "www.tiktok.com",
-  "www.dailymotion.com", "geo.dailymotion.com",
-  "player.twitch.tv", "clips.twitch.tv",
+  "www.dailymotion.com",
+  "geo.dailymotion.com",
+  "player.twitch.tv",
+  "clips.twitch.tv",
   "www.loom.com",
-  "fast.wistia.net", "fast.wistia.com",
+  "fast.wistia.net",
+  "fast.wistia.com",
   "player.bilibili.com",
   "embed.nicovideo.jp",
   "www.facebook.com",
   "www.instagram.com",
   "www.threads.net",
-  "platform.twitter.com", "twitframe.com",
+  "platform.twitter.com",
+  "twitframe.com",
   // Audio / music
   "w.soundcloud.com",
   "open.spotify.com",
-  "bandcamp.com", "embed.bandcamp.com",
+  "bandcamp.com",
+  "embed.bandcamp.com",
   "embed.music.apple.com",
   "widget.deezer.com",
   "www.mixcloud.com",
-  "audius.co", "embed.audius.co",
+  "audius.co",
+  "embed.audius.co",
   "embed.tidal.com",
   // Talks
   "embed.ted.com",
@@ -70,7 +97,8 @@ export function providerOf(rawUrl: string): MediaProvider | null {
   try {
     const u = new URL(rawUrl);
     const h = u.hostname.replace(/^www\./, "");
-    if (h.endsWith("youtube.com") || h === "youtu.be" || h.endsWith("youtube-nocookie.com")) return "youtube";
+    if (h.endsWith("youtube.com") || h === "youtu.be" || h.endsWith("youtube-nocookie.com"))
+      return "youtube";
     if (h.endsWith("vimeo.com")) return "vimeo";
     if (h.endsWith("tiktok.com")) return "tiktok";
     if (h.endsWith("dailymotion.com") || h === "dai.ly") return "dailymotion";
@@ -104,7 +132,11 @@ export function providerOf(rawUrl: string): MediaProvider | null {
  */
 export function toEmbedUrl(rawUrl: string): string | null {
   let u: URL;
-  try { u = new URL(rawUrl); } catch { return null; }
+  try {
+    u = new URL(rawUrl);
+  } catch {
+    return null;
+  }
   if (u.protocol !== "https:" && u.protocol !== "http:") return null;
   const h = u.hostname.replace(/^www\./, "");
   const provider = providerOf(rawUrl);
@@ -159,7 +191,8 @@ export function toEmbedUrl(rawUrl: string): string | null {
       return m ? `https://www.loom.com/embed/${m[2]}` : null;
     }
     case "wistia": {
-      const m = u.pathname.match(/\/medias\/([^/?]+)/) || u.pathname.match(/\/embed\/iframe\/([^/?]+)/);
+      const m =
+        u.pathname.match(/\/medias\/([^/?]+)/) || u.pathname.match(/\/embed\/iframe\/([^/?]+)/);
       return m ? `https://fast.wistia.net/embed/iframe/${m[1]}` : null;
     }
     case "bilibili": {
@@ -205,7 +238,9 @@ export function toEmbedUrl(rawUrl: string): string | null {
       return `https://embed.music.apple.com${u.pathname}${u.search}`;
     }
     case "deezer": {
-      const m = u.pathname.match(/^\/(?:[a-z]{2}\/)?(track|album|playlist|artist|episode|show)\/(\d+)/);
+      const m = u.pathname.match(
+        /^\/(?:[a-z]{2}\/)?(track|album|playlist|artist|episode|show)\/(\d+)/,
+      );
       return m ? `https://widget.deezer.com/widget/auto/${m[1]}/${m[2]}` : null;
     }
     case "mixcloud": {

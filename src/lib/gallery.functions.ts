@@ -64,7 +64,8 @@ export const listFollowingWorks = createServerFn({ method: "POST" })
       .in("id", workIds)
       .limit(data.limit);
 
-    if (data.category !== "all") q = q.overlaps("categories_canonical", canonicalFilterValues(data.category));
+    if (data.category !== "all")
+      q = q.overlaps("categories_canonical", canonicalFilterValues(data.category));
     if (cityId) q = q.eq("city_id", cityId);
     if (data.q.trim()) {
       const s = data.q.trim().replace(/[%,]/g, " ");

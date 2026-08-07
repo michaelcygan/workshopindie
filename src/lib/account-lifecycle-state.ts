@@ -54,5 +54,10 @@ export function deriveLifecycleState(input: LifecycleInput): AccountLifecycleSta
 
 /** True when an overlay must block the signed-in product. */
 export function lifecycleBlocks(state: AccountLifecycleState): boolean {
-  return state === "age_required" || state === "welcome_required" || state === "underage_removal" || state === "load_error";
+  return (
+    state === "age_required" ||
+    state === "welcome_required" ||
+    state === "underage_removal" ||
+    state === "load_error"
+  );
 }

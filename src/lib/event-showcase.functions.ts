@@ -5,11 +5,9 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 
 function publicClient() {
-  return createClient<Database>(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_PUBLISHABLE_KEY!,
-    { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-  );
+  return createClient<Database>(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
+    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+  });
 }
 
 export type Bringer = {
@@ -54,13 +52,30 @@ export const listEventShowcase = createServerFn({ method: "POST" })
       work_id: string | null;
       collab_id: string | null;
       work: {
-        id: string; title: string; slug: string | null; cover_url: string | null;
-        visibility: string; status: string; created_by: string;
-        author: { display_name: string | null; username: string | null; avatar_url: string | null } | null;
+        id: string;
+        title: string;
+        slug: string | null;
+        cover_url: string | null;
+        visibility: string;
+        status: string;
+        created_by: string;
+        author: {
+          display_name: string | null;
+          username: string | null;
+          avatar_url: string | null;
+        } | null;
       } | null;
       collab: {
-        id: string; title: string; slug: string | null; status: string; user_id: string;
-        owner: { display_name: string | null; username: string | null; avatar_url: string | null } | null;
+        id: string;
+        title: string;
+        slug: string | null;
+        status: string;
+        user_id: string;
+        owner: {
+          display_name: string | null;
+          username: string | null;
+          avatar_url: string | null;
+        } | null;
       } | null;
     };
 
@@ -73,7 +88,12 @@ export const listEventShowcase = createServerFn({ method: "POST" })
         .from("profiles")
         .select("id,display_name,username,avatar_url")
         .in("id", bringerIds);
-      for (const p of (profs ?? []) as Array<{ id: string; display_name: string | null; username: string | null; avatar_url: string | null }>) {
+      for (const p of (profs ?? []) as Array<{
+        id: string;
+        display_name: string | null;
+        username: string | null;
+        avatar_url: string | null;
+      }>) {
         bringerMap.set(p.id, {
           user_id: p.id,
           display_name: p.display_name,
@@ -113,7 +133,10 @@ export const listEventShowcase = createServerFn({ method: "POST" })
       if (!key || !entry) continue;
 
       const bringer = bringerMap.get(r.user_id) ?? {
-        user_id: r.user_id, display_name: null, username: null, avatar_url: null,
+        user_id: r.user_id,
+        display_name: null,
+        username: null,
+        avatar_url: null,
       };
       const existing = groups.get(key);
       if (existing) {
@@ -159,11 +182,13 @@ export const addShowcaseItem = createServerFn({ method: "POST" })
 export const removeShowcaseItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) =>
-    z.object({
-      event_id: z.string().uuid(),
-      work_id: z.string().uuid().optional(),
-      collab_id: z.string().uuid().optional(),
-    }).parse(i),
+    z
+      .object({
+        event_id: z.string().uuid(),
+        work_id: z.string().uuid().optional(),
+        collab_id: z.string().uuid().optional(),
+      })
+      .parse(i),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -209,8 +234,12 @@ export const listMyShowcaseCandidates = createServerFn({ method: "POST" })
         .eq("user_id", userId),
     ]);
 
-    const broughtWorks = new Set((mineRes.data ?? []).map((r) => r.work_id).filter(Boolean) as string[]);
-    const broughtCollabs = new Set((mineRes.data ?? []).map((r) => r.collab_id).filter(Boolean) as string[]);
+    const broughtWorks = new Set(
+      (mineRes.data ?? []).map((r) => r.work_id).filter(Boolean) as string[],
+    );
+    const broughtCollabs = new Set(
+      (mineRes.data ?? []).map((r) => r.collab_id).filter(Boolean) as string[],
+    );
 
     return {
       works: (worksRes.data ?? []).map((w) => ({ ...w, brought: broughtWorks.has(w.id) })),

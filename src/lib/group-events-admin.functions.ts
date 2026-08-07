@@ -18,20 +18,30 @@ const SIGNED_URL_TTL = 60 * 60 * 24 * 365 * 5; // 5 years
  * to our private `event-covers` bucket, then swap to a long-lived signed URL.
  * Returns the original URL on any failure — image rehost must never block publish.
  */
-async function rehostCoverIfExternal(coverUrl: string | null | undefined, idHint: string): Promise<string | null> {
+async function rehostCoverIfExternal(
+  coverUrl: string | null | undefined,
+  idHint: string,
+): Promise<string | null> {
   if (!coverUrl) return coverUrl ?? null;
   let parsed: URL;
-  try { parsed = new URL(coverUrl); } catch { return coverUrl; }
+  try {
+    parsed = new URL(coverUrl);
+  } catch {
+    return coverUrl;
+  }
   if (!/^https?:$/.test(parsed.protocol)) return coverUrl;
   // Already on our storage? Skip.
-  if (parsed.hostname.includes("supabase.co") && parsed.pathname.includes("/storage/v1/")) return coverUrl;
+  if (parsed.hostname.includes("supabase.co") && parsed.pathname.includes("/storage/v1/"))
+    return coverUrl;
   try {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 10_000);
     let res: Response;
     try {
       res = await fetch(coverUrl, { signal: ctrl.signal, redirect: "follow" });
-    } finally { clearTimeout(timer); }
+    } finally {
+      clearTimeout(timer);
+    }
     if (!res.ok) return coverUrl;
     const mime = (res.headers.get("content-type") || "").toLowerCase().split(";")[0].trim();
     if (!ALLOWED_COVER_MIMES.has(mime)) return coverUrl;
@@ -39,12 +49,23 @@ async function rehostCoverIfExternal(coverUrl: string | null | undefined, idHint
     if (len > MAX_COVER_BYTES) return coverUrl;
     const buf = new Uint8Array(await res.arrayBuffer());
     if (buf.byteLength === 0 || buf.byteLength > MAX_COVER_BYTES) return coverUrl;
-    const ext = mime === "image/jpeg" ? "jpg" : mime === "image/png" ? "png" : mime === "image/webp" ? "webp" : "gif";
+    const ext =
+      mime === "image/jpeg"
+        ? "jpg"
+        : mime === "image/png"
+          ? "png"
+          : mime === "image/webp"
+            ? "webp"
+            : "gif";
     const path = `${idHint}/${Date.now().toString(36)}.${ext}`;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const up = await supabaseAdmin.storage.from("event-covers").upload(path, buf, { contentType: mime, upsert: false });
+    const up = await supabaseAdmin.storage
+      .from("event-covers")
+      .upload(path, buf, { contentType: mime, upsert: false });
     if (up.error) return coverUrl;
-    const signed = await supabaseAdmin.storage.from("event-covers").createSignedUrl(path, SIGNED_URL_TTL);
+    const signed = await supabaseAdmin.storage
+      .from("event-covers")
+      .createSignedUrl(path, SIGNED_URL_TTL);
     if (signed.error || !signed.data?.signedUrl) return coverUrl;
     return signed.data.signedUrl;
   } catch {
@@ -64,9 +85,21 @@ const baseSchema = z.object({
   title: z.string().min(2).max(120),
   tagline: z.string().max(140).nullable().optional(),
   description: z.string().max(6000).nullable().optional(),
-  kind: z.enum(["open_mic", "listening_party", "networking", "screening", "workshop_irl", "online", "other", "lineup"]),
+  kind: z.enum([
+    "open_mic",
+    "listening_party",
+    "networking",
+    "screening",
+    "workshop_irl",
+    "online",
+    "other",
+    "lineup",
+  ]),
   /** Optional creative medium — auto-connects the event to its Medium Group. */
-  creative_category: z.enum(["music", "film_video", "writing", "visual_art", "games_tech"]).nullable().optional(),
+  creative_category: z
+    .enum(["music", "film_video", "writing", "visual_art", "games_tech"])
+    .nullable()
+    .optional(),
   format: z.enum(["in_person", "online", "hybrid"]),
   cover_url: safeHttpUrl.nullable().optional(),
   accent_color: z.string().max(20).nullable().optional(),
@@ -118,7 +151,7 @@ async function resolveEventCity(
     .select("kind,city_id")
     .eq("id", input.group_id)
     .maybeSingle();
-  const inherited = group?.kind === "city" ? (group?.city_id as string | null) ?? null : null;
+  const inherited = group?.kind === "city" ? ((group?.city_id as string | null) ?? null) : null;
   if (!inherited && input.status !== "draft") {
     throw new Error(
       "Pick a venue so we can resolve the city — in-person events need a city before they can be published. Save it as a draft to finish later.",
@@ -205,7 +238,7 @@ export const createEvent = createServerFn({ method: "POST" })
       // A draft is private until it is explicitly published.
       published_at: effectiveStatus === "draft" ? null : new Date().toISOString(),
       archived_at: null,
-      is_official: data.source === "external" ? false : data.is_official ?? true,
+      is_official: data.source === "external" ? false : (data.is_official ?? true),
     };
     const { data: row, error } = await supabase
       .from("group_events")
@@ -224,43 +257,42 @@ export const createEvent = createServerFn({ method: "POST" })
       if (linkErr) throw new Error(linkErr.message);
     }
 
-
     // Notify all group members (except the creator) of the new event. Skip for drafts.
-    if (insertRow.status !== "draft") try {
-      const { data: group } = await supabase
-        .from("groups")
-        .select("slug,name")
-        .eq("id", data.group_id)
-        .maybeSingle();
-      const { data: members } = await supabase
-        .from("group_members")
-        .select("user_id")
-        .eq("group_id", data.group_id);
-      const recipients = (members ?? [])
-        .map((m) => m.user_id as string)
-        .filter((uid) => uid && uid !== userId);
-      if (group && recipients.length > 0) {
-        const g = group as { slug: string; name: string };
-        const payload = {
-          event_title: data.title,
-          event_slug: row.slug,
-          group_slug: g.slug,
-          group_name: g.name,
-        };
-        const { notifyMany } = await import("@/lib/notifications/deliver.server");
-        await notifyMany({
-          recipientIds: recipients,
-          actorUserId: userId,
-          kind: "event_new_in_my_group",
-          entityType: "group_event",
-          entityId: row.id,
-          payload,
-        });
-
+    if (insertRow.status !== "draft")
+      try {
+        const { data: group } = await supabase
+          .from("groups")
+          .select("slug,name")
+          .eq("id", data.group_id)
+          .maybeSingle();
+        const { data: members } = await supabase
+          .from("group_members")
+          .select("user_id")
+          .eq("group_id", data.group_id);
+        const recipients = (members ?? [])
+          .map((m) => m.user_id as string)
+          .filter((uid) => uid && uid !== userId);
+        if (group && recipients.length > 0) {
+          const g = group as { slug: string; name: string };
+          const payload = {
+            event_title: data.title,
+            event_slug: row.slug,
+            group_slug: g.slug,
+            group_name: g.name,
+          };
+          const { notifyMany } = await import("@/lib/notifications/deliver.server");
+          await notifyMany({
+            recipientIds: recipients,
+            actorUserId: userId,
+            kind: "event_new_in_my_group",
+            entityType: "group_event",
+            entityId: row.id,
+            payload,
+          });
+        }
+      } catch {
+        // Notifications are best-effort; never block event creation.
       }
-    } catch {
-      // Notifications are best-effort; never block event creation.
-    }
     return row;
   });
 
@@ -300,7 +332,10 @@ export const updateEvent = createServerFn({ method: "POST" })
     if (rest.status === "draft") {
       patch.published_at = null;
     }
-    const { error } = await supabase.from("group_events").update(patch as never).eq("id", id);
+    const { error } = await supabase
+      .from("group_events")
+      .update(patch as never)
+      .eq("id", id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -326,7 +361,8 @@ export const publishEvent = createServerFn({ method: "POST" })
       .from("group_events")
       .update({
         status: "scheduled",
-        published_at: (row as { published_at: string | null }).published_at ?? new Date().toISOString(),
+        published_at:
+          (row as { published_at: string | null }).published_at ?? new Date().toISOString(),
         archived_at: null,
       } as never)
       .eq("id", data.id);
@@ -366,7 +402,9 @@ export const unpublishEvent = createServerFn({ method: "POST" })
 
 export const cancelEvent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid(), reason: z.string().max(500).optional() }).parse(i))
+  .inputValidator((i) =>
+    z.object({ id: z.string().uuid(), reason: z.string().max(500).optional() }).parse(i),
+  )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertAdmin(supabase, userId);
@@ -389,7 +427,12 @@ export const cancelEvent = createServerFn({ method: "POST" })
     if (ev && rsvps && rsvps.length > 0) {
       type EvShape = { title: string; slug: string; group: { slug: string } };
       const e = ev as unknown as EvShape;
-      const payload = { event_title: e.title, event_slug: e.slug, group_slug: e.group.slug, reason: data.reason ?? null };
+      const payload = {
+        event_title: e.title,
+        event_slug: e.slug,
+        group_slug: e.group.slug,
+        reason: data.reason ?? null,
+      };
       const { notifyMany } = await import("@/lib/notifications/deliver.server");
       await notifyMany({
         recipientIds: rsvps.map((r) => r.user_id as string),
@@ -399,7 +442,6 @@ export const cancelEvent = createServerFn({ method: "POST" })
         entityId: data.id,
         payload,
       });
-
     }
     return { ok: true };
   });
@@ -420,7 +462,9 @@ export const setEventFeatured = createServerFn({ method: "POST" })
 
 export const postEventUpdate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ event_id: z.string().uuid(), body: z.string().min(1).max(1000) }).parse(i))
+  .inputValidator((i) =>
+    z.object({ event_id: z.string().uuid(), body: z.string().min(1).max(1000) }).parse(i),
+  )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertAdmin(supabase, userId);
@@ -452,7 +496,6 @@ export const postEventUpdate = createServerFn({ method: "POST" })
         entityId: data.event_id,
         payload,
       });
-
     }
     return { ok: true };
   });
@@ -464,7 +507,9 @@ export const adminListAllEvents = createServerFn({ method: "POST" })
     await assertAdmin(supabase, userId);
     const { data, error } = await supabase
       .from("group_events")
-      .select("id,slug,title,kind,format,starts_at,status,featured_at,going_count,capacity,group:groups!inner(id,slug,name)")
+      .select(
+        "id,slug,title,kind,format,starts_at,status,featured_at,going_count,capacity,group:groups!inner(id,slug,name)",
+      )
       .is("deleted_at", null)
       .order("starts_at", { ascending: false })
       .limit(200);
@@ -549,7 +594,7 @@ export const createEventSeries = createServerFn({ method: "POST" })
       timezone: tz,
       cover_url: sharedCover,
       status: effectiveStatus,
-      is_official: rest.source === "external" ? false : rest.is_official ?? true,
+      is_official: rest.source === "external" ? false : (rest.is_official ?? true),
       is_recurring: true,
       // Credit travels with the series: every future week keeps the organizer
       // and their link, so occurrences never fall back to the city Group.
@@ -561,7 +606,6 @@ export const createEventSeries = createServerFn({ method: "POST" })
       __pin: pinned === true,
     };
 
-
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: seriesRow, error: seriesErr } = await supabaseAdmin
@@ -570,7 +614,9 @@ export const createEventSeries = createServerFn({ method: "POST" })
         group_id,
         series_key: seriesKey,
         recurrence_rule,
-        weekday: new Date(Date.UTC(localAnchor.year, localAnchor.month - 1, localAnchor.day)).getUTCDay(),
+        weekday: new Date(
+          Date.UTC(localAnchor.year, localAnchor.month - 1, localAnchor.day),
+        ).getUTCDay(),
         day_of_month: recurrence_rule === "MONTHLY" ? localAnchor.day : null,
         start_time_local: `${pad(localAnchor.hour)}:${pad(localAnchor.minute)}:${pad(localAnchor.second)}`,
         duration_minutes: Math.round(durationMs / 60000),
@@ -642,10 +688,19 @@ export const adminListEventReports = createServerFn({ method: "POST" })
       .from("group_events")
       .select("id,slug,title,status,group:groups!inner(slug,name)")
       .in("id", eventIds);
-    type Ev = { id: string; slug: string; title: string; status: string; group: { slug: string; name: string } };
+    type Ev = {
+      id: string;
+      slug: string;
+      title: string;
+      status: string;
+      group: { slug: string; name: string };
+    };
     const byId = new Map<string, Ev>();
     for (const e of (events ?? []) as unknown as Ev[]) byId.set(e.id, e);
-    const grouped = new Map<string, { event: Ev; report_ids: string[]; reasons: string[]; latest_at: string }>();
+    const grouped = new Map<
+      string,
+      { event: Ev; report_ids: string[]; reasons: string[]; latest_at: string }
+    >();
     for (const r of list) {
       const ev = byId.get(r.entity_id as string);
       if (!ev) continue;
@@ -654,7 +709,12 @@ export const adminListEventReports = createServerFn({ method: "POST" })
         g.report_ids.push(r.id as string);
         if (r.reason) g.reasons.push(r.reason as string);
       } else {
-        grouped.set(ev.id, { event: ev, report_ids: [r.id as string], reasons: r.reason ? [r.reason as string] : [], latest_at: r.created_at as string });
+        grouped.set(ev.id, {
+          event: ev,
+          report_ids: [r.id as string],
+          reasons: r.reason ? [r.reason as string] : [],
+          latest_at: r.created_at as string,
+        });
       }
     }
     return Array.from(grouped.values());
@@ -662,7 +722,9 @@ export const adminListEventReports = createServerFn({ method: "POST" })
 
 export const adminDismissReports = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ report_ids: z.array(z.string().uuid()).min(1).max(200) }).parse(i))
+  .inputValidator((i) =>
+    z.object({ report_ids: z.array(z.string().uuid()).min(1).max(200) }).parse(i),
+  )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertAdmin(supabase, userId);
@@ -688,7 +750,6 @@ const seriesPatchSchema = z.object({
     online_url: z.string().url().nullable().optional(),
     cover_url: z.string().url().nullable().optional(),
     capacity: z.number().int().min(1).max(10000).nullable().optional(),
-    
   }),
 });
 
@@ -708,7 +769,10 @@ export const updateEventSeriesFuture = createServerFn({ method: "POST" })
 
     const patch: Record<string, unknown> = { ...data.patch };
     if (typeof patch.cover_url === "string") {
-      patch.cover_url = await rehostCoverIfExternal(patch.cover_url as string, `series_${data.series_key}`);
+      patch.cover_url = await rehostCoverIfExternal(
+        patch.cover_url as string,
+        `series_${data.series_key}`,
+      );
     }
     const { error, count } = await supabase
       .from("group_events")
@@ -734,18 +798,24 @@ export const updateEventSeriesFuture = createServerFn({ method: "POST" })
           .update({ template: nextTemplate } as never)
           .eq("id", s.id);
       }
-    } catch { /* best-effort — occurrence rows are already updated */ }
+    } catch {
+      /* best-effort — occurrence rows are already updated */
+    }
 
     return { ok: true, updated: count ?? 0 };
   });
 
 export const cancelEventSeriesFuture = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({
-    series_key: z.string().min(3).max(60),
-    from_event_id: z.string().uuid(),
-    reason: z.string().max(500).optional(),
-  }).parse(i))
+  .inputValidator((i) =>
+    z
+      .object({
+        series_key: z.string().min(3).max(60),
+        from_event_id: z.string().uuid(),
+        reason: z.string().max(500).optional(),
+      })
+      .parse(i),
+  )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertAdmin(supabase, userId);
@@ -754,7 +824,8 @@ export const cancelEventSeriesFuture = createServerFn({ method: "POST" })
       .select("starts_at,series_key")
       .eq("id", data.from_event_id)
       .maybeSingle();
-    if (!anchor || anchor.series_key !== data.series_key) throw new Error("Anchor is not in this series");
+    if (!anchor || anchor.series_key !== data.series_key)
+      throw new Error("Anchor is not in this series");
     const { data: rows, error } = await supabase
       .from("group_events")
       .update({ status: "canceled" })
@@ -775,7 +846,12 @@ export const cancelEventSeriesFuture = createServerFn({ method: "POST" })
           .eq("event_id", ev.id)
           .in("status", ["going", "maybe", "waitlist"]);
         if (rsvps && rsvps.length > 0) {
-          const payload = { event_title: ev.title, event_slug: ev.slug, group_slug: ev.group.slug, reason: data.reason ?? null };
+          const payload = {
+            event_title: ev.title,
+            event_slug: ev.slug,
+            group_slug: ev.group.slug,
+            reason: data.reason ?? null,
+          };
           const { notifyMany } = await import("@/lib/notifications/deliver.server");
           await notifyMany({
             recipientIds: rsvps.map((r) => r.user_id as string),
@@ -785,9 +861,10 @@ export const cancelEventSeriesFuture = createServerFn({ method: "POST" })
             entityId: ev.id,
             payload,
           });
-
         }
-      } catch { /* notifications are best-effort */ }
+      } catch {
+        /* notifications are best-effort */
+      }
     }
 
     // Stop the rolling materializer from creating more occurrences.
@@ -798,7 +875,9 @@ export const cancelEventSeriesFuture = createServerFn({ method: "POST" })
         .update({ canceled_at: new Date().toISOString() } as never)
         .eq("series_key", data.series_key)
         .is("canceled_at", null);
-    } catch { /* best-effort */ }
+    } catch {
+      /* best-effort */
+    }
 
     return { ok: true, canceled: canceled.length };
   });

@@ -19,9 +19,6 @@ export const postTodayMessage = createServerFn({ method: "POST" })
     // run inside the shared messaging pipeline. The database trigger that sets
     // expiry and blocks disallowed text stays in place behind it.
     const { sendTodayMessage } = await import("@/lib/messaging/pipeline.server");
-    const { id } = await sendTodayMessage(
-      { supabase, userId, subjectId: data.groupId },
-      data.body,
-    );
+    const { id } = await sendTodayMessage({ supabase, userId, subjectId: data.groupId }, data.body);
     return { ok: true, id };
   });

@@ -4,7 +4,15 @@
  * No native binaries (no canvas, no resvg, no satori) so it runs safely on Cloudflare Workers.
  */
 
-export type OgCardType = "profile" | "work" | "event" | "workshop" | "collab" | "city" | "blog" | "default";
+export type OgCardType =
+  | "profile"
+  | "work"
+  | "event"
+  | "workshop"
+  | "collab"
+  | "city"
+  | "blog"
+  | "default";
 
 export interface OgCardInput {
   type: OgCardType;
@@ -53,9 +61,9 @@ export function generateOgCard(input: OgCardInput): string {
   const safeDetail = escapeXml(truncate(detail || "", 120));
   const accentColor = accent && ACCENTS[accent] ? ACCENTS[accent] : "#64748b";
 
-  const gradientStops = DEFAULT_GRADIENT
-    .map(([color, offset]) => `<stop offset="${offset}%" stop-color="${color}"/>`)
-    .join("");
+  const gradientStops = DEFAULT_GRADIENT.map(
+    ([color, offset]) => `<stop offset="${offset}%" stop-color="${color}"/>`,
+  ).join("");
 
   const imageSection = image
     ? `<image x="620" y="60" width="520" height="510" preserveAspectRatio="xMidYMid slice" href="${escapeXml(image)}" clip-path="url(#photoClip)"/>`

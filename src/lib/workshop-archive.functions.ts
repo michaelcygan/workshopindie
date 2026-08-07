@@ -35,10 +35,15 @@ export const generateWorkshopArchive = createServerFn({ method: "POST" })
       supabaseAdmin.from("workshop_tasks").select("*").eq("workshop_id", workshopId),
       supabaseAdmin.from("workshop_drive_links").select("*").eq("workshop_id", workshopId),
       supabaseAdmin.from("workshop_drive_files").select("*").eq("workshop_id", workshopId),
-      supabaseAdmin.from("workshop_polls").select("*, votes:workshop_poll_votes(choice_index)").eq("workshop_id", workshopId),
+      supabaseAdmin
+        .from("workshop_polls")
+        .select("*, votes:workshop_poll_votes(choice_index)")
+        .eq("workshop_id", workshopId),
       supabaseAdmin
         .from("workshop_participants")
-        .select("user_id,participant_status,role_id,profile:profiles!workshop_participants_user_id_fkey(display_name,username)")
+        .select(
+          "user_id,participant_status,role_id,profile:profiles!workshop_participants_user_id_fkey(display_name,username)",
+        )
         .eq("workshop_id", workshopId),
     ]);
 

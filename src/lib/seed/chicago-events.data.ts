@@ -13,7 +13,15 @@
  */
 
 export type SeedCategory = "music" | "film_video" | "writing" | "visual_art" | "games_tech";
-export type SeedKind = "open_mic" | "listening_party" | "networking" | "screening" | "workshop_irl" | "online" | "other" | "lineup";
+export type SeedKind =
+  | "open_mic"
+  | "listening_party"
+  | "networking"
+  | "screening"
+  | "workshop_irl"
+  | "online"
+  | "other"
+  | "lineup";
 
 type SeedBase = {
   /** Stable idempotency key. Becomes `series_key`. Never change. */
@@ -118,7 +126,8 @@ export const MEDIUM_GROUP_SLUG: Record<SeedCategory, string> = {
 export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   {
     key: "chi_uncommon_ground_open_mic",
-    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Funcommon-ground-open-mic.jpg",
+    cover_url:
+      "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Funcommon-ground-open-mic.jpg",
     photo_credit_name: "Uncommon Ground Lakeview",
     photo_credit_url: "https://www.uncommonground.com/openmic",
     cadence: "weekly",
@@ -136,11 +145,13 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     venue_address: "3800 N Clark St, Chicago, IL 60613",
     external_url: "https://www.uncommonground.com/openmic",
     external_organizer: "Uncommon Ground Lakeview",
-    source_note: "uncommonground.com/openmic — 'Sunday nights: Sign up at 5:00pm | open mic starts at 6pm'.",
+    source_note:
+      "uncommonground.com/openmic — 'Sunday nights: Sign up at 5:00pm | open mic starts at 6pm'.",
   },
   {
     key: "chi_gallery_cabaret_open_jam",
-    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fgallery-cabaret.jpg",
+    cover_url:
+      "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fgallery-cabaret.jpg",
     photo_credit_name: "Gallery Cabaret",
     photo_credit_url: "https://www.gallerycabaret.com/",
     cadence: "weekly",
@@ -158,11 +169,13 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     venue_address: "2020 N Oakley Ave, Chicago, IL 60647",
     external_url: "https://www.gallerycabaret.com/",
     external_organizer: "Gallery Cabaret",
-    source_note: "gallerycabaret.com — weekly schedule block plus calendar entries listing Open Jam Tuesdays 7:00 PM.",
+    source_note:
+      "gallerycabaret.com — weekly schedule block plus calendar entries listing Open Jam Tuesdays 7:00 PM.",
   },
   {
     key: "chi_gallery_cabaret_open_mic",
-    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fgallery-cabaret.jpg",
+    cover_url:
+      "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fgallery-cabaret.jpg",
     photo_credit_name: "Gallery Cabaret",
     photo_credit_url: "https://www.gallerycabaret.com/",
     cadence: "weekly",
@@ -184,7 +197,8 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_coles_comedy_open_mic",
-    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fcoles-bar.jpg",
+    cover_url:
+      "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fcoles-bar.jpg",
     photo_credit_name: "Cole's Bar",
     photo_credit_url: "https://www.colesbarchicago.com/",
     cadence: "weekly",
@@ -202,11 +216,13 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     venue_address: "2338 N Milwaukee Ave, Chicago, IL 60647",
     external_url: "https://www.colesbarchicago.com/",
     external_organizer: "Cole's Bar",
-    source_note: "colesbarchicago.com — Comedy Open Mic listed every Wednesday, 'Show: 8 pm', 'Free', 'Ages 21 and up'.",
+    source_note:
+      "colesbarchicago.com — Comedy Open Mic listed every Wednesday, 'Show: 8 pm', 'Free', 'Ages 21 and up'.",
   },
   {
     key: "chi_hungry_brain_sunday_transmission",
-    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fhungry-brain.jpg",
+    cover_url:
+      "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fhungry-brain.jpg",
     photo_credit_name: "The Hungry Brain",
     photo_credit_url: "https://hungrybrainchicago.com/",
     cadence: "weekly",
@@ -224,11 +240,13 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     venue_address: "2319 W Belmont Ave, Chicago, IL 60618",
     external_url: "https://hungrybrainchicago.com/",
     external_organizer: "The Hungry Brain",
-    source_note: "hungrybrainchicago.com — about page plus weekly Sunday calendar entries at 9:00PM, $15.",
+    source_note:
+      "hungrybrainchicago.com — about page plus weekly Sunday calendar entries at 9:00PM, $15.",
   },
   {
     key: "chi_platform_studios_figure_drawing",
-    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fplatform-studios.jpg",
+    cover_url:
+      "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fplatform-studios.jpg",
     photo_credit_name: "Platform Studios",
     photo_credit_url: "https://www.platformchicago.com/figure-drawing-sessions",
     cadence: "weekly",
@@ -251,7 +269,8 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
   },
   {
     key: "chi_green_mill_uptown_poetry_slam",
-    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fgreen-mill.jpg",
+    cover_url:
+      "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fgreen-mill.jpg",
     photo_credit_name: "Green Mill Cocktail Lounge",
     photo_credit_url: "https://greenmilljazz.com/",
     cadence: "dated",
@@ -268,7 +287,8 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     venue_address: "4802 N Broadway Ave, Chicago, IL 60640",
     external_url: "https://greenmilljazz.com/calendar/",
     external_organizer: "Green Mill Cocktail Lounge",
-    source_note: "greenmilljazz.com calendar — '(3pm - 5pm) UPTOWN POETRY SLAM', $10 cover, dates listed individually.",
+    source_note:
+      "greenmilljazz.com calendar — '(3pm - 5pm) UPTOWN POETRY SLAM', $10 cover, dates listed individually.",
   },
   {
     key: "chi_fullers_pub_open_mic_wed",
@@ -279,14 +299,16 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Every Wednesday",
     title: "Open Mic Night at Fuller's Pub",
     tagline: "9pm–1am, various hosts, Irving Park.",
-    description: "A long-running neighborhood open mic at a no-frills Irving Park bar. Acoustic solo acts go up first and the night drifts toward jamming later; spoken word is welcome too. Hosts rotate week to week — check with the bar for that night's sign-up time.",
+    description:
+      "A long-running neighborhood open mic at a no-frills Irving Park bar. Acoustic solo acts go up first and the night drifts toward jamming later; spoken word is welcome too. Hosts rotate week to week — check with the bar for that night's sign-up time.",
     kind: "open_mic",
     creative_category: "music",
     venue_name: "Fuller's Pub",
     venue_address: "3203 W Irving Park Rd, Chicago, IL 60618",
     external_url: "http://fullerspubchicago.com/",
     external_organizer: "Fuller's Pub",
-    source_note: "fullerspubchicago.com — open mic listed Wednesday and Thursday, 9:00 PM–1:00 AM, various hosts.",
+    source_note:
+      "fullerspubchicago.com — open mic listed Wednesday and Thursday, 9:00 PM–1:00 AM, various hosts.",
   },
   {
     key: "chi_fullers_pub_open_mic_thu",
@@ -297,14 +319,16 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Every Thursday",
     title: "Open Mic Night at Fuller's Pub",
     tagline: "9pm–1am, various hosts, Irving Park.",
-    description: "The Thursday edition of Fuller's weekly open mic. Solo acoustic performers, jammers and spoken-word readers share the same list. Hosts rotate — check with the bar for that night's sign-up time.",
+    description:
+      "The Thursday edition of Fuller's weekly open mic. Solo acoustic performers, jammers and spoken-word readers share the same list. Hosts rotate — check with the bar for that night's sign-up time.",
     kind: "open_mic",
     creative_category: "music",
     venue_name: "Fuller's Pub",
     venue_address: "3203 W Irving Park Rd, Chicago, IL 60618",
     external_url: "http://fullerspubchicago.com/",
     external_organizer: "Fuller's Pub",
-    source_note: "fullerspubchicago.com — open mic listed Wednesday and Thursday, 9:00 PM–1:00 AM, various hosts.",
+    source_note:
+      "fullerspubchicago.com — open mic listed Wednesday and Thursday, 9:00 PM–1:00 AM, various hosts.",
   },
   {
     key: "chi_platform_studios_figure_drawing_wed",
@@ -315,14 +339,16 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Every Wednesday (also Tue & Thu)",
     title: "Drop-In Figure Drawing at Platform Studios",
     tagline: "Live model, 7–9:30pm, $20 drop-in.",
-    description: "Platform runs drop-in figure drawing three nights a week with a live model. Doors at 6:40pm, drawing 7:00–9:30pm, $20 at the door. All levels welcome; easels and boards are provided, bring your own drawing materials. Space is first come, first served.",
+    description:
+      "Platform runs drop-in figure drawing three nights a week with a live model. Doors at 6:40pm, drawing 7:00–9:30pm, $20 at the door. All levels welcome; easels and boards are provided, bring your own drawing materials. Space is first come, first served.",
     kind: "workshop_irl",
     creative_category: "visual_art",
     venue_name: "Platform Studios",
     venue_address: "1821 W Hubbard St #301, Chicago, IL 60622",
     external_url: "https://www.platformchicago.com/figure-drawing-sessions",
     external_organizer: "Platform Studios",
-    source_note: "platformchicago.com/figure-drawing-sessions — Tue/Wed/Thu 7:00–9:30 PM, doors 6:40 PM, $20 drop-in.",
+    source_note:
+      "platformchicago.com/figure-drawing-sessions — Tue/Wed/Thu 7:00–9:30 PM, doors 6:40 PM, $20 drop-in.",
   },
   {
     key: "chi_platform_studios_figure_drawing_thu",
@@ -333,14 +359,16 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Every Thursday (also Tue & Wed)",
     title: "Drop-In Figure Drawing at Platform Studios",
     tagline: "Live model, 7–9:30pm, $20 drop-in.",
-    description: "Platform runs drop-in figure drawing three nights a week with a live model. Doors at 6:40pm, drawing 7:00–9:30pm, $20 at the door. All levels welcome; easels and boards are provided, bring your own drawing materials. Space is first come, first served.",
+    description:
+      "Platform runs drop-in figure drawing three nights a week with a live model. Doors at 6:40pm, drawing 7:00–9:30pm, $20 at the door. All levels welcome; easels and boards are provided, bring your own drawing materials. Space is first come, first served.",
     kind: "workshop_irl",
     creative_category: "visual_art",
     venue_name: "Platform Studios",
     venue_address: "1821 W Hubbard St #301, Chicago, IL 60622",
     external_url: "https://www.platformchicago.com/figure-drawing-sessions",
     external_organizer: "Platform Studios",
-    source_note: "platformchicago.com/figure-drawing-sessions — Tue/Wed/Thu 7:00–9:30 PM, doors 6:40 PM, $20 drop-in.",
+    source_note:
+      "platformchicago.com/figure-drawing-sessions — Tue/Wed/Thu 7:00–9:30 PM, doors 6:40 PM, $20 drop-in.",
   },
   {
     key: "chi_eli_tea_writers_group",
@@ -351,14 +379,16 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Every Monday",
     title: "Monday Night Writers Group at Eli Tea Bar",
     tagline: "Weekly prompt at 7pm sharp. Bring a notebook.",
-    description: "A casual weekly writing session at Eli's Andersonville tea bar and sober bar. A prompt goes up just after 7:00pm and everyone writes together — no signup, no experience needed. Bring paper or a laptop.",
+    description:
+      "A casual weekly writing session at Eli's Andersonville tea bar and sober bar. A prompt goes up just after 7:00pm and everyone writes together — no signup, no experience needed. Bring paper or a laptop.",
     kind: "workshop_irl",
     creative_category: "writing",
     venue_name: "Eli Tea Bar Chicago",
     venue_address: "5507 N Clark St, Chicago, IL 60640",
     external_url: "https://www.eliteabar.com/pages/eli-tea-bar-events",
     external_organizer: "Eli Tea Bar Chicago",
-    source_note: "eliteabar.com events page — Monday Night Writers Group, 7:00 PM sharp, weekly prompt.",
+    source_note:
+      "eliteabar.com events page — Monday Night Writers Group, 7:00 PM sharp, weekly prompt.",
   },
   {
     key: "chi_eli_tea_art_craft_night",
@@ -369,7 +399,8 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Every Thursday",
     title: "Art & Craft Night at Eli Tea Bar",
     tagline: "8–10pm. Bring a project or use a coloring sheet.",
-    description: "A relaxed drop-in making night at Eli's Andersonville tea bar. Bring whatever you're working on, or use one of the complimentary coloring sheets, and work alongside other people for a couple of hours. Alcohol-free room.",
+    description:
+      "A relaxed drop-in making night at Eli's Andersonville tea bar. Bring whatever you're working on, or use one of the complimentary coloring sheets, and work alongside other people for a couple of hours. Alcohol-free room.",
     kind: "workshop_irl",
     creative_category: "visual_art",
     venue_name: "Eli Tea Bar Chicago",
@@ -387,7 +418,8 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Every Friday",
     title: "Open Mic Fridays at Eli Tea Bar",
     tagline: "All talents welcome, 8–10pm, all ages, alcohol-free.",
-    description: "Eli's Friday open mic takes musicians, readers, comics and anything else you want to try in front of a room. Runs 8:00–10:00pm in an all-ages, alcohol-free space in Andersonville.",
+    description:
+      "Eli's Friday open mic takes musicians, readers, comics and anything else you want to try in front of a room. Runs 8:00–10:00pm in an all-ages, alcohol-free space in Andersonville.",
     kind: "open_mic",
     creative_category: "music",
     secondary_categories: ["writing"],
@@ -395,11 +427,13 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     venue_address: "5507 N Clark St, Chicago, IL 60640",
     external_url: "https://www.eliteabar.com/pages/eli-tea-bar-events",
     external_organizer: "Eli Tea Bar Chicago",
-    source_note: "eliteabar.com events page — Open Mic Fridays, 8:00–10:00 PM, all talents welcome, all ages.",
+    source_note:
+      "eliteabar.com events page — Open Mic Fridays, 8:00–10:00 PM, all talents welcome, all ages.",
   },
   {
     key: "chi_jarvis_squear_open_mic",
-    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fjarvis-square-tavern.jpg",
+    cover_url:
+      "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fjarvis-square-tavern.jpg",
     photo_credit_name: "Jarvis Square Tavern",
     photo_credit_url: "https://jarvissquaretavern.com/js-events/",
     cadence: "weekly",
@@ -409,7 +443,8 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Every Wednesday",
     title: "Jarvis SquEAR Open Mic",
     tagline: "Sign-up 7:30pm. Three songs or five minutes.",
-    description: "A weekly Rogers Park open mic for musicians and spoken-word artists, described by the tavern as queer-centered and straight-friendly. Sign-up is at 7:30pm; performers get three songs or about five minutes and there's a one-drink minimum to play. House guitar, keyboard stand and PA line are available — originals only, no karaoke.",
+    description:
+      "A weekly Rogers Park open mic for musicians and spoken-word artists, described by the tavern as queer-centered and straight-friendly. Sign-up is at 7:30pm; performers get three songs or about five minutes and there's a one-drink minimum to play. House guitar, keyboard stand and PA line are available — originals only, no karaoke.",
     kind: "open_mic",
     creative_category: "music",
     secondary_categories: ["writing"],
@@ -417,11 +452,13 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     venue_address: "1502 W Jarvis Ave, Chicago, IL 60626",
     external_url: "https://jarvissquaretavern.com/js-events/",
     external_organizer: "Jarvis Square Tavern",
-    source_note: "jarvissquaretavern.com/js-events — Jarvis Squear every Wednesday, sign-up 7:30 PM, one-drink minimum.",
+    source_note:
+      "jarvissquaretavern.com/js-events — Jarvis Squear every Wednesday, sign-up 7:30 PM, one-drink minimum.",
   },
   {
     key: "chi_infinite_wrench_fri",
-    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fneo-futurists-infinite-wrench.jpg",
+    cover_url:
+      "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fneo-futurists-infinite-wrench.jpg",
     photo_credit_name: "The Neo-Futurists",
     photo_credit_url: "https://neofuturists.org/events/theinfinitewrench/",
     cadence: "weekly",
@@ -431,18 +468,21 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Every Friday (also Sat & Sun)",
     title: "The Infinite Wrench",
     tagline: "30 plays in 60 minutes. Fridays at 10:30pm.",
-    description: "The Neo-Futurists attempt thirty original short plays in sixty minutes, drawn from the ensemble's own lives rather than invented characters. New plays enter the rotation every week, so no two nights are the same. Tickets $15–$20, doors 30 minutes before, recommended for ages 13 and up.",
+    description:
+      "The Neo-Futurists attempt thirty original short plays in sixty minutes, drawn from the ensemble's own lives rather than invented characters. New plays enter the rotation every week, so no two nights are the same. Tickets $15–$20, doors 30 minutes before, recommended for ages 13 and up.",
     kind: "lineup",
     creative_category: "writing",
     venue_name: "The Neo-Futurist Theater",
     venue_address: "5153 N Ashland Ave, Chicago, IL 60640",
     external_url: "https://neofuturists.org/events/theinfinitewrench/",
     external_organizer: "The Neo-Futurists",
-    source_note: "neofuturists.org — Fri & Sat 10:30 PM, Sun 7:00 PM, $15–$20, 60 minutes, ages 13+.",
+    source_note:
+      "neofuturists.org — Fri & Sat 10:30 PM, Sun 7:00 PM, $15–$20, 60 minutes, ages 13+.",
   },
   {
     key: "chi_infinite_wrench_sat",
-    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fneo-futurists-infinite-wrench.jpg",
+    cover_url:
+      "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fneo-futurists-infinite-wrench.jpg",
     photo_credit_name: "The Neo-Futurists",
     photo_credit_url: "https://neofuturists.org/events/theinfinitewrench/",
     cadence: "weekly",
@@ -452,18 +492,21 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Every Saturday (also Fri & Sun)",
     title: "The Infinite Wrench",
     tagline: "30 plays in 60 minutes. Saturdays at 10:30pm.",
-    description: "The Neo-Futurists attempt thirty original short plays in sixty minutes, drawn from the ensemble's own lives rather than invented characters. New plays enter the rotation every week, so no two nights are the same. Tickets $15–$20, doors 30 minutes before, recommended for ages 13 and up.",
+    description:
+      "The Neo-Futurists attempt thirty original short plays in sixty minutes, drawn from the ensemble's own lives rather than invented characters. New plays enter the rotation every week, so no two nights are the same. Tickets $15–$20, doors 30 minutes before, recommended for ages 13 and up.",
     kind: "lineup",
     creative_category: "writing",
     venue_name: "The Neo-Futurist Theater",
     venue_address: "5153 N Ashland Ave, Chicago, IL 60640",
     external_url: "https://neofuturists.org/events/theinfinitewrench/",
     external_organizer: "The Neo-Futurists",
-    source_note: "neofuturists.org — Fri & Sat 10:30 PM, Sun 7:00 PM, $15–$20, 60 minutes, ages 13+.",
+    source_note:
+      "neofuturists.org — Fri & Sat 10:30 PM, Sun 7:00 PM, $15–$20, 60 minutes, ages 13+.",
   },
   {
     key: "chi_infinite_wrench_sun",
-    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fneo-futurists-infinite-wrench.jpg",
+    cover_url:
+      "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fneo-futurists-infinite-wrench.jpg",
     photo_credit_name: "The Neo-Futurists",
     photo_credit_url: "https://neofuturists.org/events/theinfinitewrench/",
     cadence: "weekly",
@@ -473,14 +516,16 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Every Sunday (also Fri & Sat)",
     title: "The Infinite Wrench",
     tagline: "30 plays in 60 minutes. Sundays at 7pm.",
-    description: "The Neo-Futurists attempt thirty original short plays in sixty minutes, drawn from the ensemble's own lives rather than invented characters. New plays enter the rotation every week, so no two nights are the same. Tickets $15–$20, doors 30 minutes before, recommended for ages 13 and up.",
+    description:
+      "The Neo-Futurists attempt thirty original short plays in sixty minutes, drawn from the ensemble's own lives rather than invented characters. New plays enter the rotation every week, so no two nights are the same. Tickets $15–$20, doors 30 minutes before, recommended for ages 13 and up.",
     kind: "lineup",
     creative_category: "writing",
     venue_name: "The Neo-Futurist Theater",
     venue_address: "5153 N Ashland Ave, Chicago, IL 60640",
     external_url: "https://neofuturists.org/events/theinfinitewrench/",
     external_organizer: "The Neo-Futurists",
-    source_note: "neofuturists.org — Fri & Sat 10:30 PM, Sun 7:00 PM, $15–$20, 60 minutes, ages 13+.",
+    source_note:
+      "neofuturists.org — Fri & Sat 10:30 PM, Sun 7:00 PM, $15–$20, 60 minutes, ages 13+.",
   },
   {
     key: "chi_chi_hack_night",
@@ -491,14 +536,16 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Every Tuesday",
     title: "Chi Hack Night",
     tagline: "Free weekly civic-tech night. Programmers optional.",
-    description: "Chicago's weekly civic technology gathering: a talk or demo, then breakout groups working on projects with public data. Developers, designers, researchers, journalists and organizers all show up, and non-programmers are explicitly welcome. Free; most weeks run online with occasional in-person nights — check the schedule before heading out.",
+    description:
+      "Chicago's weekly civic technology gathering: a talk or demo, then breakout groups working on projects with public data. Developers, designers, researchers, journalists and organizers all show up, and non-programmers are explicitly welcome. Free; most weeks run online with occasional in-person nights — check the schedule before heading out.",
     kind: "networking",
     creative_category: "games_tech",
     format: "hybrid",
     venue_name: "Online, with occasional in-person nights",
     external_url: "https://chihacknight.org/",
     external_organizer: "Chi Hack Night",
-    source_note: "chihacknight.org — 'We meet every Tuesday at 7pm'; event list shows online and hybrid sessions, free.",
+    source_note:
+      "chihacknight.org — 'We meet every Tuesday at 7pm'; event list shows online and hybrid sessions, free.",
   },
   {
     key: "chi_south_side_hackerspace_open_house",
@@ -509,7 +556,8 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Every Wednesday",
     title: "South Side Hackerspace Open House",
     tagline: "Weekly general body meeting in Bridgeport, 7:30pm.",
-    description: "South Side Hackerspace opens its Bridgeport shop every Wednesday for its general body meeting. Visitors can tour the space, meet members and ask about tools, projects and membership. The community spans makers, hackers, artists, crafters and tinkerers; fill out the visitor form on their site before your first trip.",
+    description:
+      "South Side Hackerspace opens its Bridgeport shop every Wednesday for its general body meeting. Visitors can tour the space, meet members and ask about tools, projects and membership. The community spans makers, hackers, artists, crafters and tinkerers; fill out the visitor form on their site before your first trip.",
     kind: "networking",
     creative_category: "games_tech",
     secondary_categories: ["visual_art"],
@@ -517,11 +565,13 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     venue_address: "1048 W 37th St, Suite 105, Chicago, IL 60609",
     external_url: "https://sshchicago.org/",
     external_organizer: "South Side Hackerspace: Chicago",
-    source_note: "sshchicago.org — 'Open House/General Body meetings, held each week on Wednesdays at 7:30PM'; visitor form required.",
+    source_note:
+      "sshchicago.org — 'Open House/General Body meetings, held each week on Wednesdays at 7:30PM'; visitor form required.",
   },
   {
     key: "chi_paper_machete",
-    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fpaper-machete.jpg",
+    cover_url:
+      "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fpaper-machete.jpg",
     photo_credit_name: "The Paper Machete",
     photo_credit_url: "https://thepapermachete.org/",
     cadence: "dated",
@@ -530,7 +580,8 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Saturday afternoons at the Green Mill",
     title: "The Paper Machete",
     tagline: "Free live magazine, Saturdays at 3pm.",
-    description: "A free weekly live 'magazine' at the Green Mill: comedic essays, sketches and interviews about the week's news and culture, performed by a rotating cast of Chicago writers and comedians. Dates listed here are the ones currently on the Green Mill calendar.",
+    description:
+      "A free weekly live 'magazine' at the Green Mill: comedic essays, sketches and interviews about the week's news and culture, performed by a rotating cast of Chicago writers and comedians. Dates listed here are the ones currently on the Green Mill calendar.",
     kind: "lineup",
     creative_category: "writing",
     secondary_categories: ["music"],
@@ -538,7 +589,8 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     venue_address: "4802 N Broadway Ave, Chicago, IL 60640",
     external_url: "https://thepapermachete.org/",
     external_organizer: "The Paper Machete",
-    source_note: "thepapermachete.org (weekly Saturday 3:00 PM, always free) cross-checked against greenmilljazz.com/calendar published dates.",
+    source_note:
+      "thepapermachete.org (weekly Saturday 3:00 PM, always free) cross-checked against greenmilljazz.com/calendar published dates.",
   },
   {
     key: "chi_story_lab_chicago",
@@ -548,18 +600,21 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Third Thursday of the month",
     title: "Story Lab Chicago",
     tagline: "True stories in the back room. Free, doors 7pm.",
-    description: "A monthly storytelling show hosted by Scott Whitehair in the back room of a Lincoln Square pub, with a new lineup of tellers each month. Free to attend, and anyone who wants to tell a story can sign up through the site — no experience required. Doors 7:00pm, stories 7:30pm.",
+    description:
+      "A monthly storytelling show hosted by Scott Whitehair in the back room of a Lincoln Square pub, with a new lineup of tellers each month. Free to attend, and anyone who wants to tell a story can sign up through the site — no experience required. Doors 7:00pm, stories 7:30pm.",
     kind: "lineup",
     creative_category: "writing",
     venue_name: "Mrs. Murphy & Sons Irish Bistro",
     venue_address: "3905 N Lincoln Ave, Chicago, IL 60613",
     external_url: "https://www.storylabchicago.com/",
     external_organizer: "Story Lab Chicago",
-    source_note: "storylabchicago.com — third Thursday monthly; Aug 20, 2026 7:30 PM (doors 7:00 PM) is the only future date published.",
+    source_note:
+      "storylabchicago.com — third Thursday monthly; Aug 20, 2026 7:30 PM (doors 7:00 PM) is the only future date published.",
   },
   {
     key: "chi_this_much_is_true",
-    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fthis-much-is-true.jpg",
+    cover_url:
+      "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fthis-much-is-true.jpg",
     photo_credit_name: "This Much Is True",
     photo_credit_url: "https://www.thismuchistruechicago.com/",
     cadence: "dated",
@@ -568,14 +623,16 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Second Thursday of the month",
     title: "This Much Is True",
     tagline: "Monthly true-story show. Free, doors 7pm.",
-    description: "A monthly personal-narrative show running since 2008, with an all-new cast of tellers each month ranging from funny to raw. Free to attend; doors 7:00pm, stories 7:30pm.",
+    description:
+      "A monthly personal-narrative show running since 2008, with an all-new cast of tellers each month ranging from funny to raw. Free to attend; doors 7:00pm, stories 7:30pm.",
     kind: "lineup",
     creative_category: "writing",
     venue_name: "Mrs. Murphy & Sons Irish Bistro",
     venue_address: "3905 N Lincoln Ave, Chicago, IL 60613",
     external_url: "https://www.thismuchistruechicago.com/",
     external_organizer: "This Much Is True",
-    source_note: "thismuchistruechicago.com — second Thursday monthly; Aug 13, 2026 7:30 PM published.",
+    source_note:
+      "thismuchistruechicago.com — second Thursday monthly; Aug 13, 2026 7:30 PM published.",
   },
   {
     key: "chi_do_not_submit_lakeview",
@@ -585,14 +642,16 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Second Tuesday of the month",
     title: "Do Not Submit — Lakeview",
     tagline: "Free storytelling open mic. Sign-up 7:15pm.",
-    description: "A free neighborhood storytelling open mic: put your name on the list and take up to seven minutes for a personal story, folktale or piece of fiction. No experience needed, and listening-only is fine. Sign-up 7:15pm, stories 7:30pm.",
+    description:
+      "A free neighborhood storytelling open mic: put your name on the list and take up to seven minutes for a personal story, folktale or piece of fiction. No experience needed, and listening-only is fine. Sign-up 7:15pm, stories 7:30pm.",
     kind: "open_mic",
     creative_category: "writing",
     venue_name: "Olive Black",
     venue_address: "3032 N Lincoln Ave, Chicago, IL 60657",
     external_url: "https://www.donotsubmitchicago.com/",
     external_organizer: "Do Not Submit",
-    source_note: "donotsubmitchicago.com — Lakeview second Tuesday monthly, sign-up 7:15 PM, stories 7:30 PM, free.",
+    source_note:
+      "donotsubmitchicago.com — Lakeview second Tuesday monthly, sign-up 7:15 PM, stories 7:30 PM, free.",
   },
   {
     key: "chi_do_not_submit_andersonville",
@@ -602,18 +661,21 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Third Tuesday of the month",
     title: "Do Not Submit — Andersonville",
     tagline: "Free storytelling open mic at Hopleaf. Sign-up 7:15pm.",
-    description: "The Andersonville edition of Do Not Submit's free storytelling open mic. Names go on a list and each teller gets up to seven minutes — personal story, folktale or fiction. Sign-up 7:15pm, stories 7:30pm.",
+    description:
+      "The Andersonville edition of Do Not Submit's free storytelling open mic. Names go on a list and each teller gets up to seven minutes — personal story, folktale or fiction. Sign-up 7:15pm, stories 7:30pm.",
     kind: "open_mic",
     creative_category: "writing",
     venue_name: "Hopleaf Bar",
     venue_address: "5148 N Clark St, Chicago, IL 60640",
     external_url: "https://www.donotsubmitchicago.com/",
     external_organizer: "Do Not Submit",
-    source_note: "donotsubmitchicago.com — Andersonville third Tuesday monthly, sign-up 7:15 PM, free.",
+    source_note:
+      "donotsubmitchicago.com — Andersonville third Tuesday monthly, sign-up 7:15 PM, free.",
   },
   {
     key: "chi_test_literary_series",
-    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Ftest-literary-series.jpg",
+    cover_url:
+      "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Ftest-literary-series.jpg",
     photo_credit_name: "TEST Literary Series",
     photo_credit_url: "https://whistlerchicago.com/events/test-literary-series-aug-2026",
     cadence: "dated",
@@ -622,34 +684,45 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Monthly at The Whistler",
     title: "TEST Literary Series",
     tagline: "Interactive reading series. Doors 6pm, words 6:30pm.",
-    description: "A monthly reading series at The Whistler hosted by Nick Kirwen and Zach Kocanda, built around collaborative discussion rather than a straight lineup of readers. Doors 6:00pm, reading at 6:30pm.",
+    description:
+      "A monthly reading series at The Whistler hosted by Nick Kirwen and Zach Kocanda, built around collaborative discussion rather than a straight lineup of readers. Doors 6:00pm, reading at 6:30pm.",
     kind: "workshop_irl",
     creative_category: "writing",
     venue_name: "The Whistler",
     venue_address: "2421 N Milwaukee Ave, Chicago, IL 60647",
     external_url: "https://whistlerchicago.com/events/test-literary-series-aug-2026",
     external_organizer: "TEST Literary Series",
-    source_note: "whistlerchicago.com — Aug 12, 2026, doors 6:00 PM, words 6:30 PM; only future date published.",
+    source_note:
+      "whistlerchicago.com — Aug 12, 2026, doors 6:00 PM, words 6:30 PM; only future date published.",
   },
   {
     key: "chi_missspoken",
-    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fcoles-bar.jpg",
+    cover_url:
+      "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fcoles-bar.jpg",
     photo_credit_name: "Cole's Bar",
     photo_credit_url: "https://www.colesbarchicago.com/",
     cadence: "dated",
-    occurrences: ["2026-08-24T19:00", "2026-09-28T19:00", "2026-10-26T19:00", "2026-11-30T19:00", "2026-12-28T19:00"],
+    occurrences: [
+      "2026-08-24T19:00",
+      "2026-09-28T19:00",
+      "2026-10-26T19:00",
+      "2026-11-30T19:00",
+      "2026-12-28T19:00",
+    ],
     duration_minutes: 120,
     recurrence_label: "Monthly at Cole's Bar",
     title: "MissSpoken",
     tagline: "Free reading series. 21+, 7pm.",
-    description: "A monthly reading series at Cole's hosted by Jasmine Davila and Amy Eaton, featuring essays and stories by women, trans and nonbinary writers. Free, 21 and over, readers announced closer to each date.",
+    description:
+      "A monthly reading series at Cole's hosted by Jasmine Davila and Amy Eaton, featuring essays and stories by women, trans and nonbinary writers. Free, 21 and over, readers announced closer to each date.",
     kind: "lineup",
     creative_category: "writing",
     venue_name: "Cole's Bar",
     venue_address: "2338 N Milwaukee Ave, Chicago, IL 60647",
     external_url: "https://www.colesbarchicago.com/",
     external_organizer: "MissSpoken",
-    source_note: "colesbarchicago.com upcoming shows — MissSpoken dates Aug 24, Sep 28, Oct 26, Nov 30, Dec 28 2026, free, 21+.",
+    source_note:
+      "colesbarchicago.com upcoming shows — MissSpoken dates Aug 24, Sep 28, Oct 26, Nov 30, Dec 28 2026, free, 21+.",
   },
   {
     key: "chi_south_side_zine_fest",
@@ -659,7 +732,8 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Annual",
     title: "South Side Zine Fest + Carnival",
     tagline: "Free, all ages. 11am–4pm in Bridgeport.",
-    description: "Zine Club Chicago's annual South Side zine fest: tables of self-published work, trading, workshops and carnival games at the Daley branch library. Free and all ages; an afterparty follows at Maria's from 5pm (21+).",
+    description:
+      "Zine Club Chicago's annual South Side zine fest: tables of self-published work, trading, workshops and carnival games at the Daley branch library. Free and all ages; an afterparty follows at Maria's from 5pm (21+).",
     kind: "other",
     creative_category: "writing",
     secondary_categories: ["visual_art"],
@@ -667,11 +741,13 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     venue_address: "3400 S Halsted St, Chicago, IL 60608",
     external_url: "https://zineclubchicago.com/",
     external_organizer: "Zine Club Chicago",
-    source_note: "zineclubchicago.com — Aug 15, 2026, 11:00 AM–4:00 PM, free, all ages; afterparty 5 PM at Maria's (21+).",
+    source_note:
+      "zineclubchicago.com — Aug 15, 2026, 11:00 AM–4:00 PM, free, all ages; afterparty 5 PM at Maria's (21+).",
   },
   {
     key: "chi_po_box_fiber_night",
-    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fpo-box-collective.jpg",
+    cover_url:
+      "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fpo-box-collective.jpg",
     photo_credit_name: "PO Box Collective",
     photo_credit_url: "https://www.poboxcollective.us/",
     cadence: "dated",
@@ -680,18 +756,21 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "First Fridays and third Mondays",
     title: "Fiber Night at PO Box Collective",
     tagline: "Free craft night, 6–8pm. Bring your project.",
-    description: "A free fiber-craft hangout in Rogers Park for sewing, knitting, crochet, embroidery, weaving and anything adjacent. Bring your own project and snacks; the collective describes it as an easy room for introverts. First Fridays and third Mondays, 6:00–8:00pm.",
+    description:
+      "A free fiber-craft hangout in Rogers Park for sewing, knitting, crochet, embroidery, weaving and anything adjacent. Bring your own project and snacks; the collective describes it as an easy room for introverts. First Fridays and third Mondays, 6:00–8:00pm.",
     kind: "workshop_irl",
     creative_category: "visual_art",
     venue_name: "PO Box Collective",
     venue_address: "6900 N Glenwood Ave, Chicago, IL 60626",
     external_url: "https://www.poboxcollective.us/",
     external_organizer: "PO Box Collective",
-    source_note: "poboxcollective.us — Fiber Night, first Fridays and third Mondays, 6:00–8:00 PM, free.",
+    source_note:
+      "poboxcollective.us — Fiber Night, first Fridays and third Mondays, 6:00–8:00 PM, free.",
   },
   {
     key: "chi_po_box_poetry_series",
-    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fpo-box-collective.jpg",
+    cover_url:
+      "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fpo-box-collective.jpg",
     photo_credit_name: "PO Box Collective",
     photo_credit_url: "https://www.poboxcollective.us/",
     cadence: "dated",
@@ -700,18 +779,21 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Monthly",
     title: "PO Box Poetry Series",
     tagline: "Writing workshop, potluck, then readings. Free.",
-    description: "A monthly poetry night in Rogers Park that starts with a generative writing workshop and free pizza at 6:30pm, breaks for social time at 7:30pm, and closes with featured poets reading from 8:00pm. Free and open to the public.",
+    description:
+      "A monthly poetry night in Rogers Park that starts with a generative writing workshop and free pizza at 6:30pm, breaks for social time at 7:30pm, and closes with featured poets reading from 8:00pm. Free and open to the public.",
     kind: "workshop_irl",
     creative_category: "writing",
     venue_name: "PO Box Collective",
     venue_address: "6900 N Glenwood Ave, Chicago, IL 60626",
     external_url: "https://www.poboxcollective.us/",
     external_organizer: "PO Box Collective",
-    source_note: "poboxcollective.us — Aug 20, 2026 6:30–9:30 PM: workshop 6:30, social 7:30, readings 8:00; free.",
+    source_note:
+      "poboxcollective.us — Aug 20, 2026 6:30–9:30 PM: workshop 6:30, social 7:30, readings 8:00; free.",
   },
   {
     key: "chi_songwriters_collective_brig_open_mic",
-    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fsongwriters-collective.jpg",
+    cover_url:
+      "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fsongwriters-collective.jpg",
     photo_credit_name: "Chicago Songwriters Collective",
     photo_credit_url: "https://www.meetup.com/vocalists-151/",
     cadence: "dated",
@@ -720,18 +802,21 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Published monthly by the collective",
     title: "Songwriters Open Mic at The Brig",
     tagline: "Chicago Songwriters Collective night, 7pm.",
-    description: "An open mic run by the Chicago Songwriters Collective for people playing their own material. Bring an instrument and a song; RSVP through the collective's Meetup page.",
+    description:
+      "An open mic run by the Chicago Songwriters Collective for people playing their own material. Bring an instrument and a song; RSVP through the collective's Meetup page.",
     kind: "open_mic",
     creative_category: "music",
     venue_name: "The Brig",
     venue_address: "5748 W Lawrence Ave, Chicago, IL 60630",
     external_url: "https://www.meetup.com/vocalists-151/",
     external_organizer: "The Chicago Songwriters Collective",
-    source_note: "meetup.com/vocalists-151 — 'Songwriters Open Mic at The Brig', Mon Aug 10, 2026, 7:00 PM.",
+    source_note:
+      "meetup.com/vocalists-151 — 'Songwriters Open Mic at The Brig', Mon Aug 10, 2026, 7:00 PM.",
   },
   {
     key: "chi_songwriters_collective_song_sharing",
-    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fsongwriters-collective.jpg",
+    cover_url:
+      "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fsongwriters-collective.jpg",
     photo_credit_name: "Chicago Songwriters Collective",
     photo_credit_url: "https://www.meetup.com/vocalists-151/",
     cadence: "dated",
@@ -740,14 +825,16 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Fourth Monday of the month",
     title: "Song Sharing & Jam Night — Chicago Songwriters Collective",
     tagline: "Share a song, get feedback, jam. 7pm.",
-    description: "The collective's fourth-Monday session: members play original songs for each other, trade supportive feedback on craft, and jam afterwards. Useful whether you're looking for critique or collaborators. RSVP through Meetup.",
+    description:
+      "The collective's fourth-Monday session: members play original songs for each other, trade supportive feedback on craft, and jam afterwards. Useful whether you're looking for critique or collaborators. RSVP through Meetup.",
     kind: "workshop_irl",
     creative_category: "music",
     venue_name: "SAE Institute Chicago",
     venue_address: "820 N Orleans St #125, Chicago, IL 60610",
     external_url: "https://www.meetup.com/vocalists-151/",
     external_organizer: "The Chicago Songwriters Collective",
-    source_note: "meetup.com/vocalists-151 — '4th Monday Live Song Sharing/Jam Night', Mon Aug 24, 2026, 7:00 PM.",
+    source_note:
+      "meetup.com/vocalists-151 — '4th Monday Live Song Sharing/Jam Night', Mon Aug 24, 2026, 7:00 PM.",
   },
   {
     key: "chi_chipy_main_meeting",
@@ -757,7 +844,8 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Roughly monthly; venue rotates",
     title: "ChiPy __main__ Meeting",
     tagline: "Chicago Python user group. Free, RSVP required.",
-    description: "The Chicago Python user group's main meeting: several short talks from members, from beginner-friendly to deep technical, followed by hanging around. Venue rotates between host companies; RSVP on chipy.org before the day of the meeting.",
+    description:
+      "The Chicago Python user group's main meeting: several short talks from members, from beginner-friendly to deep technical, followed by hanging around. Venue rotates between host companies; RSVP on chipy.org before the day of the meeting.",
     kind: "networking",
     creative_category: "games_tech",
     venue_name: "Slalom Build",
@@ -774,18 +862,21 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Published per meeting",
     title: "Digital Delivery Chicago",
     tagline: "Talks for everyone who ships software. Free.",
-    description: "A meetup for the whole product team — frontend and backend developers, designers, QA and product people — with a talk and time to meet other people building software in Chicago. Formerly Chicago JavaScript. Free, register through the group's page.",
+    description:
+      "A meetup for the whole product team — frontend and backend developers, designers, QA and product people — with a talk and time to meet other people building software in Chicago. Formerly Chicago JavaScript. Free, register through the group's page.",
     kind: "networking",
     creative_category: "games_tech",
     venue_name: "Aon Center",
     venue_address: "200 E Randolph St, Chicago, IL 60601",
     external_url: "https://www.meetup.com/js-chi/",
     external_organizer: "Digital Delivery Chicago (Bitovi)",
-    source_note: "meetup.com/js-chi and luma — Tue Aug 18, 2026, 5:30–8:00 PM at Aon Center, free registration.",
+    source_note:
+      "meetup.com/js-chi and luma — Tue Aug 18, 2026, 5:30–8:00 PM at Aon Center, free registration.",
   },
   {
     key: "chi_indie_game_showcase_2026",
-    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Findie-city-games-showcase.jpg",
+    cover_url:
+      "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Findie-city-games-showcase.jpg",
     photo_credit_name: "Indie City Games",
     photo_credit_url: "https://indiecitygames.org/calendar/cigs-2026",
     cadence: "dated",
@@ -794,7 +885,8 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Annual",
     title: "Chicago Indie Game Showcase 2026",
     tagline: "Sept 13, Ravenswood. Ticketed, sells out.",
-    description: "Indie City Games' one-day showcase of independent video games and tabletop work from Chicago and the Midwest, with an artist alley, developer meet-and-greets and guest speakers. VIP entry 1:00pm, show floor from 2:00pm. Tickets are sold in advance and past years have sold out; kids 10 and under get in free.",
+    description:
+      "Indie City Games' one-day showcase of independent video games and tabletop work from Chicago and the Midwest, with an artist alley, developer meet-and-greets and guest speakers. VIP entry 1:00pm, show floor from 2:00pm. Tickets are sold in advance and past years have sold out; kids 10 and under get in free.",
     kind: "lineup",
     creative_category: "games_tech",
     secondary_categories: ["visual_art"],
@@ -802,7 +894,8 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     venue_address: "4021 N Ravenswood Ave, Chicago, IL 60613",
     external_url: "https://indiecitygames.org/calendar/cigs-2026",
     external_organizer: "Indie City Games",
-    source_note: "indiecitygames.org/calendar/cigs-2026 — Sun Sep 13, 2026, 1:00–8:00 PM, ticketed via Tickettailor.",
+    source_note:
+      "indiecitygames.org/calendar/cigs-2026 — Sun Sep 13, 2026, 1:00–8:00 PM, ticketed via Tickettailor.",
   },
   {
     key: "chi_aiga_coworking_days",
@@ -812,14 +905,16 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Monthly; venue rotates",
     title: "AIGA Chicago Co-working Days",
     tagline: "Bring your work, work near other designers. 10am–4pm.",
-    description: "A monthly working session where Chicago designers bring whatever they're on and share a table for the day, with informal feedback along the way. The venue changes month to month; register through AIGA Chicago.",
+    description:
+      "A monthly working session where Chicago designers bring whatever they're on and share a table for the day, with informal feedback along the way. The venue changes month to month; register through AIGA Chicago.",
     kind: "workshop_irl",
     creative_category: "visual_art",
     venue_name: "Long Room Chicago",
     venue_address: "1612 W Irving Park Rd, Suite 1, Chicago, IL 60613",
     external_url: "https://chicago.aiga.org/events/",
     external_organizer: "AIGA Chicago",
-    source_note: "chicago.aiga.org/events — 'Co-working Days: August 2026', Fri Aug 21, 2026, 10:00 AM–4:00 PM, Long Room.",
+    source_note:
+      "chicago.aiga.org/events — 'Co-working Days: August 2026', Fri Aug 21, 2026, 10:00 AM–4:00 PM, Long Room.",
   },
   {
     key: "chi_aiga_coffee_and_crits",
@@ -829,32 +924,38 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Monthly; venue rotates",
     title: "AIGA Chicago Coffee & Crits",
     tagline: "Bring a project or portfolio for peer feedback.",
-    description: "A morning critique meetup: bring a project, a portfolio or a half-finished idea and get honest feedback from other designers over coffee. Register through AIGA Chicago; the location moves month to month.",
+    description:
+      "A morning critique meetup: bring a project, a portfolio or a half-finished idea and get honest feedback from other designers over coffee. Register through AIGA Chicago; the location moves month to month.",
     kind: "workshop_irl",
     creative_category: "visual_art",
     venue_name: "Friendly Coffee Lounge",
     venue_address: "6731 W Roosevelt Rd, Berwyn, IL 60402",
     external_url: "https://chicago.aiga.org/events/",
     external_organizer: "AIGA Chicago",
-    source_note: "chicago.aiga.org/events — 'Coffee & Crits: August 2026', Sun Aug 30, 2026, 9:00 AM–12:00 PM.",
+    source_note:
+      "chicago.aiga.org/events — 'Coffee & Crits: August 2026', Sun Aug 30, 2026, 9:00 AM–12:00 PM.",
   },
   {
     key: "chi_group_312_films_annual_report",
-    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fgroup-312-films.jpg",
+    cover_url:
+      "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Fgroup-312-films.jpg",
     photo_credit_name: "Group 312 Films",
-    photo_credit_url: "https://chicagofilmmakers.org/upcoming-screenings-and-events/group-312-films-2026-annual-report",
+    photo_credit_url:
+      "https://chicagofilmmakers.org/upcoming-screenings-and-events/group-312-films-2026-annual-report",
     cadence: "dated",
     occurrences: ["2026-08-29T19:00"],
     duration_minutes: 120,
     recurrence_label: "Annual",
     title: "Group 312 Films 2026 Annual Report",
     tagline: "15 short films by seven directors. $10.",
-    description: "Group 312 Films' yearly screening at Chicago Filmmakers' Firehouse Cinema: roughly 80 minutes of short narrative, experimental and music-video work made by the collective's directors around monthly themes. $10 at the door or in advance.",
+    description:
+      "Group 312 Films' yearly screening at Chicago Filmmakers' Firehouse Cinema: roughly 80 minutes of short narrative, experimental and music-video work made by the collective's directors around monthly themes. $10 at the door or in advance.",
     kind: "screening",
     creative_category: "film_video",
     venue_name: "Chicago Filmmakers (Firehouse Cinema)",
     venue_address: "1326 W Hollywood Ave, Chicago, IL 60660",
-    external_url: "https://chicagofilmmakers.org/upcoming-screenings-and-events/group-312-films-2026-annual-report",
+    external_url:
+      "https://chicagofilmmakers.org/upcoming-screenings-and-events/group-312-films-2026-annual-report",
     external_organizer: "Chicago Filmmakers",
     source_note: "chicagofilmmakers.org — Sat Aug 29, 2026, 7:00 PM, $10, Firehouse Cinema.",
   },
@@ -866,12 +967,14 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Monthly",
     title: "Queer Book Club at Unabridged",
     tagline: "Free monthly discussion, 7:30pm.",
-    description: "Unabridged's monthly book club reading through queer literature, alternating classics and contemporary work. August's pick is Garth Greenwell's What Belongs to You. Free; just read the book and turn up.",
+    description:
+      "Unabridged's monthly book club reading through queer literature, alternating classics and contemporary work. August's pick is Garth Greenwell's What Belongs to You. Free; just read the book and turn up.",
     kind: "workshop_irl",
     creative_category: "writing",
     venue_name: "Unabridged Bookstore",
     venue_address: "3251 N Broadway, Chicago, IL 60657",
-    external_url: "https://unabridgedbookstore.com/event/2026-08-25/queer-book-club-what-belongs-you-garth-greenwell",
+    external_url:
+      "https://unabridgedbookstore.com/event/2026-08-25/queer-book-club-what-belongs-you-garth-greenwell",
     external_organizer: "Unabridged Bookstore",
     source_note: "unabridgedbookstore.com — Tue Aug 25, 2026, 7:30 PM, free.",
   },
@@ -883,14 +986,16 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Published per event",
     title: "Move + Reading Night at the Wild Mile",
     tagline: "Walk or run, then read together outdoors.",
-    description: "Read & Run Chicago's outdoor reading nights pair a short walk or run with quiet reading time in a public space — this one with Urban Rivers at the Wild Mile floating park. Bring whatever you're reading.",
+    description:
+      "Read & Run Chicago's outdoor reading nights pair a short walk or run with quiet reading time in a public space — this one with Urban Rivers at the Wild Mile floating park. Bring whatever you're reading.",
     kind: "other",
     creative_category: "writing",
     venue_name: "Wild Mile",
     venue_address: "Chicago River at Goose Island, Chicago, IL",
     external_url: "https://www.readandrunchicago.com/events",
     external_organizer: "Read & Run Chicago",
-    source_note: "readandrunchicago.com/events — Tue Aug 18, 2026, 6:00–8:00 PM, with Urban Rivers.",
+    source_note:
+      "readandrunchicago.com/events — Tue Aug 18, 2026, 6:00–8:00 PM, with Urban Rivers.",
   },
   {
     key: "chi_read_and_run_fine_arts_building",
@@ -900,18 +1005,21 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Published per event",
     title: "Fun Run Before the Author Talk: Chicago's Fine Arts Building",
     tagline: "Free run, then an author talk with Keir Graff.",
-    description: "A free short run with Read & Run Chicago and the Chicago Public Library ahead of author Keir Graff's talk about the Fine Arts Building. Casual pace, no registration fee.",
+    description:
+      "A free short run with Read & Run Chicago and the Chicago Public Library ahead of author Keir Graff's talk about the Fine Arts Building. Casual pace, no registration fee.",
     kind: "other",
     creative_category: "writing",
     venue_name: "Fine Arts Building",
     venue_address: "410 S Michigan Ave, Chicago, IL 60605",
     external_url: "https://www.readandrunchicago.com/events",
     external_organizer: "Read & Run Chicago",
-    source_note: "readandrunchicago.com/events — Fri Aug 21, 2026, 1:00–2:00 PM, free, with Chicago Public Library.",
+    source_note:
+      "readandrunchicago.com/events — Fri Aug 21, 2026, 1:00–2:00 PM, free, with Chicago Public Library.",
   },
   {
     key: "chi_light_painting_workshop_fall_2026",
-    cover_url: "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Flight-painting-workshop.jpg",
+    cover_url:
+      "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/events%2Fchicago%2Flight-painting-workshop.jpg",
     photo_credit_name: "Chicago Photography Classes",
     photo_credit_url: "https://chicagophotoclasses.com/product/light-painting-workshop/",
     cadence: "dated",
@@ -920,12 +1028,14 @@ export const CHICAGO_SEED_EVENTS: SeedEvent[] = [
     recurrence_label: "Three-session program",
     title: "Light Painting Workshop (Fall 2026)",
     tagline: "Three sessions: on location, in studio, then editing.",
-    description: "A three-part light-painting course from Chicago Photography Classes. Session 1 shoots on location Sept 18, 7–10pm; session 2 is in studio Sept 25, 7–10pm; session 3 is a Zoom editing and photo-share on Oct 2, 7–9pm. $320 per person, capped at 16 participants with two instructors. Bring a camera and tripod; light-painting tools are provided.",
+    description:
+      "A three-part light-painting course from Chicago Photography Classes. Session 1 shoots on location Sept 18, 7–10pm; session 2 is in studio Sept 25, 7–10pm; session 3 is a Zoom editing and photo-share on Oct 2, 7–9pm. $320 per person, capped at 16 participants with two instructors. Bring a camera and tripod; light-painting tools are provided.",
     kind: "workshop_irl",
     creative_category: "visual_art",
     venue_name: "Chicago Photography Classes",
     external_url: "https://chicagophotoclasses.com/product/light-painting-workshop/",
     external_organizer: "Chicago Photography Classes",
-    source_note: "chicagophotoclasses.com — fall cohort Sep 18 / Sep 25 / Oct 2 2026, $320, max 16.",
+    source_note:
+      "chicagophotoclasses.com — fall cohort Sep 18 / Sep 25 / Oct 2 2026, $320, max 16.",
   },
 ];

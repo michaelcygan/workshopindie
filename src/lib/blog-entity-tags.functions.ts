@@ -25,11 +25,20 @@ export const getBlogPostEntityTagsForOwner = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const { getBlogPostEntityTagsServer } = await import("./blog-entity-tags.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: p } = await supabaseAdmin.from("blog_posts").select("created_by").eq("id", data.postId).maybeSingle();
+    const { data: p } = await supabaseAdmin
+      .from("blog_posts")
+      .select("created_by")
+      .eq("id", data.postId)
+      .maybeSingle();
     if (!p) throw new Error("Post not found.");
     const isOwner = p.created_by === context.userId;
     if (!isOwner) {
-      const { data: isAdmin } = await supabaseAdmin.from("user_roles").select("role").eq("user_id", context.userId).eq("role", "admin").maybeSingle();
+      const { data: isAdmin } = await supabaseAdmin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", context.userId)
+        .eq("role", "admin")
+        .maybeSingle();
       if (!isAdmin) throw domainError("FORBIDDEN", "Forbidden.");
     }
     return getBlogPostEntityTagsServer(data.postId, { publicOnly: false });
@@ -37,9 +46,7 @@ export const getBlogPostEntityTagsForOwner = createServerFn({ method: "GET" })
 
 export const setBlogPostEntityTagsForMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
-    z.object({ postId: z.string().uuid(), tags: tagsInput }).parse(d),
-  )
+  .inputValidator((d: unknown) => z.object({ postId: z.string().uuid(), tags: tagsInput }).parse(d))
   .handler(async ({ data, context }) => {
     const { setBlogPostEntityTagsForOwnerServer } = await import("./blog-entity-tags.server");
     return setBlogPostEntityTagsForOwnerServer(data.postId, context.userId, data.tags);
@@ -47,9 +54,7 @@ export const setBlogPostEntityTagsForMember = createServerFn({ method: "POST" })
 
 export const setBlogPostEntityTagsForAdmin = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
-    z.object({ postId: z.string().uuid(), tags: tagsInput }).parse(d),
-  )
+  .inputValidator((d: unknown) => z.object({ postId: z.string().uuid(), tags: tagsInput }).parse(d))
   .handler(async ({ data, context }) => {
     const { setBlogPostEntityTagsForAdminServer } = await import("./blog-entity-tags.server");
     return setBlogPostEntityTagsForAdminServer({ userId: context.userId }, data.postId, data.tags);
@@ -73,4 +78,3 @@ export const listBlogPostsForEntity = createServerFn({ method: "GET" })
       trustedOnly: data.trustedOnly ?? false,
     });
   });
-

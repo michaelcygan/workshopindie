@@ -4,11 +4,9 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
 function publicClient() {
-  return createClient<Database>(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_PUBLISHABLE_KEY!,
-    { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-  );
+  return createClient<Database>(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
+    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+  });
 }
 
 export type WorkProvenance = {
@@ -62,7 +60,11 @@ export type WorkFromSource = {
   cover_url: string | null;
   published_at: string | null;
   created_by: string;
-  author: { display_name: string | null; username: string | null; avatar_url: string | null } | null;
+  author: {
+    display_name: string | null;
+    username: string | null;
+    avatar_url: string | null;
+  } | null;
 };
 
 /**
@@ -94,14 +96,26 @@ export const getWorksBySource = createServerFn({ method: "POST" })
       if (data.collab_post_id) q = q.eq("source_collab_post_id", data.collab_post_id);
       const { data: rows } = await q;
       type Row = {
-        id: string; slug: string; title: string; excerpt: string | null;
-        cover_url: string | null; published_at: string | null; created_by: string;
-        profiles: { display_name: string | null; username: string | null; avatar_url: string | null }
-          | { display_name: string | null; username: string | null; avatar_url: string | null }[] | null;
+        id: string;
+        slug: string;
+        title: string;
+        excerpt: string | null;
+        cover_url: string | null;
+        published_at: string | null;
+        created_by: string;
+        profiles:
+          | { display_name: string | null; username: string | null; avatar_url: string | null }
+          | { display_name: string | null; username: string | null; avatar_url: string | null }[]
+          | null;
       };
       return ((rows ?? []) as unknown as Row[]).map((r) => ({
-        id: r.id, slug: r.slug, title: r.title, excerpt: r.excerpt,
-        cover_url: r.cover_url, published_at: r.published_at, created_by: r.created_by,
+        id: r.id,
+        slug: r.slug,
+        title: r.title,
+        excerpt: r.excerpt,
+        cover_url: r.cover_url,
+        published_at: r.published_at,
+        created_by: r.created_by,
         author: Array.isArray(r.profiles) ? (r.profiles[0] ?? null) : r.profiles,
       }));
     } catch {

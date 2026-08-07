@@ -118,7 +118,8 @@ export const unpinWork = createServerFn({ method: "POST" })
 export const reorderHostWorkPins = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: ReorderInput) => {
-    if (!input?.roomId || !Array.isArray(input?.orderedIds)) throw new Error("roomId and orderedIds required");
+    if (!input?.roomId || !Array.isArray(input?.orderedIds))
+      throw new Error("roomId and orderedIds required");
     return input;
   })
   .handler(async ({ data, context }) => {

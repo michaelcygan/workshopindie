@@ -2,11 +2,7 @@ import { Fragment, type ReactNode } from "react";
 import { isBlockedHost, isShortenerHost } from "@/lib/link-blocklist";
 import { UsernameMention } from "@/components/username-mention";
 import { EntityReferenceChip } from "@/components/entity/entity-reference-chip";
-import {
-  parseEntityBody,
-  flattenEntityBody,
-  extractBodyMentions,
-} from "@/lib/entities/parse";
+import { parseEntityBody, flattenEntityBody, extractBodyMentions } from "@/lib/entities/parse";
 
 /**
  * Today board body renderer.

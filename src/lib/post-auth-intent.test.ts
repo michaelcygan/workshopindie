@@ -15,29 +15,47 @@ import {
 // test environment without pulling in jsdom.
 class MemoryStorage {
   private map = new Map<string, string>();
-  get length() { return this.map.size; }
-  clear() { this.map.clear(); }
-  getItem(k: string) { return this.map.has(k) ? this.map.get(k)! : null; }
-  setItem(k: string, v: string) { this.map.set(k, String(v)); }
-  removeItem(k: string) { this.map.delete(k); }
-  key(i: number) { return Array.from(this.map.keys())[i] ?? null; }
+  get length() {
+    return this.map.size;
+  }
+  clear() {
+    this.map.clear();
+  }
+  getItem(k: string) {
+    return this.map.has(k) ? this.map.get(k)! : null;
+  }
+  setItem(k: string, v: string) {
+    this.map.set(k, String(v));
+  }
+  removeItem(k: string) {
+    this.map.delete(k);
+  }
+  key(i: number) {
+    return Array.from(this.map.keys())[i] ?? null;
+  }
 }
 
 const memory = new MemoryStorage() as unknown as Storage;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (globalThis as any).sessionStorage = memory;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-(globalThis as any).window = { sessionStorage: memory, location: { origin: "https://workshop.test" } };
+(globalThis as any).window = {
+  sessionStorage: memory,
+  location: { origin: "https://workshop.test" },
+};
 
 beforeEach(() => {
   sessionStorage.clear();
   __resetIntentGuards();
 });
 
-
 describe("post-auth intent", () => {
   it("serializes and reads a valid intent", () => {
-    setPostAuthIntent({ kind: "event_rsvp", payload: { event_id: "e1", status: "going" }, returnTo: "/e/abc" });
+    setPostAuthIntent({
+      kind: "event_rsvp",
+      payload: { event_id: "e1", status: "going" },
+      returnTo: "/e/abc",
+    });
     const intent = peekPostAuthIntent();
     expect(intent?.kind).toBe("event_rsvp");
     expect(intent?.payload.event_id).toBe("e1");
@@ -52,7 +70,10 @@ describe("post-auth intent", () => {
   });
 
   it("rejects expired intents", () => {
-    const stale = serializeIntent({ kind: "return_to", returnTo: "/groups" }, Date.now() - 60 * 60 * 1000);
+    const stale = serializeIntent(
+      { kind: "return_to", returnTo: "/groups" },
+      Date.now() - 60 * 60 * 1000,
+    );
     sessionStorage.setItem(INTENT_KEY, JSON.stringify(stale));
     expect(peekPostAuthIntent()).toBeNull();
   });

@@ -17,7 +17,9 @@ function youtubeIdFromUrl(url: string): string | null {
       const m = u.pathname.match(/\/(?:embed|shorts|v)\/([^/?#]+)/);
       if (m) return m[1];
     }
-  } catch { /* noop */ }
+  } catch {
+    /* noop */
+  }
   return null;
 }
 
@@ -40,7 +42,6 @@ export const getWorkSeo = createServerFn({ method: "GET" })
     return { ...row, cover_url: posterUrl };
   });
 
-
 export const getProfileSeo = createServerFn({ method: "GET" })
   .inputValidator((d: { username: string }) => ({ username: slug.parse(d.username) }))
   .handler(async ({ data }) => {
@@ -54,8 +55,7 @@ export const getProfileSeo = createServerFn({ method: "GET" })
     const { data: countRow } = await supabaseAdmin.rpc("profile_published_blog_count", {
       _profile_id: row.id,
     });
-    const published_blog_count =
-      typeof countRow === "number" ? countRow : Number(countRow ?? 0);
+    const published_blog_count = typeof countRow === "number" ? countRow : Number(countRow ?? 0);
     return { ...row, published_blog_count };
   });
 

@@ -41,18 +41,48 @@ export function detectLinkKind(url: string): DriveLinkKind {
 
   // Google
   if (host === "docs.google.com") {
-    if (path.startsWith("/document")) return { icon: FileText, label: "Google · Doc", color: "text-blue-600", bg: "bg-blue-500/10" };
-    if (path.startsWith("/spreadsheets")) return { icon: Sheet, label: "Google · Sheet", color: "text-emerald-600", bg: "bg-emerald-500/10" };
-    if (path.startsWith("/presentation")) return { icon: Presentation, label: "Google · Slides", color: "text-orange-600", bg: "bg-orange-500/10" };
-    if (path.startsWith("/forms")) return { icon: FileText, label: "Google · Form", color: "text-violet-600", bg: "bg-violet-500/10" };
+    if (path.startsWith("/document"))
+      return {
+        icon: FileText,
+        label: "Google · Doc",
+        color: "text-blue-600",
+        bg: "bg-blue-500/10",
+      };
+    if (path.startsWith("/spreadsheets"))
+      return {
+        icon: Sheet,
+        label: "Google · Sheet",
+        color: "text-emerald-600",
+        bg: "bg-emerald-500/10",
+      };
+    if (path.startsWith("/presentation"))
+      return {
+        icon: Presentation,
+        label: "Google · Slides",
+        color: "text-orange-600",
+        bg: "bg-orange-500/10",
+      };
+    if (path.startsWith("/forms"))
+      return {
+        icon: FileText,
+        label: "Google · Form",
+        color: "text-violet-600",
+        bg: "bg-violet-500/10",
+      };
   }
   if (host === "drive.google.com") {
-    return { icon: FolderOpen, label: "Google · Drive", color: "text-amber-600", bg: "bg-amber-500/10" };
+    return {
+      icon: FolderOpen,
+      label: "Google · Drive",
+      color: "text-amber-600",
+      bg: "bg-amber-500/10",
+    };
   }
 
   // Figma
   if (host === "figma.com" || host.endsWith(".figma.com")) {
-    if (path.includes("/board")) return { icon: Figma, label: "Figma · FigJam", color: "text-pink-600", bg: "bg-pink-500/10" };
+    if (path.includes("/board"))
+      return { icon: Figma, label: "Figma · FigJam", color: "text-pink-600", bg: "bg-pink-500/10" };
     return { icon: Figma, label: "Figma", color: "text-fuchsia-600", bg: "bg-fuchsia-500/10" };
   }
 
@@ -71,8 +101,15 @@ export function detectLinkKind(url: string): DriveLinkKind {
 
   // GitHub
   if (host === "github.com" || host.endsWith(".github.com")) {
-    if (/\/pull\//.test(path)) return { icon: GitPullRequest, label: "GitHub · PR", color: "text-violet-600", bg: "bg-violet-500/10" };
-    if (/\/blob\//.test(path) || /\/tree\//.test(path)) return { icon: Code2, label: "GitHub · Code", color: "text-ink", bg: "bg-ink/5" };
+    if (/\/pull\//.test(path))
+      return {
+        icon: GitPullRequest,
+        label: "GitHub · PR",
+        color: "text-violet-600",
+        bg: "bg-violet-500/10",
+      };
+    if (/\/blob\//.test(path) || /\/tree\//.test(path))
+      return { icon: Code2, label: "GitHub · Code", color: "text-ink", bg: "bg-ink/5" };
     return { icon: Github, label: "GitHub · Repo", color: "text-ink", bg: "bg-ink/5" };
   }
 

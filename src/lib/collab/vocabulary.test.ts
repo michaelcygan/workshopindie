@@ -7,7 +7,15 @@ import { join } from "node:path";
  * "In Progress" and "Published" (plus "Archived" as an owner state).
  * Retired words must not come back into Collab surfaces.
  */
-const BANNED = [/\bCasting\b/, /\bForming\b/, /\bMaking\b/, /\bClose\b/, /\bClosed\b/, /\bClosing\b/, /Open Collabs/];
+const BANNED = [
+  /\bCasting\b/,
+  /\bForming\b/,
+  /\bMaking\b/,
+  /\bClose\b/,
+  /\bClosed\b/,
+  /\bClosing\b/,
+  /Open Collabs/,
+];
 
 const FILES = [
   "src/routes/collab.$slug.tsx",

@@ -110,7 +110,8 @@ export const METRIC_DEFINITIONS: Record<string, MetricDefinition> = {
   },
   activated: {
     term: "Activated",
-    definition: "Member completed their first qualifying creative action at any point after signing up.",
+    definition:
+      "Member completed their first qualifying creative action at any point after signing up.",
   },
   d1: {
     term: "D1 Retained",
@@ -175,7 +176,11 @@ export function fmtNumber(n: number | null | undefined): string {
 
 export function fmtUsd(n: number | null | undefined): string {
   if (n === null || n === undefined || Number.isNaN(n)) return "—";
-  return n.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+  return n.toLocaleString(undefined, {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  });
 }
 
 export type Delta =
@@ -185,7 +190,8 @@ export type Delta =
 
 /** Never produce a percentage against a zero (or absent) prior period. */
 export function delta(current: number | null | undefined, prior: number | null | undefined): Delta {
-  if (current === null || current === undefined || prior === null || prior === undefined) return { kind: "none" };
+  if (current === null || current === undefined || prior === null || prior === undefined)
+    return { kind: "none" };
   const abs = current - prior;
   if (!prior) return abs === 0 ? { kind: "none" } : { kind: "absolute", abs };
   return { kind: "percent", abs, pct: (abs / prior) * 100 };
@@ -203,7 +209,10 @@ export type Ratio =
   | { kind: "ok"; pct: number; numerator: number; denominator: number; showCounts: boolean };
 
 /** Percentages always carry their denominator while samples are small. */
-export function ratio(numerator: number | null | undefined, denominator: number | null | undefined): Ratio {
+export function ratio(
+  numerator: number | null | undefined,
+  denominator: number | null | undefined,
+): Ratio {
   const n = numerator ?? 0;
   const d = denominator ?? 0;
   if (d < MIN_SAMPLE_FOR_PERCENT) return { kind: "insufficient", numerator: n, denominator: d };

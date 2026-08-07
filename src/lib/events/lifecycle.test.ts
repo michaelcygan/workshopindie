@@ -80,20 +80,31 @@ describe("windows", () => {
   });
 
   it("never opens participation on a draft or canceled event", () => {
-    expect(isParticipationOpen(base({ published_at: null }), at("2026-06-01T20:00:00.000Z"))).toBe(false);
-    expect(isParticipationOpen(base({ status: "canceled" }), at("2026-06-01T20:00:00.000Z"))).toBe(false);
+    expect(isParticipationOpen(base({ published_at: null }), at("2026-06-01T20:00:00.000Z"))).toBe(
+      false,
+    );
+    expect(isParticipationOpen(base({ status: "canceled" }), at("2026-06-01T20:00:00.000Z"))).toBe(
+      false,
+    );
   });
 });
 
 describe("discovery", () => {
   it("keeps a running event discoverable and drops it at the end", () => {
     expect(isDiscoverableNow(base(), at("2026-06-01T20:00:00.000Z"))).toBe(true);
-    expect(isDiscoverableNow(base(), at("2026-06-01T22:00:00.000Z" ))).toBe(false);
+    expect(isDiscoverableNow(base(), at("2026-06-01T22:00:00.000Z"))).toBe(false);
   });
 
   it("hides drafts and deleted events", () => {
-    expect(isDiscoverableNow(base({ published_at: null }), at("2026-06-01T10:00:00.000Z"))).toBe(false);
-    expect(isDiscoverableNow(base({ deleted_at: "2026-01-02T00:00:00.000Z" }), at("2026-06-01T10:00:00.000Z"))).toBe(false);
+    expect(isDiscoverableNow(base({ published_at: null }), at("2026-06-01T10:00:00.000Z"))).toBe(
+      false,
+    );
+    expect(
+      isDiscoverableNow(
+        base({ deleted_at: "2026-01-02T00:00:00.000Z" }),
+        at("2026-06-01T10:00:00.000Z"),
+      ),
+    ).toBe(false);
   });
 });
 
@@ -101,9 +112,9 @@ describe("labels", () => {
   it("uses calm, human status copy", () => {
     expect(eventStatusLabel(base(), at("2026-05-01T00:00:00.000Z"))).toBe("Upcoming");
     expect(eventStatusLabel(base(), at("2026-06-01T20:00:00.000Z"))).toBe("Happening now");
-    expect(eventStatusLabel(base(), new Date(new Date("2026-06-01T22:00:00.000Z").getTime() + H))).toBe(
-      "Posting open for 24 hours",
-    );
+    expect(
+      eventStatusLabel(base(), new Date(new Date("2026-06-01T22:00:00.000Z").getTime() + H)),
+    ).toBe("Posting open for 24 hours");
     expect(eventStatusLabel(base(), at("2026-06-05T00:00:00.000Z"))).toBe("Archived");
     expect(eventStatusLabel(base({ status: "canceled" }))).toBe("Canceled");
   });

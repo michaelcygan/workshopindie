@@ -18,7 +18,10 @@ export const logShare = createServerFn({ method: "POST" })
         entity_id: data.entityId,
         channel: data.channel,
       })
-      .then(() => null, () => null);
+      .then(
+        () => null,
+        () => null,
+      );
     return { ok: true as const };
   });
 

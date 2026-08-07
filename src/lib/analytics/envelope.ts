@@ -17,8 +17,7 @@ export type Panel<T> = {
 };
 
 export function ok<T>(data: T): Panel<T> {
-  const isEmpty =
-    data === null || data === undefined || (Array.isArray(data) && data.length === 0);
+  const isEmpty = data === null || data === undefined || (Array.isArray(data) && data.length === 0);
   return { data, status: isEmpty ? "empty" : "ok" };
 }
 

@@ -6,7 +6,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { normalizeUrl } from "@/lib/url-normalize";
 import { checkUrlSafety, safeImageUrl, safetyMessage } from "@/lib/url-metadata/safety";
-import { clampText, detectProvider, cleanUrl, categoryFor, resolveUrlMetadata } from "@/lib/url-metadata/resolve";
+import {
+  clampText,
+  detectProvider,
+  cleanUrl,
+  categoryFor,
+  resolveUrlMetadata,
+} from "@/lib/url-metadata/resolve";
 import { MAX_INFLUENCES } from "@/lib/influences/schemas";
 import type { AddInfluenceInput, ResolvedInfluenceMeta } from "@/lib/influences/schemas";
 
@@ -58,7 +64,9 @@ export async function prepareExternalInfluence(
     if (check.reason === "blocked") {
       try {
         await logBlockedUrl(userId, new URL(normalized).hostname.replace(/^www\./, ""));
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     throw new Error(safetyMessage(check.reason));
   }
@@ -98,9 +106,12 @@ async function nextPosition(db: Db, userId: string): Promise<number> {
 }
 
 function friendlyDbError(message: string): string {
-  if (/at most 10 influences/i.test(message)) return `You can have at most ${MAX_INFLUENCES} influences.`;
-  if (/uq_profile_influences_work/i.test(message)) return "That Work is already one of your influences.";
-  if (/uq_profile_influences_url/i.test(message)) return "That link is already one of your influences.";
+  if (/at most 10 influences/i.test(message))
+    return `You can have at most ${MAX_INFLUENCES} influences.`;
+  if (/uq_profile_influences_work/i.test(message))
+    return "That Work is already one of your influences.";
+  if (/uq_profile_influences_url/i.test(message))
+    return "That link is already one of your influences.";
   return message;
 }
 
@@ -145,7 +156,10 @@ export async function insertInfluence(db: Db, userId: string, input: AddInfluenc
       source_kind: "external",
       external_url: meta.url,
       normalized_url: normalizedKey(meta.url),
-      title: clampText(input.title, 200) ?? clampText(meta.title, 200) ?? new URL(meta.url).hostname.replace(/^www\./, ""),
+      title:
+        clampText(input.title, 200) ??
+        clampText(meta.title, 200) ??
+        new URL(meta.url).hostname.replace(/^www\./, ""),
       creator_name: clampText(input.creator_name, 160),
       category: clampText(input.category, 40) ?? meta.category,
       thumbnail_url: safeImageUrl(input.thumbnail_url) ?? meta.thumbnail_url,
@@ -160,9 +174,20 @@ export async function insertInfluence(db: Db, userId: string, input: AddInfluenc
 export async function patchInfluence(
   db: Db,
   userId: string,
-  input: { id: string; title?: string | null; creator_name?: string | null; category?: string | null; thumbnail_url?: string | null },
+  input: {
+    id: string;
+    title?: string | null;
+    creator_name?: string | null;
+    category?: string | null;
+    thumbnail_url?: string | null;
+  },
 ) {
-  const patch: { title?: string | null; creator_name?: string | null; category?: string | null; thumbnail_url?: string | null } = {};
+  const patch: {
+    title?: string | null;
+    creator_name?: string | null;
+    category?: string | null;
+    thumbnail_url?: string | null;
+  } = {};
   if (input.title !== undefined) patch.title = clampText(input.title, 200);
   if (input.creator_name !== undefined) patch.creator_name = clampText(input.creator_name, 160);
   if (input.category !== undefined) patch.category = clampText(input.category, 40);
@@ -200,16 +225,17 @@ async function resequence(db: Db, userId: string) {
     data.map((row, i) =>
       row.position === i
         ? Promise.resolve()
-        : db.from("profile_influences").update({ position: i }).eq("id", row.id).eq("profile_id", userId),
+        : db
+            .from("profile_influences")
+            .update({ position: i })
+            .eq("id", row.id)
+            .eq("profile_id", userId),
     ),
   );
 }
 
 export async function applyInfluenceOrder(db: Db, userId: string, ids: string[]) {
-  const { data } = await db
-    .from("profile_influences")
-    .select("id")
-    .eq("profile_id", userId);
+  const { data } = await db.from("profile_influences").select("id").eq("profile_id", userId);
   const owned = new Set((data ?? []).map((r) => r.id));
   const ordered = ids.filter((id) => owned.has(id));
   await Promise.all(

@@ -8,11 +8,9 @@ import { createHash } from "crypto";
 import { moderateOrThrow } from "./moderation/service.server";
 
 function publicClient() {
-  return createClient<Database>(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_PUBLISHABLE_KEY!,
-    { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-  );
+  return createClient<Database>(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
+    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+  });
 }
 
 function hashIp(ip: string | null): string | null {
@@ -22,17 +20,20 @@ function hashIp(ip: string | null): string | null {
 
 export const submitGuestEventRsvp = createServerFn({ method: "POST" })
   .inputValidator((i) =>
-    z.object({
-      eventId: z.string().uuid(),
-      name: z.string().min(1).max(80),
-      email: z.string().email().max(255),
-      note: z.string().max(280).optional().nullable(),
-      status: z.enum(["going", "maybe", "declined"]).default("going"),
-    }).parse(i)
+    z
+      .object({
+        eventId: z.string().uuid(),
+        name: z.string().min(1).max(80),
+        email: z.string().email().max(255),
+        note: z.string().max(280).optional().nullable(),
+        status: z.enum(["going", "maybe", "declined"]).default("going"),
+      })
+      .parse(i),
   )
   .handler(async ({ data }) => {
     await moderateOrThrow({ userId: null, surface: "event_guest_rsvp", text: data.name });
-    if (data.note) await moderateOrThrow({ userId: null, surface: "event_guest_rsvp", text: data.note });
+    if (data.note)
+      await moderateOrThrow({ userId: null, surface: "event_guest_rsvp", text: data.note });
     const supabase = publicClient();
     const claimToken = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -89,13 +90,14 @@ export const claimGuestEventRsvp = createServerFn({ method: "POST" })
       .eq("id", rsvp.id);
     if (updateErr) throw new Error(updateErr.message);
 
-    const { error: rsvpErr } = await supabase
-      .from("group_event_rsvps")
-      .upsert({
+    const { error: rsvpErr } = await supabase.from("group_event_rsvps").upsert(
+      {
         event_id: rsvp.event_id,
         user_id: context.userId,
         status: rsvp.status as Database["public"]["Enums"]["group_event_rsvp_status"],
-      }, { onConflict: "event_id, user_id" });
+      },
+      { onConflict: "event_id, user_id" },
+    );
     if (rsvpErr) throw new Error(rsvpErr.message);
     return { event_id: rsvp.event_id };
   });

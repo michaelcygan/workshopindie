@@ -84,8 +84,7 @@ type WorkRow = {
 const WORK_FIELDS = "id,slug,title,category,subtype,cover_url,status,visibility";
 
 function workHit(r: WorkRow, mine: boolean): EntitySearchHit {
-  const state =
-    r.status !== "published" ? "Draft" : r.visibility !== "public" ? "Unlisted" : null;
+  const state = r.status !== "published" ? "Draft" : r.visibility !== "public" ? "Unlisted" : null;
   const base = r.subtype || titleCase(r.category) || "Work";
   return {
     ...makeEntityRef(
@@ -94,9 +93,7 @@ function workHit(r: WorkRow, mine: boolean): EntitySearchHit {
         id: r.id,
         label: r.title,
         image: r.cover_url,
-        sublabel: [state, mine && !state ? "Your piece" : null, base]
-          .filter(Boolean)
-          .join(" · "),
+        sublabel: [state, mine && !state ? "Your piece" : null, base].filter(Boolean).join(" · "),
       },
     ),
     mine,
@@ -193,7 +190,10 @@ export async function searchCollabs(opts: EntitySearchOptions): Promise<EntitySe
   const out: EntitySearchHit[] = [];
 
   if (viewerId) {
-    let mine = base().eq("user_id", viewerId).order("created_at", { ascending: false }).limit(limit);
+    let mine = base()
+      .eq("user_id", viewerId)
+      .order("created_at", { ascending: false })
+      .limit(limit);
     if (context === "conversation") mine = recruitingOnly(mine);
     if (q) mine = mine.ilike("title", `%${q}%`);
     const { data } = await mine;
@@ -350,13 +350,15 @@ export async function searchProfiles(opts: EntitySearchOptions): Promise<EntityS
     .or(`username.ilike.${q}%,display_name.ilike.%${q}%`)
     .not("username", "is", null)
     .limit(limit);
-  return ((data ?? []) as Array<{
-    id: string;
-    username: string | null;
-    display_name: string | null;
-    avatar_url: string | null;
-    headline: string | null;
-  }>)
+  return (
+    (data ?? []) as Array<{
+      id: string;
+      username: string | null;
+      display_name: string | null;
+      avatar_url: string | null;
+      headline: string | null;
+    }>
+  )
     .filter((r) => r.username)
     .map((r) =>
       makeEntityRef(
@@ -387,13 +389,15 @@ export async function searchBlogPosts(opts: EntitySearchOptions): Promise<Entity
     .limit(limit);
   if (q) req = req.ilike("title", `%${q}%`);
   const { data } = await req;
-  return ((data ?? []) as Array<{
-    id: string;
-    slug: string;
-    title: string;
-    author_name: string | null;
-    cover_image_url: string | null;
-  }>).map((r) =>
+  return (
+    (data ?? []) as Array<{
+      id: string;
+      slug: string;
+      title: string;
+      author_name: string | null;
+      cover_image_url: string | null;
+    }>
+  ).map((r) =>
     makeEntityRef(
       { kind: "post", slug: r.slug },
       {

@@ -55,7 +55,11 @@ export function RenderLinks({ text }: { text: string }) {
     while ((m = BARE_URL.exec(chunk)) !== null) {
       if (m.index > last) nodes.push(chunk.slice(last, m.index));
       const url = m[1];
-      nodes.push(<ExternalLink key={`u-${key++}`} href={url}>{url}</ExternalLink>);
+      nodes.push(
+        <ExternalLink key={`u-${key++}`} href={url}>
+          {url}
+        </ExternalLink>,
+      );
       last = m.index + url.length;
     }
     if (last < chunk.length) nodes.push(chunk.slice(last));
@@ -67,9 +71,17 @@ export function RenderLinks({ text }: { text: string }) {
     if (match.index > lastIndex) pushPlain(text.slice(lastIndex, match.index));
     const [, label, href] = match;
     if (href.startsWith("/")) {
-      nodes.push(<InternalLink key={`l-${key++}`} href={href}>{label}</InternalLink>);
+      nodes.push(
+        <InternalLink key={`l-${key++}`} href={href}>
+          {label}
+        </InternalLink>,
+      );
     } else {
-      nodes.push(<ExternalLink key={`l-${key++}`} href={href}>{label}</ExternalLink>);
+      nodes.push(
+        <ExternalLink key={`l-${key++}`} href={href}>
+          {label}
+        </ExternalLink>,
+      );
     }
     lastIndex = match.index + match[0].length;
   }

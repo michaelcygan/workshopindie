@@ -25,10 +25,7 @@ export function PublicRecentWorkCarousel({ works }: { works: PublicWorkTile[] })
           <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
             Made on Workshop
           </p>
-          <h2
-            id="recent-work"
-            className="mt-1 font-display text-[22px] text-ink md:text-[28px]"
-          >
+          <h2 id="recent-work" className="mt-1 font-display text-[22px] text-ink md:text-[28px]">
             Recent Work
           </h2>
         </div>

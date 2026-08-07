@@ -37,10 +37,9 @@ export const getUsageSummary = createServerFn({ method: "GET" })
 
     // Blog publications this month (advisory RPC used by gate is a consumer;
     // the count function is safe to read on its own).
-    const { data: blogUsed } = await context.supabase.rpc(
-      "blog_member_publications_this_month",
-      { _user_id: context.userId },
-    );
+    const { data: blogUsed } = await context.supabase.rpc("blog_member_publications_this_month", {
+      _user_id: context.userId,
+    });
 
     // Lounge audio minutes this month + limit.
     const lounge = await resolveLoungeAudioAccess(context.userId);

@@ -7,11 +7,9 @@ import { withOpLog } from "@/lib/obs/log";
 import type { Database } from "@/integrations/supabase/types";
 
 function publicClient() {
-  return createClient<Database>(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_PUBLISHABLE_KEY!,
-    { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-  );
+  return createClient<Database>(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
+    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+  });
 }
 
 const EVENT_FIELDS =
@@ -30,7 +28,9 @@ export const getEventBySlug = createServerFn({ method: "GET" })
     const supabase = publicClient();
     const { data: row, error } = await supabase
       .from("group_events")
-      .select(`${EVENT_FIELDS},group:groups!group_events_group_id_fkey!inner(id,slug,name,avatar_url,kind,accent_color,visibility,deleted_at)`)
+      .select(
+        `${EVENT_FIELDS},group:groups!group_events_group_id_fkey!inner(id,slug,name,avatar_url,kind,accent_color,visibility,deleted_at)`,
+      )
       .eq("slug", data.eventSlug)
       .is("deleted_at", null)
       .maybeSingle();
@@ -52,7 +52,9 @@ export const getEventBySlugAsViewer = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
       .from("group_events")
-      .select(`${EVENT_FIELDS},group:groups!group_events_group_id_fkey!inner(id,slug,name,avatar_url,kind,accent_color,visibility,deleted_at)`)
+      .select(
+        `${EVENT_FIELDS},group:groups!group_events_group_id_fkey!inner(id,slug,name,avatar_url,kind,accent_color,visibility,deleted_at)`,
+      )
       .eq("slug", data.eventSlug)
       .is("deleted_at", null)
       .maybeSingle();
@@ -63,14 +65,14 @@ export const getEventBySlugAsViewer = createServerFn({ method: "POST" })
     return toPublicFlyer(row as typeof row & { online_url: string | null });
   });
 
-
-
 /** Public: upcoming public events that are tied to a city, for the homepage IRL strip. */
 export const listCityEventsStrip = createServerFn({ method: "GET" }).handler(async () => {
   const supabase = publicClient();
   const { data, error } = await supabase
     .from("group_events")
-    .select("id,slug,title,starts_at,city:cities!group_events_venue_city_id_fkey(name,slug),group:groups!group_events_group_id_fkey!inner(slug)")
+    .select(
+      "id,slug,title,starts_at,city:cities!group_events_venue_city_id_fkey(name,slug),group:groups!group_events_group_id_fkey!inner(slug)",
+    )
     .is("deleted_at", null)
     .eq("visibility", "public")
     .not("venue_city_id", "is", null)
@@ -105,7 +107,12 @@ export const listFeaturedEvents = createServerFn({ method: "GET" }).handler(asyn
   const { listDiscoveryEvents } = await import("@/lib/events/discovery.server");
   const fields = EVENT_FIELDS;
   // Featured first, then anything current, then the freshest recent past.
-  const featured = await listDiscoveryEvents({ when: "upcoming", featuredOnly: true, limit: 6, fields });
+  const featured = await listDiscoveryEvents({
+    when: "upcoming",
+    featuredOnly: true,
+    limit: 6,
+    fields,
+  });
   if (featured.length > 0) return featured;
   const upcoming = await listDiscoveryEvents({ when: "upcoming", limit: 6, fields });
   if (upcoming.length > 0) return upcoming;
@@ -181,12 +188,12 @@ export const listGroupEvents = createServerFn({ method: "GET" })
         .or(`ends_at.gte.${nowIso},and(ends_at.is.null,starts_at.gte.${graceIso})`);
     }
 
-    const { data: rows, error } = await q
-      .order("starts_at", { ascending: archive })
-      .limit(50);
+    const { data: rows, error } = await q.order("starts_at", { ascending: archive }).limit(50);
     if (error) throw new Error(error.message);
     // A recurring night shows once, as its nearest occurrence.
-    return collapseSeries((rows ?? []) as { series_key?: string | null }[]) as NonNullable<typeof rows>;
+    return collapseSeries((rows ?? []) as { series_key?: string | null }[]) as NonNullable<
+      typeof rows
+    >;
   });
 
 export const listEventGroups = createServerFn({ method: "POST" })
@@ -202,25 +209,30 @@ export const listEventGroups = createServerFn({ method: "POST" })
     return ((links ?? []) as unknown as Row[]).map((l) => l.groups);
   });
 
-
 export const listUpcomingForMyGroups = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
-    const { data: mem } = await supabase.from("group_members").select("group_id").eq("user_id", userId);
+    const { data: mem } = await supabase
+      .from("group_members")
+      .select("group_id")
+      .eq("user_id", userId);
     const ids = (mem ?? []).map((r) => r.group_id);
     if (ids.length === 0) return [];
-    const { DISCOVERABLE_STATUSES, sanitizeDiscoveryRows } = await import(
-      "@/lib/events/discovery.server"
-    );
+    const { DISCOVERABLE_STATUSES, sanitizeDiscoveryRows } =
+      await import("@/lib/events/discovery.server");
     const { data, error } = await supabase
       .from("group_events")
-      .select(`${EVENT_FIELDS},group:groups!group_events_group_id_fkey!inner(slug,name,avatar_url,deleted_at)`)
+      .select(
+        `${EVENT_FIELDS},group:groups!group_events_group_id_fkey!inner(slug,name,avatar_url,deleted_at)`,
+      )
       .in("group_id", ids)
       .in("status", DISCOVERABLE_STATUSES as never)
       .not("published_at", "is", null)
       .is("archived_at", null)
-      .or(`ends_at.gte.${new Date().toISOString()},and(ends_at.is.null,starts_at.gte.${new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString()})`)
+      .or(
+        `ends_at.gte.${new Date().toISOString()},and(ends_at.is.null,starts_at.gte.${new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString()})`,
+      )
       .is("deleted_at", null)
       .order("starts_at", { ascending: true })
       .limit(12);
@@ -251,8 +263,7 @@ export const rsvp = createServerFn({ method: "POST" })
           throw domainError("CLOSED", "This Event was canceled.");
         if (access.lifecycle === "draft")
           throw domainError("CLOSED", "This Event isn't published yet.");
-        if (!access.canRsvp)
-          throw domainError("CLOSED", "RSVPs are closed for this Event.");
+        if (!access.canRsvp) throw domainError("CLOSED", "RSVPs are closed for this Event.");
       }
 
       // Capacity/waitlist is settled inside one Postgres transaction, so two
@@ -269,7 +280,8 @@ export const rsvp = createServerFn({ method: "POST" })
       if (effectiveStatus === "full") throw rpcOutcomeError(effectiveStatus, "This Event is full.");
       if (effectiveStatus === "closed")
         throw rpcOutcomeError(effectiveStatus, "RSVPs are closed for this Event.");
-      if (effectiveStatus === "not_found") throw rpcOutcomeError(effectiveStatus, "Event not found");
+      if (effectiveStatus === "not_found")
+        throw rpcOutcomeError(effectiveStatus, "Event not found");
       if (effectiveStatus === "forbidden")
         throw rpcOutcomeError(effectiveStatus, "Please sign in to RSVP.");
 
@@ -287,7 +299,6 @@ export const rsvp = createServerFn({ method: "POST" })
       return { ok: true, status: effectiveStatus };
     }),
   );
-
 
 export const getMyRsvp = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -350,7 +361,9 @@ export const listMyUpcomingRsvps = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const { data, error } = await supabase
       .from("group_event_rsvps")
-      .select(`status,plus_ones,event:group_events!inner(${EVENT_FIELDS},group:groups!group_events_group_id_fkey!inner(slug,name,avatar_url))`)
+      .select(
+        `status,plus_ones,event:group_events!inner(${EVENT_FIELDS},group:groups!group_events_group_id_fkey!inner(slug,name,avatar_url))`,
+      )
       .eq("user_id", userId)
       .in("status", ["going", "maybe", "waitlist"])
       .order("created_at", { ascending: false });
@@ -358,7 +371,9 @@ export const listMyUpcomingRsvps = createServerFn({ method: "GET" })
     type R = { event: { starts_at: string; ends_at: string } };
     return ((data ?? []) as unknown as R[])
       .filter((r) => new Date(r.event.ends_at) > new Date())
-      .sort((a, b) => new Date(a.event.starts_at).getTime() - new Date(b.event.starts_at).getTime());
+      .sort(
+        (a, b) => new Date(a.event.starts_at).getTime() - new Date(b.event.starts_at).getTime(),
+      );
   });
 
 export const listMyPastRsvps = createServerFn({ method: "GET" })
@@ -367,7 +382,9 @@ export const listMyPastRsvps = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const { data, error } = await supabase
       .from("group_event_rsvps")
-      .select(`status,plus_ones,event:group_events!inner(${EVENT_FIELDS},group:groups!group_events_group_id_fkey!inner(slug,name,avatar_url))`)
+      .select(
+        `status,plus_ones,event:group_events!inner(${EVENT_FIELDS},group:groups!group_events_group_id_fkey!inner(slug,name,avatar_url))`,
+      )
       .eq("user_id", userId)
       .in("status", ["going", "maybe", "waitlist"])
       .order("created_at", { ascending: false });
@@ -378,7 +395,6 @@ export const listMyPastRsvps = createServerFn({ method: "GET" })
       .sort((a, b) => new Date(b.event.starts_at).getTime() - new Date(a.event.starts_at).getTime())
       .slice(0, 30);
   });
-
 
 const commentSchema = z.object({
   event_id: z.string().uuid(),
@@ -418,10 +434,7 @@ export const listEventComments = createServerFn({ method: "POST" })
     const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
 
     const [profilesRes, reactionsRes] = await Promise.all([
-      supabase
-        .from("profiles")
-        .select("id,username,display_name,avatar_url")
-        .in("id", userIds),
+      supabase.from("profiles").select("id,username,display_name,avatar_url").in("id", userIds),
       supabase
         .from("group_event_comment_reactions")
         .select("comment_id,user_id,kind")
@@ -469,7 +482,6 @@ export const toggleEventCommentLike = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { liked: true };
   });
-
 
 export const listEventUpdates = createServerFn({ method: "POST" })
   .inputValidator((i) => z.object({ event_id: z.string().uuid() }).parse(i))
@@ -565,12 +577,14 @@ function bucketAndFair(
 
 export const listEventAttendeeCollabs = createServerFn({ method: "POST" })
   .inputValidator((i) =>
-    z.object({
-      event_id: z.string().uuid(),
-      mode: z.enum(["fair", "byPerson"]).optional(),
-      perUserCap: z.number().int().min(1).max(6).optional(),
-      fairSize: z.number().int().min(1).max(48).optional(),
-    }).parse(i),
+    z
+      .object({
+        event_id: z.string().uuid(),
+        mode: z.enum(["fair", "byPerson"]).optional(),
+        perUserCap: z.number().int().min(1).max(6).optional(),
+        fairSize: z.number().int().min(1).max(48).optional(),
+      })
+      .parse(i),
   )
   .handler(async ({ data }) => {
     const ids = await attendeeUserIds(data.event_id);
@@ -579,7 +593,8 @@ export const listEventAttendeeCollabs = createServerFn({ method: "POST" })
     const mode = data.mode ?? "fair";
     const perUserCap = data.perUserCap ?? (mode === "byPerson" ? 3 : 2);
     const fairSize = data.fairSize ?? 12;
-    const select = "id,user_id,title,slug,category,description,timeline_text,timeline_mode,starts_on,ends_on,location_mode,compensation_type,status,created_at,resulting_work_id, user:profiles!collab_posts_user_id_fkey(id,display_name,username,avatar_url), city:cities!collab_posts_city_id_fkey(name), roles:collab_roles(id,role_name,sort_order)";
+    const select =
+      "id,user_id,title,slug,category,description,timeline_text,timeline_mode,starts_on,ends_on,location_mode,compensation_type,status,created_at,resulting_work_id, user:profiles!collab_posts_user_id_fkey(id,display_name,username,avatar_url), city:cities!collab_posts_city_id_fkey(name), roles:collab_roles(id,role_name,sort_order)";
     const { data: rows, error } = await supabase
       .from("collab_posts")
       .select(select)
@@ -589,18 +604,26 @@ export const listEventAttendeeCollabs = createServerFn({ method: "POST" })
       .limit(POOL_SIZE);
     if (error) throw new Error(error.message);
     const pool = (rows ?? []) as unknown as Record<string, unknown>[];
-    const { fair, byPerson, totalAttendees } = bucketAndFair(pool, "user_id", "user", perUserCap, fairSize);
+    const { fair, byPerson, totalAttendees } = bucketAndFair(
+      pool,
+      "user_id",
+      "user",
+      perUserCap,
+      fairSize,
+    );
     return { fair, byPerson, totalAttendees, totalItems: pool.length };
   });
 
 export const listEventAttendeeWorks = createServerFn({ method: "POST" })
   .inputValidator((i) =>
-    z.object({
-      event_id: z.string().uuid(),
-      mode: z.enum(["fair", "byPerson"]).optional(),
-      perUserCap: z.number().int().min(1).max(12).optional(),
-      fairSize: z.number().int().min(1).max(48).optional(),
-    }).parse(i),
+    z
+      .object({
+        event_id: z.string().uuid(),
+        mode: z.enum(["fair", "byPerson"]).optional(),
+        perUserCap: z.number().int().min(1).max(12).optional(),
+        fairSize: z.number().int().min(1).max(48).optional(),
+      })
+      .parse(i),
   )
   .handler(async ({ data }) => {
     const ids = await attendeeUserIds(data.event_id);
@@ -609,7 +632,8 @@ export const listEventAttendeeWorks = createServerFn({ method: "POST" })
     const mode = data.mode ?? "fair";
     const perUserCap = data.perUserCap ?? (mode === "byPerson" ? 6 : 3);
     const fairSize = data.fairSize ?? 12;
-    const select = "id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,created_by, work_credits(role_label, sort_order, display_name, profiles(id,display_name,username,avatar_url)), author:profiles!works_created_by_fkey(id,display_name,username,avatar_url)";
+    const select =
+      "id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,created_by, work_credits(role_label, sort_order, display_name, profiles(id,display_name,username,avatar_url)), author:profiles!works_created_by_fkey(id,display_name,username,avatar_url)";
     const { data: rows, error } = await supabase
       .from("works")
       .select(select)
@@ -621,7 +645,12 @@ export const listEventAttendeeWorks = createServerFn({ method: "POST" })
       .limit(POOL_SIZE);
     if (error) throw new Error(error.message);
     const pool = (rows ?? []) as unknown as Record<string, unknown>[];
-    const { fair, byPerson, totalAttendees } = bucketAndFair(pool, "created_by", "author", perUserCap, fairSize);
+    const { fair, byPerson, totalAttendees } = bucketAndFair(
+      pool,
+      "created_by",
+      "author",
+      perUserCap,
+      fairSize,
+    );
     return { fair, byPerson, totalAttendees, totalItems: pool.length };
   });
-

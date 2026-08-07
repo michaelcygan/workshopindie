@@ -38,8 +38,7 @@ export const BLOG_CATEGORIES: readonly BlogCategory[] = [
   {
     slug: "general",
     label: "General",
-    description:
-      "Notes on making things independently — process, craft, and how Workshop works.",
+    description: "Notes on making things independently — process, craft, and how Workshop works.",
     canonical: null,
   },
   {
@@ -73,8 +72,7 @@ export const BLOG_CATEGORIES: readonly BlogCategory[] = [
   {
     slug: "games-tech",
     label: "Games & Tech",
-    description:
-      "Games, software, and hardware built by small independent teams.",
+    description: "Games, software, and hardware built by small independent teams.",
     canonical: "games_tech",
   },
 ] as const;

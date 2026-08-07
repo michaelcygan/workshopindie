@@ -75,7 +75,6 @@ const URL_RE = /\bhttps?:\/\/[^\s<>()"']+/gi;
 const BARE_URL_RE =
   /\b(?:www\.[^\s<>()"']+|(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,24}(?:\/[^\s<>()"']*)?)/gi;
 
-
 /** Extract normalized absolute URL strings from a message body (bare URLs get https:// prepended). */
 export function extractUrls(body: string): string[] {
   if (!body) return [];

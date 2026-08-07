@@ -44,7 +44,6 @@ async function notifyPlus(
   });
 }
 
-
 export const listUserPlusGrants = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { userId: string }) => ({ userId: z.string().uuid().parse(d.userId) }))
@@ -64,9 +63,7 @@ export const listUserPlusGrants = createServerFn({ method: "GET" })
     if (grantsRes.error) throw new Error(grantsRes.error.message);
     const grants = grantsRes.data ?? [];
     const actorIds = Array.from(
-      new Set(
-        grants.flatMap((g: any) => [g.granted_by, g.revoked_by]).filter(Boolean) as string[],
-      ),
+      new Set(grants.flatMap((g: any) => [g.granted_by, g.revoked_by]).filter(Boolean) as string[]),
     );
     const { data: actors } = actorIds.length
       ? await admin.from("profiles").select("id,username,display_name").in("id", actorIds)
@@ -76,8 +73,8 @@ export const listUserPlusGrants = createServerFn({ method: "GET" })
       access,
       grants: grants.map((g: any) => ({
         ...g,
-        grantedByProfile: g.granted_by ? actorMap.get(g.granted_by) ?? null : null,
-        revokedByProfile: g.revoked_by ? actorMap.get(g.revoked_by) ?? null : null,
+        grantedByProfile: g.granted_by ? (actorMap.get(g.granted_by) ?? null) : null,
+        revokedByProfile: g.revoked_by ? (actorMap.get(g.revoked_by) ?? null) : null,
       })),
     };
   });
@@ -89,10 +86,10 @@ const createSchema = z
     durationMonths: z.number().int().min(1).max(120).nullable().optional(),
     note: z.string().max(500).nullable().optional(),
   })
-  .refine(
-    (d) => d.benefitType !== "months" || (d.durationMonths && d.durationMonths > 0),
-    { message: "durationMonths is required for month-based grants", path: ["durationMonths"] },
-  );
+  .refine((d) => d.benefitType !== "months" || (d.durationMonths && d.durationMonths > 0), {
+    message: "durationMonths is required for month-based grants",
+    path: ["durationMonths"],
+  });
 
 export const createAdminPlusGrant = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -125,7 +122,9 @@ export const createAdminPlusGrant = createServerFn({ method: "POST" })
 export const revokeAdminPlusGrant = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { grantId: string; reason?: string | null }) =>
-    z.object({ grantId: z.string().uuid(), reason: z.string().max(500).nullable().optional() }).parse(d),
+    z
+      .object({ grantId: z.string().uuid(), reason: z.string().max(500).nullable().optional() })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     await requireAdmin(context.supabase, context.userId);
@@ -150,11 +149,17 @@ export const revokeAdminPlusGrant = createServerFn({ method: "POST" })
       .eq("id", data.grantId);
     if (upErr) throw new Error(upErr.message);
 
-    await logAdminAction(context.supabase, "plus_grant_revoke", "profile", (existing as any).user_id, {
-      grantId: data.grantId,
-      benefitType: (existing as any).benefit_type,
-      reason: data.reason ?? null,
-    });
+    await logAdminAction(
+      context.supabase,
+      "plus_grant_revoke",
+      "profile",
+      (existing as any).user_id,
+      {
+        grantId: data.grantId,
+        benefitType: (existing as any).benefit_type,
+        reason: data.reason ?? null,
+      },
+    );
     await notifyPlus((existing as any).user_id, "plus_revoked", {
       grantId: data.grantId,
       benefitType: (existing as any).benefit_type,

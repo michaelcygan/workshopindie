@@ -36,7 +36,6 @@ async function assertPresenceOrThrow(userId: string, roomId: string) {
   return presence as { user_id: string; audio_state: string };
 }
 
-
 /**
  * Mint a short-lived Stream user token for the current user + room. Also
  * ensures the corresponding Stream `audio_room` call exists.
@@ -55,9 +54,7 @@ export const getLoungeStreamToken = createServerFn({ method: "POST" })
       .eq("id", userId)
       .maybeSingle();
     const displayName =
-      (profile?.display_name as string | null) ??
-      (profile?.username as string | null) ??
-      "Guest";
+      (profile?.display_name as string | null) ?? (profile?.username as string | null) ?? "Guest";
     const avatarUrl = (profile?.avatar_url as string | null) ?? null;
 
     const { issueLoungeStreamToken } = await import("@/lib/stream-video.server");
@@ -95,9 +92,7 @@ export const grantLoungeSpeaker = createServerFn({ method: "POST" })
 export const revokeLoungeSpeaker = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { roomId: string; userId?: string }) =>
-    z
-      .object({ roomId: z.string().uuid(), userId: z.string().uuid().optional() })
-      .parse(input),
+    z.object({ roomId: z.string().uuid(), userId: z.string().uuid().optional() }).parse(input),
   )
   .handler(async ({ data, context }) => {
     const target = data.userId ?? context.userId;
@@ -111,9 +106,7 @@ export const revokeLoungeSpeaker = createServerFn({ method: "POST" })
       if (!isAdmin) throw new Error("Not allowed");
     }
     try {
-      const { revokeLoungeSendAudio } = await import(
-        "@/lib/stream-video.server"
-      );
+      const { revokeLoungeSendAudio } = await import("@/lib/stream-video.server");
       await revokeLoungeSendAudio({ roomId: data.roomId, userId: target });
     } catch {
       // best effort

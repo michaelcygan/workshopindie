@@ -1,4 +1,10 @@
-import { METRIC_DEFINITIONS, PLUS_MONTHLY_PRICE_USD, fmtNumber, fmtUsd, ratio } from "./definitions";
+import {
+  METRIC_DEFINITIONS,
+  PLUS_MONTHLY_PRICE_USD,
+  fmtNumber,
+  fmtUsd,
+  ratio,
+} from "./definitions";
 
 /**
  * Deterministic descriptive analytics. No LLM, no speculation — these are
@@ -20,8 +26,15 @@ function dir(p: number | null): "up" | "down" | "flat" {
   return "flat";
 }
 
-export function pulseNarrative(kpi: any | null, revenue: any | null, cities: any[] = []): Narrative[] {
-  if (!kpi) return [{ text: "Analytics are unavailable right now, so no read can be generated.", tone: "note" }];
+export function pulseNarrative(
+  kpi: any | null,
+  revenue: any | null,
+  cities: any[] = [],
+): Narrative[] {
+  if (!kpi)
+    return [
+      { text: "Analytics are unavailable right now, so no read can be generated.", tone: "note" },
+    ];
   const out: Narrative[] = [];
 
   const signupsP = pctChange(kpi.signups_30d, kpi.signups_prev_30d);
@@ -38,7 +51,9 @@ export function pulseNarrative(kpi: any | null, revenue: any | null, cities: any
   const wacP = pctChange(kpi.wac, kpi.wac_prev);
   out.push({
     text: `${fmtNumber(kpi.wac)} members created something in the last 7 days${
-      wacP == null ? "" : `, ${wacP >= 0 ? "up" : "down"} ${Math.abs(wacP).toFixed(0)}% week over week`
+      wacP == null
+        ? ""
+        : `, ${wacP >= 0 ? "up" : "down"} ${Math.abs(wacP).toFixed(0)}% week over week`
     }. Of ${fmtNumber(kpi.mau)} members active in 30 days, ${fmtNumber(kpi.mac)} did something creative.`,
     tone: dir(wacP),
   });
@@ -81,7 +96,10 @@ export function pulseNarrative(kpi: any | null, revenue: any | null, cities: any
   }
 
   if ((kpi.open_reports ?? 0) > 0) {
-    out.push({ text: `${fmtNumber(kpi.open_reports)} moderation report${kpi.open_reports === 1 ? "" : "s"} awaiting review.`, tone: "down" });
+    out.push({
+      text: `${fmtNumber(kpi.open_reports)} moderation report${kpi.open_reports === 1 ? "" : "s"} awaiting review.`,
+      tone: "down",
+    });
   }
 
   return out;
@@ -107,7 +125,8 @@ export function retentionNarrative(retention: any[]): Narrative[] {
 
 export function surfaceNarrative(surfaces: any[]): Narrative[] {
   const rows = (surfaces ?? []).filter((s) => s.surface !== "presence");
-  if (!rows.length) return [{ text: "No surface activity recorded in the last 30 days.", tone: "note" }];
+  if (!rows.length)
+    return [{ text: "No surface activity recorded in the last 30 days.", tone: "note" }];
   const sorted = rows.slice().sort((a, b) => b.active_users - a.active_users);
   const top = sorted[0];
   const growing = rows
@@ -115,14 +134,23 @@ export function surfaceNarrative(surfaces: any[]): Narrative[] {
     .filter((x) => x.p != null)
     .sort((a, b) => (b.p as number) - (a.p as number));
   const out: Narrative[] = [
-    { text: `${top.surface} is the most-used surface: ${fmtNumber(top.active_users)} members, ${fmtNumber(top.actions)} actions in 30 days.`, tone: "note" },
+    {
+      text: `${top.surface} is the most-used surface: ${fmtNumber(top.active_users)} members, ${fmtNumber(top.actions)} actions in 30 days.`,
+      tone: "note",
+    },
   ];
   if (growing.length && (growing[0].p as number) > 0) {
-    out.push({ text: `Fastest growing: ${growing[0].s.surface} (+${(growing[0].p as number).toFixed(0)}% members vs prior 30 days).`, tone: "up" });
+    out.push({
+      text: `Fastest growing: ${growing[0].s.surface} (+${(growing[0].p as number).toFixed(0)}% members vs prior 30 days).`,
+      tone: "up",
+    });
   }
   const falling = growing[growing.length - 1];
   if (falling && (falling.p as number) < -10) {
-    out.push({ text: `Falling: ${falling.s.surface} (${(falling.p as number).toFixed(0)}% members vs prior 30 days).`, tone: "down" });
+    out.push({
+      text: `Falling: ${falling.s.surface} (${(falling.p as number).toFixed(0)}% members vs prior 30 days).`,
+      tone: "down",
+    });
   }
   return out;
 }
@@ -132,13 +160,19 @@ export function geoNarrative(cities: any[]): Narrative[] {
   if (!rows.length) return [{ text: "No members have set a home city yet.", tone: "note" }];
   const out: Narrative[] = [];
   const active = rows.filter((c) => (c.mau ?? 0) > 0);
-  out.push({ text: `${fmtNumber(rows.length)} cities have members; ${fmtNumber(active.length)} had someone active in the last 30 days.`, tone: "note" });
+  out.push({
+    text: `${fmtNumber(rows.length)} cities have members; ${fmtNumber(active.length)} had someone active in the last 30 days.`,
+    tone: "note",
+  });
   const emerging = rows
     .filter((c) => (c.new_30d ?? 0) > (c.new_prev_30d ?? 0) && (c.new_30d ?? 0) > 0)
     .sort((a, b) => b.new_30d - a.new_30d)
     .slice(0, 3);
   if (emerging.length) {
-    out.push({ text: `Growing fastest: ${emerging.map((c) => `${c.name} (+${fmtNumber(c.new_30d)})`).join(", ")}.`, tone: "up" });
+    out.push({
+      text: `Growing fastest: ${emerging.map((c) => `${c.name} (+${fmtNumber(c.new_30d)})`).join(", ")}.`,
+      tone: "up",
+    });
   }
   return out;
 }

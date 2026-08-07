@@ -46,9 +46,7 @@ function LaneRow({ item }: { item: HomeNowItem }) {
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center gap-2">
-        {item.isLive ? (
-          <span className="inline-block size-1.5 rounded-full bg-signal" />
-        ) : null}
+        {item.isLive ? <span className="inline-block size-1.5 rounded-full bg-signal" /> : null}
         <span
           className={cn(
             "font-display text-[10px] uppercase tracking-[0.12em]",

@@ -12,7 +12,14 @@ type Draft = {
   title: string;
   tagline: string | null;
   description: string | null;
-  kind: "open_mic" | "listening_party" | "networking" | "screening" | "workshop_irl" | "online" | "other";
+  kind:
+    | "open_mic"
+    | "listening_party"
+    | "networking"
+    | "screening"
+    | "workshop_irl"
+    | "online"
+    | "other";
   format: "in_person" | "online" | "hybrid";
   cover_url: string | null;
   starts_at: string | null; // ISO
@@ -44,7 +51,8 @@ const inputSchema = z.object({
           /^192\.168\./.test(host) ||
           /^169\.254\./.test(host) ||
           /^172\.(1[6-9]|2\d|3[01])\./.test(host)
-        ) return false;
+        )
+          return false;
         return true;
       } catch {
         return false;
@@ -87,7 +95,8 @@ function extractJsonLd(html: string): Record<string, unknown>[] {
     try {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        for (const it of parsed) if (it && typeof it === "object") out.push(it as Record<string, unknown>);
+        for (const it of parsed)
+          if (it && typeof it === "object") out.push(it as Record<string, unknown>);
       } else if (parsed && typeof parsed === "object") {
         out.push(parsed as Record<string, unknown>);
       }
@@ -165,25 +174,43 @@ async function fetchHtml(url: string): Promise<string> {
       const { value, done } = await reader.read();
       if (done) break;
       total += value.byteLength;
-      if (total > MAX) { await reader.cancel(); break; }
+      if (total > MAX) {
+        await reader.cancel();
+        break;
+      }
       chunks.push(value);
     }
     const buf = new Uint8Array(total);
     let off = 0;
-    for (const c of chunks) { buf.set(c, off); off += c.byteLength; }
+    for (const c of chunks) {
+      buf.set(c, off);
+      off += c.byteLength;
+    }
     return new TextDecoder("utf-8", { fatal: false }).decode(buf);
   } finally {
     clearTimeout(timer);
   }
 }
 
-const WEEKDAY_NAMES = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+const WEEKDAY_NAMES = [
+  "sunday",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+];
 
 function detectRecurrence(title: string, desc: string, startsAt: string | null): Recurrence {
   const s = `${title}\n${desc}`.toLowerCase();
   let weekday: number | null = null;
   if (startsAt) {
-    try { weekday = new Date(startsAt).getDay(); } catch { /* ignore */ }
+    try {
+      weekday = new Date(startsAt).getDay();
+    } catch {
+      /* ignore */
+    }
   }
   for (let i = 0; i < WEEKDAY_NAMES.length; i++) {
     const n = WEEKDAY_NAMES[i];
@@ -192,7 +219,8 @@ function detectRecurrence(title: string, desc: string, startsAt: string | null):
       return { rule: "WEEKLY", weekday, hint: `every ${n.charAt(0).toUpperCase() + n.slice(1)}` };
     }
   }
-  if (/\b(bi[- ]?weekly|every other week)\b/i.test(s)) return { rule: "BIWEEKLY", weekday, hint: "every 2 weeks" };
+  if (/\b(bi[- ]?weekly|every other week)\b/i.test(s))
+    return { rule: "BIWEEKLY", weekday, hint: "every 2 weeks" };
   if (/\b(weekly|each week)\b/i.test(s)) return { rule: "WEEKLY", weekday, hint: "weekly" };
   if (/\b(monthly|each month|first \w+ of the month|last \w+ of the month)\b/i.test(s)) {
     return { rule: "MONTHLY", weekday: null, hint: "monthly" };
@@ -207,15 +235,25 @@ function extractInlineScriptJson(html: string, idAttr: string): unknown | null {
   const re = new RegExp(`<script[^>]+id=["']${idAttr}["'][^>]*>([\\s\\S]*?)<\\/script>`, "i");
   const m = html.match(re);
   if (!m) return null;
-  try { return JSON.parse(m[1].trim()); } catch { return null; }
+  try {
+    return JSON.parse(m[1].trim());
+  } catch {
+    return null;
+  }
 }
 
 function extractAssignedJson(html: string, varName: string): unknown | null {
   // e.g. window.__SERVER_DATA__ = { ... };
-  const re = new RegExp(`${varName.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}\\s*=\\s*(\\{[\\s\\S]*?\\})\\s*;`);
+  const re = new RegExp(
+    `${varName.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}\\s*=\\s*(\\{[\\s\\S]*?\\})\\s*;`,
+  );
   const m = html.match(re);
   if (!m) return null;
-  try { return JSON.parse(m[1]); } catch { return null; }
+  try {
+    return JSON.parse(m[1]);
+  } catch {
+    return null;
+  }
 }
 
 function digPath(obj: unknown, path: (string | number)[]): unknown {
@@ -228,51 +266,98 @@ function digPath(obj: unknown, path: (string | number)[]): unknown {
 }
 
 function findFirstEventbriteEvent(html: string): {
-  title: string | null; description: string | null; startsAt: string | null; endsAt: string | null;
-  coverUrl: string | null; venueName: string | null; venueAddress: string | null; onlineUrl: string | null;
+  title: string | null;
+  description: string | null;
+  startsAt: string | null;
+  endsAt: string | null;
+  coverUrl: string | null;
+  venueName: string | null;
+  venueAddress: string | null;
+  onlineUrl: string | null;
 } | null {
   const data = extractAssignedJson(html, "window.__SERVER_DATA__");
   if (!data) return null;
   // Eventbrite's payload puts the event under `view_data.event` or `event`.
-  const ev = (digPath(data, ["view_data", "event"]) ?? digPath(data, ["event"])) as Record<string, unknown> | undefined;
+  const ev = (digPath(data, ["view_data", "event"]) ?? digPath(data, ["event"])) as
+    | Record<string, unknown>
+    | undefined;
   if (!ev || typeof ev !== "object") return null;
-  const name = asString((ev.name as Record<string, unknown> | undefined)?.text) ?? asString(ev.name);
-  const desc = asString((ev.description as Record<string, unknown> | undefined)?.text) ?? asString(ev.summary);
-  const start = asString((ev.start as Record<string, unknown> | undefined)?.utc) ?? asString(ev.start_date);
-  const end = asString((ev.end as Record<string, unknown> | undefined)?.utc) ?? asString(ev.end_date);
+  const name =
+    asString((ev.name as Record<string, unknown> | undefined)?.text) ?? asString(ev.name);
+  const desc =
+    asString((ev.description as Record<string, unknown> | undefined)?.text) ?? asString(ev.summary);
+  const start =
+    asString((ev.start as Record<string, unknown> | undefined)?.utc) ?? asString(ev.start_date);
+  const end =
+    asString((ev.end as Record<string, unknown> | undefined)?.utc) ?? asString(ev.end_date);
   const logo = ev.logo as Record<string, unknown> | undefined;
-  const cover = asString((logo?.original as Record<string, unknown> | undefined)?.url) ?? asString(logo?.url);
+  const cover =
+    asString((logo?.original as Record<string, unknown> | undefined)?.url) ?? asString(logo?.url);
   const venue = ev.venue as Record<string, unknown> | undefined;
   const venueName = venue ? asString(venue.name) : null;
   const addr = venue?.address as Record<string, unknown> | undefined;
   const venueAddress = addr
-    ? [addr.address_1, addr.address_2, addr.city, addr.region, addr.postal_code, addr.country].map(asString).filter(Boolean).join(", ") || null
+    ? [addr.address_1, addr.address_2, addr.city, addr.region, addr.postal_code, addr.country]
+        .map(asString)
+        .filter(Boolean)
+        .join(", ") || null
     : null;
   const onlineUrl = asString(ev.online_event_url) ?? null;
-  return { title: name, description: desc, startsAt: start, endsAt: end, coverUrl: cover, venueName, venueAddress, onlineUrl };
+  return {
+    title: name,
+    description: desc,
+    startsAt: start,
+    endsAt: end,
+    coverUrl: cover,
+    venueName,
+    venueAddress,
+    onlineUrl,
+  };
 }
 
 function findFirstPartifulEvent(html: string): {
-  title: string | null; description: string | null; startsAt: string | null; endsAt: string | null;
-  coverUrl: string | null; venueName: string | null; venueAddress: string | null;
+  title: string | null;
+  description: string | null;
+  startsAt: string | null;
+  endsAt: string | null;
+  coverUrl: string | null;
+  venueName: string | null;
+  venueAddress: string | null;
 } | null {
   const data = extractInlineScriptJson(html, "__NEXT_DATA__");
   if (!data) return null;
-  const ev =
-    (digPath(data, ["props", "pageProps", "event"]) ??
-      digPath(data, ["props", "pageProps", "initialState", "event"])) as Record<string, unknown> | undefined;
+  const ev = (digPath(data, ["props", "pageProps", "event"]) ??
+    digPath(data, ["props", "pageProps", "initialState", "event"])) as
+    | Record<string, unknown>
+    | undefined;
   if (!ev || typeof ev !== "object") return null;
   const title = asString(ev.title) ?? asString(ev.name);
   const desc = asString(ev.description) ?? asString(ev.summary);
   const start = asString(ev.startDate) ?? asString(ev.start) ?? asString(ev.startTime);
   const end = asString(ev.endDate) ?? asString(ev.end) ?? asString(ev.endTime);
-  const cover = asString(ev.coverImage) ?? asString(ev.image) ?? asString((ev.cover as Record<string, unknown> | undefined)?.url);
-  const venueName = asString(ev.location) ?? asString((ev.venue as Record<string, unknown> | undefined)?.name);
-  const venueAddress = asString(ev.address) ?? asString((ev.venue as Record<string, unknown> | undefined)?.address);
-  return { title, description: desc, startsAt: start, endsAt: end, coverUrl: cover, venueName, venueAddress };
+  const cover =
+    asString(ev.coverImage) ??
+    asString(ev.image) ??
+    asString((ev.cover as Record<string, unknown> | undefined)?.url);
+  const venueName =
+    asString(ev.location) ?? asString((ev.venue as Record<string, unknown> | undefined)?.name);
+  const venueAddress =
+    asString(ev.address) ?? asString((ev.venue as Record<string, unknown> | undefined)?.address);
+  return {
+    title,
+    description: desc,
+    startsAt: start,
+    endsAt: end,
+    coverUrl: cover,
+    venueName,
+    venueAddress,
+  };
 }
 
-async function parseEventFromHtml(url: string, html: string): Promise<{ draft: Draft; warnings: string[]; parser: ParserSource }> {
+async function parseEventFromHtml(
+  url: string,
+  html: string,
+): Promise<{ draft: Draft; warnings: string[]; parser: ParserSource }> {
   const warnings: string[] = [];
   let parser: ParserSource = "fallback";
 
@@ -309,7 +394,13 @@ async function parseEventFromHtml(url: string, html: string): Promise<{ draft: D
         if (typeof addr === "string") venueAddress = venueAddress ?? addr;
         else if (addr && typeof addr === "object") {
           const a = addr as Record<string, unknown>;
-          const parts = [a.streetAddress, a.addressLocality, a.addressRegion, a.postalCode, a.addressCountry]
+          const parts = [
+            a.streetAddress,
+            a.addressLocality,
+            a.addressRegion,
+            a.postalCode,
+            a.addressCountry,
+          ]
             .map(asString)
             .filter(Boolean);
           if (parts.length) venueAddress = venueAddress ?? parts.join(", ");
@@ -319,7 +410,13 @@ async function parseEventFromHtml(url: string, html: string): Promise<{ draft: D
   }
 
   // Platform-specific inline JSON fallbacks (server-rendered, no headless browser needed).
-  const host = (() => { try { return new URL(url).hostname.toLowerCase(); } catch { return ""; } })();
+  const host = (() => {
+    try {
+      return new URL(url).hostname.toLowerCase();
+    } catch {
+      return "";
+    }
+  })();
   if (!startsAt || !title) {
     if (host.includes("eventbrite.")) {
       const eb = findFirstEventbriteEvent(html);
@@ -349,7 +446,12 @@ async function parseEventFromHtml(url: string, html: string): Promise<{ draft: D
     }
   }
 
-  title = title ?? metaTag(html, "og:title") ?? metaTag(html, "twitter:title") ?? (html.match(/<title>([^<]*)<\/title>/i)?.[1]?.trim() ?? null);
+  title =
+    title ??
+    metaTag(html, "og:title") ??
+    metaTag(html, "twitter:title") ??
+    html.match(/<title>([^<]*)<\/title>/i)?.[1]?.trim() ??
+    null;
   description = description ?? metaTag(html, "og:description") ?? metaTag(html, "description");
   coverUrl = coverUrl ?? metaTag(html, "og:image") ?? metaTag(html, "twitter:image");
   startsAt = startsAt ?? metaTag(html, "event:start_time");
@@ -362,8 +464,11 @@ async function parseEventFromHtml(url: string, html: string): Promise<{ draft: D
   if (!title) warnings.push("Couldn't read a title — fill it in manually.");
   if (!startsAt) warnings.push("No start time found — set one before publishing.");
   if (!endsAt && startsAt) {
-    try { endsAt = new Date(new Date(startsAt).getTime() + 2 * 60 * 60 * 1000).toISOString(); }
-    catch { /* leave null */ }
+    try {
+      endsAt = new Date(new Date(startsAt).getTime() + 2 * 60 * 60 * 1000).toISOString();
+    } catch {
+      /* leave null */
+    }
   }
 
   const format: Draft["format"] =
@@ -432,11 +537,13 @@ export const importEventsFromUrls = createServerFn({ method: "POST" })
 
     // Trim, dedupe, preserve order
     const seen = new Set<string>();
-    const urls = data.urls.map((u) => u.trim()).filter((u) => {
-      if (!u || seen.has(u)) return false;
-      seen.add(u);
-      return true;
-    });
+    const urls = data.urls
+      .map((u) => u.trim())
+      .filter((u) => {
+        if (!u || seen.has(u)) return false;
+        seen.add(u);
+        return true;
+      });
 
     const results: BulkImportRow[] = new Array(urls.length);
     const CONCURRENCY = 3;
@@ -446,13 +553,24 @@ export const importEventsFromUrls = createServerFn({ method: "POST" })
         const i = cursor++;
         if (i >= urls.length) return;
         const u = urls[i];
-        const host = (() => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return ""; } })();
+        const host = (() => {
+          try {
+            return new URL(u).hostname.replace(/^www\./, "");
+          } catch {
+            return "";
+          }
+        })();
         try {
           const html = await fetchHtml(u);
           const { draft, warnings, parser } = await parseEventFromHtml(u, html);
           results[i] = { ok: true, url: u, host, draft, warnings, parser };
         } catch (ex) {
-          results[i] = { ok: false, url: u, host, error: (ex as Error).message || "Couldn't read that page." };
+          results[i] = {
+            ok: false,
+            url: u,
+            host,
+            error: (ex as Error).message || "Couldn't read that page.",
+          };
         }
       }
     }
