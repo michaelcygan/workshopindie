@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { shareImageMeta } from "@/lib/og-image";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -64,7 +65,6 @@ export const Route = createFileRoute("/collab/$slug")({
       ?? "A Collab in progress on Workshop. Apply in one tap — no account needed.";
     // Archived and legacy private drafts are owner-only — keep them out of search.
     const indexable = s ? isPubliclyVisible(s) : true;
-    const ogImage = `https://workshopindie.com/api/public/og?type=collab&id=${params.slug}`;
     const meta = [
       { title },
       { name: "description", content: description },
@@ -72,11 +72,10 @@ export const Route = createFileRoute("/collab/$slug")({
       { property: "og:description", content: description },
       { property: "og:type", content: "article" },
       { property: "og:url", content: url },
-      { property: "og:image", content: ogImage },
-      { name: "twitter:card", content: "summary_large_image" },
+      // Collabs carry no cover of their own — branded PNG card.
+      ...shareImageMeta(null, s?.title ?? "Collab on Workshop"),
       { name: "twitter:title", content: title },
       { name: "twitter:description", content: description },
-      { name: "twitter:image", content: ogImage },
     ];
     if (!indexable) meta.push({ name: "robots", content: "noindex,nofollow" });
 

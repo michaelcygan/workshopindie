@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useRouter, notFound } from "@tanstack/react-router";
+import { shareImageMeta } from "@/lib/og-image";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
@@ -62,9 +63,13 @@ export const Route = createFileRoute("/g/$slug/e/$eventSlug")({
   ),
   head: ({ loaderData, params }) => {
     if (!loaderData) return { meta: [] };
-    const ev = loaderData as { title: string; tagline: string | null; group: { slug: string } };
+    const ev = loaderData as {
+      title: string;
+      tagline: string | null;
+      cover_url?: string | null;
+      group: { slug: string };
+    };
     const url = `https://workshopindie.com/g/${params.slug}/e/${params.eventSlug}`;
-    const ogImage = `https://workshopindie.com/api/public/og?type=event&id=${params.eventSlug}`;
     return {
       meta: [
         { title: `${ev.title} — Workshop` },
@@ -73,11 +78,10 @@ export const Route = createFileRoute("/g/$slug/e/$eventSlug")({
         { property: "og:description", content: ev.tagline ?? "RSVP on Workshop." },
         { property: "og:url", content: url },
         { property: "og:type", content: "article" },
-        { property: "og:image", content: ogImage },
-        { name: "twitter:card", content: "summary_large_image" },
+        // The event's own flyer/cover — crawlers reject SVG cards.
+        ...shareImageMeta(ev.cover_url, ev.title),
         { name: "twitter:title", content: ev.title },
         { name: "twitter:description", content: ev.tagline ?? "RSVP on Workshop." },
-        { name: "twitter:image", content: ogImage },
       ],
       links: [{ rel: "canonical", href: url }],
     };

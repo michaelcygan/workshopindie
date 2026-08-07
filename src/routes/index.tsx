@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { shareImageMeta } from "@/lib/og-image";
 import { useAuth } from "@/hooks/use-auth";
 import { PublicHome } from "@/components/home/public-home";
 import { MemberHome } from "@/components/home/member-home";
@@ -19,7 +20,7 @@ export const Route = createFileRoute("/")({
       { property: "og:type", content: "website" },
       { property: "og:url", content: URL },
       { property: "og:site_name", content: "Workshop" },
-      { name: "twitter:card", content: "summary_large_image" },
+      ...shareImageMeta(null, "Workshop — independent culture, happening now"),
       { name: "twitter:title", content: TITLE },
       { name: "twitter:description", content: DESCRIPTION },
     ],
