@@ -578,14 +578,16 @@ function EditProfile() {
                   <Input
                     id="un"
                     value={form.username}
-                    onChange={(e) =>
-                      set("username", e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))
-                    }
+                    onChange={(e) => set("username", normalizeUsername(e.target.value))}
                     placeholder="your-handle"
                   />
-                  <p className="text-xs text-ink-muted">
-                    Your public @handle — used in your profile URL.
-                  </p>
+                  {usernameError ? (
+                    <p className="text-xs text-danger">{usernameError}</p>
+                  ) : (
+                    <p className="text-xs text-ink-muted">
+                      Your public @handle — used in your profile URL.
+                    </p>
+                  )}
                   {form.username ? (
                     <div className="mt-2 space-y-1">
                       <div className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2">
