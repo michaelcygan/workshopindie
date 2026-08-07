@@ -102,7 +102,7 @@ export const Route = createFileRoute("/$username")({
       { property: "og:type", content: "profile" },
       { property: "og:url", content: url },
       // The creator's own avatar — crawlers reject SVG cards.
-      ...shareImageMeta(p?.avatar_url, name),
+      ...shareImageMeta(p?.cover_url ?? p?.avatar_url, name),
       { name: "twitter:title", content: title },
       { name: "twitter:description", content: description },
     ];
