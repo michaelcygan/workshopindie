@@ -1,4 +1,5 @@
 import { NON_PUBLIC_STATUSES } from "@/lib/collab/query";
+import { shareImageMeta } from "@/lib/og-image";
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -93,7 +94,6 @@ export const Route = createFileRoute("/$username")({
     const name = p?.display_name ?? p?.username ?? params.username;
     const title = `${name} — Workshop`;
     const description = p?.headline ?? p?.bio?.slice(0, 160) ?? `${name}'s profile on Workshop.`;
-    const ogImage = `https://workshopindie.com/api/public/og?type=profile&id=${params.username}`;
     const meta = [
       { title },
       { name: "description", content: description },
@@ -101,11 +101,10 @@ export const Route = createFileRoute("/$username")({
       { property: "og:description", content: description },
       { property: "og:type", content: "profile" },
       { property: "og:url", content: url },
-      { property: "og:image", content: ogImage },
-      { name: "twitter:card", content: "summary_large_image" as const },
+      // The creator's own avatar — crawlers reject SVG cards.
+      ...shareImageMeta(p?.cover_url ?? p?.avatar_url, name),
       { name: "twitter:title", content: title },
       { name: "twitter:description", content: description },
-      { name: "twitter:image", content: ogImage },
     ];
     const jsonLd: Record<string, unknown> = {
       "@context": "https://schema.org",

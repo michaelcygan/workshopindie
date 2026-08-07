@@ -99,10 +99,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Drop into live collaboration workshops or schedule your own. Post collaboration requests, develop a creative community, and make real art.",
       },
       { property: "og:type", content: "website" },
+      // Sitewide default only — leaf routes override og:image with the
+      // entity's own cover. No width/height/type here: those would leak onto
+      // leaf pages whose cover has different dimensions.
       {
         property: "og:image",
-        content: "https://workshopindie.com/api/public/og?type=default&id=home",
+        content: "https://workshopindie.com/brand/og-default.png",
       },
+      { property: "og:image:secure_url", content: "https://workshopindie.com/brand/og-default.png" },
+      { property: "og:image:alt", content: "Workshop — independent culture, happening now" },
       { property: "og:site_name", content: "Workshop" },
       { name: "twitter:card", content: "summary_large_image" },
       {
@@ -116,7 +121,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       {
         name: "twitter:image",
-        content: "https://workshopindie.com/api/public/og?type=default&id=home",
+        content: "https://workshopindie.com/brand/og-default.png",
       },
     ],
     links: [

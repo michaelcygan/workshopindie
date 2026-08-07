@@ -48,7 +48,8 @@ export const getProfileSeo = createServerFn({ method: "GET" })
     setResponseHeader("cache-control", PUBLIC_CACHE);
     const { data: row } = await supabaseAdmin
       .from("profiles")
-      .select("id,display_name,username,headline,bio,avatar_url")
+      // cover_url first: avatars are often <200px, which crawlers reject.
+      .select("id,display_name,username,headline,bio,avatar_url,cover_url")
       .eq("username", data.username)
       .maybeSingle();
     if (!row) return null;
