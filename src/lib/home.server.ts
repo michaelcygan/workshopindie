@@ -36,6 +36,13 @@ import type {
   PublicWorkTile,
 } from "@/lib/home-types";
 
+/**
+ * Traced admin client. Identical behaviour to the raw client; when a trace is
+ * active (see `withTrace`) each query records table, op chain and duration.
+ */
+const supabaseAdmin = traceClient(rawSupabaseAdmin);
+
+
 const POST_SCAN_LIMIT = 40;
 const MAX_WORK_STORIES = 8;
 const MAX_STORIES_PER_WORK = 3;
