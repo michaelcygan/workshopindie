@@ -22,7 +22,7 @@ describe("username namespace", () => {
 
   it("reserves every root-level route segment in the generated route tree", () => {
     const tree = readFileSync("src/routeTree.gen.ts", "utf8");
-    const paths = [...tree.matchAll(/^\s*path: '\/([^'/]+)'/gm)].map((m) => m[1]);
+    const paths = [...tree.matchAll(/^\s*id: '\/([^'/]+)'$/gm)].map((m) => m[1]);
     const missing = paths.filter(
       (p) => !p.startsWith("$") && !p.startsWith(".") && !RESERVED_USERNAMES.has(p.toLowerCase()),
     );
