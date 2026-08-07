@@ -20,7 +20,8 @@ export function CategoryPlaceholder({
 }) {
   const label = category
     ? ((CATEGORY_LABELS as Record<string, string>)[category] ?? category)
-    : "Untitled work";
+    : "No cover";
+
   return (
     <div
       aria-hidden
