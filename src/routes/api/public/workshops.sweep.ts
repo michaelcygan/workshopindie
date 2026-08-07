@@ -153,18 +153,32 @@ async function runNoShowPass() {
       .eq("workshop_id", full.id);
     const recipients = Array.from(new Set((rsvps ?? []).map((r) => r.user_id)));
     if (recipients.length > 0) {
-      await supabaseAdmin
-        .from("notifications")
-        .insert(
-          recipients.map((uid) => ({
-            user_id: uid,
-            kind: uid === full.host_user_id ? "workshop_ran_without_you" : "workshop_now_live",
-            entity_type: "workshop",
-            entity_id: full.id,
-            payload: { title: full.title, slug: full.slug, auto_converted: true },
-          })),
-        )
-        .then(() => null, () => null);
+      const { notifyMany } = await import("@/lib/notifications/deliver.server");
+      // The host gets a different kind, so this goes out as two deliveries.
+      const hostIds = recipients.filter((uid) => uid === full.host_user_id);
+      const others = recipients.filter((uid) => uid !== full.host_user_id);
+      const payload = { title: full.title, slug: full.slug, auto_converted: true };
+      if (hostIds.length > 0) {
+        await notifyMany({
+          recipientIds: hostIds,
+          kind: "workshop_ran_without_you",
+          entityType: "workshop",
+          entityId: full.id,
+          preference: "inapp_workshop_updates",
+          payload,
+        });
+      }
+      if (others.length > 0) {
+        await notifyMany({
+          recipientIds: others,
+          kind: "workshop_now_live",
+          entityType: "workshop",
+          entityId: full.id,
+          preference: "inapp_workshop_updates",
+          payload,
+        });
+      }
+
     }
     results.push({ id: ws.id, converted: true });
   }
