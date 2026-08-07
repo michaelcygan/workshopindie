@@ -1,7 +1,15 @@
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { cancelQueued, enqueueLaunch, launchQueued, listLaunchQueue } from "@/lib/geo/admin.functions";
+import {
+  cancelQueued,
+  enqueueLaunch,
+  launchQueued,
+  listLaunchQueue,
+  runCityLaunchBatch,
+  type BatchCityResult,
+} from "@/lib/geo/admin.functions";
 import { LocalitySearch } from "@/components/admin/locality-search";
 import { Button } from "@/components/ui/button";
 
@@ -11,6 +19,11 @@ export function LaunchQueuePanel() {
   const enqueue = useServerFn(enqueueLaunch);
   const launch = useServerFn(launchQueued);
   const cancel = useServerFn(cancelQueued);
+  const runBatch = useServerFn(runCityLaunchBatch);
+  const [batchRunning, setBatchRunning] = useState(false);
+  const [batchResults, setBatchResults] = useState<BatchCityResult[]>([]);
+  const [batchNote, setBatchNote] = useState<string | null>(null);
+
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin", "launch-queue"],
@@ -51,6 +64,40 @@ export function LaunchQueuePanel() {
 
   const rows = data?.queue ?? [];
 
+  async function startBatch() {
+    if (batchRunning) return;
+    setBatchRunning(true);
+    setBatchResults([]);
+    setBatchNote(null);
+    try {
+      let cursor = 0;
+      let created = 0;
+      const all: BatchCityResult[] = [];
+      // Each call handles a small chunk so provider requests stay paced.
+      for (let i = 0; i < 20; i += 1) {
+        const res = await runBatch({ data: { cursor, createdSoFar: created } });
+        cursor = res.cursor;
+        created = res.created;
+        all.push(...res.results);
+        setBatchResults([...all]);
+        if (res.done) {
+          setBatchNote(
+            res.stopped
+              ? (res.stopReason ?? "Stopped early.")
+              : `Done — ${created} manifest cities launched.`,
+          );
+          break;
+        }
+      }
+      invalidate();
+      toast.success("Batch launch finished");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Batch failed");
+    } finally {
+      setBatchRunning(false);
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="space-y-2 rounded-2xl border border-border bg-surface p-4">
@@ -68,6 +115,38 @@ export function LaunchQueuePanel() {
           }}
         />
       </div>
+
+      <div className="space-y-3 rounded-2xl border border-border bg-surface p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="text-sm text-ink">Midwest expansion batch</div>
+            <p className="text-xs text-ink-muted">
+              Launches the 25-city Midwest-first manifest through the same flow as a single launch.
+              Safe to run twice — already-launched cities are reported, not recreated.
+            </p>
+          </div>
+          <Button size="sm" onClick={startBatch} disabled={batchRunning}>
+            {batchRunning ? "Launching…" : "Run batch"}
+          </Button>
+        </div>
+        {batchNote ? <div className="text-xs text-ink-soft">{batchNote}</div> : null}
+        {batchResults.length > 0 ? (
+          <ul className="max-h-72 space-y-1 overflow-auto text-xs">
+            {batchResults.map((r, i) => (
+              <li key={`${r.requested}-${i}`} className="flex justify-between gap-3">
+                <span className="text-ink">
+                  {r.requested}, {r.state}
+                  {r.citySlug ? <span className="text-ink-muted"> /{r.citySlug}</span> : null}
+                </span>
+                <span className="text-ink-muted">
+                  {r.created ? "created" : r.queueStatus === "launched" ? "existing" : r.note}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+
 
       <div className="overflow-hidden rounded-2xl border border-border bg-surface">
         <table className="w-full text-sm">
