@@ -190,11 +190,26 @@ export const CATEGORY_ENUM_VALUES = new Set<string>([
  * Like `storageValuesFor`, but restricted to values the `category` enum can
  * hold — passing a canonical-only id (e.g. "film_video") to PostgREST against
  * that enum is a 400.
+ *
+ * @deprecated Filter on the canonical columns (`categories_canonical`,
+ * `category_canonical`) with `canonicalFilterValues` instead. The legacy enum
+ * cannot represent design / performance / audio / scene_life / language, so
+ * this returns `[]` for them and the filter silently matches nothing.
  */
 export function workStorageValuesFor(canonical: string): string[] {
   const vals = storageValuesFor(canonical).filter((v) => CATEGORY_ENUM_VALUES.has(v));
   return vals.length > 0 ? vals : [];
 }
+
+/**
+ * Values to match against the canonical `*_canonical` columns, which are
+ * trigger-synced from the legacy enum columns by the database. `writing_book`
+ * already collapses to `writing` there, so a canonical id maps to itself.
+ */
+export function canonicalFilterValues(value: string): CanonicalCategory[] {
+  return [normalizeCategory(value)];
+}
+
 
 /** Subtypes shown per canonical category (stored free-form on works.subtype). */
 export const CANONICAL_SUBTYPES: Record<string, string[]> = {
