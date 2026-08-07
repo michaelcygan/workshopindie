@@ -162,6 +162,11 @@ export function SiteFooter() {
                     Groups
                   </Link>
                 </li>
+                <li>
+                  <Link to="/events" className="text-ink-soft hover:text-ink">
+                    Events
+                  </Link>
+                </li>
               </ul>
             </div>
             <div>
@@ -169,11 +174,6 @@ export function SiteFooter() {
                 More
               </div>
               <ul className="mt-3 space-y-2">
-                <li>
-                  <Link to="/events" className="text-ink-soft hover:text-ink">
-                    Events
-                  </Link>
-                </li>
                 <li>
                   <Link to="/pricing" className="text-ink-soft hover:text-ink">
                     Pricing
