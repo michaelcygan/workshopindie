@@ -3,6 +3,7 @@ import { listPublishedPosts } from "@/lib/blog.functions";
 import type { BlogListItem } from "@/components/blog-featured-carousel";
 import { PublicFeaturedStories } from "@/components/home/public-featured-stories";
 import { BlogCategoryNav } from "@/components/blog/blog-category-nav";
+import { BlogMastheadActions } from "@/components/blog/blog-masthead-actions";
 import {
   BlogArchive,
   BlogLatestStories,
@@ -61,17 +62,20 @@ export const Route = createFileRoute("/blog/")({
 function Masthead() {
   return (
     <section className="border-b border-border">
-      <div className="mx-auto max-w-7xl px-4 py-5 md:px-6 md:py-7">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
-          Blog
-        </p>
-        <h1 className="mt-1.5 max-w-3xl font-display text-[28px] leading-[1.06] tracking-tight text-ink md:text-[42px]">
-          Notes from Workshop
-        </h1>
-        <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-ink-soft md:text-[15px]">
-          Ideas, guides, and stories about finding collaborators, making independent creative
-          work, and building a portfolio that shows how the work happened.
-        </p>
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-4 py-5 md:px-6 md:py-7">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
+            Blog
+          </p>
+          <h1 className="mt-1.5 max-w-3xl font-display text-[28px] leading-[1.06] tracking-tight text-ink md:text-[42px]">
+            Notes from Workshop
+          </h1>
+          <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-ink-soft md:text-[15px]">
+            Ideas, guides, and stories about finding collaborators, making independent creative
+            work, and building a portfolio that shows how the work happened.
+          </p>
+        </div>
+        <BlogMastheadActions />
       </div>
     </section>
   );
