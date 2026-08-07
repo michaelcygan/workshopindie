@@ -443,16 +443,16 @@ export const postEventUpdate = createServerFn({ method: "POST" })
       type EvShape = { title: string; slug: string; group: { slug: string } };
       const e = ev as unknown as EvShape;
       const payload = { event_title: e.title, event_slug: e.slug, group_slug: e.group.slug };
-      await supabase.from("notifications").insert(
-        rsvps.map((r) => ({
-          user_id: r.user_id as string,
-          kind: "event_updated",
-          actor_user_id: userId,
-          entity_type: "group_event",
-          entity_id: data.event_id,
-          payload,
-        })),
-      );
+      const { notifyMany } = await import("@/lib/notifications/deliver.server");
+      await notifyMany({
+        recipientIds: rsvps.map((r) => r.user_id as string),
+        actorUserId: userId,
+        kind: "event_updated",
+        entityType: "group_event",
+        entityId: data.event_id,
+        payload,
+      });
+
     }
     return { ok: true };
   });
