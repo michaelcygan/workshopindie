@@ -1,5 +1,6 @@
 import { useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
+import { isProfilePath } from "@/lib/usernames";
 
 export type MobileIslandVisibility = {
   islandVisible: boolean;

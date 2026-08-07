@@ -137,3 +137,13 @@ export function profilePath(username: string): string {
 export function profileUrl(username: string): string {
   return `${SITE_ORIGIN}/${username}`;
 }
+
+/**
+ * True when a pathname is a canonical root profile URL (`/username`), i.e. a
+ * single segment that isn't a reserved Workshop route word.
+ */
+export function isProfilePath(pathname: string): boolean {
+  const seg = (pathname || "").replace(/^\/+|\/+$/g, "");
+  if (!seg || seg.includes("/")) return false;
+  return validateUsername(decodeURIComponent(seg)).ok;
+}
