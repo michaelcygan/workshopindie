@@ -53,8 +53,13 @@ export function PublicWorkStories({ stories }: { stories: HomeWorkStory[] }) {
                       className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
                     />
                   ) : (
-                    <div className="h-full w-full bg-surface-2" />
+                    <CategoryPlaceholder
+                      size="cover"
+                      category={work.categories[0]}
+                      className="h-full w-full"
+                    />
                   )}
+
                 </div>
                 <h3 className="mt-3 font-display text-[22px] leading-tight text-ink transition-colors group-hover:text-primary">
                   {work.title}
