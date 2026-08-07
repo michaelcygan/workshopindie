@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { rpcOutcomeError } from "@/lib/errors";
+import { withOpLog } from "@/lib/obs/log";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const MEDIUMS = ["film", "music", "writing", "writing_book", "build", "visual", "critique", "business", "coworking", "office_hours", "roundtable", "pitch", "listen_party", "open_mic", "jam", "standup"] as const;
@@ -327,21 +329,22 @@ export const joinSpecificInstantRoom = createServerFn({ method: "POST" })
       _room_id: data.roomId,
     } as never);
     if (error) throw new Error(error.message);
-    switch (String(outcome)) {
+    const status = String(outcome);
+    switch (status) {
       case "joined":
       case "already_joined":
         return { roomId: data.roomId };
       case "not_found":
-        throw new Error("That room no longer exists");
+        throw rpcOutcomeError(status, "That room no longer exists");
       case "full":
-        throw new Error("Room is full");
+        throw rpcOutcomeError(status, "Room is full");
       case "forbidden":
-        throw new Error("You were removed from this Workshop. Try again later.");
+        throw rpcOutcomeError(status, "You were removed from this Workshop. Try again later.");
       case "locked":
-        throw new Error("This Workshop is locked");
+        throw rpcOutcomeError(status, "This Workshop is locked");
       case "closed":
       default:
-        throw new Error("That room isn't live anymore");
+        throw rpcOutcomeError(status, "That room isn't live anymore");
 
     }
   });

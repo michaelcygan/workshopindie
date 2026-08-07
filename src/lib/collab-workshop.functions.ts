@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { rpcOutcomeError } from "@/lib/errors";
+import { withOpLog } from "@/lib/obs/log";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 /**
@@ -99,18 +101,19 @@ export const rsvpToWorkshop = createServerFn({ method: "POST" })
       _workshop_id: data.workshopId,
     } as never);
     if (error) throw new Error(error.message);
-    switch (String(outcome)) {
+    const status = String(outcome);
+    switch (status) {
       case "joined":
       case "already_joined":
         return { ok: true };
       case "full":
-        throw new Error("This Workshop is full.");
+        throw rpcOutcomeError(status, "This Workshop is full.");
       case "closed":
-        throw new Error("This Workshop is closed.");
+        throw rpcOutcomeError(status, "This Workshop is closed.");
       case "not_found":
-        throw new Error("Workshop not found.");
+        throw rpcOutcomeError(status, "Workshop not found.");
       default:
-        throw new Error("You can't join this Workshop.");
+        throw rpcOutcomeError(status, "You can't join this Workshop.");
     }
   });
 

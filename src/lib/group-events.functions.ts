@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { domainError, rpcOutcomeError } from "@/lib/errors";
+import { withOpLog } from "@/lib/obs/log";
 import type { Database } from "@/integrations/supabase/types";
 
 function publicClient() {
@@ -244,9 +246,12 @@ export const rsvp = createServerFn({ method: "POST" })
     const attending = data.status === "going" || data.status === "maybe";
 
     if (attending) {
-      if (access.lifecycle === "canceled") throw new Error("This Event was canceled.");
-      if (access.lifecycle === "draft") throw new Error("This Event isn't published yet.");
-      if (!access.canRsvp) throw new Error("RSVPs are closed for this Event.");
+      if (access.lifecycle === "canceled")
+        throw domainError("CLOSED", "This Event was canceled.");
+      if (access.lifecycle === "draft")
+        throw domainError("CLOSED", "This Event isn't published yet.");
+      if (!access.canRsvp)
+        throw domainError("CLOSED", "RSVPs are closed for this Event.");
     }
 
     // Capacity/waitlist is settled inside one Postgres transaction, so two
@@ -260,10 +265,12 @@ export const rsvp = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
 
     const effectiveStatus = String(outcome);
-    if (effectiveStatus === "full") throw new Error("This Event is full.");
-    if (effectiveStatus === "closed") throw new Error("RSVPs are closed for this Event.");
-    if (effectiveStatus === "not_found") throw new Error("Event not found");
-    if (effectiveStatus === "forbidden") throw new Error("Please sign in to RSVP.");
+    if (effectiveStatus === "full") throw rpcOutcomeError(effectiveStatus, "This Event is full.");
+    if (effectiveStatus === "closed")
+      throw rpcOutcomeError(effectiveStatus, "RSVPs are closed for this Event.");
+    if (effectiveStatus === "not_found") throw rpcOutcomeError(effectiveStatus, "Event not found");
+    if (effectiveStatus === "forbidden")
+      throw rpcOutcomeError(effectiveStatus, "Please sign in to RSVP.");
 
     // Auto-join host group when the user is attending. Best-effort —
     // any failure here must not block the RSVP itself.
