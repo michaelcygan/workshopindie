@@ -31,8 +31,9 @@ export const Route = createFileRoute("/login")({
 
 function Login() {
   const search = Route.useSearch();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const navigate = useNavigate();
+  const [email, setEmail] = useState(search.email ?? "");
+  const [password, setPassword] = useState(() => takeHandoffPassword());
   const [loading, setLoading] = useState(false);
   const { user, loading: authLoading } = useAuth();
 
@@ -62,11 +63,35 @@ function Login() {
     e.preventDefault();
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (!error) {
+      setLoading(false);
+      setPostAuthIntentFromSearch(search);
+      window.location.assign(AUTH_CALLBACK_PATH);
+      return;
+    }
+
+    // No account with this email? Don't dead-end — start the signup flow instead.
+    const credentialFailure = /invalid login credentials/i.test(error.message);
+    if (credentialFailure) {
+      const probe = await checkEmailExists({ data: { email: email.trim() } }).catch(() => null);
+      if (probe && probe.exists === false) {
+        setLoading(false);
+        stashHandoffPassword(password);
+        toast.info("No account yet — let's make one.");
+        navigate({
+          to: "/signup",
+          search: { ...search, email: email.trim() },
+        });
+        return;
+      }
+      setLoading(false);
+      return toast.error("That password doesn't match. Try again or reset it.");
+    }
+
     setLoading(false);
-    if (error) return toast.error(error.message);
-    setPostAuthIntentFromSearch(search);
-    window.location.assign(AUTH_CALLBACK_PATH);
+    toast.error(error.message);
   };
+
 
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center px-4 py-10">
