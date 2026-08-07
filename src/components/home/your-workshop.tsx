@@ -25,10 +25,12 @@ function Cover({
         alt=""
         loading="lazy"
         style={
+          // Focal points are stored as percentages (0-100), not fractions.
           focalX != null || focalY != null
-            ? { objectPosition: `${(focalX ?? 0.5) * 100}% ${(focalY ?? 0.5) * 100}%` }
+            ? { objectPosition: `${focalX ?? 50}% ${focalY ?? 50}%` }
             : undefined
         }
+
         className="aspect-[16/10] w-full object-cover transition duration-500 group-hover:scale-[1.03]"
       />
     );
