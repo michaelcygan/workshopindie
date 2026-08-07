@@ -1,10 +1,12 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { safeDestination } from "@/lib/safe-destination";
 import { setPostAuthIntent } from "@/lib/post-auth-intent";
 import { AUTH_CALLBACK_PATH } from "@/lib/auth-launcher";
+import { checkEmailExists } from "@/lib/auth-email.functions";
+import { stashHandoffPassword, takeHandoffPassword } from "@/lib/auth-handoff";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,19 +15,19 @@ import { AppleSignIn } from "@/components/apple-sign-in";
 import { KickerChip } from "@/components/kicker-chip";
 import { toast } from "sonner";
 
-const REF_KEY = "signup-ref";
-
 export const Route = createFileRoute("/login")({
   component: Login,
   validateSearch: (
     s: Record<string, unknown>,
-  ): { claim?: string; join?: string; group?: string; redirect?: string } => ({
+  ): { claim?: string; join?: string; group?: string; redirect?: string; email?: string } => ({
     claim: typeof s.claim === "string" ? s.claim : undefined,
     join: typeof s.join === "string" ? s.join : undefined,
     group: typeof s.group === "string" ? s.group : undefined,
     redirect: typeof s.redirect === "string" ? s.redirect : undefined,
+    email: typeof s.email === "string" ? s.email : undefined,
   }),
 });
+
 
 function Login() {
   const search = Route.useSearch();
