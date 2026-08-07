@@ -1,14 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import type { PublicBlogCard } from "@/lib/home-types";
-
-function formatDate(iso: string | null) {
-  if (!iso) return "";
-  return new Date(iso).toLocaleDateString(undefined, {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
-}
+import { formatLongDate as formatDate } from "@/lib/format-date";
 
 /**
  * The lead editorial block: one large feature plus two compact secondary

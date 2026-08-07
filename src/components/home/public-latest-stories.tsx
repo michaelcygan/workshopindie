@@ -1,10 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import type { PublicBlogCard } from "@/lib/home-types";
-
-function formatDate(iso: string | null) {
-  if (!iso) return "";
-  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
-}
+import { formatShortDate as formatDate } from "@/lib/format-date";
 
 function Byline({ post }: { post: PublicBlogCard }) {
   return (
