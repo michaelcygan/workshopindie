@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.enforce_username_namespace() FROM PUBLIC, anon, authenticated;
