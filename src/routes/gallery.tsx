@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { WorkCard, type WorkCardData } from "@/components/work-card";
 import { CANONICAL_WORK_CATEGORIES, type Category } from "@/lib/categories";
-import { normalizeCategory, workStorageValuesFor } from "@/lib/taxonomy";
+import { canonicalFilterValues, normalizeCategory } from "@/lib/taxonomy";
 import { CategoryScroller } from "@/components/category-scroller";
 import { GalleryCityFilter, type CityOption } from "@/components/gallery-city-filter";
 import { Button } from "@/components/ui/button";
@@ -118,7 +118,7 @@ async function fetchForYouPage(params: {
     .in("visibility", ["public", "unlisted"])
     .limit(PAGE_SIZE);
 
-  if (params.category !== "all") qb = qb.overlaps("categories", workStorageValuesFor(params.category) as Category[]);
+  if (params.category !== "all") qb = qb.overlaps("categories_canonical", canonicalFilterValues(params.category));
   if (params.citySlug !== "all") {
     const cid = params.cityIdMap.get(params.citySlug);
     if (!cid) return { works: [], nextCursor: null };
@@ -197,7 +197,7 @@ async function fetchFavoritesPage(params: {
       "id,title,slug,category,categories,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,created_at,created_by, work_credits(role_label, sort_order, display_name, profiles(id,display_name,username))",
     )
     .in("id", ids);
-  if (params.category !== "all") qb = qb.overlaps("categories", workStorageValuesFor(params.category) as Category[]);
+  if (params.category !== "all") qb = qb.overlaps("categories_canonical", canonicalFilterValues(params.category));
   if (params.citySlug !== "all") {
     const cid = params.cityIdMap.get(params.citySlug);
     if (!cid) return { works: [], nextCursor: null };

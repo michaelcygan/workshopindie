@@ -12,8 +12,8 @@ import { CollabCard, type CollabCardData } from "@/components/collab-card";
 import { CategoryScroller } from "@/components/category-scroller";
 import { CityCombobox } from "@/components/city-combobox";
 
-import { CANONICAL_WORK_CATEGORIES, type Category } from "@/lib/categories";
-import { normalizeCategory, workStorageValuesFor } from "@/lib/taxonomy";
+import { CANONICAL_WORK_CATEGORIES } from "@/lib/categories";
+import { canonicalFilterValues, normalizeCategory } from "@/lib/taxonomy";
 
 /** Category filter value: a canonical category id, or "all". */
 type CatFilter = string;
@@ -86,7 +86,7 @@ async function fetchPosts({ cat, city, online, blockedIds }: Filters & { blocked
     .order("created_at", { ascending: false })
     .limit(60);
 
-  if (cat !== "all") q = q.overlaps("categories", workStorageValuesFor(cat) as Category[]);
+  if (cat !== "all") q = q.overlaps("categories_canonical", canonicalFilterValues(cat));
   if (online) {
     q = q.eq("location_mode", "online");
   } else if (city) {

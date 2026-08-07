@@ -2,8 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-
-const ONLINE_WINDOW_MS = 2 * 60 * 1000;
+import { isComingOnline, isOnline } from "@/lib/presence/policy";
 
 export type Friend = {
   user_id: string;
@@ -24,37 +23,30 @@ export type LiveLoungeRoom = {
   createdAt: string;
 };
 
-const COME_ONLINE_THRESHOLD_MS = 10 * 60 * 1000;
-
 /**
- * Lightweight presence heartbeat. Touches profiles.last_active_at for the
- * signed-in user. Called every ~60s from the root while the tab is visible.
+ * Presence heartbeat — Wave 8, two tiers (see @/lib/presence/policy).
  *
- * Also fires "friend came online" notifications to mutuals who opted in,
- * but only when the user has been away for >10 minutes — so the per-minute
- * heartbeat doesn't spam anyone.
+ * One RPC call: upserts the ephemeral `user_presence` row, and only refreshes
+ * the durable `profiles.last_active_at` once every 10 minutes. Runs as the
+ * signed-in user, so no service-role write is involved in the hot path.
+ *
+ * Still fires "friend came online" to mutuals who opted in, and only after a
+ * real absence, using the prior durable stamp the RPC hands back.
  */
 export const pingPresence = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { userId } = context;
+    const { userId, supabase } = context;
 
-    const { data: prev } = await supabaseAdmin
-      .from("profiles")
-      .select("last_active_at, show_online, display_name, username")
-      .eq("id", userId)
-      .maybeSingle();
+    const { data, error } = await supabase.rpc("touch_presence");
+    if (error) return { ok: false as const, cameOnline: false };
 
-    const now = new Date();
-    await supabaseAdmin
-      .from("profiles")
-      .update({ last_active_at: now.toISOString() })
-      .eq("id", userId);
+    const row = (Array.isArray(data) ? data[0] : data) as
+      | { prev_seen_at: string | null; show_online: boolean; durable_written: boolean }
+      | undefined;
 
-    const wasAway =
-      !prev?.last_active_at ||
-      now.getTime() - new Date(prev.last_active_at).getTime() > COME_ONLINE_THRESHOLD_MS;
-    if (!wasAway || !prev?.show_online) return { ok: true, cameOnline: false };
+    if (!row?.show_online) return { ok: true as const, cameOnline: false };
+    if (!isComingOnline(row.prev_seen_at)) return { ok: true as const, cameOnline: false };
 
     // Find mutuals
     const [{ data: iFollow }, { data: followMe }] = await Promise.all([
@@ -65,7 +57,7 @@ export const pingPresence = createServerFn({ method: "POST" })
     const mutualIds = (followMe ?? [])
       .map((r) => r.follower_user_id)
       .filter((id) => iFollowSet.has(id));
-    if (mutualIds.length === 0) return { ok: true, cameOnline: true };
+    if (mutualIds.length === 0) return { ok: true as const, cameOnline: true };
 
     // "Came online" is opt-IN (default off), so the opt-in list is resolved
     // here; self-suppression, blocks and dedupe come from the delivery service.
@@ -75,7 +67,13 @@ export const pingPresence = createServerFn({ method: "POST" })
       .in("user_id", mutualIds)
       .eq("inapp_friend_online", true);
     const optedIn = (prefs ?? []).map((p) => p.user_id as string);
-    if (optedIn.length === 0) return { ok: true, cameOnline: true };
+    if (optedIn.length === 0) return { ok: true as const, cameOnline: true };
+
+    const { data: me } = await supabaseAdmin
+      .from("profiles")
+      .select("display_name, username")
+      .eq("id", userId)
+      .maybeSingle();
 
     const { notifyMany } = await import("@/lib/notifications/deliver.server");
     await notifyMany({
@@ -85,16 +83,18 @@ export const pingPresence = createServerFn({ method: "POST" })
       entityType: "profile",
       entityId: userId,
       dedupeWindowS: 300,
-      payload: { display_name: prev.display_name, username: prev.username },
+      payload: { display_name: me?.display_name ?? null, username: me?.username ?? null },
     });
 
-
-    return { ok: true, cameOnline: true };
+    return { ok: true as const, cameOnline: true };
   });
+
 
 /**
  * Mutual-follow friends list with online indicator.
- * Online = last_active_at within 2 minutes AND show_online=true.
+ * Online is read from the ephemeral tier (`user_presence`), gated by the
+ * person's own show_online flag. `last_active_at` stays the coarse durable
+ * stamp shown as "last seen".
  */
 export const getFriends = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -116,24 +116,34 @@ export const getFriends = createServerFn({ method: "GET" })
       .filter((id) => iFollowSet.has(id) && !blocked.has(id));
     if (mutualIds.length === 0) return [];
 
-    const { data: rows } = await supabaseAdmin
-      .from("profiles")
-      .select("id, display_name, username, avatar_url, headline, last_active_at, show_online")
-      .in("id", mutualIds)
-      .limit(200);
+    const [{ data: rows }, { data: presence }] = await Promise.all([
+      supabaseAdmin
+        .from("profiles")
+        .select("id, display_name, username, avatar_url, headline, last_active_at, show_online")
+        .in("id", mutualIds)
+        .limit(200),
+      supabaseAdmin
+        .from("user_presence")
+        .select("user_id, last_seen_at, show_online")
+        .in("user_id", mutualIds),
+    ]);
+
+    const seen = new Map<string, string>();
+    for (const p of presence ?? []) {
+      if (p.show_online) seen.set(p.user_id as string, p.last_seen_at as string);
+    }
 
     const now = Date.now();
     return (rows ?? [])
       .map((p) => {
-        const last = p.last_active_at ? new Date(p.last_active_at).getTime() : 0;
-        const isOnline = !!p.show_online && last > 0 && now - last < ONLINE_WINDOW_MS;
+        const online = !!p.show_online && isOnline(seen.get(p.id) ?? null, now);
         return {
           user_id: p.id,
           display_name: p.display_name,
           username: p.username,
           avatar_url: p.avatar_url,
           headline: p.headline,
-          online: isOnline,
+          online,
           last_active_at: p.show_online ? p.last_active_at : null,
         } as Friend;
       })
@@ -144,6 +154,7 @@ export const getFriends = createServerFn({ method: "GET" })
         );
       });
   });
+
 
 /**
  * Live Lounge rooms the signed-in user can invite someone into: rooms they

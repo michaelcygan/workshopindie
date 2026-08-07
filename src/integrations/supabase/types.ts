@@ -995,7 +995,9 @@ export type Database = {
           archived_at: string | null
           boost_count: number
           categories: Database["public"]["Enums"]["category"][]
+          categories_canonical: string[]
           category: Database["public"]["Enums"]["category"]
+          category_canonical: string | null
           city_id: string | null
           close_nudge_dismissed_at: string | null
           closed_at: string | null
@@ -1032,7 +1034,9 @@ export type Database = {
           archived_at?: string | null
           boost_count?: number
           categories?: Database["public"]["Enums"]["category"][]
+          categories_canonical?: string[]
           category: Database["public"]["Enums"]["category"]
+          category_canonical?: string | null
           city_id?: string | null
           close_nudge_dismissed_at?: string | null
           closed_at?: string | null
@@ -1069,7 +1073,9 @@ export type Database = {
           archived_at?: string | null
           boost_count?: number
           categories?: Database["public"]["Enums"]["category"][]
+          categories_canonical?: string[]
           category?: Database["public"]["Enums"]["category"]
+          category_canonical?: string | null
           city_id?: string | null
           close_nudge_dismissed_at?: string | null
           closed_at?: string | null
@@ -3549,6 +3555,7 @@ export type Database = {
       instant_rooms: {
         Row: {
           category: Database["public"]["Enums"]["category"] | null
+          category_canonical: string | null
           city_id: string | null
           claim_started_at: string | null
           claim_user_id: string | null
@@ -3569,6 +3576,7 @@ export type Database = {
           link_token: string | null
           locked: boolean
           medium: Database["public"]["Enums"]["category"] | null
+          medium_canonical: string | null
           note: string | null
           note_updated_at: string | null
           note_updated_by: string | null
@@ -3589,6 +3597,7 @@ export type Database = {
         }
         Insert: {
           category?: Database["public"]["Enums"]["category"] | null
+          category_canonical?: string | null
           city_id?: string | null
           claim_started_at?: string | null
           claim_user_id?: string | null
@@ -3609,6 +3618,7 @@ export type Database = {
           link_token?: string | null
           locked?: boolean
           medium?: Database["public"]["Enums"]["category"] | null
+          medium_canonical?: string | null
           note?: string | null
           note_updated_at?: string | null
           note_updated_by?: string | null
@@ -3629,6 +3639,7 @@ export type Database = {
         }
         Update: {
           category?: Database["public"]["Enums"]["category"] | null
+          category_canonical?: string | null
           city_id?: string | null
           claim_started_at?: string | null
           claim_user_id?: string | null
@@ -3649,6 +3660,7 @@ export type Database = {
           link_token?: string | null
           locked?: boolean
           medium?: Database["public"]["Enums"]["category"] | null
+          medium_canonical?: string | null
           note?: string | null
           note_updated_at?: string | null
           note_updated_by?: string | null
@@ -4846,6 +4858,7 @@ export type Database = {
           bio: string | null
           birthdate: string | null
           categories: Database["public"]["Enums"]["category"][]
+          categories_canonical: string[]
           cc_consent_ack: boolean
           cc_consent_ack_at: string | null
           city_id: string | null
@@ -4896,6 +4909,7 @@ export type Database = {
           bio?: string | null
           birthdate?: string | null
           categories?: Database["public"]["Enums"]["category"][]
+          categories_canonical?: string[]
           cc_consent_ack?: boolean
           cc_consent_ack_at?: string | null
           city_id?: string | null
@@ -4946,6 +4960,7 @@ export type Database = {
           bio?: string | null
           birthdate?: string | null
           categories?: Database["public"]["Enums"]["category"][]
+          categories_canonical?: string[]
           cc_consent_ack?: boolean
           cc_consent_ack_at?: string | null
           city_id?: string | null
@@ -5366,6 +5381,7 @@ export type Database = {
           city_id: string
           created_at: string
           default_category: Database["public"]["Enums"]["category"] | null
+          default_category_canonical: string | null
           default_location_text: string | null
           description: string | null
           host_user_id: string
@@ -5378,6 +5394,7 @@ export type Database = {
           city_id: string
           created_at?: string
           default_category?: Database["public"]["Enums"]["category"] | null
+          default_category_canonical?: string | null
           default_location_text?: string | null
           description?: string | null
           host_user_id: string
@@ -5390,6 +5407,7 @@ export type Database = {
           city_id?: string
           created_at?: string
           default_category?: Database["public"]["Enums"]["category"] | null
+          default_category_canonical?: string | null
           default_location_text?: string | null
           description?: string | null
           host_user_id?: string
@@ -5516,6 +5534,30 @@ export type Database = {
           blocker_user_id?: string
           created_at?: string
           id?: string
+        }
+        Relationships: []
+      }
+      user_presence: {
+        Row: {
+          created_at: string
+          last_seen_at: string
+          show_online: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          last_seen_at?: string
+          show_online?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          last_seen_at?: string
+          show_online?: boolean
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -6184,7 +6226,9 @@ export type Database = {
           book_publisher: string | null
           boost_count: number
           categories: Database["public"]["Enums"]["category"][]
+          categories_canonical: string[]
           category: Database["public"]["Enums"]["category"]
+          category_canonical: string | null
           city_id: string | null
           comment_count: number
           commercial_use: string
@@ -6232,7 +6276,9 @@ export type Database = {
           book_publisher?: string | null
           boost_count?: number
           categories?: Database["public"]["Enums"]["category"][]
+          categories_canonical?: string[]
           category: Database["public"]["Enums"]["category"]
+          category_canonical?: string | null
           city_id?: string | null
           comment_count?: number
           commercial_use?: string
@@ -6280,7 +6326,9 @@ export type Database = {
           book_publisher?: string | null
           boost_count?: number
           categories?: Database["public"]["Enums"]["category"][]
+          categories_canonical?: string[]
           category?: Database["public"]["Enums"]["category"]
+          category_canonical?: string | null
           city_id?: string | null
           comment_count?: number
           commercial_use?: string
@@ -6827,6 +6875,7 @@ export type Database = {
       workshop_links: {
         Row: {
           category: Database["public"]["Enums"]["category"] | null
+          category_canonical: string | null
           cover_url: string | null
           created_at: string
           created_by: string | null
@@ -6840,6 +6889,7 @@ export type Database = {
         }
         Insert: {
           category?: Database["public"]["Enums"]["category"] | null
+          category_canonical?: string | null
           cover_url?: string | null
           created_at?: string
           created_by?: string | null
@@ -6853,6 +6903,7 @@ export type Database = {
         }
         Update: {
           category?: Database["public"]["Enums"]["category"] | null
+          category_canonical?: string | null
           cover_url?: string | null
           created_at?: string
           created_by?: string | null
@@ -7531,7 +7582,9 @@ export type Database = {
           audience_city_ids: string[]
           auto_converted_at: string | null
           categories: Database["public"]["Enums"]["category"][]
+          categories_canonical: string[]
           category: Database["public"]["Enums"]["category"]
+          category_canonical: string | null
           check_in_closes_at: string | null
           check_in_opens_at: string | null
           city_id: string | null
@@ -7586,7 +7639,9 @@ export type Database = {
           audience_city_ids?: string[]
           auto_converted_at?: string | null
           categories?: Database["public"]["Enums"]["category"][]
+          categories_canonical?: string[]
           category: Database["public"]["Enums"]["category"]
+          category_canonical?: string | null
           check_in_closes_at?: string | null
           check_in_opens_at?: string | null
           city_id?: string | null
@@ -7641,7 +7696,9 @@ export type Database = {
           audience_city_ids?: string[]
           auto_converted_at?: string | null
           categories?: Database["public"]["Enums"]["category"][]
+          categories_canonical?: string[]
           category?: Database["public"]["Enums"]["category"]
+          category_canonical?: string | null
           check_in_closes_at?: string | null
           check_in_opens_at?: string | null
           city_id?: string | null
@@ -7778,6 +7835,7 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           categories: Database["public"]["Enums"]["category"][] | null
+          categories_canonical: string[] | null
           city_id: string | null
           cover_url: string | null
           cover_work_id: string | null
@@ -7816,6 +7874,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           categories?: Database["public"]["Enums"]["category"][] | null
+          categories_canonical?: string[] | null
           city_id?: string | null
           cover_url?: string | null
           cover_work_id?: string | null
@@ -7854,6 +7913,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           categories?: Database["public"]["Enums"]["category"][] | null
+          categories_canonical?: string[] | null
           city_id?: string | null
           cover_url?: string | null
           cover_work_id?: string | null
@@ -8584,6 +8644,7 @@ export type Database = {
         Returns: boolean
       }
       can_dm: { Args: { _a: string; _b: string }; Returns: boolean }
+      canonical_category: { Args: { _value: string }; Returns: string }
       canonical_from_storage: { Args: { _value: string }; Returns: string }
       cast_workshop_poll_vote: {
         Args: { _choice_index: number; _poll_id: string }
@@ -8981,6 +9042,7 @@ export type Database = {
       start_host_claim: { Args: { _room_id: string }; Returns: undefined }
       sweep_stale_lounge_speakers: { Args: never; Returns: number }
       sweep_stale_lounges: { Args: never; Returns: undefined }
+      sweep_stale_presence: { Args: never; Returns: number }
       sync_blog_medium_groups: {
         Args: { _post_id: string }
         Returns: undefined
@@ -9008,6 +9070,14 @@ export type Database = {
           liked: boolean
           save_count: number
           saved: boolean
+        }[]
+      }
+      touch_presence: {
+        Args: never
+        Returns: {
+          durable_written: boolean
+          prev_seen_at: string
+          show_online: boolean
         }[]
       }
       try_consume_blog_publication: {
