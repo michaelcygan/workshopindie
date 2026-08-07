@@ -1,7 +1,5 @@
-import { useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Link } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { BookOpen, Calendar, Compass, PenLine, Radio, Sparkles, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
