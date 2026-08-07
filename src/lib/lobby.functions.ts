@@ -378,14 +378,17 @@ export const requestToJoinLobby = createServerFn({ method: "POST" })
       }, { onConflict: "workshop_id,invitee_user_id" })
       .then(() => null, () => null);
 
-    await supabaseAdmin.from("notifications").insert({
-      user_id: ws.host_user_id,
+    const { notify } = await import("@/lib/notifications/deliver.server");
+    await notify({
+      recipientId: ws.host_user_id,
+      actorUserId: userId,
       kind: "workshop_invite_from_room",
-      actor_user_id: userId,
-      entity_type: "workshop",
-      entity_id: ws.id,
+      entityType: "workshop",
+      entityId: ws.id,
+      preference: "inapp_workshop_updates",
       payload: { workshop_slug: ws.slug, title: ws.title, is_lobby: true, requested: true },
-    }).then(() => null, () => null);
+    });
+
 
     return { ok: true };
   });
