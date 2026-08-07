@@ -164,13 +164,13 @@ function DmsIndex() {
       }
 
       // Realtime: refresh row order / unread counts on inbound activity.
+      // Only `conversations` is watched over realtime here, and both legs are
+      // filtered to this user. New/updated *messages* arrive via the shared
+      // notifications channel below (see useNotificationEvents) — subscribing
+      // to `messages` directly is impossible to filter (no recipient column)
+      // and would stream every DM in the app to anyone viewing their inbox.
       channel = supabase
         .channel(`dms-index:${uid}`)
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "messages" },
-          () => scheduleReload(),
-        )
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "conversations", filter: `user_a=eq.${uid}` },
@@ -183,6 +183,7 @@ function DmsIndex() {
         )
         .subscribe();
     })();
+
 
 
     function onFocus() { scheduleReload(); }
