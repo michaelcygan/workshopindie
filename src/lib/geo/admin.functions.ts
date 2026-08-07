@@ -447,9 +447,9 @@ export const runCityLaunchBatch = createServerFn({ method: "POST" })
           providerId: match.providerId,
           created: isNew,
           cityId: launched.cityId,
-          citySlug: city?.slug ?? null,
-          groupId: group?.id ?? null,
-          groupSlug: group?.slug ?? null,
+          citySlug: launched.citySlug,
+          groupId: launched.groupId,
+          groupSlug: launched.groupSlug,
           queueStatus: "launched",
           note: isNew ? "Provisioned" : "Already existed",
         });
