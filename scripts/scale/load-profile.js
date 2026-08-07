@@ -112,15 +112,28 @@ export function eventPage() {
 }
 
 export function rsvpBurst() {
-  if (!TOKEN) return;
-  // Exercises reserve_event_rsvp under contention through the real stack.
-  // EVENT_ID must be a scratch event; the RPC is idempotent per user.
+  // Exercises reserve_event_rsvp under contention. Server functions speak
+  // TanStack's RPC protocol and can't be driven from k6, so this hits the
+  // database RPC directly — the same statement the server function runs.
+  const url = __ENV.SUPABASE_URL;
+  const key = __ENV.SUPABASE_PUBLISHABLE_KEY;
   const eventId = __ENV.EVENT_ID;
-  if (!eventId) return;
+  if (!TOKEN || !url || !key || !eventId) return;
+
   const res = http.post(
-    `${BASE}/api/public/health`,
-    JSON.stringify({ event_id: eventId }),
-    { headers: { ...authHeaders(), "Content-Type": "application/json" } },
+    `${url}/rest/v1/rpc/reserve_event_rsvp`,
+    JSON.stringify({ _event_id: eventId, _status: "going", _plus_ones: 0, _note: null }),
+    {
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${TOKEN}`,
+        "Content-Type": "application/json",
+      },
+    },
   );
-  check(res, { "rsvp accepted": (r) => r.status < 500 });
+  check(res, {
+    "rsvp resolved": (r) => r.status === 200,
+    // Contention must produce a decision, never a deadlock or a 5xx.
+    "no server error": (r) => r.status < 500,
+  });
 }
