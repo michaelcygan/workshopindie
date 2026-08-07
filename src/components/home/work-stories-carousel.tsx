@@ -42,7 +42,7 @@ function StoryCard({ item, onPeek }: { item: HomeWorkStory; onPeek: (slug: strin
             style={{
               objectPosition:
                 w.cover_focal_x != null && w.cover_focal_y != null
-                  ? `${w.cover_focal_x * 100}% ${w.cover_focal_y * 100}%`
+                  ? `${w.cover_focal_x}% ${w.cover_focal_y}%`
                   : undefined,
             }}
           />
