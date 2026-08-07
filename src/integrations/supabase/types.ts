@@ -995,6 +995,7 @@ export type Database = {
           archived_at: string | null
           boost_count: number
           categories: Database["public"]["Enums"]["category"][]
+          categories_canonical: string[]
           category: Database["public"]["Enums"]["category"]
           category_canonical: string | null
           city_id: string | null
@@ -1033,6 +1034,7 @@ export type Database = {
           archived_at?: string | null
           boost_count?: number
           categories?: Database["public"]["Enums"]["category"][]
+          categories_canonical?: string[]
           category: Database["public"]["Enums"]["category"]
           category_canonical?: string | null
           city_id?: string | null
@@ -1071,6 +1073,7 @@ export type Database = {
           archived_at?: string | null
           boost_count?: number
           categories?: Database["public"]["Enums"]["category"][]
+          categories_canonical?: string[]
           category?: Database["public"]["Enums"]["category"]
           category_canonical?: string | null
           city_id?: string | null
@@ -6223,6 +6226,7 @@ export type Database = {
           book_publisher: string | null
           boost_count: number
           categories: Database["public"]["Enums"]["category"][]
+          categories_canonical: string[]
           category: Database["public"]["Enums"]["category"]
           category_canonical: string | null
           city_id: string | null
@@ -6272,6 +6276,7 @@ export type Database = {
           book_publisher?: string | null
           boost_count?: number
           categories?: Database["public"]["Enums"]["category"][]
+          categories_canonical?: string[]
           category: Database["public"]["Enums"]["category"]
           category_canonical?: string | null
           city_id?: string | null
@@ -6321,6 +6326,7 @@ export type Database = {
           book_publisher?: string | null
           boost_count?: number
           categories?: Database["public"]["Enums"]["category"][]
+          categories_canonical?: string[]
           category?: Database["public"]["Enums"]["category"]
           category_canonical?: string | null
           city_id?: string | null
@@ -7576,6 +7582,7 @@ export type Database = {
           audience_city_ids: string[]
           auto_converted_at: string | null
           categories: Database["public"]["Enums"]["category"][]
+          categories_canonical: string[]
           category: Database["public"]["Enums"]["category"]
           category_canonical: string | null
           check_in_closes_at: string | null
@@ -7632,6 +7639,7 @@ export type Database = {
           audience_city_ids?: string[]
           auto_converted_at?: string | null
           categories?: Database["public"]["Enums"]["category"][]
+          categories_canonical?: string[]
           category: Database["public"]["Enums"]["category"]
           category_canonical?: string | null
           check_in_closes_at?: string | null
@@ -7688,6 +7696,7 @@ export type Database = {
           audience_city_ids?: string[]
           auto_converted_at?: string | null
           categories?: Database["public"]["Enums"]["category"][]
+          categories_canonical?: string[]
           category?: Database["public"]["Enums"]["category"]
           category_canonical?: string | null
           check_in_closes_at?: string | null
@@ -7826,6 +7835,7 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           categories: Database["public"]["Enums"]["category"][] | null
+          categories_canonical: string[] | null
           city_id: string | null
           cover_url: string | null
           cover_work_id: string | null
@@ -7864,6 +7874,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           categories?: Database["public"]["Enums"]["category"][] | null
+          categories_canonical?: string[] | null
           city_id?: string | null
           cover_url?: string | null
           cover_work_id?: string | null
@@ -7902,6 +7913,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           categories?: Database["public"]["Enums"]["category"][] | null
+          categories_canonical?: string[] | null
           city_id?: string | null
           cover_url?: string | null
           cover_work_id?: string | null
