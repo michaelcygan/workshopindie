@@ -46,7 +46,12 @@ async function measure(label: string, fn: () => Promise<unknown>) {
 describe("home fan-out measurement", () => {
   it("public home", async () => {
     const { getPublicHomeServer } = await import("@/lib/home.server");
-    await measure("home.public", () => getPublicHomeServer());
+    const { invalidateCached } = await import("./ttl-cache.server");
+    await measure("home.public", () => {
+      invalidateCached("home:public");
+      return getPublicHomeServer();
+    });
+    await measure("home.public.cached", () => getPublicHomeServer());
   }, 180_000);
 
   it("member home", async () => {
