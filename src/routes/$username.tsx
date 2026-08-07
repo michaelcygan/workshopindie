@@ -81,6 +81,15 @@ export const Route = createFileRoute("/$username")({
   head: ({ params, loaderData }) => {
     const p = loaderData?.seo;
     const url = `https://workshopindie.com/${params.username}`;
+    // Root-level handles that resolve to nobody must never be indexed.
+    if (!p) {
+      return {
+        meta: [
+          { title: "Profile not found — Workshop" },
+          { name: "robots", content: "noindex" },
+        ],
+      };
+    }
     const name = p?.display_name ?? p?.username ?? params.username;
     const title = `${name} — Workshop`;
     const description = p?.headline ?? p?.bio?.slice(0, 160) ?? `${name}'s profile on Workshop.`;
