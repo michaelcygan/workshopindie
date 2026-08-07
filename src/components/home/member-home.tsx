@@ -82,7 +82,7 @@ function HomeSkeleton() {
 
 export function MemberHome() {
   const fetchHome = useServerFn(getMemberHome);
-  const qc = useQueryClient();
+  
   const q = useQuery({
     queryKey: ["member-home"],
     queryFn: () => fetchHome(),
