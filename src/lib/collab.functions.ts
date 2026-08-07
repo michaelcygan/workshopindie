@@ -1118,21 +1118,21 @@ export const acceptCollabApplicant = createServerFn({ method: "POST" })
     }
 
     // 4. Notify the accepted user (best-effort).
-    await supabaseAdmin
-      .from("notifications")
-      .insert({
-        user_id: data.applicantUserId,
-        kind: "collab_accepted",
-        actor_user_id: userId,
-        entity_type: "collab_post",
-        entity_id: data.collabPostId,
-        payload: {
-          collab_title: post.title ?? null,
-          collab_slug: post.slug ?? null,
-          url: post.slug ? `/collab/${post.slug}` : null,
-        },
-      })
-      .then(() => null, () => null);
+    const { notify } = await import("@/lib/notifications/deliver.server");
+    await notify({
+      recipientId: data.applicantUserId,
+      actorUserId: userId,
+      kind: "collab_accepted",
+      entityType: "collab_post",
+      entityId: data.collabPostId,
+      preference: "inapp_collab_activity",
+      payload: {
+        collab_title: post.title ?? null,
+        collab_slug: post.slug ?? null,
+        url: post.slug ? `/collab/${post.slug}` : null,
+      },
+    });
+
 
     return { ok: true as const };
   });
