@@ -110,7 +110,8 @@ export const options = SMOKE
     "t_member_home": ["p(95)<1500"],
     "t_event_read": ["p(95)<1000"],
   },
-};
+    };
+
 
 function authHeaders() {
   return TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {};
