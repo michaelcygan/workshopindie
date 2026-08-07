@@ -869,14 +869,17 @@ export const leaveCollab = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     if (!rows || rows.length === 0) throw new Error("You're not on this collab.");
 
-    await supabaseAdmin.from("notifications").insert({
-      user_id: post.user_id,
+    const { notify } = await import("@/lib/notifications/deliver.server");
+    await notify({
+      recipientId: post.user_id,
+      actorUserId: userId,
       kind: "collab_member_left",
-      actor_user_id: userId,
-      entity_type: "collab_post",
-      entity_id: data.collabPostId,
+      entityType: "collab_post",
+      entityId: data.collabPostId,
+      preference: "inapp_collab_activity",
       payload: { collab_title: post.title },
     });
+
     return { ok: true as const };
   });
 
