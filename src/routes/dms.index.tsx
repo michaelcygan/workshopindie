@@ -193,12 +193,22 @@ function DmsIndex() {
 
     return () => {
       cancelled = true;
+      inboxReloadRef.current = () => {};
       if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current);
       if (channel) supabase.removeChannel(channel);
       document.removeEventListener("visibilitychange", onFocus);
       window.removeEventListener("focus", onFocus);
     };
   }, [user?.id]);
+
+  // Inbound DMs reach the inbox through the shared, user-filtered
+  // notifications channel rather than a global `messages` subscription.
+  const onDmNotification = useCallback((row: { kind: string }) => {
+    if (row.kind !== "dm") return;
+    inboxReloadRef.current();
+  }, []);
+  useNotificationEvents(onDmNotification);
+
 
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
