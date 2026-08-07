@@ -27,8 +27,16 @@ export function PresenceHeartbeat() {
       ping().catch(() => {});
     };
 
-    beat();
-    timer = setInterval(beat, HEARTBEAT_INTERVAL_MS);
+    // Sessions that start in the same second would otherwise beat in lockstep
+    // forever. A random offset inside the first quarter of the interval spreads
+    // the writes out; the interval itself is unchanged.
+    const jitter = Math.floor(Math.random() * (HEARTBEAT_INTERVAL_MS / 4));
+    const start = setTimeout(() => {
+      if (cancelled) return;
+      beat();
+      timer = setInterval(beat, HEARTBEAT_INTERVAL_MS);
+    }, jitter);
+
     const onVis = () => {
       if (document.visibilityState === "visible") beat();
     };
@@ -36,10 +44,12 @@ export function PresenceHeartbeat() {
 
     return () => {
       cancelled = true;
+      clearTimeout(start);
       if (timer) clearInterval(timer);
       document.removeEventListener("visibilitychange", onVis);
     };
   }, [user, ping]);
+
 
   return null;
 }
