@@ -1,54 +1,86 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { buildIcsFile, icsFilename } from "@/lib/events/ics";
+import { eventEndsAt } from "@/lib/events/lifecycle";
 
-function escapeIcs(s: string): string {
-  return s.replace(/\\/g, "\\\\").replace(/,/g, "\\,").replace(/;/g, "\\;").replace(/\n/g, "\\n");
-}
-function toIcsDate(iso: string): string {
-  return new Date(iso).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-}
+const SITE = "https://workshopindie.com";
 
+/**
+ * Public calendar representation of a single Event occurrence.
+ *
+ * Read as an anonymous visitor on purpose: Workshop's existing event access
+ * rules decide what this endpoint can see, so drafts, group-only and unlisted
+ * events 404 here exactly as they do for a signed-out page view. The private
+ * online join URL is never selected, let alone emitted — the calendar entry
+ * always points back to the Workshop event page instead.
+ */
 export const Route = createFileRoute("/api/public/events/$id/ics")({
   server: {
     handlers: {
       GET: async ({ params }) => {
-        const supabase = createClient<Database>(
-          process.env.SUPABASE_URL!,
-          process.env.SUPABASE_PUBLISHABLE_KEY!,
-          { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-        );
+        const url = process.env["SUPABASE_URL"];
+        const key = process.env["SUPABASE_PUBLISHABLE_KEY"];
+        if (!url || !key) return new Response("Not found", { status: 404 });
+
+        const supabase = createClient<Database>(url, key, {
+          auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+        });
+
         const { data, error } = await supabase
           .from("group_events")
-          .select("id,title,tagline,description,starts_at,ends_at,venue_name,venue_address,online_url,slug,group:groups!inner(slug,name)")
+          .select(
+            "id,title,tagline,description,starts_at,ends_at,venue_name,venue_address,format,status,slug,group:groups!group_events_group_id_fkey(slug)",
+          )
           .eq("id", params.id)
           .is("deleted_at", null)
           .maybeSingle();
         if (error || !data) return new Response("Not found", { status: 404 });
-        type E = { id: string; title: string; tagline: string | null; description: string | null; starts_at: string; ends_at: string; venue_name: string | null; venue_address: string | null; online_url: string | null; slug: string; group: { slug: string; name: string } };
+
+        type E = {
+          id: string;
+          title: string;
+          tagline: string | null;
+          description: string | null;
+          starts_at: string;
+          ends_at: string | null;
+          venue_name: string | null;
+          venue_address: string | null;
+          format: string | null;
+          status: string | null;
+          slug: string;
+          group: { slug: string } | null;
+        };
         const ev = data as unknown as E;
-        const loc = [ev.venue_name, ev.venue_address].filter(Boolean).join(", ") || ev.online_url || "";
-        const desc = [ev.tagline, ev.description].filter(Boolean).join("\n\n");
-        const ics = [
-          "BEGIN:VCALENDAR",
-          "VERSION:2.0",
-          "PRODID:-//Workshop//Events//EN",
-          "BEGIN:VEVENT",
-          `UID:${ev.id}@workshopindie.com`,
-          `DTSTAMP:${toIcsDate(new Date().toISOString())}`,
-          `DTSTART:${toIcsDate(ev.starts_at)}`,
-          `DTEND:${toIcsDate(ev.ends_at)}`,
-          `SUMMARY:${escapeIcs(ev.title)}`,
-          `DESCRIPTION:${escapeIcs(desc)}`,
-          loc ? `LOCATION:${escapeIcs(loc)}` : "",
-          ev.online_url ? `URL:${escapeIcs(ev.online_url)}` : "",
-          "END:VEVENT",
-          "END:VCALENDAR",
-        ].filter(Boolean).join("\r\n");
+        if (!ev.group?.slug || !ev.starts_at) return new Response("Not found", { status: 404 });
+
+        const eventUrl = `${SITE}/g/${ev.group.slug}/e/${ev.slug}`;
+        const venue = [ev.venue_name, ev.venue_address].filter(Boolean).join(", ");
+        const location =
+          ev.format === "online" || !venue ? "Online — RSVP on Workshop for the link" : venue;
+
+        const description = [ev.tagline, ev.description, `View on Workshop: ${eventUrl}`]
+          .filter(Boolean)
+          .join("\n\n");
+
+        const end = eventEndsAt(ev) ?? new Date(ev.starts_at).getTime();
+
+        const ics = buildIcsFile({
+          uid: ev.id,
+          title: ev.title,
+          description,
+          location,
+          url: eventUrl,
+          start: ev.starts_at,
+          end,
+          canceled: ev.status === "canceled",
+        });
+
         return new Response(ics, {
           headers: {
             "content-type": "text/calendar; charset=utf-8",
-            "content-disposition": `attachment; filename="${ev.slug}.ics"`,
+            "content-disposition": `attachment; filename="${icsFilename(ev.slug)}"`,
+            "cache-control": "public, max-age=300",
           },
         });
       },
