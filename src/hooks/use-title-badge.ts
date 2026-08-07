@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { useNotificationEvents } from "@/hooks/use-realtime-notifications";
 
 /**
  * Prefix the browser tab title with `(n) ` when the tab is hidden and the
@@ -10,12 +11,19 @@ import { supabase } from "@/integrations/supabase/client";
  * Mounted once from `src/routes/__root.tsx`. The bell/envelope components
  * still own their own visible badges + sounds; this hook just mirrors the
  * total unread into the tab title so users notice from another tab.
+ *
+ * Both counts are driven by the shared per-session notifications channel
+ * (see use-realtime-notifications). This hook used to open two more channels
+ * of its own — one an exact duplicate of the bell's, one an unfiltered
+ * subscription to the whole `messages` table.
  */
 export function useTitleBadge() {
   const { user } = useAuth();
   const [notifUnread, setNotifUnread] = useState(0);
   const [dmUnread, setDmUnread] = useState(0);
   const baseTitleRef = useRef<string>(typeof document !== "undefined" ? document.title : "");
+  const reloadNotifRef = useRef<() => void>(() => {});
+  const reloadDmRef = useRef<() => void>(() => {});
 
   // Track base title (the title set by route head())
   useEffect(() => {
@@ -24,7 +32,7 @@ export function useTitleBadge() {
     baseTitleRef.current = document.title.replace(/^\(\d+\)\s+/, "");
   }, []);
 
-  // Load + subscribe to notifications unread count.
+  // Notifications unread count.
   useEffect(() => {
     if (!user) { setNotifUnread(0); return; }
     let cancelled = false;
@@ -37,30 +45,26 @@ export function useTitleBadge() {
         .is("read_at", null);
       if (!cancelled) setNotifUnread(count ?? 0);
     }
+    reloadNotifRef.current = () => { void load(); };
     load();
 
-    const uid = (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2));
-    const ch = supabase
-      .channel(`title-notifs:${user.id}:${uid}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
-        () => load(),
-      )
-      .subscribe();
-
-    return () => { cancelled = true; supabase.removeChannel(ch); };
+    return () => { cancelled = true; reloadNotifRef.current = () => {}; };
   }, [user?.id]);
 
-  // Load + subscribe to DM unread count.
+  // DM unread count.
   useEffect(() => {
     if (!user) { setDmUnread(0); return; }
     let cancelled = false;
-    let convIds: string[] = [];
     let debounce: ReturnType<typeof setTimeout> | null = null;
 
     async function loadUnread() {
-      if (!convIds.length) { if (!cancelled) setDmUnread(0); return; }
+      const { data: convs } = await supabase
+        .from("conversations")
+        .select("id")
+        .or(`user_a.eq.${user!.id},user_b.eq.${user!.id}`);
+      if (cancelled) return;
+      const convIds = (convs ?? []).map((c) => c.id);
+      if (!convIds.length) { setDmUnread(0); return; }
       const { data } = await supabase
         .from("messages")
         .select("conversation_id")
@@ -70,42 +74,37 @@ export function useTitleBadge() {
       if (cancelled) return;
       setDmUnread(new Set((data ?? []).map((m) => m.conversation_id)).size);
     }
-    function schedule() { if (debounce) clearTimeout(debounce); debounce = setTimeout(loadUnread, 250); }
+    function schedule() {
+      if (debounce) clearTimeout(debounce);
+      debounce = setTimeout(() => { void loadUnread(); }, 250);
+    }
+    reloadDmRef.current = schedule;
 
-    let channel: ReturnType<typeof supabase.channel> | null = null;
-    (async () => {
-      const { data: convs } = await supabase
-        .from("conversations")
-        .select("id")
-        .or(`user_a.eq.${user!.id},user_b.eq.${user!.id}`);
-      if (cancelled) return;
-      convIds = (convs ?? []).map((c) => c.id);
-      await loadUnread();
-      if (!convIds.length) return;
-      const uid = (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2));
-      channel = supabase
-        .channel(`title-dm:${user!.id}:${uid}`)
-        .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (p) => {
-          const m = p.new as { conversation_id: string };
-          if (convIds.includes(m.conversation_id)) schedule();
-        })
-        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages" }, (p) => {
-          const m = p.new as { conversation_id: string };
-          if (convIds.includes(m.conversation_id)) schedule();
-        })
-        .on("postgres_changes", { event: "INSERT", schema: "public", table: "conversations" }, (p) => {
-          const c = p.new as { id: string; user_a: string; user_b: string };
-          if (c.user_a === user!.id || c.user_b === user!.id) { convIds = [...convIds, c.id]; schedule(); }
-        })
-        .subscribe();
-    })().catch(() => { if (!cancelled) setDmUnread(0); });
+    loadUnread().catch(() => { if (!cancelled) setDmUnread(0); });
+
+    // Local reads and cross-tab focus keep the count honest without a
+    // realtime subscription on `messages`.
+    function onFocus() { schedule(); }
+    document.addEventListener("visibilitychange", onFocus);
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("dm:read", onFocus);
 
     return () => {
       cancelled = true;
+      reloadDmRef.current = () => {};
       if (debounce) clearTimeout(debounce);
-      if (channel) supabase.removeChannel(channel);
+      document.removeEventListener("visibilitychange", onFocus);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("dm:read", onFocus);
     };
   }, [user?.id]);
+
+  const onNotification = useCallback((row: { kind: string }) => {
+    reloadNotifRef.current();
+    if (row.kind === "dm") reloadDmRef.current();
+  }, []);
+  useNotificationEvents(onNotification);
+
 
   // Reflect total unread into tab title while the tab is hidden.
   useEffect(() => {

@@ -24,6 +24,7 @@ import {
   clearPendingAuthState,
 } from "@/components/account-lifecycle/post-auth-runner";
 import { useTitleBadge } from "@/hooks/use-title-badge";
+import { RealtimeNotificationsProvider } from "@/hooks/use-realtime-notifications";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteFooter } from "@/components/site-footer";
 import { OAuthErrorToast } from "@/components/oauth-error-toast";
@@ -182,23 +183,27 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <AccountLifecycleProvider>
-          <div className="min-h-screen bg-background pb-28 md:pb-0">
-            <PaymentTestModeBanner />
-            <MobileBrandHeader />
-            <TopNav />
-            <Outlet />
-            <SiteFooter />
-            <MobileNav />
+          {/* One realtime channel per session, shared by the bell, the DM
+              badge and the tab-title badge. See use-realtime-notifications. */}
+          <RealtimeNotificationsProvider>
+            <div className="min-h-screen bg-background pb-28 md:pb-0">
+              <PaymentTestModeBanner />
+              <MobileBrandHeader />
+              <TopNav />
+              <Outlet />
+              <SiteFooter />
+              <MobileNav />
 
-            <OAuthErrorToast />
+              <OAuthErrorToast />
 
-            <RefCapture />
-            <PresenceHeartbeat />
-            <SignOutCacheReset />
-            <TitleBadge />
-            <AccountLifecycleGate />
-            <PostAuthRunner />
-          </div>
+              <RefCapture />
+              <PresenceHeartbeat />
+              <SignOutCacheReset />
+              <TitleBadge />
+              <AccountLifecycleGate />
+              <PostAuthRunner />
+            </div>
+          </RealtimeNotificationsProvider>
         </AccountLifecycleProvider>
         <Toaster />
       </AuthProvider>

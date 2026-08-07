@@ -1,7 +1,5 @@
-import { useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Link } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { BookOpen, Calendar, Compass, PenLine, Radio, Sparkles, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -84,7 +82,7 @@ function HomeSkeleton() {
 
 export function MemberHome() {
   const fetchHome = useServerFn(getMemberHome);
-  const qc = useQueryClient();
+  
   const q = useQuery({
     queryKey: ["member-home"],
     queryFn: () => fetchHome(),
@@ -96,30 +94,17 @@ export function MemberHome() {
     refetchOnWindowFocus: true,
   });
 
-  // Realtime nudge, heavily debounced: bursts of Today posts collapse into one
-  // refetch rather than one per row.
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    const bump = () => {
-      if (timer) return;
-      timer = setTimeout(() => {
-        timer = null;
-        if (!document.hidden) qc.invalidateQueries({ queryKey: ["member-home"] });
-      }, 8_000);
-    };
-    const channel = supabase
-      .channel("member-home-live")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "group_today_posts" },
-        bump,
-      )
-      .subscribe();
-    return () => {
-      if (timer) clearTimeout(timer);
-      supabase.removeChannel(channel);
-    };
-  }, [qc]);
+  // No realtime subscription here on purpose.
+  //
+  // This used to open an unfiltered channel on `group_today_posts`, so every
+  // signed-in member sitting on the homepage received an event for every
+  // Today post created anywhere in the app — O(home viewers x posts) of
+  // fan-out. All it bought was collapsing worst-case staleness on an ambient
+  // pulse module from 60s to 8s.
+  //
+  // The query above already refetches every 60s while the tab is visible and
+  // again on focus, which is the right freshness for this module.
+
 
   if (q.isLoading || !q.data) return <HomeSkeleton />;
   const data = q.data as MemberHomePayload;
