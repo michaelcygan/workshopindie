@@ -56,6 +56,9 @@ export const Route = createFileRoute("/$username")({
   component: ProfilePage,
   validateSearch: zodValidator(profileSearch),
   loader: async ({ params }) => {
+    // The root segment is a shared namespace with Workshop's own routes, so a
+    // reserved or malformed handle is a 404 rather than a profile lookup.
+    if (!validateUsername(params.username).ok) throw notFound();
     const { getProfileSeo } = await import("@/lib/seo-loaders.functions");
     const data = await getProfileSeo({ data: { username: params.username } });
     return { seo: data };
