@@ -8689,6 +8689,7 @@ export type Database = {
         Args: { _months: number; _reason: string; _user_id: string }
         Returns: boolean
       }
+      group_is_joinable: { Args: { _group_id: string }; Returns: boolean }
       has_effective_plus: { Args: { _user_id: string }; Returns: boolean }
       has_max_age: {
         Args: { _max: number; _user_id: string }
@@ -8718,6 +8719,10 @@ export type Database = {
       }
       is_event_wall_sealed: { Args: { _event_id: string }; Returns: boolean }
       is_follow: { Args: { _a: string; _b: string }; Returns: boolean }
+      is_group_member: {
+        Args: { _group_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_mutual_follow: { Args: { _a: string; _b: string }; Returns: boolean }
       is_persona_member: {
         Args: { _persona_id: string; _user_id: string }
