@@ -13,6 +13,7 @@ import { NON_PUBLIC_STATUSES, RECRUITING_DEADLINE_OR } from "@/lib/collab/query"
 
 import { supabaseAdmin as rawSupabaseAdmin } from "@/integrations/supabase/client.server";
 import { span, traceClient } from "@/lib/perf/query-trace.server";
+import { cached } from "@/lib/perf/ttl-cache.server";
 import { DISCOVERABLE_STATUSES } from "@/lib/events/filters";
 import type {
   HomeBlogCard,
@@ -859,21 +860,20 @@ export async function circleStoriesServer(
   groups: MyGroup[],
   blocked: Set<string>,
 ): Promise<HomeCircleStory[]> {
-  const { data: followRows } = await supabaseAdmin
-    .from("follows")
-    .select("followed_user_id")
-    .eq("follower_user_id", userId)
-    .limit(300);
+  // Two independent lookups — issued together, not one after the other.
+  const [{ data: followRows }, { data: myCredits }] = await Promise.all([
+    supabaseAdmin
+      .from("follows")
+      .select("followed_user_id")
+      .eq("follower_user_id", userId)
+      .limit(300),
+    supabaseAdmin.from("work_credits").select("work_id").eq("user_id", userId).limit(100),
+  ]);
   const followed = ((followRows ?? []) as Array<{ followed_user_id: string }>)
     .map((r) => r.followed_user_id)
     .filter((id) => !blocked.has(id));
 
   // Frequent credited collaborators.
-  const { data: myCredits } = await supabaseAdmin
-    .from("work_credits")
-    .select("work_id")
-    .eq("user_id", userId)
-    .limit(100);
   const myWorkIds = ((myCredits ?? []) as Array<{ work_id: string }>).map((r) => r.work_id);
   const collaborators = new Set<string>();
   if (myWorkIds.length) {
@@ -1287,6 +1287,7 @@ export async function getMemberHomeServer(userId: string): Promise<MemberHomePay
     mineR,
     cityR,
     cityGroupR,
+    blogRailR,
   ] = await Promise.allSettled([
     span("lounges", () => myGroupLoungesServer(groups)),
     span("events", () => upcomingEventsServer(userId, groups, homeCityId, 4)),
@@ -1334,7 +1335,7 @@ export async function getMemberHomeServer(userId: string): Promise<MemberHomePay
             .maybeSingle()
         : { data: null },
     ),
-
+    span("blogRail", () => blogRailRowsServer().catch(() => [] as BlogCardRow[])),
   ]);
 
 
@@ -1348,12 +1349,10 @@ export async function getMemberHomeServer(userId: string): Promise<MemberHomePay
       : { posts: [] as HomeBlogCard[], isFallback: false };
   const mine = mineR.status === "fulfilled" ? mineR.value : [];
 
-  const blogRail = await span("blogRail", () =>
-    blogRailServer([
-      ...featured.posts.map((p) => p.id),
-      ...mine.filter((m) => m.kind === "blog").map((m) => m.id),
-    ]).catch(() => [] as HomeBlogCard[]),
-  );
+  const blogRail = pickBlogRail(blogRailR.status === "fulfilled" ? blogRailR.value : [], [
+    ...featured.posts.map((p) => p.id),
+    ...mine.filter((m) => m.kind === "blog").map((m) => m.id),
+  ]);
 
 
   // Prefer a Group with Today activity for the "open a Lounge" fallback.
@@ -1452,8 +1451,11 @@ export async function featuredBlogServer(): Promise<{
   return { posts: fb.map(toBlogCard), isFallback: true };
 }
 
-/** Recent public Blog posts for the "From the Blog" rail. */
-export async function blogRailServer(excludeIds: string[]): Promise<HomeBlogCard[]> {
+/**
+ * Candidate rows for the "From the Blog" rail. The exclusion set is applied in
+ * memory, so this query never has to wait on the featured/mine rails.
+ */
+async function blogRailRowsServer(): Promise<BlogCardRow[]> {
   const { data } = await supabaseAdmin
     .from("blog_posts")
     .select(BLOG_CARD_COLS)
@@ -1462,11 +1464,20 @@ export async function blogRailServer(excludeIds: string[]): Promise<HomeBlogCard
     .lte("published_at", new Date().toISOString())
     .order("published_at", { ascending: false })
     .limit(12);
+  return (data ?? []) as unknown as BlogCardRow[];
+}
+
+function pickBlogRail(rows: BlogCardRow[], excludeIds: string[]): HomeBlogCard[] {
   const seen = new Set(excludeIds);
-  return ((data ?? []) as unknown as BlogCardRow[])
+  return rows
     .filter((r) => !seen.has(r.id))
     .slice(0, 6)
     .map(toBlogCard);
+}
+
+/** Recent public Blog posts for the "From the Blog" rail. */
+export async function blogRailServer(excludeIds: string[]): Promise<HomeBlogCard[]> {
+  return pickBlogRail(await blogRailRowsServer(), excludeIds);
 }
 
 /* ───────────────────────────── Your Workshop ───────────────────────────── */
@@ -1684,7 +1695,14 @@ function toPublicBlogCard(r: PublicBlogRow): PublicBlogCard {
  * access is never the only gate. Supporting sections fail closed to empty
  * arrays; the Blog read is the one that may surface an error.
  */
+/** Public home is viewer-independent; a short TTL absorbs cold + bot traffic. */
+const PUBLIC_HOME_TTL_MS = 60_000;
+
 export async function getPublicHomeServer(): Promise<PublicHomePayload> {
+  return cached("home:public", PUBLIC_HOME_TTL_MS, buildPublicHomeServer);
+}
+
+async function buildPublicHomeServer(): Promise<PublicHomePayload> {
   const nowIso = new Date().toISOString();
   const today = nowIso.slice(0, 10);
 
