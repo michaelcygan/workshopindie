@@ -776,16 +776,16 @@ export const cancelEventSeriesFuture = createServerFn({ method: "POST" })
           .in("status", ["going", "maybe", "waitlist"]);
         if (rsvps && rsvps.length > 0) {
           const payload = { event_title: ev.title, event_slug: ev.slug, group_slug: ev.group.slug, reason: data.reason ?? null };
-          await supabase.from("notifications").insert(
-            rsvps.map((r) => ({
-              user_id: r.user_id as string,
-              kind: "event_canceled",
-              actor_user_id: userId,
-              entity_type: "group_event",
-              entity_id: ev.id,
-              payload,
-            })),
-          );
+          const { notifyMany } = await import("@/lib/notifications/deliver.server");
+          await notifyMany({
+            recipientIds: rsvps.map((r) => r.user_id as string),
+            actorUserId: userId,
+            kind: "event_canceled",
+            entityType: "group_event",
+            entityId: ev.id,
+            payload,
+          });
+
         }
       } catch { /* notifications are best-effort */ }
     }
