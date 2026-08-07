@@ -91,14 +91,19 @@ export const signUpForLineup = createServerFn({ method: "POST" })
     if (e.lineup_capacity == null) throw new Error("This event isn't taking lineup signups.");
     if (new Date(e.ends_at).getTime() < Date.now()) throw new Error("This event is over.");
 
+    // One row per (event, person) is enforced by a unique index, so a released
+    // slot has to be cleared before the person can sign up again.
     const { data: existing } = await supabase
       .from("event_lineup_signups")
       .select("id,status")
       .eq("event_id", data.event_id)
       .eq("user_id", userId)
-      .neq("status", "released")
       .maybeSingle();
-    if (existing) throw new Error("You're already on this lineup.");
+    if (existing) {
+      const row = existing as { id: string; status: string };
+      if (row.status !== "released") throw new Error("You're already on this lineup.");
+      await supabase.from("event_lineup_signups").delete().eq("id", row.id);
+    }
 
     const { error } = await supabase
       .from("event_lineup_signups")
@@ -109,8 +114,13 @@ export const signUpForLineup = createServerFn({ method: "POST" })
         // position + status are set by trigger
         position: 0,
       } as never);
-    if (error) throw new Error(error.message);
+    // Two concurrent taps race here; the loser hits the unique index.
+    if (error) {
+      if (error.code === "23505") return { ok: true };
+      throw new Error(error.message);
+    }
     return { ok: true };
+
   });
 
 export const updateMyLineupNote = createServerFn({ method: "POST" })

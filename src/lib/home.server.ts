@@ -11,7 +11,9 @@ import { NON_PUBLIC_STATUSES, RECRUITING_DEADLINE_OR } from "@/lib/collab/query"
  * transform strips sibling module-scope declarations from that module.
  */
 
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { supabaseAdmin as rawSupabaseAdmin } from "@/integrations/supabase/client.server";
+import { span, traceClient } from "@/lib/perf/query-trace.server";
+import { cached } from "@/lib/perf/ttl-cache.server";
 import { DISCOVERABLE_STATUSES } from "@/lib/events/filters";
 import type {
   HomeBlogCard,
@@ -34,6 +36,13 @@ import type {
   PublicHomePayload,
   PublicWorkTile,
 } from "@/lib/home-types";
+
+/**
+ * Traced admin client. Identical behaviour to the raw client; when a trace is
+ * active (see `withTrace`) each query records table, op chain and duration.
+ */
+const supabaseAdmin = traceClient(rawSupabaseAdmin);
+
 
 const POST_SCAN_LIMIT = 40;
 const MAX_WORK_STORIES = 8;
@@ -851,21 +860,20 @@ export async function circleStoriesServer(
   groups: MyGroup[],
   blocked: Set<string>,
 ): Promise<HomeCircleStory[]> {
-  const { data: followRows } = await supabaseAdmin
-    .from("follows")
-    .select("followed_user_id")
-    .eq("follower_user_id", userId)
-    .limit(300);
+  // Two independent lookups — issued together, not one after the other.
+  const [{ data: followRows }, { data: myCredits }] = await Promise.all([
+    supabaseAdmin
+      .from("follows")
+      .select("followed_user_id")
+      .eq("follower_user_id", userId)
+      .limit(300),
+    supabaseAdmin.from("work_credits").select("work_id").eq("user_id", userId).limit(100),
+  ]);
   const followed = ((followRows ?? []) as Array<{ followed_user_id: string }>)
     .map((r) => r.followed_user_id)
     .filter((id) => !blocked.has(id));
 
   // Frequent credited collaborators.
-  const { data: myCredits } = await supabaseAdmin
-    .from("work_credits")
-    .select("work_id")
-    .eq("user_id", userId)
-    .limit(100);
   const myWorkIds = ((myCredits ?? []) as Array<{ work_id: string }>).map((r) => r.work_id);
   const collaborators = new Set<string>();
   if (myWorkIds.length) {
@@ -1238,15 +1246,17 @@ export async function disciplineItemsServer(mediums: string[]): Promise<HomeDisc
  * a failure loading Events can never blank Today, Lounge, or Continue.
  */
 export async function getMemberHomeServer(userId: string): Promise<MemberHomePayload> {
-  const [profileRes, blocked, groups] = await Promise.all([
-    supabaseAdmin
-      .from("profiles")
-      .select("display_name,username,first_name,cover_url,cover_work_id,home_city_id,mediums")
-      .eq("id", userId)
-      .maybeSingle(),
-    blockedIdsFor(userId),
-    myGroupsFor(userId),
-  ]);
+  const [profileRes, blocked, groups] = await span("prelude", () =>
+    Promise.all([
+      supabaseAdmin
+        .from("profiles")
+        .select("display_name,username,first_name,cover_url,cover_work_id,home_city_id,mediums")
+        .eq("id", userId)
+        .maybeSingle(),
+      blockedIdsFor(userId),
+      myGroupsFor(userId),
+    ]),
+  );
 
   const profile = profileRes.data as {
     display_name: string | null;
@@ -1260,7 +1270,9 @@ export async function getMemberHomeServer(userId: string): Promise<MemberHomePay
   const mediums = profile?.mediums ?? [];
   const homeCityId = profile?.home_city_id ?? null;
 
-  const today = await todaySummariesServer(groups, blocked).catch(() => [] as HomeTodaySummary[]);
+  const today = await span("today", () =>
+    todaySummariesServer(groups, blocked).catch(() => [] as HomeTodaySummary[]),
+  );
 
   const [
     loungesR,
@@ -1275,40 +1287,57 @@ export async function getMemberHomeServer(userId: string): Promise<MemberHomePay
     mineR,
     cityR,
     cityGroupR,
+    blogRailR,
   ] = await Promise.allSettled([
-    myGroupLoungesServer(groups),
-    upcomingEventsServer(userId, groups, homeCityId, 4),
-    continueActionsServer(userId, groups, today),
-    groups.length
-      ? Promise.resolve([] as HomeGroupSuggestion[])
-      : groupSuggestionsServer(homeCityId, mediums),
-    circleStoriesServer(userId, groups, blocked),
-    peopleSuggestionsServer(userId, groups, blocked, homeCityId, mediums),
-    disciplineItemsServer(mediums),
-    profile?.cover_work_id
-      ? supabaseAdmin
-          .from("works")
-          .select("slug,title")
-          .eq("id", profile.cover_work_id)
-          .maybeSingle()
-      : Promise.resolve({ data: null }),
-    featuredBlogServer(),
-    myWorkshopServer(userId),
-    homeCityId
-      ? supabaseAdmin.from("cities").select("id,name,slug").eq("id", homeCityId).maybeSingle()
-      : Promise.resolve({ data: null }),
-    homeCityId
-      ? supabaseAdmin
-          .from("groups")
-          .select("id,name,slug")
-          .eq("city_id", homeCityId)
-          .eq("visibility", "public")
-          .is("deleted_at", null)
-          .order("member_count", { ascending: false })
-          .limit(1)
-          .maybeSingle()
-      : Promise.resolve({ data: null }),
+    span("lounges", () => myGroupLoungesServer(groups)),
+    span("events", () => upcomingEventsServer(userId, groups, homeCityId, 4)),
+    span("continue", () => continueActionsServer(userId, groups, today)),
+    span("groupSuggestions", () =>
+      groups.length
+        ? Promise.resolve([] as HomeGroupSuggestion[])
+        : groupSuggestionsServer(homeCityId, mediums),
+    ),
+    span("circle", () => circleStoriesServer(userId, groups, blocked)),
+    span("people", () =>
+      peopleSuggestionsServer(userId, groups, blocked, homeCityId, mediums),
+    ),
+    span("disciplines", () => disciplineItemsServer(mediums)),
+    span("coverWork", async () =>
+      profile?.cover_work_id
+        ? await supabaseAdmin
+            .from("works")
+            .select("slug,title")
+            .eq("id", profile.cover_work_id)
+            .maybeSingle()
+        : { data: null },
+    ),
+    span("featuredBlog", () => featuredBlogServer()),
+    span("mine", () => myWorkshopServer(userId)),
+    span("city", async () =>
+      homeCityId
+        ? await supabaseAdmin
+            .from("cities")
+            .select("id,name,slug")
+            .eq("id", homeCityId)
+            .maybeSingle()
+        : { data: null },
+    ),
+    span("cityGroup", async () =>
+      homeCityId
+        ? await supabaseAdmin
+            .from("groups")
+            .select("id,name,slug")
+            .eq("city_id", homeCityId)
+            .eq("visibility", "public")
+            .is("deleted_at", null)
+            .order("member_count", { ascending: false })
+            .limit(1)
+            .maybeSingle()
+        : { data: null },
+    ),
+    span("blogRail", () => blogRailRowsServer().catch(() => [] as BlogCardRow[])),
   ]);
+
 
   const lounges = loungesR.status === "fulfilled" ? loungesR.value : [];
   const upcomingEvents = eventsR.status === "fulfilled" ? eventsR.value : [];
@@ -1320,10 +1349,11 @@ export async function getMemberHomeServer(userId: string): Promise<MemberHomePay
       : { posts: [] as HomeBlogCard[], isFallback: false };
   const mine = mineR.status === "fulfilled" ? mineR.value : [];
 
-  const blogRail = await blogRailServer([
+  const blogRail = pickBlogRail(blogRailR.status === "fulfilled" ? blogRailR.value : [], [
     ...featured.posts.map((p) => p.id),
     ...mine.filter((m) => m.kind === "blog").map((m) => m.id),
-  ]).catch(() => [] as HomeBlogCard[]);
+  ]);
+
 
   // Prefer a Group with Today activity for the "open a Lounge" fallback.
   const fallbackGroup =
@@ -1421,8 +1451,11 @@ export async function featuredBlogServer(): Promise<{
   return { posts: fb.map(toBlogCard), isFallback: true };
 }
 
-/** Recent public Blog posts for the "From the Blog" rail. */
-export async function blogRailServer(excludeIds: string[]): Promise<HomeBlogCard[]> {
+/**
+ * Candidate rows for the "From the Blog" rail. The exclusion set is applied in
+ * memory, so this query never has to wait on the featured/mine rails.
+ */
+async function blogRailRowsServer(): Promise<BlogCardRow[]> {
   const { data } = await supabaseAdmin
     .from("blog_posts")
     .select(BLOG_CARD_COLS)
@@ -1431,11 +1464,20 @@ export async function blogRailServer(excludeIds: string[]): Promise<HomeBlogCard
     .lte("published_at", new Date().toISOString())
     .order("published_at", { ascending: false })
     .limit(12);
+  return (data ?? []) as unknown as BlogCardRow[];
+}
+
+function pickBlogRail(rows: BlogCardRow[], excludeIds: string[]): HomeBlogCard[] {
   const seen = new Set(excludeIds);
-  return ((data ?? []) as unknown as BlogCardRow[])
+  return rows
     .filter((r) => !seen.has(r.id))
     .slice(0, 6)
     .map(toBlogCard);
+}
+
+/** Recent public Blog posts for the "From the Blog" rail. */
+export async function blogRailServer(excludeIds: string[]): Promise<HomeBlogCard[]> {
+  return pickBlogRail(await blogRailRowsServer(), excludeIds);
 }
 
 /* ───────────────────────────── Your Workshop ───────────────────────────── */
@@ -1653,7 +1695,14 @@ function toPublicBlogCard(r: PublicBlogRow): PublicBlogCard {
  * access is never the only gate. Supporting sections fail closed to empty
  * arrays; the Blog read is the one that may surface an error.
  */
+/** Public home is viewer-independent; a short TTL absorbs cold + bot traffic. */
+const PUBLIC_HOME_TTL_MS = 60_000;
+
 export async function getPublicHomeServer(): Promise<PublicHomePayload> {
+  return cached("home:public", PUBLIC_HOME_TTL_MS, buildPublicHomeServer);
+}
+
+async function buildPublicHomeServer(): Promise<PublicHomePayload> {
   const nowIso = new Date().toISOString();
   const today = nowIso.slice(0, 10);
 
@@ -1702,12 +1751,13 @@ export async function getPublicHomeServer(): Promise<PublicHomePayload> {
     .limit(16);
 
   const [postsRes, storiesRes, collabsRes, groupsRes, worksRes] = await Promise.all([
-    postsPromise,
-    listHomeWorkStoriesServer().catch(() => [] as HomeWorkStory[]),
-    collabsPromise,
-    groupsPromise,
-    worksPromise,
+    span("publicPosts", async () => await postsPromise),
+    span("publicStories", () => listHomeWorkStoriesServer().catch(() => [] as HomeWorkStory[])),
+    span("publicCollabs", async () => await collabsPromise),
+    span("publicGroups", async () => await groupsPromise),
+    span("publicWorks", async () => await worksPromise),
   ]);
+
 
   if (postsRes.error) throw postsRes.error;
   const allPosts = ((postsRes.data ?? []) as unknown as PublicBlogRow[]).map(toPublicBlogCard);
