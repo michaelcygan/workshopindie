@@ -21,6 +21,7 @@ export const Route = createFileRoute("/u/$username")({
       params: { username: params.username },
       search: search as never,
       replace: true,
+      statusCode: 301,
     });
   },
 });
