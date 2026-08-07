@@ -66,19 +66,17 @@ async function runStartingPass() {
     ).filter(Boolean) as string[];
 
     if (recipients.length > 0) {
-      await supabaseAdmin
-        .from("notifications")
-        .insert(
-          recipients.map((uid) => ({
-            user_id: uid,
-            kind: "workshop_starting",
-            entity_type: "workshop",
-            entity_id: ws.id,
-            payload: { title: ws.title, slug: ws.slug, starts_at: ws.starts_at },
-          })),
-        )
-        .then(() => null, () => null);
+      const { notifyMany } = await import("@/lib/notifications/deliver.server");
+      await notifyMany({
+        recipientIds: recipients,
+        kind: "workshop_starting",
+        entityType: "workshop",
+        entityId: ws.id,
+        preference: "inapp_workshop_updates",
+        payload: { title: ws.title, slug: ws.slug, starts_at: ws.starts_at },
+      });
     }
+
 
     await supabaseAdmin
       .from("workshops")
