@@ -246,12 +246,15 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice, env: StripeEn
   const userId = (invoiceAny.subscription_details?.metadata as Record<string, string> | null)?.userId
     || (invoice.metadata as Record<string, string> | null)?.userId;
   if (userId) {
-    await supabaseAdmin.from("notifications").insert({
-      user_id: userId,
+    const { notify } = await import("@/lib/notifications/deliver.server");
+    // Billing notices are never muted by preferences.
+    await notify({
+      recipientId: userId,
       kind: "payment_failed",
-      entity_type: "invoice",
+      entityType: "invoice",
       payload: { hosted_invoice_url: invoice.hosted_invoice_url ?? null },
     });
+
   }
 }
 
