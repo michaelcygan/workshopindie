@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { moderateOrThrow } from "@/lib/moderation/service.server";
+
 import { findBlockedUrl } from "@/lib/moderation/url-blocklist";
 import { normalizeUrl } from "@/lib/url-normalize";
 
@@ -38,31 +38,13 @@ export const postCollabMessage = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-
-    const blocked = findBlockedUrl(data.body);
-    if (blocked) {
-      throw new Error("That link isn't allowed here.");
-    }
-
-    await moderateOrThrow({
-      text: data.body,
-      userId,
-      surface: "collab_messages",
-      subjectId: data.collabPostId,
-    });
-
-    const { data: row, error } = await supabase
-      .from("collab_messages")
-      .insert({
-        collab_post_id: data.collabPostId,
-        author_id: userId,
-        body: data.body,
-      })
-      .select("id,collab_post_id,author_id,body,created_at")
-      .single();
-    if (error) throw new Error(error.message);
-    return row;
+    const { sendCollabMessage } = await import("@/lib/messaging/pipeline.server");
+    return sendCollabMessage(
+      { supabase, userId, subjectId: data.collabPostId },
+      data.body,
+    );
   });
+
 
 export const deleteCollabMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

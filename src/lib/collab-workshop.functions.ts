@@ -63,23 +63,21 @@ export const openWorkshopOnCollab = createServerFn({ method: "POST" })
         ),
       );
       if (senderIds.length > 0) {
-        await supabaseAdmin
-          .from("notifications")
-          .insert(
-            senderIds.map((uid) => ({
-              user_id: uid,
-              kind: "collab_workshop_live",
-              actor_user_id: userId,
-              entity_type: "workshop",
-              entity_id: ws.id,
-              payload: {
-                collab_post_id: collabPostId,
-                workshop_slug: ws.slug,
-                title: post?.title ?? "",
-              },
-            })),
-          )
-          .then(() => null, () => null);
+        const { notifyMany } = await import("@/lib/notifications/deliver.server");
+        await notifyMany({
+          recipientIds: senderIds,
+          actorUserId: userId,
+          kind: "collab_workshop_live",
+          entityType: "workshop",
+          entityId: ws.id,
+          preference: "inapp_collab_activity",
+          payload: {
+            collab_post_id: collabPostId,
+            workshop_slug: ws.slug,
+            title: post?.title ?? "",
+          },
+        });
+
       }
     }
 
@@ -330,19 +328,17 @@ export const createCollabFromRoom = createServerFn({ method: "POST" })
         )
         .then(() => null, () => null);
 
-      await supabaseAdmin
-        .from("notifications")
-        .insert(
-          inviteeIds.map((uid) => ({
-            user_id: uid,
-            kind: "workshop_invite_from_room",
-            actor_user_id: userId,
-            entity_type: "workshop",
-            entity_id: ws.id,
-            payload: { workshop_slug: ws.slug, title, room_id: roomId },
-          })),
-        )
-        .then(() => null, () => null);
+      const { notifyMany } = await import("@/lib/notifications/deliver.server");
+      await notifyMany({
+        recipientIds: inviteeIds,
+        actorUserId: userId,
+        kind: "workshop_invite_from_room",
+        entityType: "workshop",
+        entityId: ws.id,
+        preference: "inapp_workshop_updates",
+        payload: { workshop_slug: ws.slug, title, room_id: roomId },
+      });
+
     }
 
     return { workshopSlug: ws.slug, collabSlug: collab?.slug ?? null, alreadyPromoted: false };

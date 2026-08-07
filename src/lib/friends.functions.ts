@@ -67,45 +67,27 @@ export const pingPresence = createServerFn({ method: "POST" })
       .filter((id) => iFollowSet.has(id));
     if (mutualIds.length === 0) return { ok: true, cameOnline: true };
 
-    // Respect blocks both ways
-    const { data: blocks } = await supabaseAdmin
-      .from("user_blocks")
-      .select("blocker_user_id, blocked_user_id")
-      .or(
-        `and(blocker_user_id.eq.${userId},blocked_user_id.in.(${mutualIds.join(",")})),and(blocked_user_id.eq.${userId},blocker_user_id.in.(${mutualIds.join(",")}))`,
-      );
-    const blocked = new Set<string>();
-    for (const b of blocks ?? []) {
-      blocked.add(b.blocker_user_id === userId ? b.blocked_user_id : b.blocker_user_id);
-    }
-    const targets = mutualIds.filter((id) => !blocked.has(id));
-    if (targets.length === 0) return { ok: true, cameOnline: true };
-
-    // Only notify mutuals who opted in (default false)
+    // "Came online" is opt-IN (default off), so the opt-in list is resolved
+    // here; self-suppression, blocks and dedupe come from the delivery service.
     const { data: prefs } = await supabaseAdmin
       .from("notification_preferences")
       .select("user_id, inapp_friend_online")
-      .in("user_id", targets)
+      .in("user_id", mutualIds)
       .eq("inapp_friend_online", true);
-    const optedIn = (prefs ?? []).map((p) => p.user_id);
+    const optedIn = (prefs ?? []).map((p) => p.user_id as string);
     if (optedIn.length === 0) return { ok: true, cameOnline: true };
 
-    await supabaseAdmin
-      .from("notifications")
-      .insert(
-        optedIn.map((uid) => ({
-          user_id: uid,
-          kind: "friend_online",
-          actor_user_id: userId,
-          entity_type: "profile",
-          entity_id: userId,
-          payload: {
-            display_name: prev.display_name,
-            username: prev.username,
-          },
-        })),
-      )
-      .then(() => null, () => null);
+    const { notifyMany } = await import("@/lib/notifications/deliver.server");
+    await notifyMany({
+      recipientIds: optedIn,
+      actorUserId: userId,
+      kind: "friend_online",
+      entityType: "profile",
+      entityId: userId,
+      dedupeWindowS: 300,
+      payload: { display_name: prev.display_name, username: prev.username },
+    });
+
 
     return { ok: true, cameOnline: true };
   });
@@ -284,23 +266,22 @@ export const inviteFriendToLounge = createServerFn({ method: "POST" })
     const inviterName =
       (inviter?.display_name as string | null) ?? (inviter?.username as string | null) ?? null;
 
-    await supabaseAdmin
-      .from("notifications")
-      .insert({
-        user_id: data.inviteeId,
-        kind: "lounge_invite",
-        actor_user_id: userId,
-        entity_type: "lounge_room",
-        entity_id: room.id,
-        payload: {
-          room_id: room.id,
-          title: room.title,
-          medium: room.medium ?? null,
-          actor_name: inviterName,
-          group_slug: groupSlug,
-        },
-      })
-      .then(() => null, () => null);
+    const { notify } = await import("@/lib/notifications/deliver.server");
+    await notify({
+      recipientId: data.inviteeId,
+      actorUserId: userId,
+      kind: "lounge_invite",
+      entityType: "lounge_room",
+      entityId: room.id,
+      payload: {
+        room_id: room.id,
+        title: room.title,
+        medium: room.medium ?? null,
+        actor_name: inviterName,
+        group_slug: groupSlug,
+      },
+    });
+
 
     return { ok: true, roomId: room.id };
   });

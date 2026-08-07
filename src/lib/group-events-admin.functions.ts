@@ -247,16 +247,16 @@ export const createEvent = createServerFn({ method: "POST" })
           group_slug: g.slug,
           group_name: g.name,
         };
-        await supabase.from("notifications").insert(
-          recipients.map((uid) => ({
-            user_id: uid,
-            kind: "event_new_in_my_group",
-            actor_user_id: userId,
-            entity_type: "group_event",
-            entity_id: row.id,
-            payload,
-          })),
-        );
+        const { notifyMany } = await import("@/lib/notifications/deliver.server");
+        await notifyMany({
+          recipientIds: recipients,
+          actorUserId: userId,
+          kind: "event_new_in_my_group",
+          entityType: "group_event",
+          entityId: row.id,
+          payload,
+        });
+
       }
     } catch {
       // Notifications are best-effort; never block event creation.
@@ -390,15 +390,16 @@ export const cancelEvent = createServerFn({ method: "POST" })
       type EvShape = { title: string; slug: string; group: { slug: string } };
       const e = ev as unknown as EvShape;
       const payload = { event_title: e.title, event_slug: e.slug, group_slug: e.group.slug, reason: data.reason ?? null };
-      const rows = rsvps.map((r) => ({
-        user_id: r.user_id as string,
+      const { notifyMany } = await import("@/lib/notifications/deliver.server");
+      await notifyMany({
+        recipientIds: rsvps.map((r) => r.user_id as string),
+        actorUserId: userId,
         kind: "event_canceled",
-        actor_user_id: userId,
-        entity_type: "group_event",
-        entity_id: data.id,
+        entityType: "group_event",
+        entityId: data.id,
         payload,
-      }));
-      await supabase.from("notifications").insert(rows);
+      });
+
     }
     return { ok: true };
   });
@@ -442,16 +443,16 @@ export const postEventUpdate = createServerFn({ method: "POST" })
       type EvShape = { title: string; slug: string; group: { slug: string } };
       const e = ev as unknown as EvShape;
       const payload = { event_title: e.title, event_slug: e.slug, group_slug: e.group.slug };
-      await supabase.from("notifications").insert(
-        rsvps.map((r) => ({
-          user_id: r.user_id as string,
-          kind: "event_updated",
-          actor_user_id: userId,
-          entity_type: "group_event",
-          entity_id: data.event_id,
-          payload,
-        })),
-      );
+      const { notifyMany } = await import("@/lib/notifications/deliver.server");
+      await notifyMany({
+        recipientIds: rsvps.map((r) => r.user_id as string),
+        actorUserId: userId,
+        kind: "event_updated",
+        entityType: "group_event",
+        entityId: data.event_id,
+        payload,
+      });
+
     }
     return { ok: true };
   });
@@ -775,16 +776,16 @@ export const cancelEventSeriesFuture = createServerFn({ method: "POST" })
           .in("status", ["going", "maybe", "waitlist"]);
         if (rsvps && rsvps.length > 0) {
           const payload = { event_title: ev.title, event_slug: ev.slug, group_slug: ev.group.slug, reason: data.reason ?? null };
-          await supabase.from("notifications").insert(
-            rsvps.map((r) => ({
-              user_id: r.user_id as string,
-              kind: "event_canceled",
-              actor_user_id: userId,
-              entity_type: "group_event",
-              entity_id: ev.id,
-              payload,
-            })),
-          );
+          const { notifyMany } = await import("@/lib/notifications/deliver.server");
+          await notifyMany({
+            recipientIds: rsvps.map((r) => r.user_id as string),
+            actorUserId: userId,
+            kind: "event_canceled",
+            entityType: "group_event",
+            entityId: ev.id,
+            payload,
+          });
+
         }
       } catch { /* notifications are best-effort */ }
     }

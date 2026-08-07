@@ -63,20 +63,20 @@ export const Route = createFileRoute("/api/public/events/report-sweep")({
               .eq("event_id", ev.id)
               .in("status", ["going", "maybe", "waitlist"]);
             if (rsvps && rsvps.length > 0) {
-              await supabaseAdmin.from("notifications").insert(
-                rsvps.map((r) => ({
-                  user_id: r.user_id as string,
-                  kind: "event_canceled",
-                  entity_type: "group_event",
-                  entity_id: ev.id,
-                  payload: {
-                    event_title: ev.title,
-                    event_slug: ev.slug,
-                    group_slug: ev.group.slug,
-                    reason: `Auto-canceled: ${AUTO_CANCEL_THRESHOLD}+ reports as not a real event.`,
-                  },
-                })),
-              );
+              const { notifyMany } = await import("@/lib/notifications/deliver.server");
+              await notifyMany({
+                recipientIds: rsvps.map((r) => r.user_id as string),
+                kind: "event_canceled",
+                entityType: "group_event",
+                entityId: ev.id,
+                payload: {
+                  event_title: ev.title,
+                  event_slug: ev.slug,
+                  group_slug: ev.group.slug,
+                  reason: `Auto-canceled: ${AUTO_CANCEL_THRESHOLD}+ reports as not a real event.`,
+                },
+              });
+
             }
           } catch { /* best-effort */ }
         }

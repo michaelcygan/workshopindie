@@ -174,19 +174,17 @@ export const createLobby = createServerFn({ method: "POST" })
         )
         .then(() => null, () => null);
 
-      await supabaseAdmin
-        .from("notifications")
-        .insert(
-          data.inviteeIds.map((uid) => ({
-            user_id: uid,
-            kind: "workshop_invite_from_room",
-            actor_user_id: userId,
-            entity_type: "workshop",
-            entity_id: ws.id,
-            payload: { workshop_slug: ws.slug, title: data.title, is_lobby: true },
-          })),
-        )
-        .then(() => null, () => null);
+      const { notifyMany } = await import("@/lib/notifications/deliver.server");
+      await notifyMany({
+        recipientIds: data.inviteeIds,
+        actorUserId: userId,
+        kind: "workshop_invite_from_room",
+        entityType: "workshop",
+        entityId: ws.id,
+        preference: "inapp_workshop_updates",
+        payload: { workshop_slug: ws.slug, title: data.title, is_lobby: true },
+      });
+
     }
 
     return { id: ws.id, slug: ws.slug };
@@ -380,14 +378,17 @@ export const requestToJoinLobby = createServerFn({ method: "POST" })
       }, { onConflict: "workshop_id,invitee_user_id" })
       .then(() => null, () => null);
 
-    await supabaseAdmin.from("notifications").insert({
-      user_id: ws.host_user_id,
+    const { notify } = await import("@/lib/notifications/deliver.server");
+    await notify({
+      recipientId: ws.host_user_id,
+      actorUserId: userId,
       kind: "workshop_invite_from_room",
-      actor_user_id: userId,
-      entity_type: "workshop",
-      entity_id: ws.id,
+      entityType: "workshop",
+      entityId: ws.id,
+      preference: "inapp_workshop_updates",
       payload: { workshop_slug: ws.slug, title: ws.title, is_lobby: true, requested: true },
-    }).then(() => null, () => null);
+    });
+
 
     return { ok: true };
   });
@@ -451,25 +452,23 @@ export const scheduleDraft = createServerFn({ method: "POST" })
     for (const r of parts ?? []) targets.add(r.user_id as string);
     targets.delete(userId);
     if (targets.size > 0) {
-      await supabaseAdmin
-        .from("notifications")
-        .insert(
-          Array.from(targets).map((uid) => ({
-            user_id: uid,
-            kind: "workshop_invite_from_room",
-            actor_user_id: userId,
-            entity_type: "workshop",
-            entity_id: ws.id,
-            payload: {
-              workshop_slug: ws.slug,
-              title: ws.title,
-              scheduled: true,
-              starts_at: data.startsAt,
-            },
-          })),
-        )
-        .then(() => null, () => null);
+      const { notifyMany } = await import("@/lib/notifications/deliver.server");
+      await notifyMany({
+        recipientIds: Array.from(targets),
+        actorUserId: userId,
+        kind: "workshop_invite_from_room",
+        entityType: "workshop",
+        entityId: ws.id,
+        preference: "inapp_workshop_updates",
+        payload: {
+          workshop_slug: ws.slug,
+          title: ws.title,
+          scheduled: true,
+          starts_at: data.startsAt,
+        },
+      });
     }
+
 
     return { ok: true, slug: ws.slug };
   });

@@ -66,19 +66,17 @@ async function runStartingPass() {
     ).filter(Boolean) as string[];
 
     if (recipients.length > 0) {
-      await supabaseAdmin
-        .from("notifications")
-        .insert(
-          recipients.map((uid) => ({
-            user_id: uid,
-            kind: "workshop_starting",
-            entity_type: "workshop",
-            entity_id: ws.id,
-            payload: { title: ws.title, slug: ws.slug, starts_at: ws.starts_at },
-          })),
-        )
-        .then(() => null, () => null);
+      const { notifyMany } = await import("@/lib/notifications/deliver.server");
+      await notifyMany({
+        recipientIds: recipients,
+        kind: "workshop_starting",
+        entityType: "workshop",
+        entityId: ws.id,
+        preference: "inapp_workshop_updates",
+        payload: { title: ws.title, slug: ws.slug, starts_at: ws.starts_at },
+      });
     }
+
 
     await supabaseAdmin
       .from("workshops")
@@ -155,18 +153,32 @@ async function runNoShowPass() {
       .eq("workshop_id", full.id);
     const recipients = Array.from(new Set((rsvps ?? []).map((r) => r.user_id)));
     if (recipients.length > 0) {
-      await supabaseAdmin
-        .from("notifications")
-        .insert(
-          recipients.map((uid) => ({
-            user_id: uid,
-            kind: uid === full.host_user_id ? "workshop_ran_without_you" : "workshop_now_live",
-            entity_type: "workshop",
-            entity_id: full.id,
-            payload: { title: full.title, slug: full.slug, auto_converted: true },
-          })),
-        )
-        .then(() => null, () => null);
+      const { notifyMany } = await import("@/lib/notifications/deliver.server");
+      // The host gets a different kind, so this goes out as two deliveries.
+      const hostIds = recipients.filter((uid) => uid === full.host_user_id);
+      const others = recipients.filter((uid) => uid !== full.host_user_id);
+      const payload = { title: full.title, slug: full.slug, auto_converted: true };
+      if (hostIds.length > 0) {
+        await notifyMany({
+          recipientIds: hostIds,
+          kind: "workshop_ran_without_you",
+          entityType: "workshop",
+          entityId: full.id,
+          preference: "inapp_workshop_updates",
+          payload,
+        });
+      }
+      if (others.length > 0) {
+        await notifyMany({
+          recipientIds: others,
+          kind: "workshop_now_live",
+          entityType: "workshop",
+          entityId: full.id,
+          preference: "inapp_workshop_updates",
+          payload,
+        });
+      }
+
     }
     results.push({ id: ws.id, converted: true });
   }
@@ -282,19 +294,17 @@ async function notifyMembers(
     new Set([...(parts ?? []).map((p) => p.user_id), ws?.host_user_id].filter(Boolean)),
   ) as string[];
   if (recipients.length === 0) return;
-  await supabaseAdmin
-    .from("notifications")
-    .insert(
-      recipients.map((uid) => ({
-        user_id: uid,
-        kind,
-        entity_type: "workshop",
-        entity_id: workshopId,
-        payload: payload as any,
-      })),
-    )
-    .then(() => null, () => null);
+  const { notifyMany } = await import("@/lib/notifications/deliver.server");
+  await notifyMany({
+    recipientIds: recipients,
+    kind,
+    entityType: "workshop",
+    entityId: workshopId,
+    preference: "inapp_workshop_updates",
+    payload: payload as Record<string, unknown>,
+  });
 }
+
 
 async function clearStudio(workshopId: string) {
   // Delete tool data. Storage objects for drive files are best-effort cleaned;
