@@ -19,6 +19,8 @@ import { BlogAboutEditor } from "@/components/blog-about-editor";
 import { BlogEntityTagPicker } from "@/components/blog-entity-tag-picker";
 import { entityMarkdown, tagKey, invalidateEntityTagCaches, type BlogEntityTag } from "@/lib/blog-entity-tags";
 import { blogCategoryLabel, toBlogCategorySlug, type BlogCategorySlug } from "@/lib/blog-categories";
+import { CategoryPlaceholder } from "@/components/home/category-placeholder";
+
 import { BlogPostContext } from "@/components/blog-post-context";
 import { deriveBlogPostContext } from "@/lib/blog-post-context";
 
