@@ -1301,25 +1301,29 @@ export async function getMemberHomeServer(userId: string): Promise<MemberHomePay
       peopleSuggestionsServer(userId, groups, blocked, homeCityId, mediums),
     ),
     span("disciplines", () => disciplineItemsServer(mediums)),
-    span("coverWork", () =>
+    span("coverWork", async () =>
       profile?.cover_work_id
-        ? supabaseAdmin
+        ? await supabaseAdmin
             .from("works")
             .select("slug,title")
             .eq("id", profile.cover_work_id)
             .maybeSingle()
-        : Promise.resolve({ data: null }),
+        : { data: null },
     ),
     span("featuredBlog", () => featuredBlogServer()),
     span("mine", () => myWorkshopServer(userId)),
-    span("city", () =>
+    span("city", async () =>
       homeCityId
-        ? supabaseAdmin.from("cities").select("id,name,slug").eq("id", homeCityId).maybeSingle()
-        : Promise.resolve({ data: null }),
+        ? await supabaseAdmin
+            .from("cities")
+            .select("id,name,slug")
+            .eq("id", homeCityId)
+            .maybeSingle()
+        : { data: null },
     ),
-    span("cityGroup", () =>
+    span("cityGroup", async () =>
       homeCityId
-        ? supabaseAdmin
+        ? await supabaseAdmin
             .from("groups")
             .select("id,name,slug")
             .eq("city_id", homeCityId)
@@ -1328,8 +1332,9 @@ export async function getMemberHomeServer(userId: string): Promise<MemberHomePay
             .order("member_count", { ascending: false })
             .limit(1)
             .maybeSingle()
-        : Promise.resolve({ data: null }),
+        : { data: null },
     ),
+
   ]);
 
 
