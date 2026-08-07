@@ -1733,12 +1733,13 @@ export async function getPublicHomeServer(): Promise<PublicHomePayload> {
     .limit(16);
 
   const [postsRes, storiesRes, collabsRes, groupsRes, worksRes] = await Promise.all([
-    postsPromise,
-    listHomeWorkStoriesServer().catch(() => [] as HomeWorkStory[]),
-    collabsPromise,
-    groupsPromise,
-    worksPromise,
+    span("publicPosts", async () => await postsPromise),
+    span("publicStories", () => listHomeWorkStoriesServer().catch(() => [] as HomeWorkStory[])),
+    span("publicCollabs", async () => await collabsPromise),
+    span("publicGroups", async () => await groupsPromise),
+    span("publicWorks", async () => await worksPromise),
   ]);
+
 
   if (postsRes.error) throw postsRes.error;
   const allPosts = ((postsRes.data ?? []) as unknown as PublicBlogRow[]).map(toPublicBlogCard);
