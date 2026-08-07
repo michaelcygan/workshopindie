@@ -247,16 +247,16 @@ export const createEvent = createServerFn({ method: "POST" })
           group_slug: g.slug,
           group_name: g.name,
         };
-        await supabase.from("notifications").insert(
-          recipients.map((uid) => ({
-            user_id: uid,
-            kind: "event_new_in_my_group",
-            actor_user_id: userId,
-            entity_type: "group_event",
-            entity_id: row.id,
-            payload,
-          })),
-        );
+        const { notifyMany } = await import("@/lib/notifications/deliver.server");
+        await notifyMany({
+          recipientIds: recipients,
+          actorUserId: userId,
+          kind: "event_new_in_my_group",
+          entityType: "group_event",
+          entityId: row.id,
+          payload,
+        });
+
       }
     } catch {
       // Notifications are best-effort; never block event creation.
