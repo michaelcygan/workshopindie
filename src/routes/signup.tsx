@@ -115,6 +115,33 @@ function Signup() {
         },
       },
     });
+    // Already has an account? Log them in instead of dead-ending on an error.
+    const alreadyRegistered =
+      (error && /already registered|already exists|user already/i.test(error.message)) ||
+      (!error && data.user && (data.user.identities?.length ?? 0) === 0);
+
+    if (alreadyRegistered) {
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      setLoading(false);
+      if (!signInError) {
+        window.location.assign(AUTH_CALLBACK_PATH);
+        return;
+      }
+      stashHandoffPassword(password);
+      toast.info("You already have an account — sign in.");
+      navigate({
+        to: "/login",
+        search: {
+          claim: search.claim,
+          join: search.join,
+          group: search.group,
+          redirect: search.redirect,
+          email: email.trim(),
+        },
+      });
+      return;
+    }
+
     if (error) {
       setLoading(false);
       return toast.error(error.message);
@@ -128,6 +155,7 @@ function Signup() {
     // Email confirmation is on: the user must click the link before the lifecycle runs.
     toast.success("Check your inbox to confirm your email.");
   };
+
 
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center px-4 py-10">
