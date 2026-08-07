@@ -2,6 +2,8 @@ import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import type { HomeWorkStory } from "@/lib/home-types";
 import { HOME_STORY_LABEL_TEXT } from "@/lib/home-types";
+import { CategoryPlaceholder } from "@/components/home/category-placeholder";
+
 
 /**
  * Public presentation of the trusted Work ↔ Blog composites.
@@ -27,10 +29,12 @@ export function PublicWorkStories({ stories }: { stories: HomeWorkStory[] }) {
 
       <div className="mt-8 space-y-10">
         {stories.map(({ work, credits, stories: posts }) => {
+          // cover_focal_x/y are stored as percentages (0-100), not fractions.
           const focal =
             work.cover_focal_x != null && work.cover_focal_y != null
-              ? `${work.cover_focal_x * 100}% ${work.cover_focal_y * 100}%`
+              ? `${work.cover_focal_x}% ${work.cover_focal_y}%`
               : undefined;
+
           const names = credits
             .map((c) => c.display_name || c.username)
             .filter(Boolean)
@@ -53,8 +57,13 @@ export function PublicWorkStories({ stories }: { stories: HomeWorkStory[] }) {
                       className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
                     />
                   ) : (
-                    <div className="h-full w-full bg-surface-2" />
+                    <CategoryPlaceholder
+                      size="cover"
+                      category={work.categories[0]}
+                      className="h-full w-full"
+                    />
                   )}
+
                 </div>
                 <h3 className="mt-3 font-display text-[22px] leading-tight text-ink transition-colors group-hover:text-primary">
                   {work.title}

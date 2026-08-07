@@ -6,6 +6,8 @@ import { ArrowRight, BookOpen } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BlogPostPeek } from "@/components/blog-post-peek";
 import { HomeSection } from "@/components/home-section";
+import { CategoryPlaceholder } from "@/components/home/category-placeholder";
+
 import { listHomeWorkStories } from "@/lib/home.functions";
 import { HOME_STORY_LABEL_TEXT, type HomeWorkStory } from "@/lib/home-types";
 import { CATEGORY_LABELS } from "@/lib/categories";
@@ -40,13 +42,18 @@ function StoryCard({ item, onPeek }: { item: HomeWorkStory; onPeek: (slug: strin
             style={{
               objectPosition:
                 w.cover_focal_x != null && w.cover_focal_y != null
-                  ? `${w.cover_focal_x * 100}% ${w.cover_focal_y * 100}%`
+                  ? `${w.cover_focal_x}% ${w.cover_focal_y}%`
                   : undefined,
             }}
           />
         ) : (
-          <div className="aspect-[16/10] w-full bg-secondary" />
+          <CategoryPlaceholder
+            size="cover"
+            category={w.categories[0]}
+            className="aspect-[16/10] w-full"
+          />
         )}
+
       </Link>
 
       <div className="flex min-h-0 flex-1 flex-col gap-3 p-4">

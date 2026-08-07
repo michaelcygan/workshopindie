@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { CategoryChip } from "@/components/category-chip";
+import { CategoryPlaceholder } from "@/components/home/category-placeholder";
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ReportDialog } from "@/components/report-dialog";
 import { ShareCollabSheet } from "@/components/share-collab-sheet";
@@ -735,8 +737,13 @@ function CollabDetail() {
             {resultingWork.cover_url ? (
               <img src={resultingWork.cover_url} alt={resultingWork.title} className="aspect-video w-full object-cover" />
             ) : (
-              <div className="aspect-video w-full bg-secondary" />
+              <CategoryPlaceholder
+                size="cover"
+                category={resultingWork.category}
+                className="aspect-video w-full"
+              />
             )}
+
             <div className="flex items-center gap-3 p-4">
               <div className="min-w-0 flex-1">
                 <p className="text-[11px] uppercase tracking-wide text-ink-muted">From this Collab</p>

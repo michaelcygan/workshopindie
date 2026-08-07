@@ -19,6 +19,8 @@ import { BlogAboutEditor } from "@/components/blog-about-editor";
 import { BlogEntityTagPicker } from "@/components/blog-entity-tag-picker";
 import { entityMarkdown, tagKey, invalidateEntityTagCaches, type BlogEntityTag } from "@/lib/blog-entity-tags";
 import { blogCategoryLabel, toBlogCategorySlug, type BlogCategorySlug } from "@/lib/blog-categories";
+import { CategoryPlaceholder } from "@/components/home/category-placeholder";
+
 import { BlogPostContext } from "@/components/blog-post-context";
 import { deriveBlogPostContext } from "@/lib/blog-post-context";
 
@@ -552,8 +554,13 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
             {cover ? (
               <img src={cover} alt="" className="aspect-video w-full object-cover" />
             ) : (
-              <div className="aspect-video w-full bg-secondary" />
+              <CategoryPlaceholder
+                size="cover"
+                category={blogCategoryLabel(categorySlug)}
+                className="aspect-video w-full"
+              />
             )}
+
             <div className="p-3">
               <div className="text-xs text-ink-muted">workshopindie.com</div>
               <div className="mt-0.5 line-clamp-2 text-sm font-medium text-ink">{effTitle || "Your title"}</div>

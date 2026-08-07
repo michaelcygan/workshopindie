@@ -15,6 +15,8 @@ import { publishWorkFromCollab } from "@/lib/collab-publish.functions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { PlusGate } from "@/components/plus-gate";
+import { CategoryPlaceholder } from "@/components/home/category-placeholder";
+
 
 type Props = {
   open: boolean;
@@ -211,8 +213,12 @@ export function PublishFromCollabSheet({ open, onOpenChange, postId, postTitle, 
                 {coverUrl ? (
                   <img src={coverUrl} alt="" className="h-24 w-20 shrink-0 rounded-xl object-cover" />
                 ) : (
-                  <div className="h-24 w-20 shrink-0 rounded-xl bg-secondary" />
+                  <CategoryPlaceholder
+                    category={null}
+                    className="h-24 w-20 shrink-0 rounded-xl"
+                  />
                 )}
+
                 <div className="min-w-0 flex-1">
                   <h3 className="font-display text-xl text-ink line-clamp-2">{title}</h3>
                   <p className="mt-1 text-xs text-ink-muted">
