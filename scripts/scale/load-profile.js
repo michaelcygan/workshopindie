@@ -28,7 +28,37 @@ const anonBrowse = new Trend("t_anon_browse", true);
 const memberHome = new Trend("t_member_home", true);
 const eventRead = new Trend("t_event_read", true);
 
-export const options = {
+// SMOKE=1 runs a 60-second, low-VU version of the same shapes. Use it to prove
+// the harness and the URLs are right before committing to the full profile,
+// and whenever the target shares a database with real rows.
+const SMOKE = !!__ENV.SMOKE;
+
+export const options = SMOKE
+  ? {
+      scenarios: {
+        anonymous_browse: {
+          executor: "constant-vus",
+          exec: "anonymousBrowse",
+          vus: 5,
+          duration: "45s",
+        },
+        event_pages: {
+          executor: "constant-arrival-rate",
+          exec: "eventPage",
+          rate: 2,
+          timeUnit: "1s",
+          duration: "45s",
+          preAllocatedVUs: 10,
+        },
+      },
+      thresholds: {
+        http_req_failed: ["rate<0.05"],
+        t_anon_browse: ["p(95)<2000"],
+        t_event_read: ["p(95)<2000"],
+      },
+    }
+  : {
+
   scenarios: {
     // The bulk of launch traffic: crawlers, social referrals, curious visitors.
     anonymous_browse: {
@@ -80,7 +110,8 @@ export const options = {
     "t_member_home": ["p(95)<1500"],
     "t_event_read": ["p(95)<1000"],
   },
-};
+    };
+
 
 function authHeaders() {
   return TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {};
