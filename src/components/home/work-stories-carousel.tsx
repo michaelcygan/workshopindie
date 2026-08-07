@@ -45,8 +45,13 @@ function StoryCard({ item, onPeek }: { item: HomeWorkStory; onPeek: (slug: strin
             }}
           />
         ) : (
-          <div className="aspect-[16/10] w-full bg-secondary" />
+          <CategoryPlaceholder
+            size="cover"
+            category={w.categories[0]}
+            className="aspect-[16/10] w-full"
+          />
         )}
+
       </Link>
 
       <div className="flex min-h-0 flex-1 flex-col gap-3 p-4">
