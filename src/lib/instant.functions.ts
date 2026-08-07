@@ -349,9 +349,10 @@ export const joinSpecificInstantRoom = createServerFn({ method: "POST" })
         throw new Error("You were removed from this Workshop. Try again later.");
       case "locked":
         throw new Error("This Workshop is locked");
-
+      case "closed":
       default:
         throw new Error("That room isn't live anymore");
+
     }
   });
 
