@@ -31,7 +31,7 @@ Workshop is an 18+ product. Public pages are open to everyone, but account creat
 - Work detail: `/works/{slug}`
 - Collab detail: `/collab/{slug}`
 - Workshop detail: `/workshops/{slug}`
-- Profile: `/u/{username}`
+- Profile: `/{username}`
 - City: `/cities/{slug}`
 - Group: `/g/{slug}`
 - Group event: `/g/{slug}/e/{eventSlug}`

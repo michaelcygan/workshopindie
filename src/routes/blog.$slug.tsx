@@ -54,14 +54,14 @@ export const Route = createFileRoute("/blog/$slug")({
       authors.length > 0
         ? authors.map((a) =>
             a.username
-              ? { "@type": "Person", name: a.display_name || a.username, url: `${SITE}/u/${a.username}` }
+              ? { "@type": "Person", name: a.display_name || a.username, url: `${SITE}/${a.username}` }
               : { "@type": "Person", name: a.display_name || p.author_name || "Workshop" },
           )
         : p.author_profile?.username
           ? {
               "@type": "Person",
               name: p.author_name || p.author_profile.display_name || p.author_profile.username,
-              url: `${SITE}/u/${p.author_profile.username}`,
+              url: `${SITE}/${p.author_profile.username}`,
             }
           : { "@type": "Organization", name: p.author_name || "Workshop" };
     return {
@@ -169,7 +169,7 @@ function BlogPostPage() {
               <span key={a.id}>
                 {a.username ? (
                   <Link
-                    to="/u/$username"
+                    to="/$username"
                     params={{ username: a.username }}
                     search={{ tab: "blog" as const }}
                     className="font-medium text-ink underline decoration-border underline-offset-4 hover:decoration-primary"
@@ -185,7 +185,7 @@ function BlogPostPage() {
             ))
           ) : post.author_profile?.username ? (
             <Link
-              to="/u/$username"
+              to="/$username"
               params={{ username: post.author_profile.username }}
               className="font-medium text-ink underline decoration-border underline-offset-4 hover:decoration-primary"
             >

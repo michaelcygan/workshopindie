@@ -85,7 +85,7 @@ describe("deriveBlogPostContext", () => {
     });
     expect(contextMentions(ctx, "https://x.test")).toEqual([
       { "@type": "CreativeWork", name: "Work 1", url: "https://x.test/works/w-1" },
-      { "@type": "Person", name: "jane", url: "https://x.test/u/jane" },
+      { "@type": "Person", name: "jane", url: "https://x.test/jane" },
     ]);
   });
 });

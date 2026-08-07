@@ -1,5 +1,6 @@
 import { useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
+import { isProfilePath } from "@/lib/usernames";
 
 export type MobileIslandVisibility = {
   islandVisible: boolean;
@@ -51,7 +52,7 @@ export function useMobileIslandVisibility(): MobileIslandVisibility {
   }
 
   // Preserve existing standalone behavior for logged-out visitors.
-  if (!user && (pathname.startsWith("/u/") || pathname.startsWith("/works/"))) {
+  if (!user && (isProfilePath(pathname) || pathname.startsWith("/works/"))) {
     return { islandVisible: false, composerVisible: false };
   }
 

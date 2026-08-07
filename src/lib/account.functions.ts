@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { validateUsername } from "@/lib/usernames";
 
 function slugifyHandle(input: string): string {
   return (input || "")
@@ -15,7 +16,7 @@ function slugifyHandle(input: string): string {
 /**
  * Auto-mint a username from the user's first+last (or display_name) if they
  * don't have one yet. Never overwrites a user-chosen handle. Returns the
- * effective username so callers can navigate to /u/$username immediately.
+ * effective username so callers can navigate to /$username immediately.
  */
 export const claimAutoUsername = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -41,7 +42,7 @@ export const claimAutoUsername = createServerFn({ method: "POST" })
     candidates.push(`user${userId.slice(0, 8)}`);
 
     for (const candidate of candidates) {
-      if (!candidate || candidate.length < 2) continue;
+      if (!candidate || !validateUsername(candidate).ok) continue;
       const { data: taken } = await supabaseAdmin
         .from("profiles")
         .select("id")

@@ -6,6 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { safeDestination } from "@/lib/safe-destination";
+import { normalizeUsername, validateUsername } from "@/lib/usernames";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -126,8 +127,36 @@ function EditProfile() {
     if (!form.username) return "";
     const origin =
       typeof window !== "undefined" ? window.location.origin : "https://workshopindie.com";
-    return `${origin}/u/${form.username}`;
+    return `${origin}/${form.username}`;
   }, [form.username]);
+
+  const usernameCheck = useMemo(
+    () => (form.username ? validateUsername(form.username) : null),
+    [form.username],
+  );
+
+  // Availability is confirmed against the database; the unique index is the
+  // authoritative guard at save time.
+  const { data: usernameTaken } = useQuery({
+    queryKey: ["username-available", form.username, user?.id],
+    enabled: !!user?.id && !!usernameCheck?.ok,
+    staleTime: 10_000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("username", form.username)
+        .maybeSingle();
+      return !!data && data.id !== user!.id;
+    },
+  });
+
+  const usernameError = usernameCheck && !usernameCheck.ok
+    ? usernameCheck.message
+    : usernameTaken
+      ? "That username is already taken."
+      : null;
+
 
   async function copyBioLink() {
     if (!bioLinkUrl) return;
@@ -315,6 +344,9 @@ function EditProfile() {
   async function onSubmit(e?: React.FormEvent) {
     e?.preventDefault();
     if (!user) return;
+    if (usernameError) {
+      return toast.error(usernameError);
+    }
     const first = form.firstName.trim();
     const last = form.lastName.trim();
     if (!first || !last) {
@@ -549,14 +581,16 @@ function EditProfile() {
                   <Input
                     id="un"
                     value={form.username}
-                    onChange={(e) =>
-                      set("username", e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))
-                    }
+                    onChange={(e) => set("username", normalizeUsername(e.target.value))}
                     placeholder="your-handle"
                   />
-                  <p className="text-xs text-ink-muted">
-                    Your public @handle — used in your profile URL.
-                  </p>
+                  {usernameError ? (
+                    <p className="text-xs text-destructive">{usernameError}</p>
+                  ) : (
+                    <p className="text-xs text-ink-muted">
+                      Your public @handle — used in your profile URL.
+                    </p>
+                  )}
                   {form.username ? (
                     <div className="mt-2 space-y-1">
                       <div className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2">

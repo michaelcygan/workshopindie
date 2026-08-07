@@ -148,7 +148,7 @@ export function CommentThread({ workId, ownerId }: { workId: string; ownerId?: s
         <div className={cn("flex-1 rounded-2xl border border-border bg-surface px-4 py-3", dimmed && "opacity-60")}>
           <div className="flex items-center gap-2 text-sm">
             {c.profiles?.username ? (
-              <Link to="/u/$username" params={{ username: c.profiles.username }} className="font-medium text-ink hover:underline">
+              <Link to="/$username" params={{ username: c.profiles.username }} className="font-medium text-ink hover:underline">
                 {name}
               </Link>
             ) : (

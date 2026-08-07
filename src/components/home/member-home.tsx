@@ -228,7 +228,7 @@ export function MemberHome() {
             {data.people.map((p) => (
               <Link
                 key={p.id}
-                to="/u/$username"
+                to="/$username"
                 params={{ username: p.username }}
                 className="group flex w-56 shrink-0 snap-start flex-col items-start gap-2 rounded-xl border border-border bg-surface p-4 transition hover:border-ink/20"
               >

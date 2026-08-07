@@ -39,7 +39,7 @@ export function CreditStrip({ credits, className }: { credits: CreditChip[]; cla
         );
         if (p?.username) {
           return (
-            <Link key={c.id} to="/u/$username" params={{ username: p.username }} className="no-underline">
+            <Link key={c.id} to="/$username" params={{ username: p.username }} className="no-underline">
               {chip}
             </Link>
           );

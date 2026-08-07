@@ -120,7 +120,7 @@ export function GroupsPeopleRail() {
           return (
             <Link
               key={p.id}
-              to="/u/$username"
+              to="/$username"
               params={{ username: p.username ?? p.id }}
               className="group flex w-[75vw] shrink-0 snap-start items-center gap-3 rounded-2xl border border-border bg-surface p-3 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift sm:w-[55vw] md:w-auto"
             >

@@ -103,7 +103,7 @@ export function ProfileBlogTab({
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     e.preventDefault();
     navigate({
-      to: "/u/$username",
+      to: "/$username",
       params: { username },
       search: (prev: Record<string, unknown>) => ({ ...prev, tab: "blog" as const, post: slug }),
     });

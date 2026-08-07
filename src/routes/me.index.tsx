@@ -10,7 +10,7 @@ export const Route = createFileRoute("/me/")({
 });
 
 /**
- * /me is a thin redirect to the unified public profile at /u/$username.
+ * /me is a thin redirect to the unified public profile at /$username.
  * If the user finished onboarding but somehow has no username (legacy bug),
  * mint one inline so the Profile button never dead-ends back to onboarding.
  */
@@ -56,7 +56,7 @@ function MeRedirect() {
         }
       }
       if (cancelled) return;
-      navigate({ to: "/u/$username", params: { username }, replace: true });
+      navigate({ to: "/$username", params: { username }, replace: true });
     })();
     return () => {
       cancelled = true;

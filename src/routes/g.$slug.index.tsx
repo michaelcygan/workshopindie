@@ -936,7 +936,7 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
                 </div>
                 {author?.username && (
                   <Link
-                    to="/u/$username"
+                    to="/$username"
                     params={{ username: author.username }}
                     onClick={(e) => e.stopPropagation()}
                     aria-label={`View ${authorName || author.username}'s profile`}
@@ -1305,7 +1305,7 @@ function GroupMembersTab({ group }: { group: GroupRow }) {
               className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 transition hover:bg-muted"
             >
               <Link
-                to="/u/$username"
+                to="/$username"
                 params={{ username: m.username ?? "" }}
                 className="flex min-w-0 flex-1 items-center gap-3"
               >

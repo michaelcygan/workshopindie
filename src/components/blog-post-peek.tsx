@@ -86,7 +86,7 @@ export function BlogPostPeek({
                     <span key={a.id}>
                       {a.username ? (
                         <a
-                          href={`/u/${a.username}?tab=blog`}
+                          href={`/${a.username}?tab=blog`}
                           className="font-medium text-ink underline decoration-border underline-offset-4 hover:decoration-primary"
                         >
                           {a.display_name || a.username}
