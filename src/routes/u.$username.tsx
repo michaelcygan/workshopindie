@@ -341,6 +341,8 @@ function ProfilePage() {
     isError: profileError,
     refetch: refetchProfile,
   } = useQuery({ queryKey: ["profile", username], queryFn: () => fetchProfile(username), retry: 1 });
+  // Must stay above every early return — hook order has to be stable.
+  const { data: influences = [] } = useInfluences(profile?.id);
   const { data: ownedWorks } = useQuery({
     queryKey: ["profile-owned", profile?.id],
     queryFn: () => fetchOwnedWorks(profile!.id),
