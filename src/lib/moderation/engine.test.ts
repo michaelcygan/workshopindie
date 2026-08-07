@@ -53,8 +53,11 @@ describe("moderation engine — blocking", () => {
   it("flags warn-severity terms without blocking them", () => {
     const result = check("kms", matcher);
     expect(result.ok).toBe(false);
+    // The result type only carries `severity` on the failing branch.
+    if (result.ok) throw new Error("expected 'kms' to be flagged");
     expect(result.severity).toBe("warn");
   });
+
 });
 
 describe("moderation engine — false positives", () => {
