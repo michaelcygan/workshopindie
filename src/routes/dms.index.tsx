@@ -147,6 +147,8 @@ function DmsIndex() {
         load(uid).then((r) => { if (!cancelled) setRows(r); }).catch(() => {});
       }, 250);
     }
+    inboxReloadRef.current = scheduleReload;
+
 
 
     (async () => {
