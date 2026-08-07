@@ -143,7 +143,7 @@ export async function getPublishedPostServer(slug: string) {
   const { data, error } = await publicClient()
     .from("blog_posts")
     .select(
-      "id,title,slug,excerpt,body_markdown,cover_image_url,cover_image_alt,seo_title,seo_description,author_name,published_at,updated_at,show_in_blog_index,publication_type,category_slug,author_profile:profiles!blog_posts_author_profile_id_fkey(username,display_name,avatar_url)",
+      "id,title,slug,excerpt,body_markdown,cover_image_url,cover_image_alt,seo_title,seo_description,author_name,published_at,updated_at,show_in_blog_index,publication_type,category_slug,created_by,author_profile_id,author_profile:profiles!blog_posts_author_profile_id_fkey(username,display_name,avatar_url)",
     )
     .eq("slug", slug)
     .eq("status", "published")

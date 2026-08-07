@@ -3,6 +3,7 @@ import { getPublishedPost } from "@/lib/blog.functions";
 import { BlogPostBody } from "@/components/blog-post-body";
 import { BlogArticleFooter } from "@/components/blog-article-footer";
 import { BlogPostContext } from "@/components/blog-post-context";
+import { BlogAuthorActions } from "@/components/blog/blog-author-actions";
 import { deriveBlogPostContext, contextMentions } from "@/lib/blog-post-context";
 import { getBlogCategory } from "@/lib/blog-categories";
 import type { BlogEntityTag } from "@/lib/blog-entity-tags";
@@ -213,6 +214,11 @@ function BlogPostPage() {
               })}
             </>
           )}
+          <BlogAuthorActions
+            postId={post.id}
+            createdBy={(post as { created_by?: string | null }).created_by ?? null}
+            authorProfileId={(post as { author_profile_id?: string | null }).author_profile_id ?? null}
+          />
         </div>
       </header>
 
