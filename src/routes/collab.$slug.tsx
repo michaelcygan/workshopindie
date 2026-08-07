@@ -72,8 +72,8 @@ export const Route = createFileRoute("/collab/$slug")({
       { property: "og:description", content: description },
       { property: "og:type", content: "article" },
       { property: "og:url", content: url },
-      // Collabs carry no cover of their own — branded PNG card.
-      ...shareImageMeta(null, s?.title ?? "Collab on Workshop"),
+      // Resulting work's cover when there is one, else the branded PNG card.
+      ...shareImageMeta(s?.workCover, s?.title ?? "Collab on Workshop"),
       { name: "twitter:title", content: title },
       { name: "twitter:description", content: description },
     ];
