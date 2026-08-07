@@ -1,5 +1,5 @@
 import { NON_PUBLIC_STATUSES } from "@/lib/collab/query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
@@ -38,6 +38,7 @@ import { EntityBlogPosts } from "@/components/entity-blog-posts";
 import { EditorialCard, EditorialChip } from "@/components/editorial-card";
 import { InfluencesGrid } from "@/components/influences/influence-card";
 import { useInfluences } from "@/hooks/use-influences";
+import { validateUsername } from "@/lib/usernames";
 
 
 const TAB_VALUES = ["works", "blog", "collabs", "influences", "activity", "about"] as const;
