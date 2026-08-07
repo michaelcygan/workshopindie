@@ -3,6 +3,7 @@ import { listPublishedPosts } from "@/lib/blog.functions";
 import type { BlogListItem } from "@/components/blog-featured-carousel";
 import { PublicFeaturedStories } from "@/components/home/public-featured-stories";
 import { BlogCategoryNav } from "@/components/blog/blog-category-nav";
+import { BlogMastheadActions } from "@/components/blog/blog-masthead-actions";
 import {
   BlogArchive,
   BlogLatestStories,
