@@ -164,12 +164,14 @@ export const submitGuestApplication = createServerFn({ method: "POST" })
       .select("title,slug")
       .eq("id", data.collabPostId)
       .maybeSingle();
-    await supabaseAdmin.from("notifications").insert({
-      user_id: post.user_id,
+    const { notify } = await import("@/lib/notifications/deliver.server");
+    await notify({
+      recipientId: post.user_id,
+      actorUserId: null,
       kind: "collab_application",
-      actor_user_id: null,
-      entity_type: "collab_post",
-      entity_id: data.collabPostId,
+      entityType: "collab_post",
+      entityId: data.collabPostId,
+      dedupeWindowS: 0,
       payload: {
         actor_name: data.name,
         is_guest: true,
@@ -180,6 +182,7 @@ export const submitGuestApplication = createServerFn({ method: "POST" })
         role_name: resolvedRoleName,
       },
     });
+
 
     return { ok: true as const, claimToken, applicationId: inserted.id };
   });
@@ -522,25 +525,26 @@ export const applyToCollab = createServerFn({ method: "POST" })
       .eq("id", userId)
       .maybeSingle();
 
-    await supabaseAdmin
-      .from("notifications")
-      .insert({
-        user_id: post.user_id,
-        kind: "collab_application",
-        actor_user_id: userId,
-        entity_type: "collab_post",
-        entity_id: data.collabPostId,
-        payload: {
-          actor_name: senderProfile?.display_name ?? senderProfile?.username ?? "Someone",
-          is_guest: false,
-          collab_title: post.title ?? "your collab",
-          collab_slug: post.slug ?? null,
-          preview: data.message.slice(0, 140),
-          application_kind: data.collabRoleId ? "role" : "suggestion",
-          role_name: resolvedRoleName,
-        },
-      })
-      .then(() => null, () => null);
+    const { notify } = await import("@/lib/notifications/deliver.server");
+    await notify({
+      recipientId: post.user_id,
+      actorUserId: userId,
+      kind: "collab_application",
+      entityType: "collab_post",
+      entityId: data.collabPostId,
+      preference: "inapp_collab_activity",
+      dedupeWindowS: 0,
+      payload: {
+        actor_name: senderProfile?.display_name ?? senderProfile?.username ?? "Someone",
+        is_guest: false,
+        collab_title: post.title ?? "your collab",
+        collab_slug: post.slug ?? null,
+        preview: data.message.slice(0, 140),
+        application_kind: data.collabRoleId ? "role" : "suggestion",
+        role_name: resolvedRoleName,
+      },
+    });
+
 
     const { conversationId } = await openCollabDmThread({
       collabPostId: data.collabPostId,
@@ -825,16 +829,17 @@ export const updateCollab = createServerFn({ method: "POST" })
         .eq("collab_post_id", data.collabPostId)
         .eq("status", "accepted");
       if (invites && invites.length > 0) {
-        await supabaseAdmin.from("notifications").insert(
-          invites.map((i) => ({
-            user_id: i.invitee_user_id,
-            kind: "collab_scope_changed",
-            actor_user_id: userId,
-            entity_type: "collab_post",
-            entity_id: data.collabPostId,
-            payload: { collab_title: post.title },
-          })),
-        );
+        const { notifyMany } = await import("@/lib/notifications/deliver.server");
+        await notifyMany({
+          recipientIds: invites.map((i) => i.invitee_user_id as string),
+          actorUserId: userId,
+          kind: "collab_scope_changed",
+          entityType: "collab_post",
+          entityId: data.collabPostId,
+          preference: "inapp_collab_activity",
+          payload: { collab_title: post.title },
+        });
+
       }
     }
 

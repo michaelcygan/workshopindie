@@ -55,33 +55,15 @@ export const sendMessage = createServerFn({ method: "POST" })
   }))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-
-    // Rate limit: 30 messages / 60s per user
-    const { data: ok } = await supabase.rpc("check_and_bump", {
-      _action: "dm_send",
-      _key: userId,
-      _window_s: 60,
-      _max: 30,
-    });
-    if (ok === false) throw new Error("You're sending messages too fast. Slow down a sec.");
-
-    const { moderateOrThrow } = await import("@/lib/moderation/service.server");
-    await moderateOrThrow({
-      userId,
-      surface: "dm.message",
-      subjectId: data.conversationId,
-      text: data.body,
-      spam: { maxLinks: 5, maxRepeatChars: 30 },
-    });
-
-    const { data: msg, error } = await supabase
-      .from("messages")
-      .insert({ conversation_id: data.conversationId, sender_id: userId, body: data.body })
-      .select("id, created_at")
-      .single();
-    if (error) throw new Error(error.message);
-    return { id: msg.id, createdAt: msg.created_at };
+    // Shared messaging policy: normalize → validate → rate limit → moderate →
+    // persist. Blocks are enforced by can_dm(...) inside the insert policy.
+    const { sendDirectMessage } = await import("@/lib/messaging/pipeline.server");
+    return sendDirectMessage(
+      { supabase, userId, subjectId: data.conversationId },
+      data.body,
+    );
   });
+
 
 export const markConversationRead = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
