@@ -19,6 +19,8 @@ export type QuerySample = {
   /** Wall-clock duration in milliseconds. */
   ms: number;
   ok: boolean;
+  /** Exact call key including filter values; used for duplicate detection only. */
+  key: string;
 };
 
 export type SpanSample = {
@@ -85,13 +87,12 @@ export function summarize(trace: Trace): TraceSummary {
   const totalMs = Math.round(now() - trace.startedAt);
   const dbMs = Math.round(trace.queries.reduce((sum, q) => sum + q.ms, 0));
 
-  const bySignature = new Map<string, { count: number; totalMs: number }>();
+  const bySignature = new Map<string, { count: number; totalMs: number; label: string }>();
   for (const q of trace.queries) {
-    const key = signature(q);
-    const entry = bySignature.get(key) ?? { count: 0, totalMs: 0 };
+    const entry = bySignature.get(q.key) ?? { count: 0, totalMs: 0, label: signature(q) };
     entry.count += 1;
     entry.totalMs += q.ms;
-    bySignature.set(key, entry);
+    bySignature.set(q.key, entry);
   }
 
   return {
@@ -105,7 +106,7 @@ export function summarize(trace: Trace): TraceSummary {
       .map((q) => ({ ...q, ms: Math.round(q.ms) })),
     duplicates: [...bySignature.entries()]
       .filter(([, v]) => v.count > 1)
-      .map(([sig, v]) => ({ signature: sig, count: v.count, totalMs: Math.round(v.totalMs) }))
+      .map(([, v]) => ({ signature: v.label, count: v.count, totalMs: Math.round(v.totalMs) }))
       .sort((a, b) => b.count - a.count),
     spans: [...trace.spans].sort((a, b) => b.ms - a.ms).map((s) => ({ ...s, ms: Math.round(s.ms) })),
   };
@@ -143,6 +144,14 @@ export async function span<T>(name: string, fn: () => Promise<T>): Promise<T> {
   }
 }
 
+function safeArgs(args: unknown[]): string {
+  try {
+    return JSON.stringify(args) ?? "";
+  } catch {
+    return "?";
+  }
+}
+
 type Thenable = { then: (...args: unknown[]) => unknown };
 
 function isThenable(value: unknown): value is Thenable {
@@ -158,7 +167,12 @@ function isThenable(value: unknown): value is Thenable {
  * mutate and return `this`, so identity results are re-wrapped to keep the
  * proxy alive across the chain.
  */
-function wrapBuilder<T extends object>(builder: T, table: string, ops: string[]): T {
+function wrapBuilder<T extends object>(
+  builder: T,
+  table: string,
+  ops: string[],
+  keyParts: string[],
+): T {
   const proxy: T = new Proxy(builder, {
     get(target, prop, receiver) {
       const value = Reflect.get(target, prop, receiver);
@@ -174,11 +188,18 @@ function wrapBuilder<T extends object>(builder: T, table: string, ops: string[])
                 ops: ops.join("."),
                 ms: now() - t0,
                 ok: !(result as { error?: unknown } | null)?.error,
+                key: `${table}|${keyParts.join("|")}`,
               });
               return result;
             },
             (err: unknown) => {
-              recordQuery({ table, ops: ops.join("."), ms: now() - t0, ok: false });
+              recordQuery({
+                table,
+                ops: ops.join("."),
+                ms: now() - t0,
+                ok: false,
+                key: `${table}|${keyParts.join("|")}`,
+              });
               throw err;
             },
           ) as Promise<unknown>;
@@ -189,12 +210,14 @@ function wrapBuilder<T extends object>(builder: T, table: string, ops: string[])
       if (typeof value === "function") {
         return (...args: unknown[]) => {
           const result = (value as (...a: unknown[]) => unknown).apply(target, args);
+          const part = `${String(prop)}(${safeArgs(args)})`;
           if (result === target) {
             ops.push(String(prop));
+            keyParts.push(part);
             return proxy;
           }
           if (typeof result === "object" && result !== null && isThenable(result)) {
-            return wrapBuilder(result as object, table, [...ops, String(prop)]);
+            return wrapBuilder(result as object, table, [...ops, String(prop)], [...keyParts, part]);
           }
           return result;
         };
@@ -218,14 +241,16 @@ export function traceClient<T extends { from: (table: string) => unknown }>(clie
         return (table: string) => {
           const builder = (value as (t: string) => unknown).call(target, table);
           if (typeof builder !== "object" || builder === null) return builder;
-          return wrapBuilder(builder as object, table, []);
+          return wrapBuilder(builder as object, table, [], []);
         };
       }
       if (prop === "rpc" && typeof value === "function") {
         return (...args: unknown[]) => {
           const builder = (value as (...a: unknown[]) => unknown).apply(target, args);
           if (typeof builder !== "object" || builder === null) return builder;
-          return wrapBuilder(builder as object, `rpc:${String(args[0])}`, []);
+          return wrapBuilder(builder as object, `rpc:${String(args[0])}`, [], [
+            `args(${safeArgs(args.slice(1))})`,
+          ]);
         };
       }
       return typeof value === "function" ? (value as () => unknown).bind(target) : value;
