@@ -57,24 +57,14 @@ async function notifyMutualsOnHost(opts: {
     if (mutuals.length === 0) return;
 
     // Respect prefs (inapp_workshop_updates). Anyone with no prefs row defaults to true.
-    const { data: prefs } = await supabaseAdmin
-      .from("notification_preferences")
-      .select("user_id, inapp_workshop_updates")
-      .in("user_id", mutuals);
-    const optedOut = new Set(
-      (prefs ?? [])
-        .filter((p: any) => p.inapp_workshop_updates === false)
-        .map((p: any) => p.user_id as string),
-    );
-    const recipients = mutuals.filter((id) => !optedOut.has(id));
-    if (recipients.length === 0) return;
-
-    const rows = recipients.map((uid) => ({
-      user_id: uid,
+    const { notifyMany } = await import("@/lib/notifications/deliver.server");
+    await notifyMany({
+      recipientIds: mutuals,
+      actorUserId: opts.hostUserId,
       kind: "workshop_live",
-      actor_user_id: opts.hostUserId,
-      entity_type: "instant_room",
-      entity_id: opts.roomId,
+      entityType: "instant_room",
+      entityId: opts.roomId,
+      preference: "inapp_workshop_updates",
       payload: {
         actor_name: actorName,
         actor_username: actorUsername,
@@ -83,8 +73,8 @@ async function notifyMutualsOnHost(opts: {
         medium: opts.medium,
         visibility: opts.visibility,
       },
-    }));
-    await supabaseAdmin.from("notifications").insert(rows);
+    });
+
   } catch {
     // best effort; never block the host flow
   }
