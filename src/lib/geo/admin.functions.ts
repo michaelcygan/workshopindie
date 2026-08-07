@@ -213,6 +213,39 @@ export const listLaunchQueue = createServerFn({ method: "GET" })
     };
   });
 
+/**
+ * Shared internal: verify a provider identity server-side and upsert it into
+ * the launch queue. Used by both the single-city admin launch and the one-time
+ * batch launch so there is exactly one queueing implementation.
+ */
+async function queuePlaceForLaunch(providerId: string, userId: string) {
+  const admin = await adminClient();
+  const { resolveProviderPlace, PLACE_PROVIDER } = await import("@/lib/geo/provider.server");
+
+  const place = await resolveProviderPlace(providerId);
+  if (!place) throw new Error("That place couldn't be verified as a city or town.");
+
+  const displayName = place.sublabel ? `${place.name}, ${place.sublabel}` : place.name;
+  const { data: row, error } = await admin
+    .from("city_launch_queue")
+    .upsert(
+      {
+        place_provider: PLACE_PROVIDER,
+        place_provider_id: place.providerId,
+        display_name: displayName,
+        payload: { country_code: place.countryCode, kind: place.locationKind },
+        status: "queued",
+        error: null,
+        queued_by: userId,
+      },
+      { onConflict: "place_provider,place_provider_id" },
+    )
+    .select("id,status")
+    .single();
+  if (error) throw new Error(error.message);
+  return { id: row.id as string, place };
+}
+
 /** Queue a place for proactive launch. The place is verified server-side. */
 export const enqueueLaunch = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -226,36 +259,14 @@ export const enqueueLaunch = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await requireAdmin(context.supabase, context.userId);
-    const admin = await adminClient();
-    const { resolveProviderPlace, PLACE_PROVIDER } = await import("@/lib/geo/provider.server");
-
-    const place = await resolveProviderPlace(data.providerId);
-    if (!place) throw new Error("That place couldn't be verified as a city or town.");
-
-    const displayName = place.sublabel ? `${place.name}, ${place.sublabel}` : place.name;
-    const { data: row, error } = await admin
-      .from("city_launch_queue")
-      .upsert(
-        {
-          place_provider: PLACE_PROVIDER,
-          place_provider_id: place.providerId,
-          display_name: displayName,
-          payload: { country_code: place.countryCode, kind: place.locationKind },
-          status: "queued",
-          error: null,
-          queued_by: context.userId,
-        },
-        { onConflict: "place_provider,place_provider_id" },
-      )
-      .select("id")
-      .single();
-    if (error) throw new Error(error.message);
+    const queued = await queuePlaceForLaunch(data.providerId, context.userId);
 
     if (data.launchNow) {
-      return launchQueueEntry(row.id, context.userId);
+      return launchQueueEntry(queued.id, context.userId);
     }
-    return { ok: true, launched: false, id: row.id };
+    return { ok: true, launched: false, id: queued.id };
   });
+
 
 async function launchQueueEntry(queueId: string, userId: string) {
   const admin = await adminClient();
