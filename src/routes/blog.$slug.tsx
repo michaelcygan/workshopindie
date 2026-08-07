@@ -213,6 +213,11 @@ function BlogPostPage() {
               })}
             </>
           )}
+          <BlogAuthorActions
+            postId={post.id}
+            createdBy={(post as { created_by?: string | null }).created_by ?? null}
+            authorProfileId={(post as { author_profile_id?: string | null }).author_profile_id ?? null}
+          />
         </div>
       </header>
 
