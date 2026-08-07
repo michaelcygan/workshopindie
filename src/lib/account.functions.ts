@@ -15,7 +15,7 @@ function slugifyHandle(input: string): string {
 /**
  * Auto-mint a username from the user's first+last (or display_name) if they
  * don't have one yet. Never overwrites a user-chosen handle. Returns the
- * effective username so callers can navigate to /u/$username immediately.
+ * effective username so callers can navigate to /$username immediately.
  */
 export const claimAutoUsername = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
