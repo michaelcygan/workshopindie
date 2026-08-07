@@ -51,7 +51,7 @@ export function useMobileIslandVisibility(): MobileIslandVisibility {
   }
 
   // Preserve existing standalone behavior for logged-out visitors.
-  if (!user && (pathname.startsWith("/u/") || pathname.startsWith("/works/"))) {
+  if (!user && (isProfilePath(pathname) || pathname.startsWith("/works/"))) {
     return { islandVisible: false, composerVisible: false };
   }
 
