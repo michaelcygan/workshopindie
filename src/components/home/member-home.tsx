@@ -14,6 +14,8 @@ import { NowBoardMobile } from "@/components/home/now-board-mobile";
 import { NowBoardDesktop } from "@/components/home/now-board-desktop";
 import { YourWorkshop } from "@/components/home/your-workshop";
 import { BlogRail } from "@/components/home/blog-rail";
+import { GroupNewsTicker } from "@/components/group/group-news-ticker";
+
 import { getMemberHome } from "@/lib/home.functions";
 import { CATEGORY_LABELS } from "@/lib/categories";
 import type { HomeCircleStory, MemberHomePayload } from "@/lib/home-types";
@@ -126,7 +128,18 @@ export function MemberHome() {
         isFallback={data.featuredIsFallback}
       />
 
+      {/* Ambient pulse from the groups you belong to. Hides itself when empty. */}
+      {data.nowGroups.length > 0 && (
+        <div className="mx-auto max-w-7xl pt-5">
+          <GroupNewsTicker
+            slugs={data.nowGroups.map((g) => g.slug)}
+            label="Workshop now"
+          />
+        </div>
+      )}
+
       {/* Now — departures board on desktop, compact module on small screens. */}
+
       <div className="mx-auto hidden max-w-7xl px-4 pt-6 md:px-6 lg:block">
         <NowBoardDesktop data={data} />
       </div>

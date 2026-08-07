@@ -1,7 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
-import { parseFeed, type NewsItem } from "@/lib/group-news";
+import type { NewsItem } from "@/lib/group-news";
+import {
+  CACHE_FRESH_MS,
+  fetchFeedItems,
+  publicSupabase,
+  readNewsCache,
+  writeNewsCache,
+} from "@/lib/group-news.server";
 
 /**
  * Public JSON endpoint for a group's news feed.
@@ -21,12 +26,7 @@ type Reason =
   | "upstream_timeout"
   | "upstream_error";
 
-function json(
-  items: NewsItem[],
-  reason: Reason,
-  status: number,
-  cache: string,
-): Response {
+function json(items: NewsItem[], reason: Reason, status: number, cache: string): Response {
   return Response.json({ items, reason }, { status, headers: { "Cache-Control": cache } });
 }
 
@@ -48,19 +48,7 @@ export const Route = createFileRoute("/api/public/group-news/$slug")({
           return json([], "config", 500, NO_STORE);
         }
 
-        const supabase = createClient<Database>(url, key, {
-          auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-          global: {
-            fetch: (input, init) => {
-              const h = new Headers(init?.headers);
-              if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`) {
-                h.delete("Authorization");
-              }
-              h.set("apikey", key);
-              return fetch(input, { ...init, headers: h });
-            },
-          },
-        });
+        const supabase = publicSupabase(url, key);
 
         const { data: g, error } = await supabase
           .from("groups")
@@ -80,97 +68,25 @@ export const Route = createFileRoute("/api/public/group-news/$slug")({
         const feedUrl = (g as { news_feed_url?: string | null }).news_feed_url ?? null;
         if (!feedUrl) return json([], "no_feed", 200, SHORT);
 
-        let hostname = "unknown";
-        try {
-          hostname = new URL(feedUrl).hostname;
-        } catch {
-          console.error(`[group-news] invalid feed url slug=${slug}`);
-          return json([], "upstream_error", 502, NO_STORE);
-        }
-
         // Serve a fresh cached snapshot without touching upstream at all.
-        const { data: cached } = await supabase
-          .from("group_news_cache" as never)
-          .select("items, fetched_at")
-          .eq("slug", slug)
-          .maybeSingle();
-        const cachedRow = cached as { items?: NewsItem[]; fetched_at?: string } | null;
-        const cachedItems = Array.isArray(cachedRow?.items) ? (cachedRow!.items as NewsItem[]) : [];
-        const cachedAgeMs = cachedRow?.fetched_at
-          ? Date.now() - new Date(cachedRow.fetched_at).getTime()
-          : Number.POSITIVE_INFINITY;
-        if (cachedItems.length > 0 && cachedAgeMs < 20 * 60 * 1000) {
+        const cache = await readNewsCache(supabase, [slug]);
+        const cachedItems = cache.get(slug)?.items ?? [];
+        const cachedAgeMs = cache.get(slug)?.ageMs ?? Number.POSITIVE_INFINITY;
+        if (cachedItems.length > 0 && cachedAgeMs < CACHE_FRESH_MS) {
           return json(cachedItems, "ok", 200, SUCCESS);
         }
 
-        // Upstream (Google News) intermittently 503s Cloudflare edge traffic; retry briefly.
-        let xml = "";
-        let failure: Reason | null = null;
-        for (let attempt = 0; attempt < 3; attempt++) {
-          try {
-            const res = await fetch(feedUrl, {
-              redirect: "follow",
-              headers: {
-                "user-agent":
-                  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
-                accept:
-                  "application/rss+xml, application/atom+xml, application/xml, text/xml, */*;q=0.5",
-                "accept-language": "en-US,en;q=0.9",
-              },
-              signal: AbortSignal.timeout(8000),
-            });
-            if (!res.ok) {
-              failure = "upstream_status";
-              console.error(
-                `[group-news] upstream ${res.status} slug=${slug} hostname=${hostname} attempt=${attempt + 1}`,
-              );
-              await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
-              continue;
-            }
-            xml = await res.text();
-            failure = null;
-            break;
-          } catch (e) {
-            const timedOut =
-              e instanceof Error && (e.name === "TimeoutError" || e.name === "AbortError");
-            failure = timedOut ? "upstream_timeout" : "upstream_error";
-            console.error(
-              `[group-news] upstream ${timedOut ? "timeout" : "error"} slug=${slug} hostname=${hostname} name=${
-                e instanceof Error ? e.name : "unknown"
-              }`,
-            );
-          }
-        }
+        const { items, reason } = await fetchFeedItems(feedUrl, slug, 12);
 
-        if (failure) {
+        if (reason !== "ok") {
           if (cachedItems.length > 0) {
-            console.warn(`[group-news] serving stale cache slug=${slug} reason=${failure}`);
+            console.warn(`[group-news] serving stale cache slug=${slug} reason=${reason}`);
             return json(cachedItems, "ok", 200, SHORT);
           }
-          return json([], failure, 502, NO_STORE);
+          return json([], reason, reason === "empty_feed" ? 200 : 502, reason === "empty_feed" ? SHORT : NO_STORE);
         }
 
-        const items = parseFeed(xml, 12);
-        if (items.length === 0) {
-          console.warn(
-            `[group-news] parse returned zero items slug=${slug} hostname=${hostname} bytes=${xml.length}`,
-          );
-          if (cachedItems.length > 0) return json(cachedItems, "ok", 200, SHORT);
-          return json([], "empty_feed", 200, SHORT);
-        }
-
-        try {
-          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          await supabaseAdmin
-            .from("group_news_cache" as never)
-            .upsert({ slug, items, fetched_at: new Date().toISOString() } as never, {
-              onConflict: "slug",
-            });
-        } catch (e) {
-          console.error(
-            `[group-news] cache write failed slug=${slug} name=${e instanceof Error ? e.name : "?"}`,
-          );
-        }
+        await writeNewsCache(slug, items);
 
         console.log(`[group-news] success slug=${slug} items=${items.length}`);
         return json(items, "ok", 200, SUCCESS);
@@ -178,4 +94,3 @@ export const Route = createFileRoute("/api/public/group-news/$slug")({
     },
   },
 });
-
