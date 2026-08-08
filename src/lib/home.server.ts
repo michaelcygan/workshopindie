@@ -1134,76 +1134,107 @@ export async function peopleSuggestionsServer(
   homeCityId: string | null,
   mediums: string[],
 ): Promise<HomePersonSuggestion[]> {
-  if (!groups.length) return [];
-  const { data: members } = await supabaseAdmin
-    .from("group_members")
-    .select("user_id,group_id")
-    .in(
-      "group_id",
-      groups.map((g) => g.id),
-    )
-    .limit(500);
-  const rows = (members ?? []) as Array<{ user_id: string; group_id: string }>;
+  const TARGET = 6;
+  const mySet = new Set(mediums);
 
   const { data: followRows } = await supabaseAdmin
     .from("follows")
-    .select("followed_user_id")
-    .eq("follower_user_id", userId);
-  const following = new Set(
-    ((followRows ?? []) as Array<{ followed_user_id: string }>).map((r) => r.followed_user_id),
+    .select("followed_user_id,created_at")
+    .eq("follower_user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(200);
+  const followList = ((followRows ?? []) as Array<{ followed_user_id: string }>).map(
+    (r) => r.followed_user_id,
   );
+  const following = new Set(followList);
 
   const sharedGroup = new Map<string, string>();
-  for (const r of rows) {
-    if (r.user_id === userId || following.has(r.user_id) || blocked.has(r.user_id)) continue;
-    if (!sharedGroup.has(r.user_id)) sharedGroup.set(r.user_id, r.group_id);
+  if (groups.length) {
+    const { data: members } = await supabaseAdmin
+      .from("group_members")
+      .select("user_id,group_id")
+      .in(
+        "group_id",
+        groups.map((g) => g.id),
+      )
+      .limit(500);
+    for (const r of (members ?? []) as Array<{ user_id: string; group_id: string }>) {
+      if (r.user_id === userId || following.has(r.user_id) || blocked.has(r.user_id)) continue;
+      if (!sharedGroup.has(r.user_id)) sharedGroup.set(r.user_id, r.group_id);
+    }
   }
-  const ids = Array.from(sharedGroup.keys()).slice(0, 60);
-  if (!ids.length) return [];
+
+  const suggestionIds = Array.from(sharedGroup.keys()).slice(0, 60);
+  const fallbackIds = followList.filter((id) => id !== userId && !blocked.has(id)).slice(0, 24);
+  const allIds = Array.from(new Set([...suggestionIds, ...fallbackIds]));
+  if (!allIds.length) return [];
 
   const { data: profiles } = await supabaseAdmin
     .from("profiles")
     .select("id,username,display_name,headline,avatar_url,mediums,home_city_id,discoverable")
-    .in("id", ids)
+    .in("id", allIds)
     .eq("discoverable", true)
-    .limit(60);
+    .limit(120);
+
+  type Row = {
+    id: string;
+    username: string | null;
+    display_name: string | null;
+    headline: string | null;
+    avatar_url: string | null;
+    mediums: string[] | null;
+    home_city_id: string | null;
+  };
+  const byId = new Map<string, Row>();
+  for (const p of (profiles ?? []) as unknown as Row[]) {
+    if (p.username) byId.set(p.id, p);
+  }
 
   const groupById = new Map(groups.map((g) => [g.id, g]));
-  const mySet = new Set(mediums);
-  return (
-    (profiles ?? []) as unknown as Array<{
-      id: string;
-      username: string | null;
-      display_name: string | null;
-      headline: string | null;
-      avatar_url: string | null;
-      mediums: string[] | null;
-      home_city_id: string | null;
-    }>
-  )
-    .filter((p) => !!p.username)
-    .map((p) => {
-      const shared = (p.mediums ?? []).filter((m) => mySet.has(m));
-      const g = groupById.get(sharedGroup.get(p.id)!);
-      const reasonText = shared.length
-        ? `Shares your ${shared[0]} work`
-        : homeCityId && p.home_city_id === homeCityId
-          ? "In your city"
-          : g
-            ? `Also in ${g.name}`
-            : "In one of your Groups";
-      return {
-        id: p.id,
-        username: p.username!,
-        displayName: p.display_name,
-        headline: p.headline,
-        avatarUrl: p.avatar_url,
-        mediums: (p.mediums ?? []).slice(0, 3),
-        reasonText,
-      };
-    })
-    .slice(0, 6);
+  const toCard = (p: Row, reasonText: string): HomePersonSuggestion => ({
+    id: p.id,
+    username: p.username!,
+    displayName: p.display_name,
+    headline: p.headline,
+    avatarUrl: p.avatar_url,
+    mediums: (p.mediums ?? []).slice(0, 3),
+    reasonText,
+  });
+  const sharedMedium = (p: Row) => (p.mediums ?? []).find((m) => mySet.has(m));
+
+  const out: HomePersonSuggestion[] = [];
+  const seen = new Set<string>();
+
+  for (const id of suggestionIds) {
+    const p = byId.get(id);
+    if (!p || seen.has(id)) continue;
+    const shared = sharedMedium(p);
+    const g = groupById.get(sharedGroup.get(id)!);
+    const reasonText = shared
+      ? `Shares your ${shared} work`
+      : homeCityId && p.home_city_id === homeCityId
+        ? "In your city"
+        : g
+          ? `Also in ${g.name}`
+          : "In one of your Groups";
+    seen.add(id);
+    out.push(toCard(p, reasonText));
+    if (out.length >= TARGET) return out;
+  }
+
+  // Fallback: pad with the people this member followed most recently.
+  for (const id of fallbackIds) {
+    if (out.length >= TARGET) break;
+    const p = byId.get(id);
+    if (!p || seen.has(id)) continue;
+    const shared = sharedMedium(p);
+    seen.add(id);
+    out.push(toCard(p, shared ? `Shares your ${shared} work` : "You follow them"));
+  }
+
+  return out;
 }
+
 
 /** A small, medium-diverse editorial set. Adjacent picks need a real bridge. */
 export async function disciplineItemsServer(mediums: string[]): Promise<HomeDisciplineItem[]> {
