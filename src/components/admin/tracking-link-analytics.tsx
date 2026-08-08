@@ -135,7 +135,7 @@ function TrackingRow({
                   <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-muted">Visits per day (90d)</h4>
                   {isOk(d?.daily) ? (
                     <MetricChart data={daily as any} xKey="day" yKey="total" kind="bar" />
-                  ) : d?.daily.status === "unavailable" ? (
+                  ) : (d?.daily as Panel<any> | undefined)?.status === "unavailable" ? (
                     <Unavailable />
                   ) : (
                     <p className="text-sm text-ink-muted">No visits yet.</p>
