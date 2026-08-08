@@ -91,6 +91,7 @@ export async function resolveAndRecord(
     .eq("slug", slug)
     .maybeSingle();
 
+  if (error) console.error(`[tracking-links] lookup failed slug=${slug}: ${error.message}`);
   if (error || !link) return { kind: "missing" };
   if (!link.is_active) return { kind: "disabled" };
 
