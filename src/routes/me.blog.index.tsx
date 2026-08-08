@@ -29,7 +29,7 @@ import {
   unpublishMyBlogPost,
   deleteMyBlogDraft,
 } from "@/lib/blog-member.functions";
-import { PenLine, Plus, ExternalLink, ChevronRight, MoreVertical, Trash2, Loader2 } from "lucide-react";
+import { PenLine, Plus, ExternalLink, MoreVertical, Trash2, Loader2, Share2 } from "lucide-react";
 import { blogCategoryLabel } from "@/lib/blog-categories";
 
 
@@ -140,7 +140,7 @@ function MyBlogPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button asChild variant="outline" size="sm" className="rounded-md">
-            <Link to="/blog">Public blog</Link>
+            <Link to="/blog">Blog</Link>
           </Button>
           <Button
             size="sm"
@@ -149,8 +149,9 @@ function MyBlogPage() {
             onClick={() => createMut.mutate()}
           >
             <Plus className="mr-1 h-4 w-4" />
-            New draft
+            New post
           </Button>
+
         </div>
       </div>
 
@@ -239,33 +240,51 @@ function MyBlogPage() {
                     </div>
                   </div>
                   <div className="flex shrink-0 items-center gap-1 self-center">
-                    {p.status === "published" && (
-                      <Link
-                        to="/blog/$slug"
-                        params={{ slug: p.slug }}
-                        onClick={(e) => e.stopPropagation()}
-                        className="hidden items-center gap-1 rounded-full border border-border px-3 py-1 text-xs text-ink-soft hover:bg-background md:inline-flex"
-                      >
-                        View <ExternalLink className="h-3 w-3" />
-                      </Link>
-                    )}
-                    {acc?.canDeleteNeverPublishedDraft && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button
-                            type="button"
-                            aria-label="Post actions"
-                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-ink-muted hover:bg-background hover:text-ink"
-                          >
-                            {deletingId === p.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <MoreVertical className="h-4 w-4" />
-                            )}
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label="Post actions"
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-ink-muted hover:bg-background hover:text-ink"
+                        >
+                          {deletingId === p.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <MoreVertical className="h-4 w-4" />
+                          )}
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                        {p.status === "published" && (
+                          <>
+                            <DropdownMenuItem
+                              onSelect={(e) => {
+                                e.preventDefault();
+                                navigator.clipboard
+                                  .writeText(`${window.location.origin}/blog/${p.slug}`)
+                                  .then(() => toast.success("Link copied"))
+                                  .catch(() => toast.error("Couldn't copy link"));
+                              }}
+                            >
+                              <Share2 className="mr-2 h-4 w-4" />
+                              Share post
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link to="/blog/$slug" params={{ slug: p.slug }}>
+                                <ExternalLink className="mr-2 h-4 w-4" />
+                                View post
+                              </Link>
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                        <DropdownMenuItem asChild>
+                          <Link to="/me/blog/$id" params={{ id: p.id }}>
+                            <PenLine className="mr-2 h-4 w-4" />
+                            Edit post
+                          </Link>
+                        </DropdownMenuItem>
+                        {acc?.canDeleteNeverPublishedDraft && (
                           <DropdownMenuItem
                             className="text-destructive focus:text-destructive"
                             onSelect={(e) => {
@@ -276,11 +295,11 @@ function MyBlogPage() {
                             <Trash2 className="mr-2 h-4 w-4" />
                             {p.status === "published" || p.published_at ? "Delete post" : "Delete draft"}
                           </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                    <ChevronRight className="h-5 w-5 text-ink-muted" aria-hidden />
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
+
                 </Link>
               </li>
             ))}
