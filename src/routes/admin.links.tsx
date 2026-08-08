@@ -19,6 +19,7 @@ import {
   deleteWorkshopLink,
 } from "@/lib/workshop-links.functions";
 import { GroupSeedLinksPanel } from "@/components/admin/group-seed-links-panel";
+import { TrackingLinksPanel } from "@/components/admin/tracking-links-panel";
 
 
 export const Route = createFileRoute("/admin/links")({ component: AdminLinks });
@@ -83,6 +84,9 @@ function AdminLinks() {
     <div className="space-y-8">
       {/* Group seed links — auto-join Meta/ad traffic */}
       <GroupSeedLinksPanel />
+
+      {/* Tracking links — named campaign URLs (/go/…) */}
+      <TrackingLinksPanel />
 
 
       {/* Builder */}
