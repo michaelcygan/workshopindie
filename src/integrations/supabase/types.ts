@@ -5712,6 +5712,13 @@ export type Database = {
             referencedRelation: "tracking_links"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "tracking_link_clicks_tracking_link_id_fkey"
+            columns: ["tracking_link_id"]
+            isOneToOne: false
+            referencedRelation: "vw_tracking_link_stats"
+            referencedColumns: ["id"]
+          },
         ]
       }
       tracking_links: {
@@ -8800,6 +8807,23 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_tracking_link_stats: {
+        Row: {
+          clicks_7d: number | null
+          created_at: string | null
+          destination_path: string | null
+          first_click_at: string | null
+          guest_clicks: number | null
+          id: string | null
+          is_active: boolean | null
+          last_click_at: string | null
+          member_clicks: number | null
+          name: string | null
+          slug: string | null
+          total_clicks: number | null
+        }
+        Relationships: []
+      }
       vw_user_activation: {
         Row: {
           activated: boolean | null
@@ -9322,6 +9346,31 @@ export type Database = {
           durable_written: boolean
           prev_seen_at: string
           show_online: boolean
+        }[]
+      }
+      tracking_link_daily: {
+        Args: { _days?: number; _link_id: string }
+        Returns: {
+          day: string
+          guests: number
+          members: number
+          total: number
+        }[]
+      }
+      tracking_link_locations: {
+        Args: { _days?: number; _link_id: string }
+        Returns: {
+          city: string
+          country: string
+          region: string
+          total: number
+        }[]
+      }
+      tracking_link_referrers: {
+        Args: { _days?: number; _link_id: string }
+        Returns: {
+          referrer: string
+          total: number
         }[]
       }
       try_consume_blog_publication: {
