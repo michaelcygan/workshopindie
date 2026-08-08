@@ -3,6 +3,7 @@ import { getPublishedPost } from "@/lib/blog.functions";
 import { BlogPostBody } from "@/components/blog-post-body";
 import { BlogArticleFooter } from "@/components/blog-article-footer";
 import { BlogPostContext } from "@/components/blog-post-context";
+import { BlogComments } from "@/components/blog-comments";
 import { BlogAuthorActions } from "@/components/blog/blog-author-actions";
 import { deriveBlogPostContext, contextMentions } from "@/lib/blog-post-context";
 import { getBlogCategory } from "@/lib/blog-categories";
