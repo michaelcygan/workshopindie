@@ -5673,6 +5673,80 @@ export type Database = {
         }
         Relationships: []
       }
+      tracking_link_clicks: {
+        Row: {
+          city: string | null
+          clicked_at: string
+          country: string | null
+          id: string
+          referrer: string | null
+          region: string | null
+          tracking_link_id: string
+          visitor_type: string
+        }
+        Insert: {
+          city?: string | null
+          clicked_at?: string
+          country?: string | null
+          id?: string
+          referrer?: string | null
+          region?: string | null
+          tracking_link_id: string
+          visitor_type?: string
+        }
+        Update: {
+          city?: string | null
+          clicked_at?: string
+          country?: string | null
+          id?: string
+          referrer?: string | null
+          region?: string | null
+          tracking_link_id?: string
+          visitor_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracking_link_clicks_tracking_link_id_fkey"
+            columns: ["tracking_link_id"]
+            isOneToOne: false
+            referencedRelation: "tracking_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracking_links: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          destination_path: string
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          destination_path: string
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          destination_path?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_blocks: {
         Row: {
           blocked_user_id: string
