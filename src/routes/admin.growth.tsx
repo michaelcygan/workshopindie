@@ -10,6 +10,7 @@ import { NarrativeList } from "@/components/admin/narrative-list";
 import { METRIC_DEFINITIONS, fmtNumber } from "@/lib/analytics";
 import { isOk, rows } from "@/lib/analytics/envelope";
 import { retentionNarrative } from "@/lib/analytics/narrative";
+import { TrackingLinkAnalytics } from "@/components/admin/tracking-link-analytics";
 
 export const Route = createFileRoute("/admin/growth")({ component: GrowthPage });
 
@@ -83,6 +84,8 @@ function GrowthPage() {
           </>
         )}
       </section>
+
+      <TrackingLinkAnalytics />
 
       <section className="rounded-2xl border border-border bg-surface p-5">
         <h2 className="mb-2 font-display text-lg text-ink">Daily signups</h2>
