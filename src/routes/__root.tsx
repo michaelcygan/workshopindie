@@ -16,6 +16,7 @@ import { MobileNav } from "@/components/mobile-nav";
 import { PaymentTestModeBanner } from "@/components/payment-test-mode-banner";
 
 import { RefCapture } from "@/components/ref-capture";
+import { TrackingClickAttribution } from "@/components/tracking-click-attribution";
 import { PresenceHeartbeat } from "@/components/presence-heartbeat";
 import { AccountLifecycleProvider } from "@/components/account-lifecycle/provider";
 import { AccountLifecycleGate } from "@/components/account-lifecycle/gate";
@@ -202,6 +203,7 @@ function RootComponent() {
               <OAuthErrorToast />
 
               <RefCapture />
+              <TrackingClickAttribution />
               <PresenceHeartbeat />
               <SignOutCacheReset />
               <TitleBadge />
