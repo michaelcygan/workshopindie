@@ -118,9 +118,11 @@ export function PublicGroupsHome({ state, onChange, onReset }: Props) {
                 className="rounded-full border border-border bg-surface px-3.5 py-1.5 text-sm text-ink transition hover:bg-muted"
               >
                 {g.name}
-                <span className="ml-1.5 text-xs text-ink-muted">
-                  {g.member_count.toLocaleString()}
-                </span>
+                {g.member_count > 0 && (
+                  <span className="ml-1.5 text-xs text-ink-muted">
+                    {g.member_count.toLocaleString()}
+                  </span>
+                )}
               </Link>
             ))}
           </div>
