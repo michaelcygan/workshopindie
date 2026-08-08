@@ -241,7 +241,17 @@ function BlogPostPage() {
 
       <ShareRow slug={post.slug} title={post.title} postId={post.id} />
 
+      <BlogComments
+        postId={post.id}
+        authorProfileIds={[
+          (post as { created_by?: string | null }).created_by ?? null,
+          (post as { author_profile_id?: string | null }).author_profile_id ?? null,
+          ...authors.map((a) => a.id),
+        ]}
+      />
+
       <BlogArticleFooter postId={post.id} mode="article" />
+
     </article>
   );
 }
