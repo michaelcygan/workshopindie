@@ -5,7 +5,7 @@ import { ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { MetricChart } from "@/components/admin/metric-chart";
 import { SectionHeading, Unavailable } from "@/components/admin/metric";
-import { isOk, rows } from "@/lib/analytics/envelope";
+import { isOk, rows, type Panel } from "@/lib/analytics/envelope";
 import {
   getTrackingLinkDetail,
   listTrackingLinks,
@@ -94,9 +94,14 @@ function TrackingRow({
     refetchOnWindowFocus: false,
   });
 
-  const daily = rows<any>(data?.daily);
-  const locations = rows<any>(data?.locations);
-  const referrers = rows<any>(data?.referrers);
+  // The server fn returns three Panel<T> envelopes; widen once so the JSX
+  // below can read `.status` without fighting inference across the RPC boundary.
+  const d = data as
+    | { daily: Panel<any>; locations: Panel<any>; referrers: Panel<any> }
+    | undefined;
+  const daily = rows<any>(d?.daily);
+  const locations = rows<any>(d?.locations);
+  const referrers = rows<any>(d?.referrers);
 
   return (
     <>
@@ -128,9 +133,9 @@ function TrackingRow({
               <div className="grid gap-6 md:grid-cols-[2fr_1fr_1fr]">
                 <div>
                   <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-muted">Visits per day (90d)</h4>
-                  {isOk(data?.daily) ? (
+                  {isOk(d?.daily) ? (
                     <MetricChart data={daily as any} xKey="day" yKey="total" kind="bar" />
-                  ) : data?.daily.status === "unavailable" ? (
+                  ) : d?.daily.status === "unavailable" ? (
                     <Unavailable />
                   ) : (
                     <p className="text-sm text-ink-muted">No visits yet.</p>
@@ -143,13 +148,13 @@ function TrackingRow({
                     label: formatClickLocation(r.city, r.region, r.country),
                     value: r.total,
                   }))}
-                  unavailable={data?.locations.status === "unavailable"}
+                  unavailable={d?.locations.status === "unavailable"}
                 />
                 <BreakdownList
                   title="Referrers"
                   empty="No referrer data."
                   items={referrers.map((r) => ({ label: r.referrer, value: r.total }))}
-                  unavailable={data?.referrers.status === "unavailable"}
+                  unavailable={d?.referrers.status === "unavailable"}
                 />
               </div>
             )}
