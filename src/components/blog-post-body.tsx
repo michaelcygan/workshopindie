@@ -4,35 +4,14 @@ import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
 import { BlogLightbox, type LightboxImage } from "./blog-lightbox";
 import { BlogEmbed } from "./blog-embed";
+import { parseSegments, type BodySegment } from "@/lib/blog-body-segments";
 
 type Props = { markdown: string; className?: string };
 
-const EMBED_LINE = /^[ \t]*\[\[embed:(\S+?)\]\][ \t]*$/;
-
-type Segment = { type: "md"; text: string } | { type: "embed"; url: string };
-
-function splitEmbeds(md: string): Segment[] {
-  const lines = md.split("\n");
-  const out: Segment[] = [];
-  let buf: string[] = [];
-  const flush = () => {
-    if (buf.length) {
-      out.push({ type: "md", text: buf.join("\n") });
-      buf = [];
-    }
-  };
-  for (const line of lines) {
-    const m = line.match(EMBED_LINE);
-    if (m) {
-      flush();
-      out.push({ type: "embed", url: m[1] });
-    } else {
-      buf.push(line);
-    }
-  }
-  flush();
-  return out;
+function splitEmbeds(md: string): BodySegment[] {
+  return parseSegments(md).filter((s) => s.type === "embed" || s.text.trim().length > 0);
 }
+
 
 /**
  * Shared editorial Markdown renderer. Used by both /admin/blog preview and
