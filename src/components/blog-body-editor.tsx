@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
 import {
   Bold,
   Italic,
@@ -11,6 +19,8 @@ import {
   List,
   ListOrdered,
   AtSign,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -31,6 +41,13 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { BlogEmbed } from "@/components/blog-embed";
+import {
+  parseSegments,
+  serializeSegments,
+  trimBlankLines,
+  type BodySegment,
+} from "@/lib/blog-body-segments";
 
 export type BlogBodyEditorProps = {
   value: string;
@@ -60,72 +77,111 @@ function normalizeUrl(input: string): string | null {
   }
 }
 
+/**
+ * Markdown-light composer that renders `[[embed:URL]]` markers as the real
+ * Workshop embed card while keeping one canonical Markdown string as the
+ * source of truth. The writing surface is a stack of auto-growing textareas
+ * (one per text segment) separated by embed cards; every toolbar action
+ * targets the segment that currently holds the caret.
+ */
 export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEntityInsert }: BlogBodyEditorProps) {
-  const ref = useRef<HTMLTextAreaElement>(null);
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkText, setLinkText] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
   const [embedOpen, setEmbedOpen] = useState(false);
   const [embedUrl, setEmbedUrl] = useState("");
-  const savedSelection = useRef<{ start: number; end: number } | null>(null);
+  /** Index of the embed segment being edited, or null when inserting a new one. */
+  const [embedEditIndex, setEmbedEditIndex] = useState<number | null>(null);
+
+  const segments = useMemo(() => parseSegments(value), [value]);
+
+  /** Raw text of the focused segment, so trailing newlines survive typing. */
+  const [local, setLocal] = useState<{ idx: number; text: string } | null>(null);
+  const refs = useRef(new Map<number, HTMLTextAreaElement>());
+  const activeIdx = useRef(0);
+  const savedSelection = useRef<{ idx: number; start: number; end: number } | null>(null);
+  const pendingFocus = useRef<{ idx: number; start: number; end: number } | null>(null);
+
+  const displayText = useCallback(
+    (idx: number, seg: BodySegment) => {
+      if (seg.type !== "text") return "";
+      if (local && local.idx === idx) return local.text;
+      return trimBlankLines(seg.text);
+    },
+    [local],
+  );
+
+  useLayoutEffect(() => {
+    const p = pendingFocus.current;
+    if (!p) return;
+    pendingFocus.current = null;
+    const el = refs.current.get(p.idx);
+    if (!el) return;
+    el.focus();
+    el.setSelectionRange(p.start, p.end);
+  });
 
   const wordCount = useMemo(() => value.trim().match(/\S+/g)?.length ?? 0, [value]);
   const readingMin = Math.max(1, Math.round(wordCount / 220));
 
-  function commit(next: string) {
-    onChange(next);
+  function commitSegments(next: BodySegment[]) {
+    onChange(serializeSegments(next));
     onDirty?.();
   }
 
+  /** Returns the active text segment index, falling back to the last one. */
+  function activeTextIndex(): number {
+    const i = activeIdx.current;
+    if (segments[i]?.type === "text") return i;
+    for (let j = segments.length - 1; j >= 0; j--) if (segments[j].type === "text") return j;
+    return 0;
+  }
+
+  function setSegmentText(idx: number, text: string, caret?: { start: number; end: number }) {
+    setLocal({ idx, text });
+    const next = segments.map((s, i) => (i === idx && s.type === "text" ? { ...s, text } : s));
+    commitSegments(next);
+    if (caret) pendingFocus.current = { idx, ...caret };
+  }
+
+  function currentTarget() {
+    const idx = activeTextIndex();
+    const el = refs.current.get(idx);
+    const seg = segments[idx];
+    const text = el?.value ?? (seg && seg.type === "text" ? trimBlankLines(seg.text) : "");
+    const start = el?.selectionStart ?? text.length;
+    const end = el?.selectionEnd ?? text.length;
+    return { idx, text, start, end };
+  }
+
   function wrapSelection(before: string, after: string, placeholder: string) {
-    const el = ref.current;
-    if (!el) return;
-    const start = el.selectionStart;
-    const end = el.selectionEnd;
+    if (readOnly) return;
+    const { idx, text, start, end } = currentTarget();
     const hasSel = end > start;
-    const sel = hasSel ? value.slice(start, end) : placeholder;
-    const next = value.slice(0, start) + before + sel + after + value.slice(end);
-    commit(next);
-    requestAnimationFrame(() => {
-      el.focus();
-      if (hasSel) {
-        const pos = start + before.length + sel.length + after.length;
-        el.setSelectionRange(pos, pos);
-      } else {
-        const from = start + before.length;
-        el.setSelectionRange(from, from + sel.length);
-      }
-    });
+    const sel = hasSel ? text.slice(start, end) : placeholder;
+    const next = text.slice(0, start) + before + sel + after + text.slice(end);
+    const caret = hasSel
+      ? { start: start + before.length + sel.length + after.length, end: start + before.length + sel.length + after.length }
+      : { start: start + before.length, end: start + before.length + sel.length };
+    setSegmentText(idx, next, caret);
   }
 
   function insertLinePrefix(prefix: string, placeholder: string) {
-    const el = ref.current;
-    if (!el) return;
-    const start = el.selectionStart;
-    const end = el.selectionEnd;
+    if (readOnly) return;
+    const { idx, text, start, end } = currentTarget();
     const hasSel = end > start;
-    const insertion = hasSel ? value.slice(start, end) : placeholder;
-    const needsNl = start > 0 && value[start - 1] !== "\n";
+    const insertion = hasSel ? text.slice(start, end) : placeholder;
+    const needsNl = start > 0 && text[start - 1] !== "\n";
     const pre = needsNl ? "\n" : "";
-    const next = value.slice(0, start) + pre + prefix + insertion + value.slice(end);
-    commit(next);
-    requestAnimationFrame(() => {
-      el.focus();
-      const from = start + pre.length + prefix.length;
-      el.setSelectionRange(from, from + insertion.length);
-    });
+    const next = text.slice(0, start) + pre + prefix + insertion + text.slice(end);
+    const from = start + pre.length + prefix.length;
+    setSegmentText(idx, next, { start: from, end: from + insertion.length });
   }
 
   function openLink() {
-    const el = ref.current;
-    if (!el) {
-      setLinkOpen(true);
-      return;
-    }
-    const start = el.selectionStart;
-    const end = el.selectionEnd;
-    savedSelection.current = { start, end };
-    setLinkText(end > start ? value.slice(start, end) : "");
+    const { idx, text, start, end } = currentTarget();
+    savedSelection.current = { idx, start, end };
+    setLinkText(end > start ? text.slice(start, end) : "");
     setLinkUrl("");
     setLinkOpen(true);
   }
@@ -138,75 +194,105 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
     }
     const text = linkText.trim() || url;
     const md = `[${text}](${url})`;
-    const el = ref.current;
-    const sel = savedSelection.current;
-    const start = sel?.start ?? el?.selectionStart ?? value.length;
-    const end = sel?.end ?? el?.selectionEnd ?? value.length;
-    const next = value.slice(0, start) + md + value.slice(end);
-    commit(next);
+    const sel = savedSelection.current ?? { idx: activeTextIndex(), start: 0, end: 0 };
+    const seg = segments[sel.idx];
+    const source = refs.current.get(sel.idx)?.value ?? (seg && seg.type === "text" ? trimBlankLines(seg.text) : "");
+    const next = source.slice(0, sel.start) + md + source.slice(sel.end);
+    const pos = sel.start + md.length;
     setLinkOpen(false);
-    requestAnimationFrame(() => {
-      if (!el) return;
-      el.focus();
-      const pos = start + md.length;
-      el.setSelectionRange(pos, pos);
-    });
+    setSegmentText(sel.idx, next, { start: pos, end: pos });
   }
 
   function openEmbed() {
-    const el = ref.current;
-    if (el) savedSelection.current = { start: el.selectionStart, end: el.selectionEnd };
+    const { idx, start, end } = currentTarget();
+    savedSelection.current = { idx, start, end };
+    setEmbedEditIndex(null);
     setEmbedUrl("");
     setEmbedOpen(true);
   }
 
-  function insertEmbed() {
+  function openEmbedEdit(idx: number) {
+    const seg = segments[idx];
+    if (!seg || seg.type !== "embed") return;
+    savedSelection.current = null;
+    setEmbedEditIndex(idx);
+    setEmbedUrl(seg.url);
+    setEmbedOpen(true);
+  }
+
+  function submitEmbed() {
     const url = normalizeUrl(embedUrl);
     if (!url) {
       toast.error("Enter a valid URL (must start with https:// or http://).");
       return;
     }
-    const marker = `[[embed:${url}]]`;
-    const el = ref.current;
-    const sel = savedSelection.current;
-    const start = sel?.start ?? el?.selectionStart ?? value.length;
-    const end = sel?.end ?? el?.selectionEnd ?? value.length;
-    const before = value.slice(0, start);
-    const after = value.slice(end);
-    const leadNl = before.length === 0 || before.endsWith("\n\n") ? "" : before.endsWith("\n") ? "\n" : "\n\n";
-    const trailNl = after.length === 0 || after.startsWith("\n\n") ? "" : after.startsWith("\n") ? "\n" : "\n\n";
-    const block = `${leadNl}${marker}${trailNl}`;
-    const next = before + block + after;
-    commit(next);
+
+    if (embedEditIndex != null) {
+      const next = segments.map((s, i) => (i === embedEditIndex && s.type === "embed" ? { ...s, url } : s));
+      setEmbedOpen(false);
+      setEmbedEditIndex(null);
+      setLocal(null);
+      commitSegments(next);
+      return;
+    }
+
+    // Split the active text segment at the caret and drop the embed between.
+    const sel = savedSelection.current ?? { idx: activeTextIndex(), start: 0, end: 0 };
+    const seg = segments[sel.idx];
+    const source = refs.current.get(sel.idx)?.value ?? (seg && seg.type === "text" ? trimBlankLines(seg.text) : "");
+    const before = source.slice(0, sel.start);
+    const after = source.slice(Math.max(sel.end, sel.start));
+    const next: BodySegment[] = [
+      ...segments.slice(0, sel.idx),
+      { type: "text", text: before },
+      { type: "embed", url },
+      { type: "text", text: after },
+      ...segments.slice(sel.idx + 1),
+    ];
     setEmbedOpen(false);
-    requestAnimationFrame(() => {
-      if (!el) return;
-      el.focus();
-      const pos = start + block.length;
-      el.setSelectionRange(pos, pos);
-    });
+    setLocal(null);
+    commitSegments(next);
+    pendingFocus.current = { idx: sel.idx + 2, start: 0, end: 0 };
+  }
+
+  /** Removes an embed and merges the text segments that surrounded it. */
+  function removeEmbed(idx: number) {
+    const prev = segments[idx - 1];
+    const nextSeg = segments[idx + 1];
+    const merged = trimBlankLines(
+      [
+        prev && prev.type === "text" ? trimBlankLines(prev.text) : "",
+        nextSeg && nextSeg.type === "text" ? trimBlankLines(nextSeg.text) : "",
+      ]
+        .filter(Boolean)
+        .join("\n\n"),
+    );
+    const out: BodySegment[] = [
+      ...segments.slice(0, Math.max(0, idx - 1)),
+      { type: "text", text: merged },
+      ...segments.slice(idx + 2),
+    ];
+    setLocal(null);
+    commitSegments(out);
+    const caret = prev && prev.type === "text" ? trimBlankLines(prev.text).length : 0;
+    pendingFocus.current = { idx: Math.max(0, idx - 1), start: caret, end: caret };
   }
 
   /**
    * Opens the consumer's entity picker with an insert callback pinned to the
-   * current cursor. `replaceFrom` lets the inline "@" trigger swap out the
-   * typed character itself.
+   * caret in the active text segment.
    */
-  function requestEntityInsert(range?: { start: number; end: number; source: string }) {
+  function requestEntityInsert(range?: { idx: number; start: number; end: number; source: string }) {
     if (!onRequestEntityInsert) return;
-    const el = ref.current;
-    const source = range?.source ?? value;
-    const start = range?.start ?? el?.selectionStart ?? source.length;
-    const end = range?.end ?? el?.selectionEnd ?? source.length;
+    const t = currentTarget();
+    const idx = range?.idx ?? t.idx;
+    const source = range?.source ?? t.text;
+    const start = range?.start ?? t.start;
+    const end = range?.end ?? t.end;
     const insert = (md: string) => {
       const next = source.slice(0, start) + md + source.slice(Math.max(end, start));
-      commit(next);
-      requestAnimationFrame(() => {
-        if (!el) return;
-        el.focus();
-        const pos = start + md.length;
-        el.setSelectionRange(pos, pos);
-      });
+      const pos = start + md.length;
+      setSegmentText(idx, next, { start: pos, end: pos });
     };
     onRequestEntityInsert(insert);
   }
@@ -215,22 +301,34 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
    * Typing "@" at the start of a line or after whitespace opens the picker.
    * Inside a word (e.g. an email address) it stays a plain character.
    */
-  function handleChange(next: string) {
-    commit(next);
+  function handleSegmentChange(idx: number, nextText: string, prevText: string) {
+    setSegmentText(idx, nextText);
     if (readOnly || !onRequestEntityInsert) return;
-    const el = ref.current;
-    const caret = el?.selectionStart ?? next.length;
-    if (next.length !== value.length + 1) return;
-    if (next[caret - 1] !== "@") return;
-    const prev = caret >= 2 ? next[caret - 2] : "";
+    const el = refs.current.get(idx);
+    const caret = el?.selectionStart ?? nextText.length;
+    if (nextText.length !== prevText.length + 1) return;
+    if (nextText[caret - 1] !== "@") return;
+    const prev = caret >= 2 ? nextText[caret - 2] : "";
     if (prev && !/\s/.test(prev)) return;
     requestAnimationFrame(() =>
-      requestEntityInsert({ start: caret - 1, end: caret, source: next }),
+      requestEntityInsert({ idx, start: caret - 1, end: caret, source: nextText }),
     );
   }
 
-  function onKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+  function onSegmentKeyDown(e: KeyboardEvent<HTMLTextAreaElement>, idx: number) {
     if (readOnly) return;
+    const el = e.currentTarget;
+    // Backspace at the very start of the text directly below an embed removes it.
+    if (
+      e.key === "Backspace" &&
+      el.selectionStart === 0 &&
+      el.selectionEnd === 0 &&
+      segments[idx - 1]?.type === "embed"
+    ) {
+      e.preventDefault();
+      removeEmbed(idx - 1);
+      return;
+    }
     const mod = e.metaKey || e.ctrlKey;
     if (!mod) return;
     const k = e.key.toLowerCase();
@@ -249,6 +347,8 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
   useEffect(() => {
     if (!linkOpen && !embedOpen) savedSelection.current = null;
   }, [linkOpen, embedOpen]);
+
+  const onlyText = segments.length === 1;
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-3 md:p-4">
@@ -317,19 +417,42 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
         </div>
       </div>
 
-      <textarea
-        ref={ref}
-        value={value}
-        readOnly={readOnly}
-        onChange={(e) => handleChange(e.target.value)}
-        onKeyDown={onKeyDown}
-        placeholder="Write your post…"
+      <div
         className={cn(
-          "mt-3 block w-full resize-y rounded-xl border border-border bg-background px-4 py-4 text-[16px] leading-[1.7] text-ink",
-          "focus:border-primary focus:outline-none",
-          "min-h-[360px] md:min-h-[560px]",
+          "mt-3 w-full overflow-hidden rounded-xl border border-border bg-background px-4 py-3",
+          onlyText ? "min-h-[360px] md:min-h-[560px]" : "min-h-[360px]",
         )}
-      />
+      >
+        {segments.map((seg, i) =>
+          seg.type === "embed" ? (
+            <ComposerEmbedBlock
+              key={`e-${i}`}
+              url={seg.url}
+              readOnly={readOnly}
+              onEdit={() => openEmbedEdit(i)}
+              onRemove={() => removeEmbed(i)}
+            />
+          ) : (
+            <AutoTextarea
+              key={`t-${i}`}
+              registerRef={(el) => {
+                if (el) refs.current.set(i, el);
+                else refs.current.delete(i);
+              }}
+              value={displayText(i, seg)}
+              readOnly={readOnly}
+              placeholder={i === 0 ? "Write your post…" : undefined}
+              minHeight={onlyText ? 320 : 48}
+              onFocus={() => {
+                activeIdx.current = i;
+              }}
+              onBlur={() => setLocal((l) => (l && l.idx === i ? null : l))}
+              onChange={(next) => handleSegmentChange(i, next, displayText(i, seg))}
+              onKeyDown={(e) => onSegmentKeyDown(e, i)}
+            />
+          ),
+        )}
+      </div>
 
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-ink-muted">
         <span>
@@ -386,10 +509,16 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
         </DialogContent>
       </Dialog>
 
-      <Dialog open={embedOpen} onOpenChange={setEmbedOpen}>
+      <Dialog
+        open={embedOpen}
+        onOpenChange={(o) => {
+          setEmbedOpen(o);
+          if (!o) setEmbedEditIndex(null);
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Add embed</DialogTitle>
+            <DialogTitle>{embedEditIndex != null ? "Edit embed" : "Add embed"}</DialogTitle>
             <DialogDescription>
               Paste a YouTube or Vimeo video, or add another URL as a link card.
             </DialogDescription>
@@ -405,7 +534,7 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
-                  insertEmbed();
+                  submitEmbed();
                 }
               }}
             />
@@ -414,13 +543,102 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
             <Button type="button" variant="ghost" onClick={() => setEmbedOpen(false)}>
               Cancel
             </Button>
-            <Button type="button" onClick={insertEmbed}>
-              Add embed
+            <Button type="button" onClick={submitEmbed}>
+              {embedEditIndex != null ? "Save embed" : "Add embed"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+/** The published embed card, shown inert inside the composer with author controls. */
+function ComposerEmbedBlock({
+  url,
+  readOnly,
+  onEdit,
+  onRemove,
+}: {
+  url: string;
+  readOnly?: boolean;
+  onEdit: () => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="my-2 rounded-2xl border border-dashed border-border/70 p-2">
+      <div className="pointer-events-none select-none [&_.my-6]:my-0">
+        <BlogEmbed url={url} />
+      </div>
+      {!readOnly && (
+        <div className="mt-2 flex items-center justify-end gap-1">
+          <button
+            type="button"
+            onClick={onEdit}
+            className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs text-ink-soft hover:bg-muted"
+          >
+            <Pencil className="h-3.5 w-3.5" /> Edit
+          </button>
+          <button
+            type="button"
+            onClick={onRemove}
+            className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs text-ink-soft hover:bg-muted"
+          >
+            <Trash2 className="h-3.5 w-3.5" /> Remove
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AutoTextarea({
+  value,
+  onChange,
+  onKeyDown,
+  onFocus,
+  onBlur,
+  placeholder,
+  readOnly,
+  minHeight,
+  registerRef,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+  onKeyDown: (e: KeyboardEvent<HTMLTextAreaElement>) => void;
+  onFocus: () => void;
+  onBlur: () => void;
+  placeholder?: string;
+  readOnly?: boolean;
+  minHeight: number;
+  registerRef: (el: HTMLTextAreaElement | null) => void;
+}) {
+  const ref = useRef<HTMLTextAreaElement | null>(null);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.max(minHeight, el.scrollHeight)}px`;
+  }, [value, minHeight]);
+
+  return (
+    <textarea
+      ref={(el) => {
+        ref.current = el;
+        registerRef(el);
+      }}
+      value={value}
+      readOnly={readOnly}
+      placeholder={placeholder}
+      onChange={(e) => onChange(e.target.value)}
+      onKeyDown={onKeyDown}
+      onFocus={onFocus}
+      onBlur={onBlur}
+      rows={1}
+      className="block w-full resize-none border-0 bg-transparent p-0 py-1 text-[16px] leading-[1.7] text-ink outline-none focus:outline-none focus:ring-0"
+      style={{ minHeight }}
+    />
   );
 }
 
