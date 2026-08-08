@@ -1,20 +1,23 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import {
+  assertBlogAuthor,
+  blogCommentBody,
+  blogCommentUuid as uuid,
+  BLOG_COMMENT_SPAM,
+} from "@/lib/blog-comments.shared";
 
 /**
  * Lite blog comments: one comment, optional single author response, up/down votes.
  * Deliberately separate from the Work comment system (`comments` table).
  */
 
-const uuid = z.string().uuid();
-const bodyText = z.string().trim().min(1).max(1000);
-
 export const postBlogComment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { postId: string; body: string }) => ({
     postId: uuid.parse(d.postId),
-    body: bodyText.parse(d.body),
+    body: blogCommentBody.parse(d.body),
   }))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -39,7 +42,7 @@ export const postBlogComment = createServerFn({ method: "POST" })
       surface: "blog.comment",
       subjectId: data.postId,
       text: data.body,
-      spam: { maxLinks: 4, maxRepeatChars: 25 },
+      spam: { ...BLOG_COMMENT_SPAM },
     });
 
     const { data: inserted, error } = await supabase
@@ -74,25 +77,11 @@ export const deleteBlogComment = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-async function assertBlogAuthor(
-  supabase: { rpc: (fn: "is_blog_post_author", args: { _post_id: string; _user_id: string }) => Promise<{ data: boolean | null; error: { message: string } | null }> },
-  postId: string,
-  userId: string,
-  message: string,
-) {
-  const { data: isAuthor, error } = await supabase.rpc("is_blog_post_author", {
-    _post_id: postId,
-    _user_id: userId,
-  });
-  if (error) throw new Error(error.message);
-  if (!isAuthor) throw new Error(message);
-}
-
 export const replyToBlogComment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { commentId: string; body: string }) => ({
     commentId: uuid.parse(d.commentId),
-    body: bodyText.parse(d.body),
+    body: blogCommentBody.parse(d.body),
   }))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -112,7 +101,7 @@ export const replyToBlogComment = createServerFn({ method: "POST" })
       surface: "blog.comment.author_reply",
       subjectId: c.blog_post_id,
       text: data.body,
-      spam: { maxLinks: 4, maxRepeatChars: 25 },
+      spam: { ...BLOG_COMMENT_SPAM },
     });
 
     const { error } = await supabase
@@ -139,7 +128,12 @@ export const clearBlogCommentReply = createServerFn({ method: "POST" })
       .maybeSingle();
     if (cErr) throw new Error(cErr.message);
     if (!c) throw new Error("Comment not found.");
-    await assertBlogAuthor(supabase, c.blog_post_id, userId, "Only an article author can remove this response.");
+    await assertBlogAuthor(
+      supabase,
+      c.blog_post_id,
+      userId,
+      "Only an article author can remove this response.",
+    );
 
     const { error } = await supabase
       .from("blog_comments")
@@ -164,7 +158,12 @@ export const setBlogCommentHidden = createServerFn({ method: "POST" })
       .maybeSingle();
     if (cErr) throw new Error(cErr.message);
     if (!c) throw new Error("Comment not found.");
-    await assertBlogAuthor(supabase, c.blog_post_id, userId, "Only an article author can hide comments.");
+    await assertBlogAuthor(
+      supabase,
+      c.blog_post_id,
+      userId,
+      "Only an article author can hide comments.",
+    );
 
     const { error } = await supabase
       .from("blog_comments")
@@ -206,7 +205,7 @@ export const setBlogCommentVote = createServerFn({ method: "POST" })
         .eq("comment_id", data.commentId)
         .eq("user_id", userId);
       if (error) throw new Error(error.message);
-      return { ok: true, value: 0 as const };
+      return { ok: true, value: 0 };
     }
 
     const { error } = await supabase
