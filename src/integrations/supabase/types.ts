@@ -74,6 +74,163 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_comment_votes: {
+        Row: {
+          comment_id: string
+          created_at: string
+          user_id: string
+          value: number
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          user_id: string
+          value: number
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          user_id?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_comment_votes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "blog_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_comment_votes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_comment_votes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_comment_votes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_comment_votes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      blog_comments: {
+        Row: {
+          author_replied_at: string | null
+          author_reply: string | null
+          author_reply_by: string | null
+          blog_post_id: string
+          body: string
+          created_at: string
+          hidden: boolean
+          id: string
+          user_id: string
+        }
+        Insert: {
+          author_replied_at?: string | null
+          author_reply?: string | null
+          author_reply_by?: string | null
+          blog_post_id: string
+          body: string
+          created_at?: string
+          hidden?: boolean
+          id?: string
+          user_id: string
+        }
+        Update: {
+          author_replied_at?: string | null
+          author_reply?: string | null
+          author_reply_by?: string | null
+          blog_post_id?: string
+          body?: string
+          created_at?: string
+          hidden?: boolean
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_comments_author_reply_by_fkey"
+            columns: ["author_reply_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_comments_author_reply_by_fkey"
+            columns: ["author_reply_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_comments_author_reply_by_fkey"
+            columns: ["author_reply_by"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_comments_author_reply_by_fkey"
+            columns: ["author_reply_by"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "blog_comments_blog_post_id_fkey"
+            columns: ["blog_post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       blog_post_authors: {
         Row: {
           blog_post_id: string
@@ -8634,6 +8791,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: number
       }
+      blog_post_is_published: { Args: { _post_id: string }; Returns: boolean }
       blog_writer_access_state: { Args: { _user_id: string }; Returns: string }
       bump_work_view: {
         Args: { _key: string; _work_id: string }
@@ -8689,6 +8847,14 @@ export type Database = {
       }
       finalize_host_claim: { Args: { _room_id: string }; Returns: undefined }
       gen_event_short_code: { Args: never; Returns: string }
+      get_blog_comment_vote_summary: {
+        Args: { _blog_post_id: string }
+        Returns: {
+          comment_id: string
+          score: number
+          viewer_vote: number
+        }[]
+      }
       get_or_create_conversation: {
         Args: {
           _context_collab_post_id?: string
@@ -8732,6 +8898,10 @@ export type Database = {
       }
       is_adult: { Args: { _user_id: string }; Returns: boolean }
       is_blocked_pair: { Args: { _a: string; _b: string }; Returns: boolean }
+      is_blog_post_author: {
+        Args: { _post_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_collab_member: {
         Args: { _collab: string; _user: string }
         Returns: boolean

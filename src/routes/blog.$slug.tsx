@@ -3,6 +3,7 @@ import { getPublishedPost } from "@/lib/blog.functions";
 import { BlogPostBody } from "@/components/blog-post-body";
 import { BlogArticleFooter } from "@/components/blog-article-footer";
 import { BlogPostContext } from "@/components/blog-post-context";
+import { BlogComments } from "@/components/blog-comments";
 import { BlogAuthorActions } from "@/components/blog/blog-author-actions";
 import { deriveBlogPostContext, contextMentions } from "@/lib/blog-post-context";
 import { getBlogCategory } from "@/lib/blog-categories";
@@ -241,7 +242,17 @@ function BlogPostPage() {
 
       <ShareRow slug={post.slug} title={post.title} postId={post.id} />
 
+      <BlogComments
+        postId={post.id}
+        authorProfileIds={[
+          (post as { created_by?: string | null }).created_by ?? null,
+          (post as { author_profile_id?: string | null }).author_profile_id ?? null,
+          ...authors.map((a) => a.id),
+        ]}
+      />
+
       <BlogArticleFooter postId={post.id} mode="article" />
+
     </article>
   );
 }
