@@ -18,6 +18,12 @@ UA = "WorkshopIndie/1.0 (city group photos; https://workshopindie.com)"
 
 ALLOWED = re.compile(r"^(cc0|cc-zero|cc-by-\d|cc-by-sa-\d|pd|public domain)", re.I)
 
+# Reject archival scans, maps, documents, logos - we want photographs.
+BAD_TITLE = re.compile(
+    r"(DPLA|antique|map\b|atlas|flag|seal\b|logo|coat of arms|poster|postcard|"
+    r"engraving|lithograph|diagram|plan of|scan|page \d|document|letter|"
+    r"newspaper|advertisement|1[6-9]\d\d|190\d|19[1-4]\d)", re.I)
+
 CITIES = [
     ("akron", "Akron, Ohio"), ("ann-arbor", "Ann Arbor, Michigan"),
     ("austin", "Austin, Texas"), ("berlin", "Berlin"),
@@ -92,6 +98,16 @@ def search_city(name):
             if w < 1600 or h < 900 or w < h:
                 continue
             if ii.get("mime") not in ("image/jpeg", "image/png", "image/webp"):
+                continue
+            short = name.split(",")[0]
+            if short.lower() not in title.lower():
+                continue
+            if BAD_TITLE.search(title):
+                continue
+            # a photo titled for another city in our list is a mismatch
+            others = [c.split(",")[0].lower() for _, c in CITIES
+                      if c.split(",")[0].lower() != short.lower()]
+            if any(o in title.lower() for o in others):
                 continue
             out.append({
                 "title": title,
