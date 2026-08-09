@@ -167,8 +167,15 @@ def treat(src_bytes, size, sat=0.22, cool=(0.98, 1.0, 1.06)):
 
 def fetch(url):
     req = urllib.request.Request(url, headers={"User-Agent": UA})
-    with urllib.request.urlopen(req, timeout=90) as r:
-        return r.read()
+    for attempt in range(6):
+        try:
+            with urllib.request.urlopen(req, timeout=90) as r:
+                return r.read()
+        except Exception:  # noqa: BLE001 - Commons rate limits aggressively
+            if attempt == 5:
+                raise
+            time.sleep(5 * (attempt + 1))
+    return b""
 
 
 def cmd_build(only=None):
@@ -179,7 +186,11 @@ def cmd_build(only=None):
         if only and slug not in only:
             continue
         pick = row["pick"]
+        cover_path = os.path.join(OUT, "cover", slug + ".jpg")
+        if os.path.exists(cover_path) and not only:
+            continue
         raw = fetch(pick["download"])
+        time.sleep(1.5)
         open(os.path.join(OUT, "cover", slug + ".jpg"), "wb").write(treat(raw, (1600, 1000)))
         open(os.path.join(OUT, "avatar", slug + ".jpg"), "wb").write(treat(raw, (512, 512)))
         print("built", slug)
