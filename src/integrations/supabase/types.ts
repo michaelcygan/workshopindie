@@ -2742,6 +2742,47 @@ export type Database = {
         }
         Relationships: []
       }
+      group_photo_credits: {
+        Row: {
+          author: string
+          created_at: string
+          group_id: string
+          license: string
+          license_url: string | null
+          source_title: string | null
+          source_url: string
+          updated_at: string
+        }
+        Insert: {
+          author: string
+          created_at?: string
+          group_id: string
+          license: string
+          license_url?: string | null
+          source_title?: string | null
+          source_url: string
+          updated_at?: string
+        }
+        Update: {
+          author?: string
+          created_at?: string
+          group_id?: string
+          license?: string
+          license_url?: string | null
+          source_title?: string | null
+          source_url?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_photo_credits_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: true
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_seed_links: {
         Row: {
           click_count: number
