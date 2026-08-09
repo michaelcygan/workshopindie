@@ -52,7 +52,7 @@ export function DocumentViewer({
           "pdfjs-dist/build/pdf.worker.min.mjs",
           import.meta.url,
         ).toString();
-        const task = pdfjs.getDocument({ url, isEvalSupported: false });
+        const task = pdfjs.getDocument({ url });
         const d = (await task.promise) as unknown as PdfDoc;
         if (cancelled) {
           d.destroy();
