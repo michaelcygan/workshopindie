@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUpload } from "@/components/image-upload";
+import { WorkAssetsEditor } from "@/components/work/work-assets-editor";
 import { CategoryMultiPicker } from "@/components/category-multi-picker";
 import { BookDetailsSection, emptyBookDetails, type BookDetails } from "@/components/book-details-section";
 import { WORK_SUBTYPES, type WorkCategory, type Category } from "@/lib/categories";
@@ -259,6 +260,12 @@ function EditWork() {
             aspect="wide"
           />
         </div>
+
+        {category !== "writing_book" && work?.id && user?.id && (
+          <div className="border-t border-border pt-6">
+            <WorkAssetsEditor workId={work.id} userId={user.id} license={licenseType} />
+          </div>
+        )}
 
         {category !== "writing_book" && (
           <>
