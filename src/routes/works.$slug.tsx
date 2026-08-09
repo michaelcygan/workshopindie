@@ -317,6 +317,11 @@ function WorkDetail() {
           }
         />
 
+        {/* Everything else on Workshop that points at this Work */}
+        <EntityConnections kind="work" entityId={work.id} className="mt-10" />
+
+
+
         {/* Credits — cast strip + provenance chips */}
         <div id="credits" className="mt-14">
           <WorkCreditLayer
