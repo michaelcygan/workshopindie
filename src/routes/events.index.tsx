@@ -22,6 +22,7 @@ import {
   listPublicEvents,
 } from "@/lib/group-events.functions";
 import { cn } from "@/lib/utils";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 // Public events feed. Drop-in surface for visitors and logged-out crawlers —
 // groups still own their event pages and RSVP still auto-joins the host group.
@@ -168,7 +169,7 @@ function EventsIndexPage() {
       itemListElement: list.slice(0, 30).map((e, i) => ({
         "@type": "ListItem",
         position: i + 1,
-        url: `https://workshopindie.com/g/${e.group.slug}/e/${e.slug}`,
+        url: `https://workshopindie.com${workshopEntityUrl({ kind: "event", groupSlug: e.group.slug, slug: e.slug })}`,
         name: e.title,
       })),
     };

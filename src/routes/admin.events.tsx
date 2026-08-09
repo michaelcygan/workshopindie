@@ -32,6 +32,7 @@ import { AdminImportEventDialog } from "@/components/admin-import-event-dialog";
 import { VenueAutocomplete } from "@/components/event/venue-autocomplete";
 import { CoverImagePicker } from "@/components/event/cover-image-picker";
 import { SeedChicagoButton } from "@/components/admin/seed-chicago-button";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 export const Route = createFileRoute("/admin/events")({
   component: AdminEventsPage,
@@ -83,7 +84,7 @@ function AdminEventsPage() {
               return (
                 <tr key={ev.id} className="border-t border-border">
                   <td className="px-3 py-2">
-                    <a href={`/g/${ev.group.slug}/e/${ev.slug}`} className="font-medium text-ink hover:underline" target="_blank" rel="noreferrer">
+                    <a href={workshopEntityUrl({ kind: "event", groupSlug: ev.group.slug, slug: ev.slug })} className="font-medium text-ink hover:underline" target="_blank" rel="noreferrer">
                       {ev.title}
                     </a>
                   </td>
@@ -604,7 +605,7 @@ function ReportsAlertStrip({ onAnyChange }: { onAnyChange: () => void }) {
           return (
             <li key={r.event.id} className="flex flex-wrap items-center gap-2 py-2 text-sm">
               <a
-                href={`/g/${r.event.group.slug}/e/${r.event.slug}`}
+                href={workshopEntityUrl({ kind: "event", groupSlug: r.event.group.slug, slug: r.event.slug })}
                 target="_blank"
                 rel="noreferrer"
                 className="font-medium text-ink hover:underline"

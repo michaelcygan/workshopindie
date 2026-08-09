@@ -20,6 +20,7 @@ import { WorkCreditLayer } from "@/components/work-credit-layer";
 import { ProfilePeek } from "@/components/profile-peek";
 import { WorkCard } from "@/components/work-card";
 import { EntityBlogPosts } from "@/components/entity-blog-posts";
+import { EntityConnections } from "@/components/entity/entity-connections";
 import { EmbedPlayer, providerFromUrl } from "@/components/embed-player";
 // WorkSocialProof (vouches + boosts) retired in v1 distillation pass.
 import { WorkPublishedNudge } from "@/components/nudges/work-published-nudge";
@@ -36,6 +37,7 @@ const LICENSE_LABELS: Record<string, string> = {
 };
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 
 export const Route = createFileRoute("/works/$slug")({
@@ -71,7 +73,7 @@ export const Route = createFileRoute("/works/$slug")({
   },
   head: ({ params, loaderData }) => {
     const w = loaderData?.seo;
-    const url = `https://workshopindie.com/works/${params.slug}`;
+    const url = `https://workshopindie.com${workshopEntityUrl({ kind: "work", slug: params.slug })}`;
     const title = w?.title ? `${w.title} — Workshop` : "Work — Workshop";
     const description = w?.excerpt ?? w?.description?.slice(0, 160) ?? "A creative work on Workshop.";
     const meta = [
@@ -261,7 +263,7 @@ function WorkDetail() {
               entity={{
                 type: "work",
                 id: work.id,
-                url: `https://workshopindie.com/works/${work.slug}`,
+                url: `https://workshopindie.com${workshopEntityUrl({ kind: "work", slug: work.slug })}`,
                 title: work.title,
                 subtitle: work.excerpt ?? undefined,
               }}
@@ -315,6 +317,11 @@ function WorkDetail() {
             })
           }
         />
+
+        {/* Everything else on Workshop that points at this Work */}
+        <EntityConnections kind="work" entityId={work.id} className="mt-10" />
+
+
 
         {/* Credits — cast strip + provenance chips */}
         <div id="credits" className="mt-14">

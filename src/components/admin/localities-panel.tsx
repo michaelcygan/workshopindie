@@ -11,6 +11,7 @@ import {
 import { LocalitySearch } from "@/components/admin/locality-search";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 const STATUS_FILTERS = ["all", "active", "paused", "deactivated", "merged"] as const;
 
@@ -161,7 +162,7 @@ export function LocalitiesPanel() {
                     <div className="text-ink">{c.name}</div>
                     <div className="text-xs text-ink-muted">
                       {c.sublabel}
-                      {c.officialGroupSlug ? ` · /g/${c.officialGroupSlug}` : " · no official group"}
+                      {c.officialGroupSlug ? ` · ${workshopEntityUrl({ kind: "group", slug: c.officialGroupSlug })}` : " · no official group"}
                       {c.mergedIntoName ? ` · → ${c.mergedIntoName}` : ""}
                     </div>
                   </td>

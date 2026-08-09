@@ -28,6 +28,7 @@ import { GroupPicker, usePreselectGroup, type PickerGroup } from "@/components/g
 import { tagCollabInGroup } from "@/lib/groups.functions";
 import { pinCollab } from "@/lib/room-pins.functions";
 import { COLLAB_PROMPT_IDS, COLLAB_PROMPTS, type CollabPromptId } from "@/lib/collab-prompts";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 export const Route = createFileRoute("/collab/new")({
   component: NewCollabRoute,
@@ -330,7 +331,7 @@ export function CollabComposer({
 
 
   const shareUrl = postedDialog
-    ? `${typeof window !== "undefined" ? window.location.origin : ""}/collab/${postedDialog.slug}`
+    ? `${typeof window !== "undefined" ? window.location.origin : ""}${workshopEntityUrl({ kind: "collab", slug: postedDialog.slug })}`
     : "";
 
   async function copyShareLink() {

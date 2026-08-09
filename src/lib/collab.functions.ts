@@ -8,6 +8,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { findHateSlur } from "./profanity.server";
 import { normalizeUrlOrKeep } from "@/lib/url-normalize";
 import { parseFriendly } from "@/lib/zod-message";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 const httpsUrl = z.preprocess(
   (v) => (typeof v === "string" ? normalizeUrlOrKeep(v) : v),
@@ -1184,7 +1185,7 @@ export const acceptCollabApplicant = createServerFn({ method: "POST" })
       payload: {
         collab_title: post.title ?? null,
         collab_slug: post.slug ?? null,
-        url: post.slug ? `/collab/${post.slug}` : null,
+        url: post.slug ? workshopEntityUrl({ kind: "collab", slug: post.slug }) : null,
       },
     });
 

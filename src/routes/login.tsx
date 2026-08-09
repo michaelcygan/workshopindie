@@ -14,6 +14,7 @@ import { GoogleSignIn } from "@/components/google-sign-in";
 import { AppleSignIn } from "@/components/apple-sign-in";
 import { KickerChip } from "@/components/kicker-chip";
 import { toast } from "sonner";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 export const Route = createFileRoute("/login")({
   component: Login,
@@ -51,7 +52,7 @@ function Login() {
       setPostAuthIntent({
         kind: "group_seed_join",
         payload: { token: s.join, slug: s.group },
-        returnTo: `/g/${s.group}`,
+        returnTo: workshopEntityUrl({ kind: "group", slug: s.group }),
       });
     } else {
       const dest = safeDestination(s.redirect);

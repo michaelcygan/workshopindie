@@ -10,6 +10,7 @@
  * auth round trip. No tokens, no birthdates, no personal data.
  */
 import { safeDestination } from "./safe-destination";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 export const INTENT_KEY = "ws.postAuthIntent.v1";
 const VERSION = 1;
@@ -139,7 +140,7 @@ export function migrateLegacyIntents() {
         setPostAuthIntent({
           kind: "group_seed_join",
           payload: { token: parsed.token, slug: parsed.slug },
-          returnTo: `/g/${parsed.slug}`,
+          returnTo: workshopEntityUrl({ kind: "group", slug: parsed.slug }),
         });
         return;
       }

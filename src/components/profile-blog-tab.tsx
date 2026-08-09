@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { listProfileBlogPosts } from "@/lib/blog.functions";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 type Cursor = { published_at: string; id: string } | null;
 
@@ -118,7 +119,7 @@ export function ProfileBlogTab({
           return (
             <a
               key={p.id}
-              href={`/blog/${p.slug}`}
+              href={workshopEntityUrl({ kind: "post", slug: p.slug })}
               onClick={(e) => handleCardClick(e, p.slug)}
               className="group block overflow-hidden rounded-2xl border border-border bg-surface transition hover:bg-muted"
             >

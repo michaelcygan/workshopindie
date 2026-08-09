@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BlogPostBody } from "@/components/blog-post-body";
 import { BlogArticleFooter } from "@/components/blog-article-footer";
 import { getPublishedPost } from "@/lib/blog.functions";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 const SITE = "https://workshopindie.com";
 
@@ -31,7 +32,7 @@ export function BlogPostPeek({
   });
 
   const post = data ?? null;
-  const canonical = slug ? `${SITE}/blog/${slug}` : SITE;
+  const canonical = slug ? `${SITE}${workshopEntityUrl({ kind: "post", slug: slug })}` : SITE;
   const published = post?.published_at ? new Date(post.published_at) : null;
 
   async function copyLink() {
@@ -119,7 +120,7 @@ export function BlogPostPeek({
                 <Link2 className="h-4 w-4" /> Copy link
               </Button>
               <Button asChild variant="outline" size="sm" className="rounded-full gap-1.5">
-                <a href={`/blog/${post.slug}`}>
+                <a href={workshopEntityUrl({ kind: "post", slug: post.slug })}>
                   Open full article <ExternalLink className="h-3.5 w-3.5" />
                 </a>
               </Button>

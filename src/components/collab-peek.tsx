@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import type { Category } from "@/lib/categories";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 type CollabRow = {
   id: string;
@@ -155,7 +156,7 @@ export function CollabPeek({
 
               <div className="flex items-center justify-end pt-2">
                 <Button asChild size="sm" className="rounded-md gap-1.5">
-                  <a href={`/collab/${collab.slug}`} target="_blank" rel="noopener noreferrer">
+                  <a href={workshopEntityUrl({ kind: "collab", slug: collab.slug })} target="_blank" rel="noopener noreferrer">
                     Open & apply <ExternalLink className="h-3.5 w-3.5" />
                   </a>
                 </Button>

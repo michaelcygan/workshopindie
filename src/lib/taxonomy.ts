@@ -86,8 +86,15 @@ export const GROUP_CATEGORY_IDS = [
   "language",
 ] as const;
 
-/** Legacy stored value -> canonical id. Canonical ids map to themselves. */
-const LEGACY_TO_CANONICAL: Record<string, CanonicalCategory> = {
+/**
+ * Legacy stored value -> canonical id. Canonical ids map to themselves.
+ *
+ * This map is the single author of the taxonomy. The database mirrors of it
+ * (`canonical_category`, `canonical_from_storage`) are *generated* from here
+ * into `supabase/generated/taxonomy-functions.sql`; never hand-edit that file
+ * or the deployed functions, or the two halves drift apart again.
+ */
+export const STORAGE_TO_CANONICAL: Record<string, CanonicalCategory> = {
   film: "film_video",
   film_video: "film_video",
   visual: "visual_art",
@@ -105,6 +112,40 @@ const LEGACY_TO_CANONICAL: Record<string, CanonicalCategory> = {
   language: "language",
   other: "other",
 };
+
+const LEGACY_TO_CANONICAL = STORAGE_TO_CANONICAL;
+
+/**
+ * Finer-grained mediums a Profile can claim. These are more specific than a
+ * canonical category ("photography" is Visual Art), and they are what the
+ * medium-group triggers key off, so search, filters and chips must know the
+ * same list the database does.
+ */
+export const MEDIUM_TO_CANONICAL: Record<string, CanonicalCategory> = {
+  photography: "visual_art",
+  "photography-analog": "visual_art",
+  printmaking: "visual_art",
+  ceramics: "visual_art",
+  sculpture: "visual_art",
+  painting: "visual_art",
+  illustration: "visual_art",
+  comics: "visual_art",
+  dj: "music",
+  songwriting: "music",
+  production: "music",
+  poetry: "writing",
+  journalism: "writing",
+  code: "games_tech",
+  "game-design": "games_tech",
+  animation: "film_video",
+};
+
+/** Any medium or stored value in, canonical id out. `null` when unrecognised. */
+export function canonicalForMedium(value: string | null | undefined): CanonicalCategory | null {
+  if (!value) return null;
+  return MEDIUM_TO_CANONICAL[value] ?? STORAGE_TO_CANONICAL[value] ?? null;
+}
+
 
 /**
  * Canonical id -> the stored enum values a Works/Collabs/Profiles query must

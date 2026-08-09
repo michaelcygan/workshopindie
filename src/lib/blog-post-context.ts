@@ -12,6 +12,7 @@
  */
 import { getBlogCategory, type BlogCategory } from "@/lib/blog-categories";
 import type { BlogEntityTag, BlogWorkSummary } from "@/lib/blog-entity-tags";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 export type BlogContextWork = Extract<BlogEntityTag, { kind: "work" }>;
 export type BlogContextCollab = Extract<BlogEntityTag, { kind: "collab" }>;
@@ -98,10 +99,10 @@ export function contextMentions(ctx: BlogPostContext, site: string) {
   const nodes: Array<{ "@type": string; name: string; url: string }> = [];
   const push = (type: string, name: string, path: string) =>
     nodes.push({ "@type": type, name, url: `${site}${path}` });
-  for (const w of ctx.works) push("CreativeWork", w.label, `/works/${w.slug}`);
+  for (const w of ctx.works) push("CreativeWork", w.label, workshopEntityUrl({ kind: "work", slug: w.slug }));
   for (const p of ctx.people) push("Person", p.label, `/${p.username}`);
-  for (const c of ctx.collabs) push("Thing", c.label, `/collab/${c.slug}`);
-  for (const g of ctx.groups) push("Organization", g.label, `/g/${g.slug}`);
-  for (const e of ctx.events) push("Event", e.label, `/g/${e.groupSlug}/e/${e.slug}`);
+  for (const c of ctx.collabs) push("Thing", c.label, workshopEntityUrl({ kind: "collab", slug: c.slug }));
+  for (const g of ctx.groups) push("Organization", g.label, workshopEntityUrl({ kind: "group", slug: g.slug }));
+  for (const e of ctx.events) push("Event", e.label, workshopEntityUrl({ kind: "event", groupSlug: e.groupSlug, slug: e.slug }));
   return nodes;
 }

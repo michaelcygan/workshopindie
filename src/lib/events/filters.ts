@@ -1,3 +1,4 @@
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 /**
  * Client-safe event discovery invariants.
  *
@@ -12,7 +13,7 @@ export type DiscoverableStatus = (typeof DISCOVERABLE_STATUSES)[number];
 
 /** The one canonical destination for an event anywhere in Workshop. */
 export function canonicalEventPath(groupSlug: string, eventSlug: string): string {
-  return `/g/${groupSlug}/e/${eventSlug}`;
+  return workshopEntityUrl({ kind: "event", groupSlug: groupSlug, slug: eventSlug });
 }
 
 /** Drop rows whose owning group is missing or soft-deleted. */

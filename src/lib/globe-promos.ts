@@ -1,6 +1,7 @@
 import { NON_PUBLIC_STATUSES, RECRUITING_DEADLINE_OR } from "@/lib/collab/query";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 export type GlobeCity = { name: string; lon: number; lat: number };
 
@@ -207,7 +208,7 @@ async function fetchPromos(): Promise<GlobePromo[]> {
       return {
         kind: "work" as const,
         title: w.title as string,
-        href: `/works/${w.slug}`,
+        href: workshopEntityUrl({ kind: "work", slug: w.slug }),
         from,
         to: randomDestination(from),
       };
@@ -220,7 +221,7 @@ async function fetchPromos(): Promise<GlobePromo[]> {
       return {
         kind: "collab" as const,
         title: c.title as string,
-        href: `/collab/${c.slug}`,
+        href: workshopEntityUrl({ kind: "collab", slug: c.slug }),
         from,
         to: randomDestination(from),
         verb: "Open collab",
@@ -234,7 +235,7 @@ async function fetchPromos(): Promise<GlobePromo[]> {
       return {
         kind: "group" as const,
         title: g.name as string,
-        href: `/g/${g.slug}`,
+        href: workshopEntityUrl({ kind: "group", slug: g.slug }),
         from,
       };
     });

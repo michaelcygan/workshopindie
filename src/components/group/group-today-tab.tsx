@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { TodayPresenceBubbles } from "@/components/group/today-presence-bubbles";
 import { useAdjacentGroups } from "@/components/group/use-adjacent-groups";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 
 type TodayPost = {
@@ -317,7 +318,7 @@ function TodayChat({ group, expanded = false }: { group: GroupRefForToday; expan
           </p>
           <Link
             to="/login"
-            search={{ redirect: typeof window !== "undefined" ? window.location.pathname + window.location.search : `/g/${group.slug}` }}
+            search={{ redirect: typeof window !== "undefined" ? window.location.pathname + window.location.search : workshopEntityUrl({ kind: "group", slug: group.slug }) }}
             className="inline-flex h-9 items-center rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
             Sign in

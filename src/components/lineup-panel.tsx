@@ -15,6 +15,7 @@ import {
 } from "@/lib/lineup.functions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 
 type Signup = {
@@ -102,7 +103,7 @@ export function LineupPanel({
   async function handleSignUp() {
     if (!user) {
       if (typeof window !== "undefined") window.localStorage.setItem(PENDING_KEY, eventId);
-      navigate({ to: "/login", search: { redirect: `/g/${groupSlug}/e/${eventSlug}` } });
+      navigate({ to: "/login", search: { redirect: workshopEntityUrl({ kind: "event", groupSlug: groupSlug, slug: eventSlug }) } });
       return;
     }
     try {

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useGroupLive } from "@/components/group/group-live-shell";
 
 import { toast } from "sonner";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 export type GroupHeroData = {
   id: string;
@@ -36,7 +37,7 @@ export function GroupHero({
 
 
   const onShare = async () => {
-    const url = typeof window !== "undefined" ? `${window.location.origin}/g/${group.slug}` : "";
+    const url = typeof window !== "undefined" ? `${window.location.origin}${workshopEntityUrl({ kind: "group", slug: group.slug })}` : "";
     try {
       if (typeof navigator !== "undefined" && navigator.share) {
         await navigator.share({ title: group.name, url });
