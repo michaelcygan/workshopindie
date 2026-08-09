@@ -31,16 +31,18 @@ import {
 import { categoryLabel } from "@/lib/taxonomy";
 
 /** Kinds this reader can be asked about. */
-export type ReferenceSubjectKind = "work" | "collab" | "group" | "event";
+export type ReferenceSubjectKind = "work" | "collab" | "group" | "event" | "post";
 
 export type EntityReferences = {
   works: WorkshopEntityRef[];
   collabs: WorkshopEntityRef[];
   groups: WorkshopEntityRef[];
   events: WorkshopEntityRef[];
+  /** Only populated for `post` subjects, whose tags can include people. */
+  profiles: WorkshopEntityRef[];
 };
 
-const EMPTY: EntityReferences = { works: [], collabs: [], groups: [], events: [] };
+const EMPTY: EntityReferences = { works: [], collabs: [], groups: [], events: [], profiles: [] };
 
 const WORK_COLS = "id,slug,title,category,cover_url,status,visibility";
 const COLLAB_COLS =
@@ -187,7 +189,7 @@ export async function listEntityReferencesServer(
       collabsByIds(idsOf(collabRows.data, "id")),
       eventsByIds(idsOf(showcaseRows.data, "event_id")),
     ]);
-    return { works: [], collabs: cap(collabs), groups: cap(groups), events: cap(events) };
+    return { works: [], collabs: cap(collabs), groups: cap(groups), events: cap(events), profiles: [] };
   }
 
   if (kind === "collab") {
@@ -202,7 +204,7 @@ export async function listEntityReferencesServer(
       eventsByIds(idsOf(showcaseRows.data, "event_id")),
       worksByIds(workId ? [workId] : []),
     ]);
-    return { works: cap(works), collabs: [], groups: cap(groups), events: cap(events) };
+    return { works: cap(works), collabs: [], groups: cap(groups), events: cap(events), profiles: [] };
   }
 
   if (kind === "event") {
@@ -215,7 +217,7 @@ export async function listEntityReferencesServer(
       worksByIds(idsOf(rows, "work_id")),
       collabsByIds(idsOf(rows, "collab_id")),
     ]);
-    return { works: cap(works), collabs: cap(collabs), groups: [], events: [] };
+    return { works: cap(works), collabs: cap(collabs), groups: [], events: [], profiles: [] };
   }
 
   if (kind === "group") {
@@ -237,7 +239,38 @@ export async function listEntityReferencesServer(
       worksByIds(idsOf(workRows.data, "work_id")),
       collabsByIds(idsOf(collabRows.data, "collab_post_id")),
     ]);
-    return { works: cap(works), collabs: cap(collabs), groups: [], events: [] };
+    return { works: cap(works), collabs: cap(collabs), groups: [], events: [], profiles: [] };
+  }
+
+  if (kind === "post") {
+    // A Blog post's connections are its curated entity tags. They already run
+    // through the same visibility predicates, so reuse that resolver instead
+    // of re-querying `blog_post_entity_tags` with a second set of rules.
+    const { getBlogPostEntityTagsServer } = await import("@/lib/blog-entity-tags.server");
+    const tags = await getBlogPostEntityTagsServer(entityId, { publicOnly: true });
+    const refs = tags.map((t) =>
+      t.kind === "profile"
+        ? makeEntityRef(
+            { kind: "profile", username: t.username },
+            { id: t.id, label: t.label, image: t.image, sublabel: t.sublabel },
+          )
+        : t.kind === "event"
+          ? makeEntityRef(
+              { kind: "event", slug: t.slug, groupSlug: t.groupSlug },
+              { id: t.id, label: t.label, image: t.image, sublabel: t.sublabel },
+            )
+          : makeEntityRef(
+              { kind: t.kind, slug: t.slug },
+              { id: t.id, label: t.label, image: t.image, sublabel: t.sublabel },
+            ),
+    ) as WorkshopEntityRef[];
+    return {
+      works: cap(refs.filter((r) => r.kind === "work")),
+      collabs: cap(refs.filter((r) => r.kind === "collab")),
+      groups: cap(refs.filter((r) => r.kind === "group")),
+      events: cap(refs.filter((r) => r.kind === "event")),
+      profiles: cap(refs.filter((r) => r.kind === "profile")),
+    };
   }
 
   return EMPTY;

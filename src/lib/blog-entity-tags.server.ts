@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { BlogEntityKind, BlogEntityTag } from "@/lib/blog-entity-tags";
 import { MAX_BLOG_ENTITY_TAGS } from "@/lib/blog-entity-tags";
+import { makeEntityRef } from "@/lib/entities/kinds";
 import {
   isWorkPubliclyReferenceable,
   isCollabPubliclyReferenceable,
@@ -180,10 +181,15 @@ async function resolveTags(rows: Row[], opts: { publicOnly: boolean }): Promise<
       const isPublic = isWorkPubliclyReferenceable(w);
       if (opts.publicOnly && !isPublic) continue;
       out.push({
-        kind: "work",
-        id: w.id,
-        slug: w.slug,
-        label: w.title,
+        ...makeEntityRef(
+          { kind: "work", slug: w.slug },
+          {
+            id: w.id,
+            label: w.title,
+            image: w.cover_url,
+            sublabel: w.category ? w.category.charAt(0).toUpperCase() + w.category.slice(1) : null,
+          },
+        ),
         sublabel: w.category ? w.category.charAt(0).toUpperCase() + w.category.slice(1) : null,
         image: w.cover_url,
         work: isPublic
@@ -219,10 +225,7 @@ async function resolveTags(rows: Row[], opts: { publicOnly: boolean }): Promise<
       // archived or legacy-draft one is not public and must not resolve.
       if (opts.publicOnly && !isCollabPubliclyReferenceable(c)) continue;
       out.push({
-        kind: "collab",
-        id: c.id,
-        slug: c.slug,
-        label: c.title,
+        ...makeEntityRef({ kind: "collab", slug: c.slug }, { id: c.id, label: c.title }),
         sublabel: c.description ?? null,
         image: null,
       });
@@ -233,10 +236,7 @@ async function resolveTags(rows: Row[], opts: { publicOnly: boolean }): Promise<
       if (!g) continue;
       if (opts.publicOnly && !isGroupPubliclyReferenceable(g)) continue;
       out.push({
-        kind: "group",
-        id: g.id,
-        slug: g.slug,
-        label: g.name,
+        ...makeEntityRef({ kind: "group", slug: g.slug }, { id: g.id, label: g.name }),
         sublabel: g.tagline ?? null,
         image: g.avatar_url,
       });
@@ -247,11 +247,10 @@ async function resolveTags(rows: Row[], opts: { publicOnly: boolean }): Promise<
       if (!e || !e.group?.slug) continue;
       if (opts.publicOnly && !isEventPubliclyReferenceable(e, e.group)) continue;
       out.push({
-        kind: "event",
-        id: e.id,
-        slug: e.slug,
-        groupSlug: e.group.slug,
-        label: e.title,
+        ...makeEntityRef(
+          { kind: "event", slug: e.slug, groupSlug: e.group.slug },
+          { id: e.id, label: e.title },
+        ),
         sublabel: e.group.name,
         image: e.cover_url,
       });
@@ -262,10 +261,10 @@ async function resolveTags(rows: Row[], opts: { publicOnly: boolean }): Promise<
       if (!p || !p.username) continue;
       if (opts.publicOnly && !isProfilePubliclyReferenceable(p)) continue;
       out.push({
-        kind: "profile",
-        id: p.id,
-        username: p.username,
-        label: p.display_name || p.username,
+        ...makeEntityRef(
+          { kind: "profile", username: p.username },
+          { id: p.id, label: p.display_name || p.username },
+        ),
         sublabel: p.headline ?? `@${p.username}`,
         image: p.avatar_url,
       });

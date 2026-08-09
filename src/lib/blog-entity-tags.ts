@@ -7,7 +7,7 @@
  * This file is client-safe (no server imports).
  */
 
-import { workshopEntityUrl } from "@/lib/entities/kinds";
+import { workshopEntityUrl, type WorkshopEntityRef } from "@/lib/entities/kinds";
 
 export type BlogEntityKind = "work" | "collab" | "group" | "event" | "profile";
 
@@ -37,49 +37,27 @@ export type BlogWorkSummary = {
   }>;
 };
 
+/**
+ * A Blog tag *is* a Workshop entity reference. The only Blog-specific payload
+ * is the Work summary the "About this post" cards render. `url` is optional so
+ * unsaved, locally-constructed tags stay cheap to build; readers should use
+ * `entityUrl()` which falls back to the canonical resolver.
+ */
+type BlogRefOf<K extends BlogEntityKind> = Omit<
+  Extract<WorkshopEntityRef, { kind: K }>,
+  "url" | "sublabel" | "image"
+> & {
+  url?: string;
+  sublabel: string | null;
+  image: string | null;
+};
+
 export type BlogEntityTag =
-  | {
-      kind: "work";
-      id: string;
-      slug: string;
-      label: string;
-      sublabel: string | null;
-      image: string | null;
-      work?: BlogWorkSummary | null;
-    }
-  | {
-      kind: "collab";
-      id: string;
-      slug: string;
-      label: string;
-      sublabel: string | null;
-      image: string | null;
-    }
-  | {
-      kind: "group";
-      id: string;
-      slug: string;
-      label: string;
-      sublabel: string | null;
-      image: string | null;
-    }
-  | {
-      kind: "event";
-      id: string;
-      slug: string;
-      groupSlug: string;
-      label: string;
-      sublabel: string | null;
-      image: string | null;
-    }
-  | {
-      kind: "profile";
-      id: string;
-      username: string;
-      label: string;
-      sublabel: string | null;
-      image: string | null;
-    };
+  | (BlogRefOf<"work"> & { work?: BlogWorkSummary | null })
+  | BlogRefOf<"collab">
+  | BlogRefOf<"group">
+  | BlogRefOf<"event">
+  | BlogRefOf<"profile">;
 
 /**
  * Blog tags are Workshop entity references with extra editorial payload, so
@@ -87,6 +65,7 @@ export type BlogEntityTag =
  * second set of path templates.
  */
 export function entityUrl(tag: BlogEntityTag): string {
+  if (tag.url) return tag.url;
   switch (tag.kind) {
     case "profile":
       return workshopEntityUrl({ kind: "profile", username: tag.username });

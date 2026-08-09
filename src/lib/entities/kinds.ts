@@ -73,10 +73,10 @@ export function workshopEntityUrl(address: WorkshopEntityAddress): string {
 }
 
 /** Build a full ref, filling in `url` from the address. */
-export function makeEntityRef(
-  address: WorkshopEntityAddress,
+export function makeEntityRef<A extends WorkshopEntityAddress>(
+  address: A,
   rest: { id: string; label: string; image?: string | null; sublabel?: string | null },
-): WorkshopEntityRef {
+): A & { id: string; label: string; url: string; image?: string | null; sublabel?: string | null } {
   return { ...address, ...rest, url: workshopEntityUrl(address) };
 }
 
