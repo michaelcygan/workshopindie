@@ -49,6 +49,7 @@ import { GroupPostsTab, useGroupBlogPosts } from "@/components/group/group-posts
 import { GroupNewsTicker } from "@/components/group/group-news-ticker";
 import { setGroupNewsFeed, setGroupParent } from "@/lib/group-admin.functions";
 import { useEventsRealtime } from "@/hooks/use-events-realtime";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 type GroupRow = {
   id: string;
@@ -149,7 +150,7 @@ export const Route = createFileRoute("/g/$slug/")({
     if (!loaderData) return { meta: [] };
     const title = `${loaderData.name} — Group on Workshop`;
     const desc = loaderData.tagline ?? loaderData.description ?? "Join this Group on Workshop.";
-    const url = `https://workshopindie.com/g/${params.slug}`;
+    const url = `https://workshopindie.com${workshopEntityUrl({ kind: "group", slug: params.slug })}`;
     const jsonLd = {
       "@context": "https://schema.org",
       "@type": "CollectionPage",

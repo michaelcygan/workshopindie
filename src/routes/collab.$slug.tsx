@@ -42,6 +42,7 @@ import { EntityBlogPosts } from "@/components/entity-blog-posts";
 import type { Category } from "@/lib/categories";
 import { toast } from "sonner";
 import { PlusGate } from "@/components/plus-gate";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 
 
@@ -58,7 +59,7 @@ export const Route = createFileRoute("/collab/$slug")({
     return { seo };
   },
   head: ({ params, loaderData }) => {
-    const url = `https://workshopindie.com/collab/${params.slug}`;
+    const url = `https://workshopindie.com${workshopEntityUrl({ kind: "collab", slug: params.slug })}`;
     const s = loaderData?.seo;
     const title = s?.title ? `${s.title} — Collab on Workshop` : `Collab on Workshop`;
     const description = s?.description?.slice(0, 160)

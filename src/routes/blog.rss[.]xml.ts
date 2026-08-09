@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { blogCategoryLabel } from "@/lib/blog-categories";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 const SITE = "https://workshopindie.com";
 
@@ -28,7 +29,7 @@ export const Route = createFileRoute("/blog/rss.xml")({
           .limit(50);
 
         const items = (posts ?? []).map((p) => {
-          const url = `${SITE}/blog/${p.slug}`;
+          const url = `${SITE}${workshopEntityUrl({ kind: "post", slug: p.slug })}`;
           const pubDate = p.published_at ? new Date(p.published_at).toUTCString() : new Date().toUTCString();
           return [
             "    <item>",

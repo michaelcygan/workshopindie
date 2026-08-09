@@ -4,6 +4,7 @@
  * A real address, not a tab: crawlable, linkable, and filterable through the
  * URL so "screenings in Chicago" is something you can send to someone.
  */
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 import {
   createFileRoute,
   Link,
@@ -55,7 +56,7 @@ export const Route = createFileRoute("/g/$slug/events")({
   loader: ({ params }) => fetchGroup(params.slug),
   component: GroupEventsPage,
   head: ({ params, loaderData }) => {
-    const url = `https://workshopindie.com/g/${params.slug}/events`;
+    const url = `https://workshopindie.com${workshopEntityUrl({ kind: "group", slug: params.slug })}/events`;
     if (!loaderData) {
       return {
         meta: [{ title: "Events — Workshop" }, { name: "robots", content: "noindex" }],

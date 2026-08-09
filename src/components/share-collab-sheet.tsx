@@ -16,6 +16,7 @@ import { logShareEvent } from "@/lib/collab.functions";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 type Props = {
   postId: string;
@@ -50,8 +51,8 @@ export function ShareCollabSheet(props: Props) {
   }, [open, user, refUsername]);
 
   const baseUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/collab/${props.slug}`
-    : `https://workshopindie.com/collab/${props.slug}`;
+    ? `${window.location.origin}${workshopEntityUrl({ kind: "collab", slug: props.slug })}`
+    : `https://workshopindie.com${workshopEntityUrl({ kind: "collab", slug: props.slug })}`;
   const url = refUsername ? `${baseUrl}?ref=${refUsername}` : baseUrl;
 
   const caption =

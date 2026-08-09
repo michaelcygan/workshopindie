@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { BLOG_CATEGORIES } from "@/lib/blog-categories";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 const SITE = "https://workshopindie.com";
 
@@ -44,13 +45,13 @@ export const Route = createFileRoute("/sitemap.xml")({
         ]);
 
 
-        for (const w of works.data ?? []) urls.push({ loc: `${SITE}/works/${w.slug}`, lastmod: w.published_at ?? undefined, priority: 0.8 });
+        for (const w of works.data ?? []) urls.push({ loc: `${SITE}${workshopEntityUrl({ kind: "work", slug: w.slug })}`, lastmod: w.published_at ?? undefined, priority: 0.8 });
         for (const p of profiles.data ?? []) urls.push({ loc: `${SITE}/${p.username}`, lastmod: p.updated_at ?? undefined, priority: 0.6 });
         for (const w of workshops.data ?? []) urls.push({ loc: `${SITE}/workshops/${w.slug}`, lastmod: w.updated_at ?? undefined, priority: 0.7 });
-        for (const c of collabs.data ?? []) urls.push({ loc: `${SITE}/collab/${c.slug}`, lastmod: c.updated_at ?? undefined, priority: 0.7 });
-        for (const c of cities.data ?? []) urls.push({ loc: `${SITE}/g/${c.slug}`, priority: 0.5 });
+        for (const c of collabs.data ?? []) urls.push({ loc: `${SITE}${workshopEntityUrl({ kind: "collab", slug: c.slug })}`, lastmod: c.updated_at ?? undefined, priority: 0.7 });
+        for (const c of cities.data ?? []) urls.push({ loc: `${SITE}${workshopEntityUrl({ kind: "group", slug: c.slug })}`, priority: 0.5 });
         for (const c of BLOG_CATEGORIES) urls.push({ loc: `${SITE}/blog/c/${c.slug}`, priority: 0.6 });
-        for (const p of posts.data ?? []) urls.push({ loc: `${SITE}/blog/${p.slug}`, lastmod: p.updated_at ?? p.published_at ?? undefined, priority: 0.7 });
+        for (const p of posts.data ?? []) urls.push({ loc: `${SITE}${workshopEntityUrl({ kind: "post", slug: p.slug })}`, lastmod: p.updated_at ?? p.published_at ?? undefined, priority: 0.7 });
 
         const body = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

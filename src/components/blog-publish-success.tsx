@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { logShare } from "@/lib/share.functions";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 export type PublishedPostSummary = {
   id: string;
@@ -68,7 +69,7 @@ export function BlogPublishSuccessDialog({
   if (!post) return null;
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const base = `${origin}/blog/${post.slug}`;
+  const base = `${origin}${workshopEntityUrl({ kind: "post", slug: post.slug })}`;
   const shareUrl = refUsername ? `${base}?ref=${refUsername}` : base;
 
   function track(channel: "copy" | "native") {

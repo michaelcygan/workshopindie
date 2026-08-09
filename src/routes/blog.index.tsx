@@ -10,6 +10,7 @@ import {
   BlogMoreStories,
   toBlogCard,
 } from "@/components/blog/blog-editorial-sections";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 const SITE = "https://workshopindie.com";
 const TITLE = "Workshop Blog — Creative Collaboration, Independent Art & Artist Portfolios";
@@ -48,7 +49,7 @@ export const Route = createFileRoute("/blog/")({
           blogPost: (loaderData?.posts ?? []).slice(0, 20).map((p: { title: string; slug: string; published_at: string | null }) => ({
             "@type": "BlogPosting",
             headline: p.title,
-            url: `${SITE}/blog/${p.slug}`,
+            url: `${SITE}${workshopEntityUrl({ kind: "post", slug: p.slug })}`,
             datePublished: p.published_at,
           })),
         }),

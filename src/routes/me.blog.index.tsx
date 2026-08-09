@@ -31,6 +31,7 @@ import {
 } from "@/lib/blog-member.functions";
 import { PenLine, Plus, ExternalLink, MoreVertical, Trash2, Loader2, Share2 } from "lucide-react";
 import { blogCategoryLabel } from "@/lib/blog-categories";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 
 export const Route = createFileRoute("/me/blog/")({
@@ -262,7 +263,7 @@ function MyBlogPage() {
                               onSelect={(e) => {
                                 e.preventDefault();
                                 navigator.clipboard
-                                  .writeText(`${window.location.origin}/blog/${p.slug}`)
+                                  .writeText(`${window.location.origin}${workshopEntityUrl({ kind: "post", slug: p.slug })}`)
                                   .then(() => toast.success("Link copied"))
                                   .catch(() => toast.error("Couldn't copy link"));
                               }}

@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ArrowLeft, Link2, Flag } from "lucide-react";
 import { shareImage, shareImageMeta } from "@/lib/og-image";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 
 const SITE = "https://workshopindie.com";
@@ -30,7 +31,7 @@ export const Route = createFileRoute("/blog/$slug")({
     const p = loaderData.post;
     const title = (p.seo_title?.trim() || p.title).slice(0, 80);
     const description = (p.seo_description?.trim() || p.excerpt || "").slice(0, 200);
-    const url = `${SITE}/blog/${params.slug}`;
+    const url = `${SITE}${workshopEntityUrl({ kind: "post", slug: params.slug })}`;
     // Crawlers only render raster images, so share the post's own cover file.
     const img = shareImage(p.cover_image_url);
     const hidden = p.show_in_blog_index === false;
@@ -258,7 +259,7 @@ function BlogPostPage() {
 }
 
 function ShareRow({ slug, title, postId }: { slug: string; title: string; postId: string }) {
-  const url = `${SITE}/blog/${slug}`;
+  const url = `${SITE}${workshopEntityUrl({ kind: "post", slug: slug })}`;
   async function copy() {
     try {
       await navigator.clipboard.writeText(url);

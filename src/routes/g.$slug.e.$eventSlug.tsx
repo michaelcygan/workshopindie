@@ -30,6 +30,7 @@ import { LineupPanel } from "@/components/lineup-panel";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { EntityBlogPosts } from "@/components/entity-blog-posts";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 export const Route = createFileRoute("/g/$slug/e/$eventSlug")({
   // ?story=<slug> makes an open story peek shareable and back-button friendly.
@@ -69,7 +70,7 @@ export const Route = createFileRoute("/g/$slug/e/$eventSlug")({
       cover_url?: string | null;
       group: { slug: string };
     };
-    const url = `https://workshopindie.com/g/${params.slug}/e/${params.eventSlug}`;
+    const url = `https://workshopindie.com${workshopEntityUrl({ kind: "event", groupSlug: params.slug, slug: params.eventSlug })}`;
     return {
       meta: [
         { title: `${ev.title} — Workshop` },
@@ -212,8 +213,8 @@ function EventPage() {
 
 
   const canonicalUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/g/${ev.group.slug}/e/${ev.slug}`
-    : `/g/${ev.group.slug}/e/${ev.slug}`;
+    ? `${window.location.origin}${workshopEntityUrl({ kind: "event", groupSlug: ev.group.slug, slug: ev.slug })}`
+    : workshopEntityUrl({ kind: "event", groupSlug: ev.group.slug, slug: ev.slug });
 
   const refreshAccess = () => {
     qc.invalidateQueries({ queryKey: ["event-access", ev.id] });

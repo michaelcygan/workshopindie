@@ -23,6 +23,7 @@ import { CategoryPlaceholder } from "@/components/home/category-placeholder";
 
 import { BlogPostContext } from "@/components/blog-post-context";
 import { deriveBlogPostContext } from "@/lib/blog-post-context";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 const SITE = "https://workshopindie.com";
 
@@ -120,7 +121,7 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
 
   const effTitle = (seoTitle?.trim() || title).slice(0, 80);
   const effDesc = (seoDesc?.trim() || excerpt).slice(0, 160);
-  const effUrl = `${SITE}/blog/${slug || "your-slug"}`;
+  const effUrl = `${SITE}${workshopEntityUrl({ kind: "post", slug: slug || "your-slug" })}`;
 
 
   async function flushAuthors(postId: string) {

@@ -8,6 +8,7 @@ import { rsvp } from "@/lib/group-events.functions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { EventRsvpAuthSheet } from "@/components/event-rsvp-auth-sheet";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 export type MyRsvp = {
   status: "going" | "maybe" | "waitlist" | "declined" | "canceled";
@@ -48,7 +49,7 @@ export function EventRsvpBlock({
 
   const isFull = capacity !== null && goingCount >= capacity;
   const status = myRsvp?.status ?? null;
-  const redirectTo = `/g/${groupSlug}/e/${eventSlug}`;
+  const redirectTo = workshopEntityUrl({ kind: "event", groupSlug: groupSlug, slug: eventSlug });
   const going = status === "going" || status === "waitlist";
   const declined = status === "declined";
 

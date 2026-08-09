@@ -9,6 +9,7 @@ import { useNotificationEvents } from "@/hooks/use-realtime-notifications";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { markAllNotificationsRead } from "@/lib/notifications.functions";
 import { formatRoomTitle } from "@/lib/instant";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 type Row = {
   id: string;
@@ -70,7 +71,7 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
       return {
         title: `${actor} applied to ${collabTitle}`,
         subtitle: (n.payload?.preview as string) ?? "",
-        href: convId ? `/dms/${convId}` : collabSlug ? `/collab/${collabSlug}` : "/collab",
+        href: convId ? `/dms/${convId}` : collabSlug ? workshopEntityUrl({ kind: "collab", slug: collabSlug }) : "/collab",
       };
     }
     case "lounge_invite": {
@@ -79,7 +80,7 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
       return {
         title: `${actor} invited you into Group audio`,
         subtitle: wsTitle,
-        href: groupSlug ? `/g/${groupSlug}` : roomId ? `/lounge/${roomId}` : "/groups",
+        href: groupSlug ? workshopEntityUrl({ kind: "group", slug: groupSlug }) : roomId ? `/lounge/${roomId}` : "/groups",
       };
     }
     case "follow":
@@ -109,19 +110,19 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
       return {
         title: `${actor} just published their first Work`,
         subtitle: (n.payload?.title as string) ?? "",
-        href: n.payload?.slug ? `/works/${n.payload.slug}` : "/",
+        href: n.payload?.slug ? workshopEntityUrl({ kind: "work", slug: n.payload.slug }) : "/",
       };
     case "work_published":
       return {
         title: `${actor} published a Work`,
         subtitle: (n.payload?.title as string) ?? "",
-        href: n.payload?.slug ? `/works/${n.payload.slug}` : "/",
+        href: n.payload?.slug ? workshopEntityUrl({ kind: "work", slug: n.payload.slug }) : "/",
       };
     case "collab_first_ship":
       return {
         title: `${actor} published a Work — you're credited`,
         subtitle: (n.payload?.title as string) ?? "",
-        href: n.payload?.slug ? `/works/${n.payload.slug}` : "/",
+        href: n.payload?.slug ? workshopEntityUrl({ kind: "work", slug: n.payload.slug }) : "/",
       };
     case "workshop_starting":
       return { title: `${wsTitle} is starting`, subtitle: "Join now — your seat's open.", href: wsSlug ? `/events/${wsSlug}` : "/events" };
@@ -136,7 +137,7 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
       return {
         title: `${actor} is live${mediumLabel ? ` · ${mediumLabel}` : ""}`,
         subtitle: formatRoomTitle((n.payload?.title as string) || "", mediumLabel) || "Drop into their Group audio while there's a seat.",
-        href: groupSlug ? `/g/${groupSlug}` : roomId ? `/lounge/${roomId}` : "/groups",
+        href: groupSlug ? workshopEntityUrl({ kind: "group", slug: groupSlug }) : roomId ? `/lounge/${roomId}` : "/groups",
       };
     }
     case "chat_mention": {
@@ -146,7 +147,7 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
       return {
         title: `${actor} mentioned you in ${roomTitle}`,
         subtitle: (n.payload?.preview as string) ?? "",
-        href: groupSlug ? `/g/${groupSlug}` : roomId ? `/lounge/${roomId}` : "/groups",
+        href: groupSlug ? workshopEntityUrl({ kind: "group", slug: groupSlug }) : roomId ? `/lounge/${roomId}` : "/groups",
       };
     }
     case "today_mention": {
@@ -155,7 +156,7 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
       return {
         title: `${actor} tagged you in ${groupName}'s Today board`,
         subtitle: (n.payload?.snippet as string) ?? "",
-        href: gSlug ? `/g/${gSlug}` : "/groups",
+        href: gSlug ? workshopEntityUrl({ kind: "group", slug: gSlug }) : "/groups",
       };
     }
     case "payment_failed":
@@ -168,13 +169,13 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
       const gSlug = (n.payload?.group_slug as string) || "";
       const evSlug = (n.payload?.event_slug as string) || "";
       const when = n.kind === "event_starts_soon_2h" ? "in 2 hours" : "tomorrow";
-      return { title: `${evTitle} ${when}`, subtitle: "Tap to view details and join link.", href: gSlug && evSlug ? `/g/${gSlug}/e/${evSlug}` : "/me/tickets" };
+      return { title: `${evTitle} ${when}`, subtitle: "Tap to view details and join link.", href: gSlug && evSlug ? workshopEntityUrl({ kind: "event", groupSlug: gSlug, slug: evSlug }) : "/me/tickets" };
     }
     case "event_updated": {
       const evTitle = (n.payload?.event_title as string) || "An event";
       const gSlug = (n.payload?.group_slug as string) || "";
       const evSlug = (n.payload?.event_slug as string) || "";
-      return { title: `${evTitle} was updated`, subtitle: "Date, venue, or link changed.", href: gSlug && evSlug ? `/g/${gSlug}/e/${evSlug}` : "/me/tickets" };
+      return { title: `${evTitle} was updated`, subtitle: "Date, venue, or link changed.", href: gSlug && evSlug ? workshopEntityUrl({ kind: "event", groupSlug: gSlug, slug: evSlug }) : "/me/tickets" };
     }
     case "event_canceled": {
       const evTitle = (n.payload?.event_title as string) || "An event";
@@ -184,20 +185,20 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
       const evTitle = (n.payload?.event_title as string) || "An event";
       const gSlug = (n.payload?.group_slug as string) || "";
       const evSlug = (n.payload?.event_slug as string) || "";
-      return { title: `You're off the waitlist for ${evTitle}`, subtitle: "Your spot is locked in.", href: gSlug && evSlug ? `/g/${gSlug}/e/${evSlug}` : "/me/tickets" };
+      return { title: `You're off the waitlist for ${evTitle}`, subtitle: "Your spot is locked in.", href: gSlug && evSlug ? workshopEntityUrl({ kind: "event", groupSlug: gSlug, slug: evSlug }) : "/me/tickets" };
     }
     case "event_recap": {
       const evTitle = (n.payload?.event_title as string) || "the event";
       const gSlug = (n.payload?.group_slug as string) || "";
       const evSlug = (n.payload?.event_slug as string) || "";
-      return { title: `See what everyone brought to ${evTitle}`, subtitle: "Collabs and works from the night.", href: gSlug && evSlug ? `/g/${gSlug}/e/${evSlug}` : "/" };
+      return { title: `See what everyone brought to ${evTitle}`, subtitle: "Collabs and works from the night.", href: gSlug && evSlug ? workshopEntityUrl({ kind: "event", groupSlug: gSlug, slug: evSlug }) : "/" };
     }
     case "event_new_in_my_group": {
       const evTitle = (n.payload?.event_title as string) || "A new event";
       const groupName = (n.payload?.group_name as string) || "your group";
       const gSlug = (n.payload?.group_slug as string) || "";
       const evSlug = (n.payload?.event_slug as string) || "";
-      return { title: `${evTitle} — new in ${groupName}`, subtitle: "Tap to RSVP.", href: gSlug && evSlug ? `/g/${gSlug}/e/${evSlug}` : "/groups" };
+      return { title: `${evTitle} — new in ${groupName}`, subtitle: "Tap to RSVP.", href: gSlug && evSlug ? workshopEntityUrl({ kind: "event", groupSlug: gSlug, slug: evSlug }) : "/groups" };
     }
     default:
       return { title: n.kind, subtitle: "", href: "/me" };

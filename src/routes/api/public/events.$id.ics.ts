@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { buildIcsFile, icsFilename } from "@/lib/events/ics";
 import { eventEndsAt } from "@/lib/events/lifecycle";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 const SITE = "https://workshopindie.com";
 
@@ -54,7 +55,7 @@ export const Route = createFileRoute("/api/public/events/$id/ics")({
         const ev = data as unknown as E;
         if (!ev.group?.slug || !ev.starts_at) return new Response("Not found", { status: 404 });
 
-        const eventUrl = `${SITE}/g/${ev.group.slug}/e/${ev.slug}`;
+        const eventUrl = `${SITE}${workshopEntityUrl({ kind: "event", groupSlug: ev.group.slug, slug: ev.slug })}`;
         const venue = [ev.venue_name, ev.venue_address].filter(Boolean).join(", ");
         const location =
           ev.format === "online" || !venue ? "Online — RSVP on Workshop for the link" : venue;

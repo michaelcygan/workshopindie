@@ -12,6 +12,7 @@ import { cn, formatCount } from "@/lib/utils";
 import { getWorkPeekDetail } from "@/lib/works-peek.functions";
 import { useWorkLike } from "@/hooks/use-work-like";
 import { SignupGateModal } from "@/components/signup-gate-modal";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 export function workPeekQueryOptions(workId: string | null, fetchPeek: (args: { data: { workId: string } }) => Promise<any>) {
   return queryOptions({
@@ -157,7 +158,7 @@ export function WorkPeek({
               </div>
               <div className="flex items-center justify-end pt-2">
                 <Button asChild variant="outline" size="sm" className="rounded-md gap-1.5">
-                  <a href={`/works/${work.slug}`} target="_blank" rel="noopener noreferrer">
+                  <a href={workshopEntityUrl({ kind: "work", slug: work.slug })} target="_blank" rel="noopener noreferrer">
                     Open full piece <ExternalLink className="h-3.5 w-3.5" />
                   </a>
                 </Button>
