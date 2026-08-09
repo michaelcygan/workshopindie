@@ -155,10 +155,13 @@ async function eventsByIds(ids: string[]): Promise<WorkshopEntityRef[]> {
     .map(eventRef);
 }
 
-function idsOf<T extends Record<string, unknown>>(rows: T[] | null, key: keyof T): string[] {
-  return Array.from(
-    new Set((rows ?? []).map((r) => r[key]).filter((v): v is string => typeof v === "string")),
-  );
+function idsOf(rows: Array<Record<string, unknown>> | null, key: string): string[] {
+  const out = new Set<string>();
+  for (const r of rows ?? []) {
+    const v = r[key];
+    if (typeof v === "string") out.add(v);
+  }
+  return Array.from(out);
 }
 
 /**
