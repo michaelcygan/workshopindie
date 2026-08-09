@@ -6062,6 +6062,99 @@ export type Database = {
           },
         ]
       }
+      work_assets: {
+        Row: {
+          asset_type: string
+          byte_size: number | null
+          caption: string | null
+          created_at: string
+          created_by: string
+          download_enabled: boolean
+          id: string
+          is_primary: boolean
+          label: string | null
+          metadata: Json
+          mime_type: string | null
+          sort_order: number
+          storage_path: string | null
+          updated_at: string
+          url: string
+          work_id: string
+        }
+        Insert: {
+          asset_type: string
+          byte_size?: number | null
+          caption?: string | null
+          created_at?: string
+          created_by: string
+          download_enabled?: boolean
+          id?: string
+          is_primary?: boolean
+          label?: string | null
+          metadata?: Json
+          mime_type?: string | null
+          sort_order?: number
+          storage_path?: string | null
+          updated_at?: string
+          url: string
+          work_id: string
+        }
+        Update: {
+          asset_type?: string
+          byte_size?: number | null
+          caption?: string | null
+          created_at?: string
+          created_by?: string
+          download_enabled?: boolean
+          id?: string
+          is_primary?: boolean
+          label?: string | null
+          metadata?: Json
+          mime_type?: string | null
+          sort_order?: number
+          storage_path?: string | null
+          updated_at?: string
+          url?: string
+          work_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_assets_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_assets_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_assets_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_assets_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "work_assets_work_id_fkey"
+            columns: ["work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       work_boosts: {
         Row: {
           created_at: string

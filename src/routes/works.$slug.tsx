@@ -21,7 +21,8 @@ import { ProfilePeek } from "@/components/profile-peek";
 import { WorkCard } from "@/components/work-card";
 import { EntityBlogPosts } from "@/components/entity-blog-posts";
 import { EntityConnections } from "@/components/entity/entity-connections";
-import { EmbedPlayer, providerFromUrl } from "@/components/embed-player";
+import { WorkViewer } from "@/components/work/work-viewer";
+import { listWorkAssets, resolveWorkAssets } from "@/lib/work-assets";
 // WorkSocialProof (vouches + boosts) retired in v1 distillation pass.
 import { WorkPublishedNudge } from "@/components/nudges/work-published-nudge";
 import { getCoCreditedWorks } from "@/lib/network.functions";
@@ -163,6 +164,18 @@ function WorkDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [work?.id]);
 
+  // Assets are additive: a Work with none still renders from its legacy columns.
+  const { data: storedAssets } = useQuery({
+    queryKey: ["work-assets", work?.id],
+    queryFn: () => listWorkAssets(work!.id),
+    enabled: !!work?.id,
+    staleTime: 60_000,
+  });
+  const viewerAssets = useMemo(
+    () => (work ? resolveWorkAssets(work, storedAssets ?? []) : []),
+    [work, storedAssets],
+  );
+
   const credits = useMemo(() => (work?.work_credits ?? []).slice().sort((a, b) => a.sort_order - b.sort_order), [work]);
   const isOwnerOrCredited = !!user && !!work && (user.id === work.created_by || credits.some((c) => c.profiles?.id === user.id));
 
@@ -236,19 +249,18 @@ function WorkDetail() {
         </motion.header>
 
 
-        {/* Book hero — portrait cover + buy buttons */}
+        {/* Presentation layer — the Work's assets decide how it's shown.
+            Books keep their own portrait hero + buy buttons. */}
         {work.category === "writing_book" ? (
           <BookHero work={work} />
-        ) : work.embed_url ? (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="mt-8">
-            <EmbedPlayer url={work.embed_url} provider={providerFromUrl(work.embed_url)} title={work.title} poster={work.cover_url} />
-          </motion.div>
-        ) : work.cover_url && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-            className="mt-8 overflow-hidden rounded-xl border border-border bg-surface-2">
-            <img src={work.cover_url} alt={work.title} className="w-full object-cover" />
-          </motion.div>
+        ) : (
+          (viewerAssets.length > 0 || work.cover_url) && (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="mt-8">
+              <WorkViewer assets={viewerAssets} title={work.title} coverUrl={work.cover_url} />
+            </motion.div>
+          )
         )}
+
 
         {/* Meta strip */}
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-y border-border py-4">
