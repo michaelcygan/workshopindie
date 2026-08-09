@@ -30,7 +30,9 @@ import { LineupPanel } from "@/components/lineup-panel";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { EntityBlogPosts } from "@/components/entity-blog-posts";
+import { EntityConnections } from "@/components/entity/entity-connections";
 import { workshopEntityUrl } from "@/lib/entities/kinds";
+
 
 export const Route = createFileRoute("/g/$slug/e/$eventSlug")({
   // ?story=<slug> makes an open story peek shareable and back-button friendly.
@@ -538,6 +540,9 @@ function EventPage() {
             })
           }
         />
+
+        <EntityConnections kind="event" entityId={ev.id} className="mt-10" />
+
 
       </div>
     </main>

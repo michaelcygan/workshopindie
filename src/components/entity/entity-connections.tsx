@@ -45,7 +45,8 @@ export function EntityConnections({
         {refs.map((r) => (
           <EntityReferenceChip
             key={`${r.kind}:${r.id}`}
-            kind={r.kind as "work" | "collab" | "group" | "event"}
+            kind={r.kind}
+            id={r.id}
             label={r.label}
             slug={r.kind === "profile" ? r.username : r.slug}
             groupSlug={r.kind === "event" ? r.groupSlug : undefined}
