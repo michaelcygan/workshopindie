@@ -236,19 +236,18 @@ function WorkDetail() {
         </motion.header>
 
 
-        {/* Book hero — portrait cover + buy buttons */}
+        {/* Presentation layer — the Work's assets decide how it's shown.
+            Books keep their own portrait hero + buy buttons. */}
         {work.category === "writing_book" ? (
           <BookHero work={work} />
-        ) : work.embed_url ? (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="mt-8">
-            <EmbedPlayer url={work.embed_url} provider={providerFromUrl(work.embed_url)} title={work.title} poster={work.cover_url} />
-          </motion.div>
-        ) : work.cover_url && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-            className="mt-8 overflow-hidden rounded-xl border border-border bg-surface-2">
-            <img src={work.cover_url} alt={work.title} className="w-full object-cover" />
-          </motion.div>
+        ) : (
+          (viewerAssets.length > 0 || work.cover_url) && (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="mt-8">
+              <WorkViewer assets={viewerAssets} title={work.title} coverUrl={work.cover_url} />
+            </motion.div>
+          )
         )}
+
 
         {/* Meta strip */}
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-y border-border py-4">
