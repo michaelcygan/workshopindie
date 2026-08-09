@@ -223,13 +223,16 @@ export type NewWorkAsset = {
 
 export async function insertWorkAssets(rows: NewWorkAsset[]) {
   if (rows.length === 0) return [];
-  const { data, error } = await supabase.from("work_assets").insert(rows).select(SELECT);
+  const { data, error } = await supabase
+    .from("work_assets")
+    .insert(rows as never)
+    .select(SELECT);
   if (error) throw error;
   return (data ?? []) as unknown as WorkAsset[];
 }
 
 export async function updateWorkAsset(id: string, patch: Partial<Omit<WorkAsset, "id" | "work_id">>) {
-  const { error } = await supabase.from("work_assets").update(patch).eq("id", id);
+  const { error } = await supabase.from("work_assets").update(patch as never).eq("id", id);
   if (error) throw error;
 }
 
