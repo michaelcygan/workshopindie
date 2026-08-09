@@ -38,6 +38,8 @@ import { MessageButton } from "@/components/message-button";
 // Vouch + Boost retired in v1 distillation pass.
 import { WorksBornHere } from "@/components/works-born-here";
 import { EntityBlogPosts } from "@/components/entity-blog-posts";
+import { EntityConnections } from "@/components/entity/entity-connections";
+
 
 import type { Category } from "@/lib/categories";
 import { toast } from "sonner";
@@ -938,6 +940,9 @@ function CollabDetail() {
           })
         }
       />
+
+      <EntityConnections kind="collab" entityId={post.id} className="mt-10" />
+
 
 
       {hostUser?.username && (
