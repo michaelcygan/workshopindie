@@ -10,7 +10,7 @@ export const listEntityReferences = createServerFn({ method: "GET" })
   .inputValidator((d: unknown) =>
     z
       .object({
-        kind: z.enum(["work", "collab", "group", "event"]),
+        kind: z.enum(["work", "collab", "group", "event", "post"]),
         entityId: z.string().uuid(),
         limitPerKind: z.number().int().min(1).max(12).optional(),
       })

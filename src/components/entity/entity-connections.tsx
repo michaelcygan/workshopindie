@@ -19,7 +19,7 @@ export function EntityConnections({
   className,
   limitPerKind = 6,
 }: {
-  kind: "work" | "collab" | "group" | "event";
+  kind: "work" | "collab" | "group" | "event" | "post";
   entityId: string;
   heading?: string;
   className?: string;
@@ -34,7 +34,7 @@ export function EntityConnections({
 
   const data = q.data;
   const refs: WorkshopEntityRef[] = data
-    ? [...data.collabs, ...data.works, ...data.groups, ...data.events]
+    ? [...data.collabs, ...data.works, ...data.groups, ...data.events, ...data.profiles]
     : [];
   if (refs.length === 0) return null;
 
