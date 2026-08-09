@@ -11,17 +11,32 @@ export function ModelViewer({ url, title, className }: { url: string; title: str
   const [broken, setBroken] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
 
+  // The runtime is huge (three.js inside), so it is fetched from a CDN at
+  // view time rather than bundled into the app.
   useEffect(() => {
     let cancelled = false;
-    import("@google/model-viewer")
-      .then(() => {
-        if (!cancelled) setReady(true);
-      })
-      .catch(() => {
-        if (!cancelled) setBroken(true);
-      });
+    if (typeof window === "undefined") return;
+    if (customElements.get("model-viewer")) {
+      setReady(true);
+      return;
+    }
+    const SRC = "https://unpkg.com/@google/model-viewer@4.3.1/dist/model-viewer.min.js";
+    let script = document.querySelector<HTMLScriptElement>(`script[data-model-viewer]`);
+    if (!script) {
+      script = document.createElement("script");
+      script.type = "module";
+      script.src = SRC;
+      script.dataset.modelViewer = "true";
+      document.head.appendChild(script);
+    }
+    const onLoad = () => !cancelled && setReady(true);
+    const onError = () => !cancelled && setBroken(true);
+    script.addEventListener("load", onLoad);
+    script.addEventListener("error", onError);
     return () => {
       cancelled = true;
+      script?.removeEventListener("load", onLoad);
+      script?.removeEventListener("error", onError);
     };
   }, []);
 

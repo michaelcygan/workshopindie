@@ -47,11 +47,15 @@ export function DocumentViewer({
     let loaded: PdfDoc | null = null;
     (async () => {
       try {
-        const pdfjs = await import("pdfjs-dist");
-        pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-          "pdfjs-dist/build/pdf.worker.min.mjs",
-          import.meta.url,
-        ).toString();
+        // Loaded from a CDN at view time — the PDF engine is far too large to
+        // bundle into the app's build graph.
+        const PDFJS_VERSION = "6.2.108";
+        const base = `https://unpkg.com/pdfjs-dist@${PDFJS_VERSION}`;
+        const pdfjs = (await import(/* @vite-ignore */ `${base}/build/pdf.min.mjs`)) as {
+          GlobalWorkerOptions: { workerSrc: string };
+          getDocument: (o: { url: string }) => { promise: Promise<unknown> };
+        };
+        pdfjs.GlobalWorkerOptions.workerSrc = `${base}/build/pdf.worker.min.mjs`;
         const task = pdfjs.getDocument({ url });
         const d = (await task.promise) as unknown as PdfDoc;
         if (cancelled) {
