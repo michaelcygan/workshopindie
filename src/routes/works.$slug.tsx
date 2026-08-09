@@ -20,6 +20,7 @@ import { WorkCreditLayer } from "@/components/work-credit-layer";
 import { ProfilePeek } from "@/components/profile-peek";
 import { WorkCard } from "@/components/work-card";
 import { EntityBlogPosts } from "@/components/entity-blog-posts";
+import { EntityConnections } from "@/components/entity/entity-connections";
 import { EmbedPlayer, providerFromUrl } from "@/components/embed-player";
 // WorkSocialProof (vouches + boosts) retired in v1 distillation pass.
 import { WorkPublishedNudge } from "@/components/nudges/work-published-nudge";
