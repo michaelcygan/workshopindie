@@ -22,6 +22,8 @@ import { WorkCard } from "@/components/work-card";
 import { EntityBlogPosts } from "@/components/entity-blog-posts";
 import { EntityConnections } from "@/components/entity/entity-connections";
 import { EmbedPlayer, providerFromUrl } from "@/components/embed-player";
+import { WorkViewer } from "@/components/work/work-viewer";
+import { listWorkAssets, resolveWorkAssets } from "@/lib/work-assets";
 // WorkSocialProof (vouches + boosts) retired in v1 distillation pass.
 import { WorkPublishedNudge } from "@/components/nudges/work-published-nudge";
 import { getCoCreditedWorks } from "@/lib/network.functions";
@@ -162,6 +164,18 @@ function WorkDetail() {
     supabase.rpc("bump_work_view", { _work_id: work.id, _key: key }).then(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [work?.id]);
+
+  // Assets are additive: a Work with none still renders from its legacy columns.
+  const { data: storedAssets } = useQuery({
+    queryKey: ["work-assets", work?.id],
+    queryFn: () => listWorkAssets(work!.id),
+    enabled: !!work?.id,
+    staleTime: 60_000,
+  });
+  const viewerAssets = useMemo(
+    () => (work ? resolveWorkAssets(work, storedAssets ?? []) : []),
+    [work, storedAssets],
+  );
 
   const credits = useMemo(() => (work?.work_credits ?? []).slice().sort((a, b) => a.sort_order - b.sort_order), [work]);
   const isOwnerOrCredited = !!user && !!work && (user.id === work.created_by || credits.some((c) => c.profiles?.id === user.id));
