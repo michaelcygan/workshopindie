@@ -161,9 +161,6 @@ function BlogPostPage() {
           {category.label}
         </Link>
         <h1 className="mt-2 font-display text-4xl leading-tight text-ink md:text-5xl">{post.title}</h1>
-        {post.excerpt && (
-          <p className="mt-4 text-lg text-ink-soft">{post.excerpt}</p>
-        )}
         <div className="mt-4 text-sm text-ink-muted">
           By{" "}
           {post.authors && post.authors.length > 0 ? (
