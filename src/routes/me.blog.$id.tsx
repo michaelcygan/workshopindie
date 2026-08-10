@@ -125,7 +125,7 @@ function MemberBlogEditorPage() {
   const [blogGateOpen, setBlogGateOpen] = useState(false);
   const [published, setPublished] = useState<PublishedPostSummary | null>(null);
 
-  const post = (q.data as { post: EditorPost; entity_tags?: BlogEntityTag[]; access: { canPublish: boolean; canEditExisting: boolean; canUnpublish: boolean; canDeleteNeverPublishedDraft: boolean; reason: string | null; mode: string; publicationsThisMonth: number; monthlyPublicationLimit: number | null } } | undefined);
+  const post = (q.data as EditorPostPayload | undefined);
 
   useEffect(() => {
     if (!post || loadedForId === post.post.id) return;
