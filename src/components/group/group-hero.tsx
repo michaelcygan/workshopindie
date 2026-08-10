@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { MapPin, Radio, Share2, Sparkles, Star, Users } from "lucide-react";
+import { MapPin, Radio, Share2, Sparkles, Users } from "lucide-react";
 import { JoinGroupButton, useIsMemberOfGroup } from "@/components/join-group-button";
 import { Button } from "@/components/ui/button";
 import { useGroupLive } from "@/components/group/group-live-shell";
@@ -21,23 +21,24 @@ export type GroupHeroData = {
   parent: { id: string; slug: string; name: string } | null;
 };
 
-export function GroupHero({
-  group,
-}: {
-  group: GroupHeroData;
-  /** @deprecated Next event now lives in the Today tab sidebar. */
-  nextEvent?: { slug: string; title: string; starts_at: string } | null;
-}) {
+/**
+ * Scene header. On mobile the Group's own photography leads — a restrained
+ * band, not a full-screen hero — so a scanned NFC card lands somewhere that
+ * feels like a place. Audio only appears when someone is actually connected;
+ * an empty "Join audio" control is not chrome worth paying for.
+ */
+export function GroupHero({ group }: { group: GroupHeroData }) {
   const Icon = group.kind === "city" ? MapPin : Sparkles;
 
-  // Audio is a layer on this Group, not a separate room the hero navigates to.
   const live = useGroupLive();
   const isMember = useIsMemberOfGroup(group.id).data === true;
-
-
+  const audioLive = !!live && !live.roomId && live.connectedCount > 0;
 
   const onShare = async () => {
-    const url = typeof window !== "undefined" ? `${window.location.origin}${workshopEntityUrl({ kind: "group", slug: group.slug })}` : "";
+    const url =
+      typeof window !== "undefined"
+        ? `${window.location.origin}${workshopEntityUrl({ kind: "group", slug: group.slug })}`
+        : "";
     try {
       if (typeof navigator !== "undefined" && navigator.share) {
         await navigator.share({ title: group.name, url });
@@ -52,18 +53,31 @@ export function GroupHero({
 
   return (
     <>
-      {/* Compact identity row — no banner. */}
-      <div className="relative z-10 px-4 py-2 md:px-6 md:py-2.5">
+      {group.cover_url && (
+        <div className="relative h-[168px] w-full overflow-hidden bg-surface-2 sm:h-[190px] md:h-[220px]">
+          <img
+            src={group.cover_url}
+            alt=""
+            width={1600}
+            height={600}
+            className="h-full w-full object-cover"
+          />
+          <div
+            aria-hidden
+            className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-background to-transparent"
+          />
+        </div>
+      )}
+
+      {/* Compact identity row. */}
+      <div
+        className={`relative z-10 px-4 py-2 md:px-6 md:py-2.5 ${group.cover_url ? "-mt-9 md:-mt-10" : ""}`}
+      >
         <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 sm:gap-4">
           {/* Avatar tile */}
-          <div className="relative isolate flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-surface ring-1 ring-border shadow-sm sm:h-14 sm:w-14">
-
+          <div className="relative isolate flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-surface ring-1 ring-border shadow-sm sm:h-16 sm:w-16">
             {group.avatar_url ? (
-              <img
-                src={group.avatar_url}
-                alt={group.name}
-                className="h-full w-full object-cover"
-              />
+              <img src={group.avatar_url} alt={group.name} className="h-full w-full object-cover" />
             ) : (
               <span
                 aria-hidden
@@ -87,68 +101,55 @@ export function GroupHero({
                 <span aria-hidden>←</span> in {group.parent.name}
               </Link>
             )}
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <h1 className="text-balance font-display text-xl leading-tight text-ink sm:text-2xl md:text-3xl">
+            <div className="flex min-w-0 items-center gap-1.5">
+              <h1 className="truncate text-balance font-display text-xl leading-tight text-ink sm:text-2xl md:text-3xl">
                 {group.name}
               </h1>
-              <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-soft">
-                {group.kind}
-              </span>
               {group.is_official && (
-                <span className="rounded-full bg-ink/10 px-2 py-0.5 text-[10px] font-medium text-ink-soft">
-                  Official
+                <span
+                  title="Official Workshop Group"
+                  aria-label="Official Workshop Group"
+                  className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-primary/15 text-[9px] font-bold text-primary"
+                >
+                  ✓
                 </span>
               )}
-              {group.featured_at && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
-                  <Star className="h-3 w-3" /> Featured
-                </span>
-              )}
+            </div>
+            <div className="flex min-w-0 items-center gap-2 text-[11px] text-ink-muted md:text-xs">
               {group.member_count > 0 && (
-                <span className="inline-flex items-center gap-1 text-[11px] text-ink-muted">
+                <span className="inline-flex shrink-0 items-center gap-1">
                   <Users className="h-3 w-3" />
                   {group.member_count}
                 </span>
               )}
+              {group.tagline && <span className="truncate">{group.tagline}</span>}
             </div>
-            {group.tagline && (
-              <p className="line-clamp-1 text-xs text-ink-muted md:text-sm">
-                {group.tagline}
-              </p>
-            )}
           </div>
 
-          {/* Right column: compact — Audio + Share + Join. Create lives in the tab bar. */}
+          {/* Right column: Share + Join. Audio surfaces only when live. */}
           <div className="flex shrink-0 items-center gap-1.5">
-            {live && !live.roomId ? (
+            {audioLive && (
               <Button
                 size="sm"
-                onClick={() => void live.joinAudio()}
-                disabled={live.status === "joining" || !isMember}
+                onClick={() => void live!.joinAudio()}
+                disabled={live!.status === "joining" || !isMember}
                 className="gap-1.5 rounded-full"
                 title={
                   isMember
-                    ? "Join this Group's live audio — no camera, mic stays off until you ask"
+                    ? "Listen in — mic stays off until you ask"
                     : "Join the Group to enter live audio"
                 }
               >
                 <Radio className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">
-                  {live.status === "joining"
-                    ? "Joining…"
-                    : live.connectedCount > 0
-                      ? `Join audio · ${live.connectedCount} live`
-                      : "Join audio"}
+                  {live!.status === "joining" ? "Joining…" : `Live · ${live!.connectedCount}`}
                 </span>
-                {live.isLive ? (
-                  <span
-                    aria-hidden
-                    className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400"
-                  />
-                ) : null}
+                <span
+                  aria-hidden
+                  className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400"
+                />
               </Button>
-            ) : null}
-
+            )}
 
             <Button
               variant="ghost"
