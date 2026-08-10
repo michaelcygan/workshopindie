@@ -74,6 +74,21 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_milestones: {
+        Row: {
+          key: string
+          reached_at: string
+        }
+        Insert: {
+          key: string
+          reached_at?: string
+        }
+        Update: {
+          key?: string
+          reached_at?: string
+        }
+        Relationships: []
+      }
       blog_comment_votes: {
         Row: {
           comment_id: string
@@ -9255,6 +9270,10 @@ export type Database = {
         Args: { _choice_index: number; _poll_id: string }
         Returns: undefined
       }
+      check_admin_milestone: {
+        Args: { _count: number; _label: string; _metric: string }
+        Returns: undefined
+      }
       check_and_bump: {
         Args: { _action: string; _key: string; _max: number; _window_s: number }
         Returns: boolean
@@ -9490,6 +9509,15 @@ export type Database = {
         }[]
       }
       next_local_midnight_utc: { Args: { _tz: string }; Returns: string }
+      notify_admins: {
+        Args: {
+          _entity_id: string
+          _entity_type: string
+          _kind: string
+          _payload: Json
+        }
+        Returns: undefined
+      }
       object_host_claim: { Args: { _room_id: string }; Returns: undefined }
       open_workshop_on_collab: {
         Args: { _collab_post_id: string }
