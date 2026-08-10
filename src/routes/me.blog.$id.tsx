@@ -239,7 +239,7 @@ function MemberBlogEditorPage() {
   const generatedExcerpt = generateExcerpt(body);
   const effectiveExcerpt = excerpt.trim() || generatedExcerpt;
 
-  function PostActions() {
+  function PostActions({ post }: { post: NonNullable<typeof post> }) {
     return (
       <div className="flex min-w-0 items-center gap-2">
         {isPublished && (
