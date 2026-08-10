@@ -104,10 +104,12 @@ const TAB_VALUES = [
   "links",
   "posts",
   "events",
+  "resources",
   "members",
   "subgroups",
   "about",
 ] as const;
+
 type TabValue = (typeof TAB_VALUES)[number];
 
 export const Route = createFileRoute("/g/$slug/")({
