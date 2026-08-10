@@ -8,6 +8,7 @@
 import { useCallback, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { SharedLinksList, type SharedLinkMessage } from "@/components/shared-links-list";
 import { extractUrls, isBlockedUrl } from "@/lib/moderation/url-blocklist";
 
@@ -43,11 +44,14 @@ async function fetchTodayLinkRows(groupId: string): Promise<TodayLinkRow[]> {
  * How many links are actually collected right now. Shares the Links tab's
  * query, so the section bar badge costs nothing extra, and applies the same
  * blocklist the list renders with — the count never promises more than the
- * section shows.
+ * section shows. Today posts are readable by signed-in people only, so the
+ * read is skipped entirely when signed out.
  */
 export function useGroupLinkCount(groupId: string) {
+  const { user } = useAuth();
   const { data: rows = [] } = useQuery({
     queryKey: linksQueryKey(groupId),
+    enabled: !!user,
     staleTime: 30_000,
     queryFn: () => fetchTodayLinkRows(groupId),
   });
