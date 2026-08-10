@@ -524,6 +524,10 @@ function MemberBlogEditorPage() {
               placeholder="Defaults to the excerpt"
             />
           </div>
+
+          <div className="flex items-center justify-end border-t border-border pt-4">
+            <PostActions post={post} />
+          </div>
         </TabsContent>
       </Tabs>
 
