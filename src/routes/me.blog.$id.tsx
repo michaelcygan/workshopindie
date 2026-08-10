@@ -34,7 +34,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MAX_BLOG_ENTITY_TAGS } from "@/lib/blog-entity-tags";
 import { ArrowLeft, Loader2, MoreHorizontal } from "lucide-react";
-import { toBlogCategorySlug, type BlogCategorySlug } from "@/lib/blog-categories";
+import { blogCategorySlugForField, blogPostFields } from "@/lib/blog-categories";
+import type { FieldId } from "@/lib/taxonomy";
 
 export const Route = createFileRoute("/me/blog/$id")({
   head: () => ({
@@ -61,6 +62,7 @@ type EditorPost = {
   publication_type: "editorial" | "member";
   show_in_blog_index: boolean;
   category_slug: string | null;
+  fields: string[] | null;
   published_at: string | null;
   updated_at: string;
 };
@@ -96,7 +98,7 @@ function MemberBlogEditorPage() {
   const [seoTitle, setSeoTitle] = useState("");
   const [seoDesc, setSeoDesc] = useState("");
   const [listInBlog, setListInBlog] = useState(true);
-  const [categorySlug, setCategorySlug] = useState<BlogCategorySlug>("general");
+  const [fields, setFields] = useState<FieldId[]>(["other"]);
   const [dirty, setDirty] = useState(false);
   const [loadedForId, setLoadedForId] = useState<string | null>(null);
   const [entityTags, setEntityTags] = useState<BlogEntityTag[]>([]);
@@ -118,7 +120,8 @@ function MemberBlogEditorPage() {
     setSeoTitle(p.seo_title ?? "");
     setSeoDesc(p.seo_description ?? "");
     setListInBlog(p.show_in_blog_index !== false);
-    setCategorySlug(toBlogCategorySlug(p.category_slug));
+    const hydrated = blogPostFields(p.fields, p.category_slug);
+    setFields(hydrated.length > 0 ? hydrated : ["other"]);
     setEntityTags(post.entity_tags ?? []);
     setDirty(false);
     setLoadedForId(p.id);
@@ -144,7 +147,8 @@ function MemberBlogEditorPage() {
           seo_title: seoTitle || null,
           seo_description: seoDesc || null,
           show_in_blog_index: listInBlog,
-          category_slug: categorySlug,
+          category_slug: blogCategorySlugForField(fields[0]),
+          fields,
           tags: entityTags.map((t) => ({ kind: t.kind, id: t.id })),
           expected_updated_at: post?.post.updated_at,
         },
@@ -368,10 +372,10 @@ function MemberBlogEditorPage() {
 
           {/* "About this post" — the authoring twin of the public colophon. */}
           <BlogAboutEditor
-            categorySlug={categorySlug}
+            fields={fields}
             tags={entityTags}
             readOnly={readOnly}
-            onChangeCategory={(slug) => { setCategorySlug(slug); setDirty(true); }}
+            onChangeFields={(next) => { setFields(next.length ? next : ["other"]); setDirty(true); }}
             onChangeTags={(next) => { setEntityTags(next); setDirty(true); }}
           />
 
@@ -404,7 +408,7 @@ function MemberBlogEditorPage() {
               <BlogPostBody markdown={body} />
             </div>
             <BlogPostContext
-              context={deriveBlogPostContext({ categorySlug, tags: entityTags })}
+              context={deriveBlogPostContext({ categorySlug: blogCategorySlugForField(fields[0]), tags: entityTags })}
               className="mt-10"
             />
           </article>

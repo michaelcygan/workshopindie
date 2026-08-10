@@ -19,10 +19,10 @@ type AuthContext = {
 };
 
 const DASHBOARD_FIELDS =
-  "id,title,slug,excerpt,status,publication_type,show_in_blog_index,cover_image_url,published_at,updated_at,created_at,category_slug";
+  "id,title,slug,excerpt,status,publication_type,show_in_blog_index,cover_image_url,published_at,updated_at,created_at,category_slug,fields";
 
 const EDITOR_FIELDS =
-  "id,title,slug,excerpt,body_markdown,cover_image_url,cover_image_alt,seo_title,seo_description,status,publication_type,show_in_blog_index,published_at,updated_at,created_at,created_by,author_name,category_slug";
+  "id,title,slug,excerpt,body_markdown,cover_image_url,cover_image_alt,seo_title,seo_description,status,publication_type,show_in_blog_index,published_at,updated_at,created_at,created_by,author_name,category_slug,fields";
 
 // ---------- helpers ----------
 
@@ -292,6 +292,7 @@ type MemberUpdateInput = {
   seo_description?: string | null;
   show_in_blog_index?: boolean;
   category_slug?: BlogCategorySlug;
+  fields?: string[];
   expected_updated_at?: string;
   tags?: Array<{ kind: "work" | "collab" | "group" | "event" | "profile"; id: string }>;
 };
@@ -356,6 +357,19 @@ export async function updateMyBlogPostServer(
   // Allowlisted metadata: never moderated, never affects the article slug.
   if (input.category_slug !== undefined && isBlogCategorySlug(input.category_slug)) {
     patch.category_slug = input.category_slug;
+  }
+  // Canonical Fields are the source of truth; `category_slug` above is the
+  // derived legacy value that keeps /blog/c/<slug> URLs and RSS working.
+  if (input.fields !== undefined) {
+    const normalized: FieldId[] = [];
+    for (const f of input.fields.slice(0, 3)) {
+      const n = normalizeField(f);
+      if (!normalized.includes(n)) normalized.push(n);
+    }
+    patch.fields = normalized;
+    if (input.category_slug === undefined && normalized.length > 0) {
+      patch.category_slug = blogCategorySlugForField(normalized[0]);
+    }
   }
 
   // Slug editable only before first publish.
