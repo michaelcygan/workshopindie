@@ -22,6 +22,7 @@ type BlogWrite = {
   author_name: string;
   author_profile_username?: string | null;
   category_slug?: string;
+  fields?: string[];
 };
 
 function publicClient() {
