@@ -218,6 +218,46 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
       };
     }
     default:
+    case "admin_new_member": {
+      const who = (n.payload?.name as string) || "A new member";
+      const uname = (n.payload?.username as string) || "";
+      return { title: `${who} joined Workshop`, subtitle: uname ? `@${uname}` : "", href: uname ? `/${uname}` : "/admin/users" };
+    }
+    case "admin_blog_published": {
+      const t = (n.payload?.title as string) || "A blog post";
+      const slug = (n.payload?.slug as string) || "";
+      return {
+        title: `New blog post — ${t}`,
+        subtitle: (n.payload?.author as string) || "",
+        href: slug ? workshopEntityUrl({ kind: "blog", slug }) : "/blog",
+      };
+    }
+    case "admin_work_published": {
+      const t = (n.payload?.title as string) || "A Work";
+      const slug = (n.payload?.slug as string) || "";
+      const bits = [n.payload?.author as string | undefined, n.payload?.field as string | undefined].filter(Boolean).join(" · ");
+      return {
+        title: `New Work published — ${t}`,
+        subtitle: bits,
+        href: slug ? workshopEntityUrl({ kind: "work", slug }) : "/works",
+      };
+    }
+    case "admin_collab_posted": {
+      const t = (n.payload?.title as string) || "A collab";
+      const slug = (n.payload?.slug as string) || "";
+      const bits = [n.payload?.author as string | undefined, n.payload?.field as string | undefined].filter(Boolean).join(" · ");
+      return {
+        title: `New collab posted — ${t}`,
+        subtitle: bits,
+        href: slug ? workshopEntityUrl({ kind: "collab", slug }) : "/collab",
+      };
+    }
+    case "admin_milestone": {
+      const label = (n.payload?.label as string) || "milestone";
+      const threshold = (n.payload?.threshold as number) ?? 0;
+      return { title: `Milestone: ${threshold} ${label}`, subtitle: "Workshop just crossed a new line.", href: "/admin/growth" };
+    }
+    default:
       return { title: n.kind, subtitle: "", href: "/me" };
   }
 }
