@@ -48,7 +48,7 @@ export type EventLite = {
   title: string;
   tagline: string | null;
   kind: string;
-  creative_category: MediumGroupKey | null;
+  creative_category: string | null;
   format: "in_person" | "online" | "hybrid";
   cover_url: string | null;
   starts_at: string;
@@ -71,7 +71,7 @@ export type EventLite = {
 };
 
 export type DirectoryFilters = {
-  category: MediumGroupKey | null;
+  category: string | null;
   kind: string | null;
   format: AttendanceFilter;
   q: string;
@@ -177,7 +177,7 @@ export function GroupEventDirectory({
   );
 
   const matches = (e: EventLite) => {
-    if (filters.category && e.creative_category !== filters.category) return false;
+    if (filters.category && (!e.creative_category || normalizeField(e.creative_category) !== filters.category)) return false;
     if (filters.kind && e.kind !== filters.kind) return false;
     if (!matchesAttendance(e.format, filters.format)) return false;
     const needle = filters.q.trim().toLowerCase();
@@ -255,7 +255,7 @@ export function GroupEventDirectory({
             <FilterMenu
               label={
                 filters.category
-                  ? (mediumGroupByKey(filters.category)?.label ?? "All categories")
+                  ? categoryLabel(filters.category)
                   : "All categories"
               }
               active={!!filters.category}
@@ -264,7 +264,7 @@ export function GroupEventDirectory({
                 All categories
               </DropdownMenuItem>
               {availableCategories.map((m) => (
-                <DropdownMenuItem key={m.key} onClick={() => onFiltersChange({ category: m.key })}>
+                <DropdownMenuItem key={m.id} onClick={() => onFiltersChange({ category: m.id })}>
                   {m.label}
                 </DropdownMenuItem>
               ))}
@@ -461,7 +461,7 @@ export function EventCardLite({ ev }: { ev: EventLite }) {
   const isExternal = ev.source === "external" && !!ev.external_url;
   const isOnline = ev.format === "online" || ev.format === "hybrid";
   const locationLine = isOnline ? "Online" : (ev.venue_name ?? ev.venue_address ?? "TBA");
-  const category = mediumGroupByKey(ev.creative_category);
+  const category = ev.creative_category ? { label: categoryLabel(ev.creative_category) } : null;
 
   // Canonical destination only — outbound links live on the event page.
   return (
