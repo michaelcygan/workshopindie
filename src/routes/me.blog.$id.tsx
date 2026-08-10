@@ -254,7 +254,7 @@ function MemberBlogEditorPage() {
   const generatedExcerpt = generateExcerpt(body);
   const effectiveExcerpt = excerpt.trim() || generatedExcerpt;
 
-  function PostActions({ post }: { post: NonNullable<typeof post> }) {
+  function PostActions({ post }: { post: EditorPostPayload }) {
     return (
       <div className="flex min-w-0 items-center gap-2">
         {isPublished && (
