@@ -39,6 +39,7 @@ export type BlogEditorInitial = {
   seo_description?: string | null;
   author_name?: string;
   category_slug?: string | null;
+  fields?: string[] | null;
   author_profile?: { username: string | null } | null;
   status?: "draft" | "published";
   published_at?: string | null;
@@ -63,7 +64,12 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
   const [seoTitle, setSeoTitle] = useState(initial?.seo_title ?? "");
   const [seoDesc, setSeoDesc] = useState(initial?.seo_description ?? "");
   const [authorName, setAuthorName] = useState(initial?.author_name ?? "Workshop");
-  const [categorySlug, setCategorySlug] = useState<BlogCategorySlug>(toBlogCategorySlug(initial?.category_slug));
+  const [fields, setFields] = useState<FieldId[]>(
+    blogPostFields(initial?.fields, initial?.category_slug).length > 0
+      ? blogPostFields(initial?.fields, initial?.category_slug)
+      : ["other"],
+  );
+  const categorySlug: BlogCategorySlug = blogCategorySlugForField(fields[0]);
   const [authorProfileUsername, setAuthorProfileUsername] = useState(initial?.author_profile?.username ?? "");
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -206,6 +212,7 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
       author_name: authorName.trim() || "Workshop",
       author_profile_username: authorProfileUsername.trim().replace(/^@/, "") || null,
       category_slug: categorySlug,
+      fields,
     };
   }
 
@@ -483,9 +490,9 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
         {/* "About this post" — category + connections, above the body. */}
         <div className="mt-4">
           <BlogAboutEditor
-            categorySlug={categorySlug}
+            fields={fields}
             tags={entityTags}
-            onChangeCategory={(slug) => { setCategorySlug(slug); setDirty(true); }}
+            onChangeFields={(next) => { setFields(next.length ? next : ["other"]); setDirty(true); }}
             onChangeTags={(next) => {
               setEntityTags(next);
               setDirty(true);
