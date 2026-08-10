@@ -373,6 +373,34 @@ export function canonicalFilterValues(value: string): CanonicalCategory[] {
 // FIELD API — the vocabulary every primitive classifies subject area with.
 // ---------------------------------------------------------------------------
 
+/**
+ * Fields that have a system ("medium") Group, keyed by that Group's slug.
+ *
+ * The database resolves these through `groups.taxonomy_key` (see
+ * `medium_group_id`), which holds canonical Field ids — the `games-tech` slug
+ * is historical URL compatibility for the Software & AI group and is
+ * deliberately not renamed.
+ *
+ * Fields absent from this map (Design, Performance, Journalism & Media,
+ * Making & Engineering, Science & Research, Architecture & Cities,
+ * Environment & Nature) intentionally have no system Group: content in those
+ * Fields simply does not auto-file anywhere. We do not auto-create a Group per
+ * Field — empty system Groups are worse than none.
+ */
+export const SYSTEM_FIELD_GROUP_SLUGS: Partial<Record<FieldId, string>> = {
+  music: "music",
+  film_video: "film-video",
+  writing: "writing",
+  visual_art: "visual-art",
+  software_ai: "games-tech",
+};
+
+/** The system Group slug a stored/legacy/canonical value files into, if any. */
+export function systemGroupSlugForField(value: string | null | undefined): string | null {
+  return SYSTEM_FIELD_GROUP_SLUGS[normalizeField(value)] ?? null;
+}
+
+
 /** Any stored, legacy or canonical value in; a user-facing Field id out. */
 export function normalizeField(value: string | null | undefined): FieldId {
   const canonical = normalizeCategory(value);
