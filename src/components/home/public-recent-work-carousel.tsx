@@ -58,7 +58,7 @@ export function PublicRecentWorkCarousel({ works }: { works: PublicWorkTile[] })
                   />
                 </div>
                 <p className="mt-2.5 text-[11px] uppercase tracking-[0.1em] text-ink-muted">
-                  {CATEGORY_LABELS[w.category as Category] ?? w.category}
+                  {categoryLabel(w.category)}
                   {w.creditName ? ` · ${w.creditName}` : ""}
                 </p>
                 <h3 className="mt-1 font-display text-[16px] leading-snug text-ink transition-colors group-hover:text-primary">

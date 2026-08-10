@@ -804,7 +804,7 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs hover:bg-surface-2">
-                  {category === "all" ? "All" : (CATEGORY_LABELS[category] ?? "All")}
+                  {category === "all" ? "All" : (categoryLabel(category))}
                   <ChevronDown className="h-3 w-3" />
                 </button>
               </DropdownMenuTrigger>
@@ -1031,7 +1031,7 @@ function GroupCollabTab({ group }: { group: GroupRow }) {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs hover:bg-surface-2">
-                  {category === "all" ? "All" : (CATEGORY_LABELS[category] ?? "All")}
+                  {category === "all" ? "All" : (categoryLabel(category))}
                   <ChevronDown className="h-3 w-3" />
                 </button>
               </DropdownMenuTrigger>
@@ -1226,7 +1226,7 @@ function GroupMembersTab({ group }: { group: GroupRow }) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs hover:bg-surface-2">
-                {category === "all" ? "All crafts" : (CATEGORY_LABELS[category] ?? "All crafts")}
+                {category === "all" ? "All crafts" : (categoryLabel(category))}
                 <ChevronDown className="h-3 w-3" />
               </button>
             </DropdownMenuTrigger>

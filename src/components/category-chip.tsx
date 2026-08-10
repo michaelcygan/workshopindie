@@ -10,7 +10,7 @@ export function CategoryChip({
   className?: string;
   size?: "sm" | "md";
 }) {
-  const label = CATEGORY_LABELS[category] ?? category;
+  const label = categoryLabel(category)
   return (
     <span
       className={cn(

@@ -1410,7 +1410,7 @@ function PinBar({
                   {w.cover_url && (
                     <img src={w.cover_url} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
                   )}
-                  <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">{CATEGORY_LABELS[w.category] ?? "Work"}</span>
+                  <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">{categoryLabel(w.category)}</span>
                 </div>
                 <p className="line-clamp-2 font-display text-sm leading-snug text-ink md:text-base">{w.title}</p>
               </Link>
@@ -1596,7 +1596,7 @@ function CollabsTab({ items, isOwn, ownerName, isLoading }: { items: CollabRow[]
                   Collab
                 </div>
                 <div className="mt-1 font-display text-2xl leading-tight">
-                  {CATEGORY_LABELS[c.category] ?? c.category}
+                  {categoryLabel(c.category)}
                 </div>
               </div>
             </div>

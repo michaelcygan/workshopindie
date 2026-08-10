@@ -19,7 +19,7 @@ export function CategoryPlaceholder({
   size?: "tile" | "cover";
 }) {
   const label = category
-    ? ((CATEGORY_LABELS as Record<string, string>)[category] ?? category)
+    ? (categoryLabel(category))
     : "No cover";
 
   return (

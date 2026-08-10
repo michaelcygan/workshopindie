@@ -51,7 +51,7 @@ export function PublicOpenCollabs({ collabs }: { collabs: PublicCollabCall[] }) 
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] uppercase tracking-[0.1em] text-ink-muted">
                     <span className="text-destructive">Open</span>
                     <span aria-hidden>·</span>
-                    <span>{CATEGORY_LABELS[c.category as Category] ?? c.category}</span>
+                    <span>{categoryLabel(c.category)}</span>
                     <span aria-hidden>·</span>
                     <span>{c.locationLabel}</span>
                     {c.timeline ? (

@@ -20,8 +20,7 @@ import type { HomeCircleStory, MemberHomePayload } from "@/lib/home-types";
 
 function categoryLabel(id: string) {
   return (
-    (CATEGORY_LABELS as Record<string, string>)[id] ??
-    id.charAt(0).toUpperCase() + id.slice(1).replace(/_/g, " ")
+    categoryLabel(id)).toUpperCase() + id.slice(1).replace(/_/g, " ")
   );
 }
 
