@@ -18,7 +18,8 @@ import { CoverFramer, type CoverAspect, type CoverFocal } from "@/components/cov
 import { CoCreatorPicker, type CoCreator } from "@/components/cocreator-picker";
 
 import { extractWorkFromUrl, type ExtractedWork } from "@/lib/works-import.functions";
-import { WORK_SUBTYPES, type Category, type WorkCategory } from "@/lib/categories";
+import { isBookWork, normalizeField, type FieldId } from "@/lib/taxonomy";
+import { fieldWritePayload } from "@/lib/work-fields";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { usePlus, FREE_PUBLISHED_WORK_CAP } from "@/hooks/use-plus";
@@ -26,7 +27,8 @@ import { PlusGate } from "@/components/plus-gate";
 import { GroupPicker, usePreselectGroup, type PickerGroup } from "@/components/group-picker";
 import { tagWorkInGroup } from "@/lib/groups.functions";
 import { BookDetailsSection, emptyBookDetails, type BookDetails } from "@/components/book-details-section";
-import { CategoryMultiPicker } from "@/components/category-multi-picker";
+import { FieldPicker } from "@/components/field-picker";
+import { FormatInput } from "@/components/format-input";
 import { normalizeUrl, normalizeUrlOrKeep } from "@/lib/url-normalize";
 
 const newWorkSearch = z.object({
@@ -73,9 +75,9 @@ function NewWork() {
 
   // form state
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState<WorkCategory>("visual");
-  const [extraCategories, setExtraCategories] = useState<WorkCategory[]>([]);
-  const [subtype, setSubtype] = useState<string | null>(null);
+  const [field, setField] = useState<FieldId>("visual_art");
+  const [extraFields, setExtraFields] = useState<FieldId[]>([]);
+  const [format, setFormat] = useState<string | null>(null);
   const [excerpt, setExcerpt] = useState("");
   const [description, setDescription] = useState("");
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
@@ -113,7 +115,7 @@ function NewWork() {
   function applyExtracted(e: ExtractedWork) {
     setExtracted(e);
     setTitle(e.title ?? "");
-    if (e.suggested_category) setCategory(e.suggested_category as WorkCategory);
+    if (e.suggested_category) setField(normalizeField(e.suggested_category));
     setExcerpt(e.description ? e.description.slice(0, 180) : "");
     setDescription(e.description ?? "");
     setCoverUrl(e.cover_url ?? null);
@@ -156,7 +158,7 @@ function NewWork() {
     if (!title.trim()) return toast.error("Give it a title.");
     if (!ownsRights) return toast.error("Confirm this is your work, or you have the rights to share it.");
 
-    const isBook = category === "writing_book";
+    const isBook = isBookWork(null, format);
     let bookFields: Record<string, unknown> = {};
     if (isBook) {
       const cleanLinks = book.buyLinks
@@ -200,9 +202,8 @@ function NewWork() {
       .insert({
         title: title.trim(),
         slug: "",
-        category: category as Category,
-        categories: [category, ...extraCategories.filter((c) => c !== category)] as Category[],
-        subtype: subtype,
+        ...fieldWritePayload(field, extraFields),
+        subtype: format,
         excerpt: excerpt || null,
         description: description || null,
         cover_url: coverUrl,
@@ -284,10 +285,10 @@ function NewWork() {
       setExtracted(null);
       setTitle(""); setExcerpt(""); setDescription("");
       setCoverUrl(null); setPrimaryUrl(""); setEmbedUrl(null);
-      setProvider(null); setSubtype(null); setOwnsRights(false);
+      setProvider(null); setFormat(null); setOwnsRights(false);
       setCoCreators([]); setDetailsOpen(false);
       setCoverAspect("portrait"); setCoverFocal({ x: 50, y: 50 });
-      setExtraCategories([]);
+      setExtraFields([]);
 
       setBook(emptyBookDetails);
       setUrlInput("");
@@ -297,8 +298,6 @@ function NewWork() {
       navigate({ to: "/works/$slug", params: { slug: work.slug } });
     }
   }
-
-  const subtypeOptions = WORK_SUBTYPES[category] ?? [];
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10 md:py-14">
@@ -389,38 +388,19 @@ function NewWork() {
             />
           </section>
 
-          <section className="space-y-2">
-            <CategoryMultiPicker
-              primary={category}
-              onPrimaryChange={(next) => setCategory(next)}
-              extras={extraCategories}
-              onExtrasChange={setExtraCategories}
-              onPrimaryReset={() => setSubtype(null)}
+          <section className="space-y-4">
+            <FieldPicker
+              primary={field}
+              onPrimaryChange={setField}
+              extras={extraFields}
+              onExtrasChange={setExtraFields}
+              onPrimaryReset={() => setFormat(null)}
             />
-            {subtypeOptions.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {subtypeOptions.map((s) => (
-                  <button
-                    type="button"
-                    key={s}
-                    onClick={() => setSubtype(subtype === s ? null : s)}
-                    className={cn(
-                      "rounded-full border px-2.5 py-1 text-xs transition",
-                      subtype === s
-                        ? "border-ink bg-ink text-background"
-                        : "border-border bg-background text-ink-soft hover:bg-muted",
-                    )}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            )}
-            <p className="text-xs text-ink-muted">Subtype is optional — helps people find your work.</p>
+            <FormatInput fields={[field, ...extraFields]} value={format} onChange={setFormat} />
           </section>
 
-          {/* Book details — only when Book category is selected */}
-          {category === "writing_book" && (
+          {/* Book details — only when the Format is a book */}
+          {isBookWork(null, format) && (
             <BookDetailsSection value={book} onChange={setBook} />
           )}
 
