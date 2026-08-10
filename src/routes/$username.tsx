@@ -161,7 +161,7 @@ type Profile = {
 async function fetchProfile(username: string) {
   const { data: sessionData } = await supabase.auth.getSession();
   const isAuthed = !!sessionData.session;
-  const baseCols = "id,username,display_name,avatar_url,cover_url,bio,headline,artist_statement,categories,mediums,tools,languages,external_links,instagram_handle,follower_count,following_count,work_count,worked_with_count,creator_status,pinned_work_ids,aliases,city:cities!profiles_city_id_fkey(name,country,slug),home_city:cities!profiles_home_city_id_fkey(name,country,slug),cover_work:works!profiles_cover_work_id_fkey(slug,status,visibility)";
+  const baseCols = "id,username,display_name,avatar_url,cover_url,bio,headline,artist_statement,categories,categories_canonical,mediums,tools,languages,external_links,instagram_handle,follower_count,following_count,work_count,worked_with_count,creator_status,pinned_work_ids,aliases,city:cities!profiles_city_id_fkey(name,country,slug),home_city:cities!profiles_home_city_id_fkey(name,country,slug),cover_work:works!profiles_cover_work_id_fkey(slug,status,visibility)";
   const cols = isAuthed ? baseCols.replace(",aliases,", ",aliases,alias_urls,") : baseCols;
   const { data, error } = await supabase
     .from("profiles")
