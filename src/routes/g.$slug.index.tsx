@@ -309,6 +309,9 @@ function GroupPage() {
   let viewTab: Tab = tab;
   if (tab === "posts" && !groupBlogLoading && !hasBlogPosts) viewTab = "today";
   if (tab === "resources" && !resourcesLoading && !hasResources) viewTab = "today";
+  // Members is a signed-in-only directory; stale deep links fall back to Today.
+  if (tab === "members" && !user) viewTab = "today";
+
 
 
   // Full child-group payload — only fetched when the Subgroups tab is opened.
