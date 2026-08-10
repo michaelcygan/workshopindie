@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { BookMarked, Calendar, ChevronDown, FileText, Info, LayoutGrid, Megaphone, Sparkles, Sun, Users } from "lucide-react";
+import { BookMarked, Calendar, ChevronDown, FileText, Info, LayoutGrid, Link2, Megaphone, Sparkles, Sun, Users } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,11 +41,21 @@ export function GroupTabBar({
   isAuthed,
   showPosts = true,
   showResources = false,
+  showLinks = false,
+  todayUnread = 0,
 }: {
   tab: GroupTab;
   setTab: (t: GroupTab) => void;
   slug?: string;
-  counts: { collab: number; work: number; members: number };
+  counts: {
+    collab: number;
+    work: number;
+    members: number;
+    events: number;
+    posts: number;
+    resources: number;
+    links: number;
+  };
   childCount: number;
   /** Members is a signed-in-only directory. */
   isAuthed: boolean;
@@ -53,6 +63,10 @@ export function GroupTabBar({
   showPosts?: boolean;
   /** Hide the Resources tab entirely until the Group has published resources. */
   showResources?: boolean;
+  /** Links is a projection of Today; it only appears once links exist. */
+  showLinks?: boolean;
+  /** Unseen Today messages for this visitor; 0 hides the dot. */
+  todayUnread?: number;
 }) {
   // One ordered spine: Today · Collabs · Events · Gallery · Blog · Members ·
   // Resources, then the two secondary sections. Omitted sections never
@@ -60,16 +74,19 @@ export function GroupTabBar({
   const items: Item[] = [
     { id: "today", label: "Today", hint: "What's happening right now", icon: Sun, count: null },
     { id: "collab", label: "Collabs", hint: "Who needs people", icon: Megaphone, count: counts.collab },
-    { id: "events", label: "Events", hint: "Where to go", icon: Calendar, count: null },
+    { id: "events", label: "Events", hint: "Where to go", icon: Calendar, count: counts.events },
     { id: "work", label: "Gallery", hint: "What the scene makes", icon: LayoutGrid, count: counts.work },
     ...(showPosts
-      ? [{ id: "posts" as const, label: "Blog", hint: "What the scene writes", icon: FileText, count: null }]
+      ? [{ id: "posts" as const, label: "Blog", hint: "What the scene writes", icon: FileText, count: counts.posts }]
       : []),
     ...(isAuthed
       ? [{ id: "members" as const, label: "Members", hint: "Who is in the room", icon: Users, count: counts.members }]
       : []),
     ...(showResources
-      ? [{ id: "resources" as const, label: "Resources", hint: "Places, services, organizations", icon: BookMarked, count: null }]
+      ? [{ id: "resources" as const, label: "Resources", hint: "Places, services, organizations", icon: BookMarked, count: counts.resources }]
+      : []),
+    ...(showLinks
+      ? [{ id: "links" as const, label: "Links", hint: "What the room is sharing", icon: Link2, count: counts.links }]
       : []),
     { id: "about", label: "About", hint: "What this Group is", icon: Info, count: null },
     ...(childCount > 0
@@ -120,6 +137,14 @@ export function GroupTabBar({
                 {t.label}
                 {t.count !== null && t.count > 0 && (
                   <span className="text-[11px] text-ink-muted/80">{t.count}</span>
+                )}
+                {t.id === "today" && todayUnread > 0 && (
+                  <span
+                    aria-label={`${todayUnread} new message${todayUnread === 1 ? "" : "s"}`}
+                    className="grid h-4 min-w-4 place-items-center rounded-full bg-signal px-1 text-[10px] font-semibold leading-none text-signal-foreground"
+                  >
+                    {todayUnread > 9 ? "9+" : todayUnread}
+                  </span>
                 )}
               </button>
             );

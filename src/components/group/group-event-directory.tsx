@@ -123,6 +123,17 @@ export function useGroupDirectoryEvents(groupId: string) {
   });
 }
 
+/**
+ * Count of still-current events for the section bar. Shares the directory
+ * query, so the badge is free once either surface has loaded, and uses the
+ * same series collapsing — a weekly night counts once.
+ */
+export function useGroupUpcomingEventCount(groupId: string) {
+  const { data = [] } = useGroupDirectoryEvents(groupId);
+  const now = Date.now();
+  return data.filter((e) => effectiveEndMs(e) >= now).length;
+}
+
 export function directoryHeading(group: DirectoryGroup): string {
   return group.kind === "city" ? `Independent events in ${group.name}` : `Events in ${group.name}`;
 }
