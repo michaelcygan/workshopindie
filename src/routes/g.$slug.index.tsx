@@ -1,4 +1,4 @@
-import { NON_PUBLIC_STATUSES, RECRUITING_DEADLINE_OR } from "@/lib/collab/query";
+import { NON_PUBLIC_STATUSES, RECRUITING_DEADLINE_OR, publicCollabs } from "@/lib/collab/query";
 import { createFileRoute, Link, notFound, useNavigate, useRouter } from "@tanstack/react-router";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
@@ -20,6 +20,7 @@ import {
   type DirectoryFilters,
 } from "@/components/group/group-event-directory";
 import { useAuth } from "@/hooks/use-auth";
+import { useBlockedIds } from "@/hooks/use-blocked-ids";
 import { Button } from "@/components/ui/button";
 import { JoinGroupButton, useIsMemberOfGroup } from "@/components/join-group-button";
 import { GroupSeedJoinPrompt } from "@/components/group-seed-join-prompt";
@@ -762,22 +763,23 @@ type WorkRow = {
   cover_url: string | null;
   category: Category | null;
   published_at: string | null;
+  created_by?: string | null;
   author: WorkAuthor | null;
 };
 
 function GroupWorkTab({ group }: { group: GroupRow }) {
-  const [sort, setSort] = useState<"recent" | "trending">("recent");
   const [category, setCategory] = useState<Category | "all">("all");
   const [searchOpen, setSearchOpen] = useState(false);
   const [q, setQ] = useState("");
+  const { ids: blockedIds } = useBlockedIds();
 
-  const { data: works = [], isLoading } = useQuery({
+  const { data: allWorks = [], isLoading } = useQuery({
     queryKey: ["group", group.id, "works"],
     queryFn: async (): Promise<WorkRow[]> => {
       const { data } = await supabase
         .from("group_works")
         .select(
-          "work:works(id,title,slug,cover_url,category,published_at, author:profiles!works_created_by_fkey(username,display_name,avatar_url))",
+          "work:works(id,title,slug,cover_url,category,published_at,created_by, author:profiles!works_created_by_fkey(username,display_name,avatar_url))",
         )
         .eq("group_id", group.id)
         .limit(48);
@@ -790,31 +792,23 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
     },
   });
 
+  // Blocked in either direction: neither party sees the other's Work here.
+  const works = allWorks.filter((w) => !w.created_by || !blockedIds.has(w.created_by));
+
   const availableCategories = Array.from(
     new Set(works.map((w) => w.category).filter((c): c is Category => !!c)),
   );
 
+  // Newest first; "Trending" was a relabeled recency sort, so it's gone.
   const filtered = (() => {
     const query = q.trim().toLowerCase();
     let list = query ? works.filter((w) => w.title.toLowerCase().includes(query)) : works.slice();
     if (category !== "all") list = list.filter((w) => w.category === category);
-    const now = Date.now();
-    if (sort === "trending") {
-      list.sort((a, b) => {
-        const ap = a.published_at ? Date.parse(a.published_at) : 0;
-        const bp = b.published_at ? Date.parse(b.published_at) : 0;
-        const aRecent = now - ap < 30 * 24 * 60 * 60 * 1000 ? 1 : 0;
-        const bRecent = now - bp < 30 * 24 * 60 * 60 * 1000 ? 1 : 0;
-        if (aRecent !== bRecent) return bRecent - aRecent;
-        return bp - ap;
-      });
-    } else {
-      list.sort((a, b) => {
-        const ap = a.published_at ? Date.parse(a.published_at) : 0;
-        const bp = b.published_at ? Date.parse(b.published_at) : 0;
-        return bp - ap;
-      });
-    }
+    list.sort((a, b) => {
+      const ap = a.published_at ? Date.parse(a.published_at) : 0;
+      const bp = b.published_at ? Date.parse(b.published_at) : 0;
+      return bp - ap;
+    });
     return list;
   })();
 
@@ -842,18 +836,6 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs hover:bg-surface-2">
-                {sort === "trending" ? "Trending" : "Recent"}
-                <ChevronDown className="h-3 w-3" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-36">
-              <DropdownMenuItem onClick={() => setSort("recent")}>Recent</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSort("trending")}>Trending</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
 
           {searchOpen ? (
             <div className="flex items-center gap-1">
@@ -1000,6 +982,7 @@ type CollabRow = {
   location_mode?: string | null;
   compensation_type?: string | null;
   timeline_text?: string | null;
+  user_id?: string | null;
   roles?: { role_name: string; quantity: number; sort_order: number }[] | null;
 };
 
@@ -1021,25 +1004,27 @@ function GroupCollabTab({ group }: { group: GroupRow }) {
   const [status, setStatus] = useState<"open" | "completed" | "all">("open");
   const [q, setQ] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const { ids: blockedIds } = useBlockedIds();
 
-  const { data: rows = [], isLoading } = useQuery({
+  const { data: allRows = [], isLoading } = useQuery({
     queryKey: ["group", group.id, "collabs"],
     queryFn: async (): Promise<CollabRow[]> => {
-      const { data } = await supabase
-        .from("group_collabs")
-        .select(
-          "collab:collab_posts(id,title,slug,description,status,resulting_work_id,category,location_mode,compensation_type,timeline_text,roles:collab_roles(role_name,quantity,sort_order))",
-        )
-        .eq("group_id", group.id)
-        .limit(48);
-      return (
-        (data ?? [])
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .map((r: any) => r.collab)
-          .filter((c: CollabRow | null) => !!c) as CollabRow[]
-      );
+      // Canonical discovery filters (shared with the global Collab board) so a
+      // Group never surfaces drafts, removed, or archived posts.
+      const { data } = await publicCollabs(
+        supabase
+          .from("collab_posts")
+          .select(
+            "id,title,slug,description,status,resulting_work_id,category,location_mode,compensation_type,timeline_text,user_id,roles:collab_roles(role_name,quantity,sort_order),group_collabs!inner(group_id)",
+          )
+          .eq("group_collabs.group_id", group.id),
+      ).limit(48);
+      return (data ?? []) as unknown as CollabRow[];
     },
   });
+
+  const rows = allRows.filter((c) => !c.user_id || !blockedIds.has(c.user_id));
+
 
   const availableCategories = Array.from(
     new Set(rows.map((r) => r.category).filter((c): c is Category => !!c)),
@@ -1238,8 +1223,9 @@ function GroupMembersTab({ group }: { group: GroupRow }) {
   const [category, setCategory] = useState<Category | "all">("all");
   const [q, setQ] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const { ids: blockedIds } = useBlockedIds();
 
-  const { data: members = [], isLoading } = useQuery({
+  const { data: allMembers = [], isLoading } = useQuery({
     queryKey: ["group", group.id, "members"],
     queryFn: async () => {
       const { data: gm } = await supabase
@@ -1262,6 +1248,8 @@ function GroupMembersTab({ group }: { group: GroupRow }) {
       }[];
     },
   });
+
+  const members = allMembers.filter((m) => !blockedIds.has(m.id));
 
   const availableCategories = Array.from(
     new Set(
