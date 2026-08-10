@@ -30,7 +30,7 @@ import {
   ATTENDANCE_OPTIONS,
   type AttendanceFilter,
 } from "@/lib/events/kinds";
-import { MEDIUM_GROUPS, mediumGroupByKey, type MediumGroupKey } from "@/lib/medium-groups";
+import { FIELD_OPTIONS, categoryLabel, normalizeField } from "@/lib/taxonomy";
 import { useEventsRealtime } from "@/hooks/use-events-realtime";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -172,8 +172,8 @@ export function GroupEventDirectory({
 
   // Only offer filters the Group's own dataset can actually satisfy.
   const availableKinds = Array.from(new Set(all.map((e) => e.kind).filter(Boolean)));
-  const availableCategories = MEDIUM_GROUPS.filter((m) =>
-    all.some((e) => e.creative_category === m.key),
+  const availableCategories = FIELD_OPTIONS.filter((f) =>
+    all.some((e) => e.creative_category && normalizeField(e.creative_category) === f.id),
   );
 
   const matches = (e: EventLite) => {

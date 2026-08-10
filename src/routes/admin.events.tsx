@@ -367,7 +367,7 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
               </Select>
             </div>
             <div>
-              <Label>Creative category</Label>
+              <Label>Field</Label>
               <Select
                 value={form.creative_category || "none"}
                 onValueChange={(v) => setForm({ ...form, creative_category: v === "none" ? "" : (v as FieldId) })}
@@ -376,7 +376,7 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
                 <SelectContent>
                   <SelectItem value="none">None</SelectItem>
                   {FIELD_OPTIONS.map((m) => (
-                    <SelectItem key={m.key} value={m.key}>{m.label}</SelectItem>
+                    <SelectItem key={m.id} value={m.id}>{m.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
