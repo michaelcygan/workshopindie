@@ -47,22 +47,37 @@ export function GroupNextEvent({ group }: Props) {
   const { data: events = [], isLoading } = useQuery({
     queryKey: ["group", group.id, "upcoming-events"],
     queryFn: async (): Promise<EventRow[]> => {
+      // Every Event connected to this Group, not just the ones whose primary
+      // group_id is this Group.
+      const { data: links, error: linkErr } = await supabase
+        .from("event_groups")
+        .select("event_id")
+        .eq("group_id", group.id);
+      if (linkErr) throw linkErr;
+      const ids = Array.from(new Set((links ?? []).map((l) => l.event_id as string)));
+      if (ids.length === 0) return [];
+
       const { data, error } = await applyCurrentWindow(
         applyDiscoverable(
           supabase
             .from("group_events")
-            .select("id,slug,title,starts_at,ends_at,series_key,venue_name,going_count,cover_url")
-            .eq("group_id", group.id),
+            .select("id,slug,title,starts_at,ends_at,series_key,venue_name,going_count,cover_url,timezone")
+            .in("id", ids),
         ),
       )
         .order("starts_at", { ascending: true })
-        .limit(6);
+        .limit(12);
       if (error) throw error;
-      return collapseSeries<EventRow>((data ?? []) as EventRow[]).slice(0, 3);
+      const seen = new Set<string>();
+      const rows = ((data ?? []) as EventRow[]).filter((r) =>
+        seen.has(r.id) ? false : (seen.add(r.id), true),
+      );
+      return collapseSeries<EventRow>(rows).slice(0, 3);
     },
     staleTime: 60_000,
     refetchInterval: 5 * 60_000,
   });
+
 
   return (
     <section className="rounded-xl border border-border bg-surface p-4">
