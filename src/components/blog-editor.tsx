@@ -20,6 +20,7 @@ import { BlogEntityTagPicker } from "@/components/blog-entity-tag-picker";
 import { entityMarkdown, tagKey, invalidateEntityTagCaches, type BlogEntityTag } from "@/lib/blog-entity-tags";
 import { blogCategorySlugForField, blogPostFields, type BlogCategorySlug } from "@/lib/blog-categories";
 import { fieldLabel, type FieldId } from "@/lib/taxonomy";
+import { toBlogStoryType, type BlogStoryType } from "@/lib/blog-story-types";
 import { CategoryPlaceholder } from "@/components/home/category-placeholder";
 
 import { BlogPostContext } from "@/components/blog-post-context";
@@ -41,6 +42,7 @@ export type BlogEditorInitial = {
   author_name?: string;
   category_slug?: string | null;
   fields?: string[] | null;
+  story_type?: string | null;
   author_profile?: { username: string | null } | null;
   status?: "draft" | "published";
   published_at?: string | null;
@@ -70,6 +72,7 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
       ? blogPostFields(initial?.fields, initial?.category_slug)
       : ["other"],
   );
+  const [storyType, setStoryType] = useState<BlogStoryType | null>(toBlogStoryType(initial?.story_type));
   const categorySlug: BlogCategorySlug = blogCategorySlugForField(fields[0]);
   const [authorProfileUsername, setAuthorProfileUsername] = useState(initial?.author_profile?.username ?? "");
   const [saving, setSaving] = useState(false);
@@ -214,6 +217,7 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
       author_profile_username: authorProfileUsername.trim().replace(/^@/, "") || null,
       category_slug: categorySlug,
       fields,
+      story_type: storyType,
     };
   }
 
@@ -492,6 +496,8 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
         <div className="mt-4">
           <BlogAboutEditor
             fields={fields}
+            storyType={storyType}
+            onChangeStoryType={(next) => { setStoryType(next); setDirty(true); }}
             tags={entityTags}
             onChangeFields={(next) => { setFields(next.length ? next : ["other"]); setDirty(true); }}
             onChangeTags={(next) => {

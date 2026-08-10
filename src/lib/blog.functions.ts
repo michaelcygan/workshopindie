@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { BLOG_CATEGORY_SLUGS } from "@/lib/blog-categories";
 import { FIELD_IDS } from "@/lib/taxonomy";
+import { BLOG_STORY_TYPE_IDS } from "@/lib/blog-story-types";
 
 export const listPublishedPosts = createServerFn({ method: "GET" }).handler(async () => {
   const { blogPublicCacheHeader, listPublishedPostsServer } = await import("./blog.server");
@@ -145,6 +146,7 @@ export const adminCreateDraft = createServerFn({ method: "POST" })
         author_profile_username: z.string().trim().max(80).nullable().optional(),
         category_slug: z.enum(BLOG_CATEGORY_SLUGS).default("general"),
         fields: z.array(z.enum(FIELD_IDS)).max(3).optional(),
+        story_type: z.enum(BLOG_STORY_TYPE_IDS).nullable().optional(),
       })
       .parse(d),
   )
@@ -177,6 +179,7 @@ export const adminUpdatePost = createServerFn({ method: "POST" })
         author_profile_username: z.string().trim().max(80).nullable().optional(),
         category_slug: z.enum(BLOG_CATEGORY_SLUGS).default("general"),
         fields: z.array(z.enum(FIELD_IDS)).max(3).optional(),
+        story_type: z.enum(BLOG_STORY_TYPE_IDS).nullable().optional(),
       })
       .parse(d),
   )
