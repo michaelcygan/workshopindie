@@ -253,7 +253,7 @@ export function GroupsDirectory({
           {tab !== "city" && (
             <div className="flex items-center gap-1.5">
               <span className="sr-only" id="category-label">
-                Category
+                Field
               </span>
               <Select value={category} onValueChange={(v) => onChange({ category: v })}>
                 <SelectTrigger
@@ -263,7 +263,7 @@ export function GroupsDirectory({
                     category !== "all" && "border-ink bg-ink text-background",
                   )}
                 >
-                  <SelectValue placeholder="Category" />
+                  <SelectValue placeholder="Field" />
                 </SelectTrigger>
                 <SelectContent align="end">
                   {categoryOptions.map(({ id, count }) => (

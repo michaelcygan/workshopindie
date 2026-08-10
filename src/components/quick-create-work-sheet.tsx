@@ -164,7 +164,7 @@ export function QuickCreateWorkSheet({
                     <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
-                <p className="mt-1 text-[11px] text-ink-muted">Sets the Fields shown on this post.</p>
+                <p className="mt-1 text-[11px] text-ink-muted">A hint for how this Work is presented.</p>
               </div>
             </div>
 
