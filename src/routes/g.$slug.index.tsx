@@ -877,7 +877,7 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
       </div>
 
       {isLoading ? (
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="h-44 animate-pulse rounded-2xl bg-surface-2" />
           ))}
@@ -908,7 +908,7 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
           </button>
         </div>
       ) : (
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
           {filtered.map((w) => {
             const author = w.author;
             const authorName = author?.display_name || author?.username || "";
@@ -920,7 +920,7 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
                 params={{ slug: w.slug }}
                 className="group relative rounded-2xl border border-border bg-surface transition hover:-translate-y-0.5 hover:shadow-lift"
               >
-                <div className="relative h-32 w-full overflow-hidden rounded-t-2xl isolate transform-gpu">
+                <div className="relative aspect-[4/3] w-full overflow-hidden rounded-t-2xl isolate transform-gpu sm:aspect-auto sm:h-32">
                   <div
                     className={cn(
                       "absolute inset-0 transition-transform duration-300 will-change-transform group-hover:scale-[1.03]",
