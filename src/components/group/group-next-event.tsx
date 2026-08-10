@@ -18,19 +18,30 @@ type EventRow = {
   cover_url: string | null;
   ends_at?: string | null;
   series_key?: string | null;
+  timezone?: string | null;
 };
 
-function formatWhen(iso: string): { day: string; time: string; relative: string } {
+/** Format in the Event's own timezone — a local scene shows local time. */
+function formatWhen(
+  iso: string,
+  timeZone?: string | null,
+): { day: string; time: string; relative: string } {
   const d = new Date(iso);
-  const day = d.toLocaleDateString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
-  const time = d.toLocaleTimeString(undefined, {
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  const tz = timeZone || undefined;
+  let day: string;
+  let time: string;
+  try {
+    day = d.toLocaleDateString(undefined, {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      timeZone: tz,
+    });
+    time = d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", timeZone: tz });
+  } catch {
+    day = d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+    time = d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  }
   const diffMs = d.getTime() - Date.now();
   const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
   let relative = "";
@@ -42,6 +53,7 @@ function formatWhen(iso: string): { day: string; time: string; relative: string 
   else relative = `in ${Math.round(diffDays / 30)} mo`;
   return { day, time, relative };
 }
+
 
 export function GroupNextEvent({ group }: Props) {
   const { data: events = [], isLoading } = useQuery({
