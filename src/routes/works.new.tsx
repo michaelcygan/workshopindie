@@ -30,6 +30,8 @@ import { BookDetailsSection, emptyBookDetails, type BookDetails } from "@/compon
 import { FieldPicker } from "@/components/field-picker";
 import { FormatInput } from "@/components/format-input";
 import { normalizeUrl, normalizeUrlOrKeep } from "@/lib/url-normalize";
+import { WorkComposerWalkthrough } from "@/components/nudges/work-composer-walkthrough";
+
 
 const newWorkSearch = z.object({
   import: z.string().optional(),
@@ -537,6 +539,8 @@ function NewWork() {
         onOpenChange={setPlusGate}
         reason="work_limit"
       />
+      <WorkComposerWalkthrough />
+
     </main>
   );
 }
