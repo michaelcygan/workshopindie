@@ -8,11 +8,14 @@
  * working. Database triggers only *fill* the canonical columns when the app
  * does not supply them, so what we write here is what is stored.
  */
+import type { Database } from "@/integrations/supabase/types";
 import { fieldToLegacyEnum, fieldsForStoredValues, normalizeField, type FieldId } from "@/lib/taxonomy";
 
+type LegacyCategory = Database["public"]["Enums"]["category"];
+
 export type FieldWritePayload = {
-  category: string;
-  categories: string[];
+  category: LegacyCategory;
+  categories: LegacyCategory[];
   category_canonical: FieldId;
   categories_canonical: FieldId[];
 };
@@ -25,13 +28,13 @@ export function fieldWritePayload(primary: string, extras: readonly string[] = [
     const f = normalizeField(e);
     if (!fields.includes(f)) fields.push(f);
   }
-  const legacy: string[] = [];
+  const legacy: LegacyCategory[] = [];
   for (const f of fields) {
-    const l = fieldToLegacyEnum(f);
+    const l = fieldToLegacyEnum(f) as LegacyCategory;
     if (!legacy.includes(l)) legacy.push(l);
   }
   return {
-    category: fieldToLegacyEnum(primaryField),
+    category: fieldToLegacyEnum(primaryField) as LegacyCategory,
     categories: legacy,
     category_canonical: primaryField,
     categories_canonical: fields,
