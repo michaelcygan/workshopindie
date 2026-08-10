@@ -12,10 +12,8 @@ import { listHomeWorkStories } from "@/lib/home.functions";
 import { HOME_STORY_LABEL_TEXT, type HomeWorkStory } from "@/lib/home-types";
 import { categoryLabel } from "@/lib/taxonomy";
 
-function categoryLabel(id: string) {
-  return (
-    categoryLabel(id)).toUpperCase() + id.slice(1).replace(/_/g, " ")
-  );
+function fieldLabelText(id: string) {
+  return categoryLabel(id);
 }
 
 function StoryCard({ item, onPeek }: { item: HomeWorkStory; onPeek: (slug: string) => void }) {

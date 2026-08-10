@@ -18,10 +18,8 @@ import { getMemberHome } from "@/lib/home.functions";
 import { categoryLabel } from "@/lib/taxonomy";
 import type { HomeCircleStory, MemberHomePayload } from "@/lib/home-types";
 
-function categoryLabel(id: string) {
-  return (
-    categoryLabel(id)).toUpperCase() + id.slice(1).replace(/_/g, " ")
-  );
+function fieldLabelText(id: string) {
+  return categoryLabel(id);
 }
 
 /* ──────────────────────────── Circles ──────────────────────────── */
