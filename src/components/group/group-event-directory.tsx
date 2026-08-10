@@ -30,7 +30,7 @@ import {
   ATTENDANCE_OPTIONS,
   type AttendanceFilter,
 } from "@/lib/events/kinds";
-import { FIELD_OPTIONS, categoryLabel, normalizeField } from "@/lib/taxonomy";
+import { FIELD_OPTIONS, categoryLabel, normalizeField, subcategoryLabel } from "@/lib/taxonomy";
 import { useEventsRealtime } from "@/hooks/use-events-realtime";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -506,6 +506,7 @@ export function EventCardLite({ ev }: { ev: EventLite }) {
         <div className="text-[11px] text-ink-muted/80">
           {eventKindLabel(ev.kind)}
           {category ? ` · ${category.label}` : ""}
+          {specialization ? ` · ${specialization}` : ""}
         </div>
         <div className="mt-auto flex items-center justify-between pt-1 text-[11px]">
           <span className="text-ink-muted">
