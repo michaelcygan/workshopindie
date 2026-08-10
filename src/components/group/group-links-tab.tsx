@@ -66,15 +66,18 @@ export function useGroupLinkCount(groupId: string) {
 
 export function GroupLinksTab({ group }: { group: { id: string; name: string } }) {
   const qc = useQueryClient();
+  const { user } = useAuth();
   const queryKey = linksQueryKey(group.id);
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey,
+    enabled: !!user,
     staleTime: 30_000,
     queryFn: () => fetchTodayLinkRows(group.id),
   });
 
   useEffect(() => {
+    if (!user) return;
     const ch = supabase
       .channel(`group-links:${group.id}`)
       .on(
@@ -92,7 +95,7 @@ export function GroupLinksTab({ group }: { group: { id: string; name: string } }
       supabase.removeChannel(ch);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [group.id, qc]);
+  }, [group.id, qc, user]);
 
   const resolveSenderName = useCallback(
     (userId: string) => {
