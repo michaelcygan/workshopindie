@@ -11,6 +11,8 @@ import type { Database } from "@/integrations/supabase/types";
 import { moderateFields } from "@/lib/moderation/service.server";
 import { resolveEffectivePlusAccess } from "@/lib/plus-access.server";
 import { FREE_PUBLISHED_WORK_CAP } from "@/lib/entitlements";
+import { fieldWritePayload } from "@/lib/work-fields";
+import { normalizeField } from "@/lib/taxonomy";
 
 type AuthContext = {
   supabase: SupabaseClient<Database>;
@@ -59,8 +61,7 @@ export async function createQuickWorkServer(
     .insert({
       title,
       slug: "",
-      category: input.category as Database["public"]["Enums"]["category"],
-      categories: [input.category] as Database["public"]["Enums"]["category"][],
+      ...fieldWritePayload(input.category),
       subtype: input.subtype,
       primary_url: input.primary_url,
       source_type: "manual",
@@ -70,7 +71,7 @@ export async function createQuickWorkServer(
       visibility: "public",
       created_by: context.userId,
     })
-    .select("id,slug,title,category,subtype")
+    .select("id,slug,title,category,category_canonical,subtype")
     .single();
 
   if (error || !work) throw new Error(error?.message ?? "Could not create that Work.");
@@ -87,7 +88,7 @@ export async function createQuickWorkServer(
     id: work.id,
     slug: work.slug,
     title: work.title,
-    category: work.category as string,
+    category: (work.category_canonical as string | null) ?? normalizeField(work.category),
     subtype: (work.subtype as string | null) ?? null,
   };
 }

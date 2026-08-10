@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { PlusGate } from "@/components/plus-gate";
 import { createQuickWork } from "@/lib/works-quick.functions";
 import { WORK_LIMIT_ERROR } from "@/lib/works-quick.shared";
-import { WORK_CATEGORIES, WORK_SUBTYPES, type WorkCategory } from "@/lib/categories";
+import { FIELD_OPTIONS, fieldLabel, formatSuggestionsFor, type FieldId } from "@/lib/taxonomy";
 import { normalizeUrlOrKeep, normalizeUrl } from "@/lib/url-normalize";
 import type { BlogEntityTag } from "@/lib/blog-entity-tags";
 
@@ -36,7 +36,7 @@ export function QuickCreateWorkSheet({
 }) {
   const create = useServerFn(createQuickWork);
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState<WorkCategory>("visual");
+  const [category, setCategory] = useState<FieldId>("visual_art");
   const [subtype, setSubtype] = useState<string>("");
   const [url, setUrl] = useState("");
   const [ownsRights, setOwnsRights] = useState(false);
@@ -44,7 +44,7 @@ export function QuickCreateWorkSheet({
 
   function reset() {
     setTitle("");
-    setCategory("visual");
+    setCategory("visual_art");
     setSubtype("");
     setUrl("");
     setOwnsRights(false);
@@ -70,7 +70,7 @@ export function QuickCreateWorkSheet({
         id: w.id,
         slug: w.slug,
         label: w.title,
-        sublabel: w.subtype || (w.category ? w.category.charAt(0).toUpperCase() + w.category.slice(1) : null),
+        sublabel: w.subtype || (w.category ? fieldLabel(w.category) : null),
         image: null,
         work: {
           excerpt: null,
@@ -97,7 +97,7 @@ export function QuickCreateWorkSheet({
     },
   });
 
-  const subtypeOptions = WORK_SUBTYPES[category] ?? [];
+  const subtypeOptions = formatSuggestionsFor([category]);
   const canSubmit = title.trim().length > 0 && ownsRights && !mut.isPending;
 
   return (
@@ -136,15 +136,15 @@ export function QuickCreateWorkSheet({
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <label className="text-xs font-medium uppercase tracking-wider text-ink-muted" htmlFor="qw-category">
-                  Category
+                  Field
                 </label>
                 <select
                   id="qw-category"
                   value={category}
-                  onChange={(e) => { setCategory(e.target.value as WorkCategory); setSubtype(""); }}
+                  onChange={(e) => { setCategory(e.target.value as FieldId); setSubtype(""); }}
                   className="mt-1 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-ink focus:border-primary focus:outline-none"
                 >
-                  {WORK_CATEGORIES.map((c) => (
+                  {FIELD_OPTIONS.map((c) => (
                     <option key={c.id} value={c.id}>{c.label}</option>
                   ))}
                 </select>
@@ -164,7 +164,7 @@ export function QuickCreateWorkSheet({
                     <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
-                <p className="mt-1 text-[11px] text-ink-muted">Sets the Mediums shown on this post.</p>
+                <p className="mt-1 text-[11px] text-ink-muted">Sets the Fields shown on this post.</p>
               </div>
             </div>
 
