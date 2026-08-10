@@ -299,16 +299,25 @@ function ApplyPodcastPage() {
           <Field
             label="Tell us about your process"
             required
-            hint="How do you actually make things? What does a working day look like, and what do you keep running into?"
+            hint="How do you actually make things? What does a working day look like, and what do you keep running into? A few sentences is plenty — at least 40 characters."
           >
             <Textarea
+              id="podcast-process"
               value={processDescription}
               onChange={(e) => setProcessDescription(e.target.value)}
               required
               rows={5}
               maxLength={4000}
+              aria-invalid={processTooShort || undefined}
             />
+            {processTooShort && (
+              <span className="mt-1 block text-xs text-ink-muted">
+                {PROCESS_MIN - processLength} more character
+                {PROCESS_MIN - processLength === 1 ? "" : "s"} to go.
+              </span>
+            )}
           </Field>
+
 
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="What are you working on right now">
