@@ -15,15 +15,8 @@ import { BlogRail } from "@/components/home/blog-rail";
 import { GroupNewsTicker } from "@/components/group/group-news-ticker";
 
 import { getMemberHome } from "@/lib/home.functions";
-import { CATEGORY_LABELS } from "@/lib/categories";
+import { categoryLabel } from "@/lib/taxonomy";
 import type { HomeCircleStory, MemberHomePayload } from "@/lib/home-types";
-
-function categoryLabel(id: string) {
-  return (
-    (CATEGORY_LABELS as Record<string, string>)[id] ??
-    id.charAt(0).toUpperCase() + id.slice(1).replace(/_/g, " ")
-  );
-}
 
 /* ──────────────────────────── Circles ──────────────────────────── */
 

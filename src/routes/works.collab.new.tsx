@@ -119,7 +119,7 @@ function NewCollaborativeWork() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Category</Label>
+              <Label>Field</Label>
               <Select value={category} onValueChange={(v) => setCategory(v as typeof CATEGORIES[number])}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>

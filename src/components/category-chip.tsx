@@ -1,4 +1,5 @@
-import { CATEGORY_LABELS, categoryClass, type Category } from "@/lib/categories";
+import { categoryClass, type Category } from "@/lib/categories";
+import { categoryLabel } from "@/lib/taxonomy";
 import { cn } from "@/lib/utils";
 
 export function CategoryChip({
@@ -10,7 +11,7 @@ export function CategoryChip({
   className?: string;
   size?: "sm" | "md";
 }) {
-  const label = CATEGORY_LABELS[category] ?? category;
+  const label = categoryLabel(category)
   return (
     <span
       className={cn(

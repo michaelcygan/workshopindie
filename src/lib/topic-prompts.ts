@@ -25,7 +25,7 @@ export const SUB_MEDIUMS: { id: Category; label: string }[] = [
   { id: "film", label: "Film" },
   { id: "music", label: "Music" },
   { id: "writing", label: "Writing" },
-  { id: "build", label: "Build" },
+  { id: "build", label: "Software & AI" },
   { id: "visual", label: "Visual" },
 ];
 

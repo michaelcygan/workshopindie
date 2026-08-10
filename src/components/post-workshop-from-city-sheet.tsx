@@ -255,7 +255,7 @@ export function PostWorkshopFromCitySheet({ open, onOpenChange, city, isAdmin, o
 
           {/* Category */}
           <section className="space-y-1.5">
-            <Label>Category</Label>
+            <Label>Field</Label>
             <div className="flex flex-wrap gap-1.5">
               {CATEGORIES.map((c) => (
                 <button type="button" key={c.id} onClick={() => setCategory(c.id)}

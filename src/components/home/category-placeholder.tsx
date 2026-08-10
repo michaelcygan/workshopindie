@@ -1,4 +1,5 @@
-import { CATEGORY_LABELS, type Category } from "@/lib/categories";
+import type { Category } from "@/lib/categories";
+import { categoryLabel } from "@/lib/taxonomy";
 import { cn } from "@/lib/utils";
 
 /**
@@ -19,7 +20,7 @@ export function CategoryPlaceholder({
   size?: "tile" | "cover";
 }) {
   const label = category
-    ? ((CATEGORY_LABELS as Record<string, string>)[category] ?? category)
+    ? (categoryLabel(category))
     : "No cover";
 
   return (

@@ -1,4 +1,5 @@
-import { CATEGORY_LABELS, categoryClass, type Category } from "@/lib/categories";
+import { categoryClass, type Category } from "@/lib/categories";
+import { categoryLabel } from "@/lib/taxonomy";
 import { cn } from "@/lib/utils";
 import { CategoryChip } from "./category-chip";
 
@@ -38,9 +39,9 @@ export function CategoryChips({
             size === "sm" ? "px-2 py-0.5 text-xs" : "px-2.5 py-1 text-sm",
             "border-border bg-surface text-ink-soft",
           )}
-          title={`Also tagged ${CATEGORY_LABELS[c] ?? c}`}
+          title={`Also tagged ${categoryLabel(c)}`}
         >
-          {CATEGORY_LABELS[c] ?? c}
+          {categoryLabel(c)}
         </span>
       ))}
     </span>
@@ -71,7 +72,7 @@ export function CategoryChipsCompact({
             size === "sm" ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-0.5 text-xs",
           )}
           title={`Also tagged ${extras
-            .map((c) => CATEGORY_LABELS[c] ?? c)
+            .map((c) => categoryLabel(c))
             .join(", ")}`}
         >
           +{extraCount}

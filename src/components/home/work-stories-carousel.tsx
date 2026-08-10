@@ -10,14 +10,7 @@ import { CategoryPlaceholder } from "@/components/home/category-placeholder";
 
 import { listHomeWorkStories } from "@/lib/home.functions";
 import { HOME_STORY_LABEL_TEXT, type HomeWorkStory } from "@/lib/home-types";
-import { CATEGORY_LABELS } from "@/lib/categories";
-
-function categoryLabel(id: string) {
-  return (
-    (CATEGORY_LABELS as Record<string, string>)[id] ??
-    id.charAt(0).toUpperCase() + id.slice(1).replace(/_/g, " ")
-  );
-}
+import { categoryLabel } from "@/lib/taxonomy";
 
 function StoryCard({ item, onPeek }: { item: HomeWorkStory; onPeek: (slug: string) => void }) {
   const w = item.work;

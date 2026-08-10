@@ -71,7 +71,7 @@ export const BLOG_CATEGORIES: readonly BlogCategory[] = [
   },
   {
     slug: "games-tech",
-    label: "Games & Tech",
+    label: "Software & AI",
     description: "Games, software, and hardware built by small independent teams.",
     canonical: "games_tech",
   },

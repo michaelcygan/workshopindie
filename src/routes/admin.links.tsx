@@ -107,7 +107,7 @@ function AdminLinks() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="wl-cat">Category</Label>
+                <Label htmlFor="wl-cat">Field</Label>
                 <select
                   id="wl-cat"
                   value={category}

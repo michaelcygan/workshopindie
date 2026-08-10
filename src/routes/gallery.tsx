@@ -7,8 +7,8 @@ import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { WorkCard, type WorkCardData } from "@/components/work-card";
-import { CANONICAL_WORK_CATEGORIES, type Category } from "@/lib/categories";
-import { canonicalFilterValues, normalizeCategory } from "@/lib/taxonomy";
+import type { Category } from "@/lib/categories";
+import { FIELD_FILTER_OPTIONS, canonicalFilterValues, normalizeCategory } from "@/lib/taxonomy";
 import { CategoryScroller } from "@/components/category-scroller";
 import { GalleryCityFilter, type CityOption } from "@/components/gallery-city-filter";
 import { Button } from "@/components/ui/button";
@@ -365,7 +365,7 @@ function GalleryPage() {
 
   const categoryTabs: { id: string; label: string }[] = [
     { id: "all", label: "All" },
-    ...CANONICAL_WORK_CATEGORIES.map((c) => ({ id: c.id as string, label: c.label })),
+    ...FIELD_FILTER_OPTIONS.map((c) => ({ id: c.id as string, label: c.label })),
   ];
 
   const filtersActive =

@@ -12,8 +12,7 @@ import { CollabCard, type CollabCardData } from "@/components/collab-card";
 import { CategoryScroller } from "@/components/category-scroller";
 import { CityCombobox } from "@/components/city-combobox";
 
-import { CANONICAL_WORK_CATEGORIES } from "@/lib/categories";
-import { canonicalFilterValues, normalizeCategory } from "@/lib/taxonomy";
+import { FIELD_FILTER_OPTIONS, canonicalFilterValues, normalizeCategory } from "@/lib/taxonomy";
 
 /** Category filter value: a canonical category id, or "all". */
 type CatFilter = string;
@@ -157,7 +156,7 @@ function CollabPage() {
   const tabs = useMemo(
     () => [
       { id: "all" as const, label: "All" },
-      ...CANONICAL_WORK_CATEGORIES.map((c) => ({ id: c.id as string, label: c.label })),
+      ...FIELD_FILTER_OPTIONS.map((c) => ({ id: c.id as string, label: c.label })),
     ],
     [],
   );

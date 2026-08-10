@@ -11,7 +11,8 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { CATEGORY_LABELS, type Category } from "@/lib/categories";
+import type { Category } from "@/lib/categories";
+import { categoryLabel } from "@/lib/taxonomy";
 import { supabase } from "@/integrations/supabase/client";
 import { DISCOVERABLE_STATUSES, collapseSeries, effectiveEndMs } from "@/lib/events/filters";
 import {
@@ -767,7 +768,7 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
   });
 
   const availableCategories = Array.from(
-    new Set(works.map((w) => w.category).filter((c): c is Category => !!c && !!CATEGORY_LABELS[c])),
+    new Set(works.map((w) => w.category).filter((c): c is Category => !!c)),
   );
 
   const filtered = (() => {
@@ -804,7 +805,7 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs hover:bg-surface-2">
-                  {category === "all" ? "All" : (CATEGORY_LABELS[category] ?? "All")}
+                  {category === "all" ? "All" : (categoryLabel(category))}
                   <ChevronDown className="h-3 w-3" />
                 </button>
               </DropdownMenuTrigger>
@@ -812,7 +813,7 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
                 <DropdownMenuItem onClick={() => setCategory("all")}>All</DropdownMenuItem>
                 {availableCategories.map((c) => (
                   <DropdownMenuItem key={c} onClick={() => setCategory(c)}>
-                    {CATEGORY_LABELS[c]}
+                    {categoryLabel(c)}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
@@ -926,12 +927,12 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
                     )}
                     style={w.cover_url ? { backgroundImage: `url(${w.cover_url})` } : undefined}
                   />
-                  {w.category && CATEGORY_LABELS[w.category] && (
+                  {w.category && (
                     <span
                       aria-hidden
                       className="absolute right-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur"
                     >
-                      {CATEGORY_LABELS[w.category]}
+                      {categoryLabel(w.category)}
                     </span>
                   )}
                 </div>
@@ -999,7 +1000,7 @@ function GroupCollabTab({ group }: { group: GroupRow }) {
   });
 
   const availableCategories = Array.from(
-    new Set(rows.map((r) => r.category).filter((c): c is Category => !!c && !!CATEGORY_LABELS[c])),
+    new Set(rows.map((r) => r.category).filter((c): c is Category => !!c)),
   );
 
   const filtered = rows.filter((c) => {
@@ -1031,7 +1032,7 @@ function GroupCollabTab({ group }: { group: GroupRow }) {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs hover:bg-surface-2">
-                  {category === "all" ? "All" : (CATEGORY_LABELS[category] ?? "All")}
+                  {category === "all" ? "All" : (categoryLabel(category))}
                   <ChevronDown className="h-3 w-3" />
                 </button>
               </DropdownMenuTrigger>
@@ -1039,7 +1040,7 @@ function GroupCollabTab({ group }: { group: GroupRow }) {
                 <DropdownMenuItem onClick={() => setCategory("all")}>All</DropdownMenuItem>
                 {availableCategories.map((c) => (
                   <DropdownMenuItem key={c} onClick={() => setCategory(c)}>
-                    {CATEGORY_LABELS[c]}
+                    {categoryLabel(c)}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
@@ -1191,7 +1192,7 @@ function GroupMembersTab({ group }: { group: GroupRow }) {
     new Set(
       members
         .flatMap((m) => m.categories ?? [])
-        .filter((c): c is Category => !!c && !!CATEGORY_LABELS[c]),
+        .filter((c): c is Category => !!c),
     ),
   );
 
@@ -1226,7 +1227,7 @@ function GroupMembersTab({ group }: { group: GroupRow }) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs hover:bg-surface-2">
-                {category === "all" ? "All crafts" : (CATEGORY_LABELS[category] ?? "All crafts")}
+                {category === "all" ? "All crafts" : (categoryLabel(category))}
                 <ChevronDown className="h-3 w-3" />
               </button>
             </DropdownMenuTrigger>
@@ -1234,7 +1235,7 @@ function GroupMembersTab({ group }: { group: GroupRow }) {
               <DropdownMenuItem onClick={() => setCategory("all")}>All crafts</DropdownMenuItem>
               {availableCategories.map((c) => (
                 <DropdownMenuItem key={c} onClick={() => setCategory(c)}>
-                  {CATEGORY_LABELS[c]}
+                  {categoryLabel(c)}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
