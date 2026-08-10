@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import type { Category } from "@/lib/categories";
 import { categoryLabel } from "@/lib/taxonomy";
 import { supabase } from "@/integrations/supabase/client";
-import { DISCOVERABLE_STATUSES, collapseSeries, effectiveEndMs } from "@/lib/events/filters";
+
 import {
   GroupEventDirectory,
   type DirectoryFilters,
