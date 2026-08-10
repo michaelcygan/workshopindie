@@ -2,6 +2,8 @@ import { Link } from "@tanstack/react-router";
 
 import type { BlogListItem } from "@/components/blog-featured-carousel";
 import type { PublicBlogCard } from "@/lib/home-types";
+import { formatShortDate } from "@/lib/format-date";
+
 
 /** Loader rows (snake_case) → the shape the homepage editorial sections read. */
 export function toBlogCard(p: BlogListItem): PublicBlogCard {
