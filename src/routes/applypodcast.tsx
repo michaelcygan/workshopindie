@@ -23,6 +23,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { submitPodcastApplication } from "@/lib/podcast.functions";
 
 const CANONICAL = "https://workshopindie.com/applypodcast";
+const PROCESS_MIN = 40;
 const DESCRIPTION =
   "Workshop Independent is a podcast about how independent creative people actually work. Tell us about your process and apply to be a guest.";
 
@@ -105,11 +106,25 @@ function ApplyPodcastPage() {
     ? [location.name, location.sublabel].filter(Boolean).join(", ")
     : "";
 
+  const processLength = processDescription.trim().length;
+  const processTooShort = processLength > 0 && processLength < PROCESS_MIN;
+
+  function focusProcess() {
+    const el = document.getElementById("podcast-process");
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    (el as HTMLTextAreaElement | null)?.focus({ preventScroll: true });
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
     if (!field) {
       toast.error("Please choose a field.");
+      return;
+    }
+    if (processDescription.trim().length < PROCESS_MIN) {
+      toast.error("Tell us a little more about how you work — a few sentences is plenty.");
+      focusProcess();
       return;
     }
     setBusy(true);
@@ -284,16 +299,25 @@ function ApplyPodcastPage() {
           <Field
             label="Tell us about your process"
             required
-            hint="How do you actually make things? What does a working day look like, and what do you keep running into?"
+            hint="How do you actually make things? What does a working day look like, and what do you keep running into? A few sentences is plenty — at least 40 characters."
           >
             <Textarea
+              id="podcast-process"
               value={processDescription}
               onChange={(e) => setProcessDescription(e.target.value)}
               required
               rows={5}
               maxLength={4000}
+              aria-invalid={processTooShort || undefined}
             />
+            {processTooShort && (
+              <span className="mt-1 block text-xs text-ink-muted">
+                {PROCESS_MIN - processLength} more character
+                {PROCESS_MIN - processLength === 1 ? "" : "s"} to go.
+              </span>
+            )}
           </Field>
+
 
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="What are you working on right now">
@@ -328,7 +352,12 @@ function ApplyPodcastPage() {
           </div>
 
           <div className="space-y-2.5 border-t border-border/70 pt-4">
-            {!user && (
+            {user ? (
+              <p className="text-sm text-ink-muted">
+                Applying while signed in — this application will be linked to your Workshop
+                account.
+              </p>
+            ) : (
               <label className="flex items-start gap-3 text-sm text-ink-soft">
                 <Checkbox
                   checked={wantsAccount}
@@ -352,8 +381,9 @@ function ApplyPodcastPage() {
             <Button type="submit" size="lg" disabled={busy}>
               {busy ? "Sending…" : "Submit application"}
             </Button>
-            <p className="text-sm text-ink-muted">No account needed.</p>
+            {!user && <p className="text-sm text-ink-muted">No account needed.</p>}
           </div>
+
         </form>
       )}
 
