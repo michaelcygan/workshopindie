@@ -1,25 +1,37 @@
-# Group Resources v1 — verification pass
+# Chicago Resources Seed (40 entries)
 
-Resources v1 is already implemented and matches the spec. This plan covers the one thing still unverified: live behavior with real data.
+Pure data seeding into the existing Resources system. No schema changes, no new UI, no new categories.
 
-## What I confirmed by inspection
+## Verified current state
 
-- Tables `resources` (15 columns) and `group_resources` (5 columns) exist, with public read policies for published resources, admin-only write policies, and correct table permissions for anonymous, signed-in, and service roles.
-- One resource can attach to many groups through the join table, with `display_order` for ordering — reusable for a future directory.
-- The Resources tab is spliced into the group tab bar only when `showResources` is true, and that flag comes from a live count of published resources attached to the group. The same tab bar drives desktop and mobile, so behavior is consistent.
-- Deep-linking `?t=resources` on a group with no resources silently falls back to Today.
-- Admin screen at `/admin/resources` supports create, edit, publish toggle, delete, attach/detach to groups, and reorder; it is linked from the admin nav.
-- No standalone directory route or nav item exists.
-- Currently there are zero resource rows in the database, so no group shows the tab — existing groups are visually unchanged, as intended.
+- Chicago city Group exists and is unique: slug `chicago`, kind `city`, linked to the Chicago city record.
+- `resources` and `group_resources` are both currently empty (0 rows), so nothing existing can be disturbed.
+- The Resources tab already appears automatically once a Group has at least one published attached resource.
 
-## What still needs verifying
+## What gets seeded
 
-Because there is no resource data yet, the appear/disappear behavior has never actually run. Steps:
+All 40 supplied records, exactly as given: existing category IDs only, `location_text` = "Chicago", `image_url` = null, `fields` = `[]`, `is_published` = true, addresses as supplied (null for Chicago Mastering Service and ArtBuilds), and `city_id` set to the existing Chicago city record.
 
-1. Create one published test resource through the admin screen and attach it to a test group.
-2. Load that group page signed out, on desktop and mobile widths: confirm the Resources tab appears, the list renders name, category, useful-for, description, location, and an external website link, and that sparse rows collapse gracefully.
-3. Unpublish the resource, reload: confirm the tab disappears and `?t=resources` falls back to Today.
-4. Attach the same resource to a second group to confirm multi-group attachment.
-5. Delete the test resource so no seeded data is left behind.
+Each is then attached to the Chicago city Group with the supplied `display_order` 0–39.
 
-Any defect found in these steps gets fixed in the same pass. If all steps pass, no code changes are needed.
+## Idempotency
+
+The seed runs as a single data statement set that can be re-run safely:
+
+- Resources are matched first on canonical `website_url`, falling back to a normalized (lowercased, trimmed) name match. A match updates the row in place; no match inserts a new one.
+- Group links are inserted only where a `(group_id, resource_id)` pair does not already exist, so re-running never duplicates a relationship and never removes links to other Groups.
+- No unique constraint is added; matching is done in the seed statement itself.
+- Nothing is deleted, and unrelated resources are untouched.
+
+## Technical notes
+
+- Delivered through the data-change (insert/update) path, not a schema migration, since no structure changes.
+- Chicago Group and city IDs are resolved by `slug = 'chicago'` lookups inside the statement rather than hardcoded UUIDs.
+- Category values are taken from `RESOURCE_CATEGORY_IDS` in `src/lib/resources/types.ts`; no new IDs.
+
+## Verification after seeding
+
+- Query counts: exactly 40 resources, 40 Chicago links, no duplicates; re-run the seed and confirm counts are unchanged.
+- Load the Chicago Group in a browser (desktop and mobile widths): Resources tab present, list renders in `display_order`, sparse records (ArtBuilds, Chicago Mastering Service) render without an address and without errors, website links point at the canonical URLs.
+- Load a Group with no resources and confirm the tab is still absent with no empty state.
+- Confirm `/admin/resources` lists and searches the seeded records and shows Chicago as the attached Group.
