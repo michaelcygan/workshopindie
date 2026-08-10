@@ -147,10 +147,19 @@ export const FIELD_OPTIONS: readonly FieldOption[] = FIELD_IDS.map((id) => {
 export const isFieldId = (value: unknown): value is FieldId =>
   typeof value === "string" && FIELD_ID_SET.has(value);
 
+/**
+ * Field options for discovery filters (Gallery, Collabs, directories).
+ * "Other" is deliberately excluded — it is a fallback, not a thing to browse.
+ */
+export const FIELD_FILTER_OPTIONS: readonly FieldOption[] = FIELD_OPTIONS.filter(
+  (o) => o.id !== "other",
+);
+
 /** Canonical categories a Work or Collab can be published under. */
 export const WORK_CANONICAL_IDS = FIELD_IDS.filter(
   (id) => id !== "other",
 ) as readonly FieldId[] as readonly CanonicalCategory[];
+
 
 /** Every value the `group_category` enum can hold, in display order. */
 export const GROUP_CATEGORY_IDS = [
