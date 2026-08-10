@@ -200,25 +200,54 @@ export const submitPodcastApplication = createServerFn({ method: "POST" })
       });
     }
 
-    const { error } = await supabaseAdmin.from("podcast_applications").insert({
-      user_id: userId,
-      name: data.name,
-      email: data.email,
-      field: data.field,
-      specialization: data.specialization,
-      portfolio_url: portfolioUrl,
-      social_handle: data.socialHandle,
-      city: data.city,
-      city_id: data.cityId,
-      workshop_username: parseWorkshopUsername(data.workshopUrl),
-      wants_account: !!data.wantsAccount,
-      process_description: data.processDescription,
-      current_work: data.currentWork,
-      conversation_topics: data.conversationTopics,
-      marketing_opt_in: !!data.marketingOptIn,
-    });
+    const { data: inserted, error } = await supabaseAdmin
+      .from("podcast_applications")
+      .insert({
+        user_id: userId,
+        name: data.name,
+        email: data.email,
+        field: data.field,
+        specialization: data.specialization,
+        portfolio_url: portfolioUrl,
+        social_handle: data.socialHandle,
+        city: data.city,
+        city_id: data.cityId,
+        workshop_username: parseWorkshopUsername(data.workshopUrl),
+        wants_account: !!data.wantsAccount,
+        process_description: data.processDescription,
+        current_work: data.currentWork,
+        conversation_topics: data.conversationTopics,
+        marketing_opt_in: !!data.marketingOptIn,
+      })
+      .select("id")
+      .maybeSingle();
 
     if (error) throw new Error(error.message);
+
+    // Ping every admin in the bell. Never let this break the submission.
+    try {
+      const { data: admins } = await supabaseAdmin
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "admin");
+      const recipientIds = (admins ?? []).map((a) => a.user_id as string);
+      if (recipientIds.length) {
+        const { notifyMany } = await import("@/lib/notifications/deliver.server");
+        await notifyMany({
+          recipientIds,
+          actorUserId: null,
+          kind: "podcast_application_new",
+          entityType: "podcast_application",
+          entityId: inserted?.id ?? null,
+          payload: { name: data.name, field: data.field, city: data.city },
+          dedupeWindowS: 0,
+          allowSelf: true,
+        });
+      }
+    } catch (err) {
+      console.error("[podcast] admin notify failed", err);
+    }
+
 
     if (data.marketingOptIn) {
       const { upsertNewsletterSubscriber } = await import("@/lib/newsletter.server");
