@@ -378,15 +378,14 @@ function GroupPage() {
         )}
 
         <div className="space-y-2">
-          <GroupHero group={group} nextEvent={nextEvent} />
-
-          <GroupNewsTicker slug={group.slug} />
+          <GroupHero group={group} />
 
           <div className="px-4 md:px-6">
             <GroupTabBar
               tab={viewTab}
               setTab={setTab}
               slug={group.slug}
+              isAuthed={!!user}
               counts={{
                 collab: group.collab_count,
                 work: group.work_count,
@@ -396,6 +395,7 @@ function GroupPage() {
               showPosts={groupBlogLoading || hasBlogPosts}
               showResources={hasResources}
             />
+
 
             <div className="mt-5">
               {viewTab === "today" && <GroupTodayTab group={group} />}
