@@ -2789,6 +2789,45 @@ export type Database = {
           },
         ]
       }
+      group_resources: {
+        Row: {
+          created_at: string
+          display_order: number
+          group_id: string
+          id: string
+          resource_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          group_id: string
+          id?: string
+          resource_id: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          group_id?: string
+          id?: string
+          resource_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_resources_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_resources_resource_id_fkey"
+            columns: ["resource_id"]
+            isOneToOne: false
+            referencedRelation: "resources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_seed_links: {
         Row: {
           click_count: number
@@ -5644,6 +5683,82 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "vw_user_activation"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      resources: {
+        Row: {
+          address: string | null
+          category: string | null
+          city_id: string | null
+          created_at: string
+          created_by: string | null
+          fields: string[]
+          id: string
+          image_url: string | null
+          is_published: boolean
+          location_text: string | null
+          name: string
+          short_description: string | null
+          updated_at: string
+          useful_for: string | null
+          website_url: string | null
+        }
+        Insert: {
+          address?: string | null
+          category?: string | null
+          city_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          fields?: string[]
+          id?: string
+          image_url?: string | null
+          is_published?: boolean
+          location_text?: string | null
+          name: string
+          short_description?: string | null
+          updated_at?: string
+          useful_for?: string | null
+          website_url?: string | null
+        }
+        Update: {
+          address?: string | null
+          category?: string | null
+          city_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          fields?: string[]
+          id?: string
+          image_url?: string | null
+          is_published?: boolean
+          location_text?: string | null
+          name?: string
+          short_description?: string | null
+          updated_at?: string
+          useful_for?: string | null
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resources_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resources_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "resources_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
+            referencedColumns: ["city_id"]
           },
         ]
       }
