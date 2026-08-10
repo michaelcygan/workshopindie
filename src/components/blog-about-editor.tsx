@@ -21,6 +21,7 @@ import { deriveBlogPostContext } from "@/lib/blog-post-context";
 import { blogCategorySlugForField } from "@/lib/blog-categories";
 import { FieldPicker } from "@/components/field-picker";
 import { fieldClass, fieldLabel, type FieldId } from "@/lib/taxonomy";
+import { BLOG_STORY_TYPES, type BlogStoryType } from "@/lib/blog-story-types";
 
 const KIND_ICONS: Record<BlogEntityKind, typeof Briefcase> = {
   work: Briefcase,
@@ -54,6 +55,8 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
  */
 export function BlogAboutEditor({
   fields,
+  storyType,
+  onChangeStoryType,
   tags,
   readOnly,
   onChangeFields,
@@ -62,6 +65,9 @@ export function BlogAboutEditor({
 }: {
   /** Canonical Fields, primary first. Never empty — default `["other"]`. */
   fields: FieldId[];
+  /** Editorial kind of piece. Optional and independent of Fields. */
+  storyType: BlogStoryType | null;
+  onChangeStoryType: (next: BlogStoryType | null) => void;
   tags: BlogEntityTag[];
   readOnly?: boolean;
   onChangeFields: (next: FieldId[]) => void;
@@ -206,6 +212,33 @@ export function BlogAboutEditor({
       </p>
 
       <div className="mt-2 divide-y divide-border border-t border-border">
+        <Row label="Type">
+          <div className="flex flex-wrap gap-2">
+            {BLOG_STORY_TYPES.map((t) => {
+              const active = t.id === storyType;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  disabled={readOnly}
+                  aria-pressed={active}
+                  onClick={() => onChangeStoryType(active ? null : t.id)}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
+                    active
+                      ? "border-ink bg-ink text-surface"
+                      : "border-border bg-background text-ink-soft hover:border-ink/40"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-1.5 text-[11px] text-ink-muted">
+            What kind of piece this is. Optional — separate from the field it is about.
+          </p>
+        </Row>
+
         <Row label={fields.length === 1 ? "Field" : "Fields"}>
           {readOnly ? (
             <div className="flex flex-wrap gap-2">
