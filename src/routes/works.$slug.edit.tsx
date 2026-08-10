@@ -13,10 +13,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { ImageUpload } from "@/components/image-upload";
 import { WorkAssetsEditor } from "@/components/work/work-assets-editor";
 import { FieldPicker } from "@/components/field-picker";
+import { SubcategoryPicker } from "@/components/subcategory-picker";
 import { FormatInput } from "@/components/format-input";
 import { BookDetailsSection, emptyBookDetails, type BookDetails } from "@/components/book-details-section";
 import { isBookWork, type FieldId } from "@/lib/taxonomy";
-import { fieldWritePayload, rowFields } from "@/lib/work-fields";
+import { fieldWritePayload, rowFields, rowSubcategory } from "@/lib/work-fields";
 import {
   Select,
   SelectContent,
@@ -65,6 +66,7 @@ function EditWork() {
   const [field, setField] = useState<FieldId>("visual_art");
   const [extraFields, setExtraFields] = useState<FieldId[]>([]);
   const [format, setFormat] = useState<string | null>(null);
+  const [subcategory, setSubcategory] = useState<string | null>(null);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [primaryUrl, setPrimaryUrl] = useState("");
   const [embedUrl, setEmbedUrl] = useState("");
@@ -81,6 +83,7 @@ function EditWork() {
     const [primaryField, ...restFields] = rowFields(work);
     setField(primaryField);
     setExtraFields(restFields);
+    setSubcategory(rowSubcategory(work as { subcategories?: string[] | null }, primaryField));
     // "Book" was a category before it was a Format — carry old rows across.
     setFormat(work.subtype ?? (work.category === "writing_book" ? "Book" : null));
     setCoverUrl(work.cover_url ?? null);
@@ -147,7 +150,7 @@ function EditWork() {
       .from("works")
       .update({
         title: title.trim(),
-        ...fieldWritePayload(field, extraFields),
+        ...fieldWritePayload(field, extraFields, subcategory),
         subtype: format,
         excerpt: excerpt.trim() || null,
         description: description.trim() || null,
@@ -227,8 +230,13 @@ function EditWork() {
           extras={extraFields}
           onPrimaryChange={setField}
           onExtrasChange={setExtraFields}
-          onPrimaryReset={() => setFormat(null)}
+          onPrimaryReset={() => {
+            setFormat(null);
+            setSubcategory(null);
+          }}
         />
+
+        <SubcategoryPicker field={field} value={subcategory} onChange={setSubcategory} />
 
         <FormatInput fields={[field, ...extraFields]} value={format} onChange={setFormat} />
 

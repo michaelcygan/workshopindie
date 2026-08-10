@@ -34,7 +34,7 @@ import { getFrequentCollaborators, type Collaborator } from "@/lib/network.funct
 import { useDocumentMeta, useJsonLd } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 import { categoryClass, type Category } from "@/lib/categories";
-import { CANONICAL_CATEGORIES, categoryClassFor, categoryLabel, normalizeCategory } from "@/lib/taxonomy";
+import { CANONICAL_CATEGORIES, categoryClassFor, categoryLabel, normalizeCategory, normalizeSpecialties, subcategoryLabel } from "@/lib/taxonomy";
 import { extraMediumLabel } from "@/lib/mediums";
 import { EntityBlogPosts } from "@/components/entity-blog-posts";
 import { EditorialCard, EditorialChip } from "@/components/editorial-card";
@@ -139,6 +139,7 @@ type Profile = {
   headline: string | null;
   artist_statement: string | null;
   categories: Category[];
+  specialties: string[] | null;
   mediums: string[] | null;
   tools: string[] | null;
   languages: string[] | null;
@@ -161,7 +162,7 @@ type Profile = {
 async function fetchProfile(username: string) {
   const { data: sessionData } = await supabase.auth.getSession();
   const isAuthed = !!sessionData.session;
-  const baseCols = "id,username,display_name,avatar_url,cover_url,bio,headline,artist_statement,categories,categories_canonical,mediums,tools,languages,external_links,instagram_handle,follower_count,following_count,work_count,worked_with_count,creator_status,pinned_work_ids,aliases,city:cities!profiles_city_id_fkey(name,country,slug),home_city:cities!profiles_home_city_id_fkey(name,country,slug),cover_work:works!profiles_cover_work_id_fkey(slug,status,visibility)";
+  const baseCols = "id,username,display_name,avatar_url,cover_url,bio,headline,artist_statement,categories,categories_canonical,specialties,mediums,tools,languages,external_links,instagram_handle,follower_count,following_count,work_count,worked_with_count,creator_status,pinned_work_ids,aliases,city:cities!profiles_city_id_fkey(name,country,slug),home_city:cities!profiles_home_city_id_fkey(name,country,slug),cover_work:works!profiles_cover_work_id_fkey(slug,status,visibility)";
   const cols = isAuthed ? baseCols.replace(",aliases,", ",aliases,alias_urls,") : baseCols;
   const { data, error } = await supabase
     .from("profiles")
@@ -1686,6 +1687,19 @@ function AboutTab({ profile }: { profile: Profile }) {
               </span>
             ))}
           </div>
+          {normalizeSpecialties(profile.specialties, profileFields(profile)).length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {normalizeSpecialties(profile.specialties, profileFields(profile)).map((id) => (
+                <span
+                  key={id}
+                  className="inline-flex items-center rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs text-ink"
+                  title="Specialty"
+                >
+                  {subcategoryLabel(id)}
+                </span>
+              ))}
+            </div>
+          )}
         </section>
       )}
 

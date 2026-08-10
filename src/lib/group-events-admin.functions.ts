@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { FIELD_IDS } from "@/lib/taxonomy";
+import { FIELD_IDS, subcategoryForPrimary } from "@/lib/taxonomy";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
@@ -98,6 +98,8 @@ const baseSchema = z.object({
   ]),
   /** Optional canonical Field — auto-connects the event to its Field Group. */
   creative_category: z.enum(FIELD_IDS).nullable().optional(),
+  /** Optional specialization beneath the Field. Must belong to it. */
+  subcategory: z.string().max(80).nullable().optional(),
   format: z.enum(["in_person", "online", "hybrid"]),
   cover_url: safeHttpUrl.nullable().optional(),
   accent_color: z.string().max(20).nullable().optional(),
@@ -125,6 +127,16 @@ const baseSchema = z.object({
   is_recurring: z.boolean().optional(),
   recurrence_label: z.string().max(80).nullable().optional(),
   pinned: z.boolean().optional(),
+}).superRefine((v, ctx) => {
+  // A specialization is only meaningful under its own Field.
+  if (!v.subcategory) return;
+  if (!v.creative_category || !subcategoryForPrimary(v.subcategory, v.creative_category)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["subcategory"],
+      message: "That specialization does not belong to the selected field.",
+    });
+  }
 });
 
 /**

@@ -26,6 +26,7 @@ import {
   setEventFeatured,
 } from "@/lib/group-events-admin.functions";
 import { FIELD_OPTIONS, type FieldId } from "@/lib/taxonomy";
+import { SubcategoryPicker } from "@/components/subcategory-picker";
 import { EVENT_KIND_OPTIONS, type EventKind } from "@/lib/events/kinds";
 import { toast } from "sonner";
 import { AdminImportEventDialog } from "@/components/admin-import-event-dialog";
@@ -141,6 +142,7 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
     group_id: string; title: string; tagline: string; description: string;
     kind: EventKind;
     creative_category: "" | FieldId;
+    subcategory: string | null;
     format: "in_person" | "online" | "hybrid";
     cover_url: string; starts_at: string; ends_at: string;
     venue_name: string; venue_address: string; online_url: string;
@@ -164,6 +166,7 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
     description: "",
     kind: "open_mic",
     creative_category: "",
+    subcategory: null,
     format: "in_person",
     cover_url: "",
     starts_at: "",
@@ -214,6 +217,7 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
         description: form.description || null,
         kind: form.kind,
         creative_category: form.creative_category || null,
+        subcategory: form.creative_category ? form.subcategory : null,
         format: form.format,
         cover_url: form.cover_url || null,
         starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : new Date().toISOString(),
@@ -370,7 +374,14 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
               <Label>Field</Label>
               <Select
                 value={form.creative_category || "none"}
-                onValueChange={(v) => setForm({ ...form, creative_category: v === "none" ? "" : (v as FieldId) })}
+                onValueChange={(v) =>
+                  setForm({
+                    ...form,
+                    creative_category: v === "none" ? "" : (v as FieldId),
+                    // A specialization only survives while its Field does.
+                    subcategory: null,
+                  })
+                }
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -381,6 +392,15 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
                 </SelectContent>
               </Select>
             </div>
+            {form.creative_category ? (
+              <div className="col-span-2">
+                <SubcategoryPicker
+                  field={form.creative_category}
+                  value={form.subcategory}
+                  onChange={(next) => setForm({ ...form, subcategory: next })}
+                />
+              </div>
+            ) : null}
             <div>
               <Label>Format</Label>
               <Select value={form.format} onValueChange={(v) => setForm({ ...form, format: v as typeof form.format })}>

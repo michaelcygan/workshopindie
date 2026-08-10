@@ -16,6 +16,7 @@ import { ImageUpload } from "@/components/image-upload";
 import { CoverImagePicker } from "@/components/cover-image-picker";
 import { FIELD_OPTIONS, fieldClass, type FieldId } from "@/lib/taxonomy";
 import { profileFieldWritePayload, profileFields } from "@/lib/work-fields";
+import { SpecialtiesPicker } from "@/components/subcategory-picker";
 import {
   EXTRA_MEDIUMS,
   isExtraMedium,
@@ -76,6 +77,7 @@ type FormState = {
   cover: string | null;
   coverWorkId: string | null;
   cats: FieldId[];
+  specialties: string[];
   mediums: ExtraMedium[];
   tools: string[];
   languages: string[];
@@ -99,6 +101,7 @@ const EMPTY: FormState = {
   cover: null,
   coverWorkId: null,
   cats: [],
+  specialties: [],
   mediums: [],
   tools: [],
   languages: [],
@@ -252,7 +255,7 @@ function EditProfile() {
     supabase
       .from("profiles")
       .select(
-        "id,username,first_name,last_name,aliases,alias_urls,instagram_handle,headline,bio,artist_statement,avatar_url,cover_url,cover_work_id,categories,categories_canonical,mediums,tools,languages,external_links,city_id,pinned_work_ids",
+        "id,username,first_name,last_name,aliases,alias_urls,instagram_handle,headline,bio,artist_statement,avatar_url,cover_url,cover_work_id,categories,categories_canonical,specialties,mediums,tools,languages,external_links,city_id,pinned_work_ids",
       )
       .eq("id", user.id)
       .maybeSingle()
@@ -284,6 +287,7 @@ function EditProfile() {
           cover: data.cover_url ?? null,
           coverWorkId: (data as { cover_work_id?: string | null }).cover_work_id ?? null,
           cats: profileFields(data as { categories?: string[] | null; categories_canonical?: string[] | null }),
+          specialties: ((data as { specialties?: string[] | null }).specialties ?? []) as string[],
           mediums: ((data.mediums as string[] | null) ?? []).filter(isExtraMedium) as ExtraMedium[],
           tools: (data.tools as string[] | null) ?? [],
           languages: (data as { languages?: string[] | null }).languages ?? [],
@@ -401,7 +405,7 @@ function EditProfile() {
         avatar_url: form.avatar,
         cover_url: form.cover,
         cover_work_id: form.cover ? form.coverWorkId : null,
-        ...profileFieldWritePayload(form.cats),
+        ...profileFieldWritePayload(form.cats, form.specialties),
         mediums: form.mediums,
         tools: form.tools,
         languages: cleanLangs,
@@ -831,6 +835,12 @@ function EditProfile() {
                 describe the specific practices you work in.
               </p>
             </div>
+
+            <SpecialtiesPicker
+              fields={form.cats}
+              value={form.specialties}
+              onChange={(next) => set("specialties", next)}
+            />
 
             <ToolsField tools={form.tools} onChange={(next) => set("tools", next)} />
 
