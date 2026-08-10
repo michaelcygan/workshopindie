@@ -36,6 +36,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: "Analytics",
     items: [
+      { to: "/admin/traffic", label: "Traffic" },
       { to: "/admin/growth", label: "Growth" },
       { to: "/admin/engagement", label: "Product" },
       { to: "/admin/marketplace", label: "Marketplace" },

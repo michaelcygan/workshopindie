@@ -6034,6 +6034,48 @@ export type Database = {
         }
         Relationships: []
       }
+      traffic_pageviews: {
+        Row: {
+          city: string | null
+          country: string | null
+          id: string
+          path: string
+          referrer: string | null
+          region: string | null
+          route_pattern: string | null
+          session_id: string
+          viewed_at: string
+          visitor_id: string
+          visitor_type: string
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          id?: string
+          path: string
+          referrer?: string | null
+          region?: string | null
+          route_pattern?: string | null
+          session_id: string
+          viewed_at?: string
+          visitor_id: string
+          visitor_type?: string
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          id?: string
+          path?: string
+          referrer?: string | null
+          region?: string | null
+          route_pattern?: string | null
+          session_id?: string
+          viewed_at?: string
+          visitor_id?: string
+          visitor_type?: string
+        }
+        Relationships: []
+      }
       user_blocks: {
         Row: {
           blocked_user_id: string
@@ -9758,6 +9800,97 @@ export type Database = {
         Returns: {
           referrer: string
           total: number
+        }[]
+      }
+      traffic_countries: {
+        Args: { _days?: number; _limit?: number }
+        Returns: {
+          country: string
+          page_views: number
+          unique_visitors: number
+          visits: number
+        }[]
+      }
+      traffic_daily: {
+        Args: { _days?: number }
+        Returns: {
+          day: string
+          page_views: number
+          unique_visitors: number
+          visits: number
+        }[]
+      }
+      traffic_entries: {
+        Args: { _days?: number; _limit?: number }
+        Returns: {
+          bounces: number
+          path: string
+          visits: number
+        }[]
+      }
+      traffic_exits: {
+        Args: { _days?: number; _limit?: number }
+        Returns: {
+          path: string
+          visits: number
+        }[]
+      }
+      traffic_locations: {
+        Args: { _days?: number; _limit?: number }
+        Returns: {
+          city: string
+          country: string
+          page_views: number
+          region: string
+          unique_visitors: number
+          visits: number
+        }[]
+      }
+      traffic_overview: {
+        Args: { _days?: number }
+        Returns: {
+          bounced_visits: number
+          guest_views: number
+          member_views: number
+          page_views: number
+          unique_visitors: number
+          visits: number
+        }[]
+      }
+      traffic_pages: {
+        Args: { _days?: number; _limit?: number }
+        Returns: {
+          bounces: number
+          entries: number
+          page_views: number
+          path: string
+          route_pattern: string
+          unique_visitors: number
+        }[]
+      }
+      traffic_referrers: {
+        Args: { _days?: number; _limit?: number }
+        Returns: {
+          source: string
+          unique_visitors: number
+          visits: number
+        }[]
+      }
+      traffic_routes: {
+        Args: { _days?: number; _limit?: number }
+        Returns: {
+          page_views: number
+          route_pattern: string
+          unique_visitors: number
+        }[]
+      }
+      traffic_since: { Args: { _days: number }; Returns: string }
+      traffic_transitions: {
+        Args: { _days?: number; _limit?: number }
+        Returns: {
+          from_path: string
+          to_path: string
+          transitions: number
         }[]
       }
       try_consume_blog_publication: {
