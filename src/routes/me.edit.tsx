@@ -51,10 +51,10 @@ export const Route = createFileRoute("/me/edit")({
 
 type ExtLink = { label: string; url: string };
 
-type SectionId = "identity" | "mediums" | "location" | "links" | "pinned" | "influences";
+type SectionId = "identity" | "fields" | "location" | "links" | "pinned" | "influences";
 const SECTIONS: { id: SectionId; label: string; icon: typeof User }[] = [
   { id: "identity", label: "Identity", icon: User },
-  { id: "mediums", label: "Mediums & bio", icon: Sparkles },
+  { id: "fields", label: "Fields & bio", icon: Sparkles },
   { id: "location", label: "Location & languages", icon: MapPin },
   { id: "links", label: "Links", icon: Link2 },
   { id: "pinned", label: "Pinned pieces", icon: Pin },
