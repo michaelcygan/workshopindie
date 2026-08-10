@@ -86,11 +86,14 @@ export const WORK_CATEGORIES = CATEGORIES.filter((c) =>
   (WORK_CATEGORY_IDS as readonly string[]).includes(c.id),
 );
 
-/** Optional sub-category labels per stored work category (works.subtype). */
+/**
+ * @deprecated Formats are now Field-driven — use `formatSuggestionsFor()` from
+ * `@/lib/taxonomy`. Kept while the last legacy callers migrate.
+ */
 export const WORK_SUBTYPES: Record<WorkCategory, string[]> = {
   film: CANONICAL_SUBTYPES.film_video,
   music: CANONICAL_SUBTYPES.music,
-  writing: ["Essay", "Poem", "Short story", "Screenplay", "Newsletter", "Article"],
+  writing: CANONICAL_SUBTYPES.writing,
   writing_book: [
     "Novel",
     "Novella",
@@ -102,9 +105,10 @@ export const WORK_SUBTYPES: Record<WorkCategory, string[]> = {
     "Zine",
     "Serial",
   ],
-  build: CANONICAL_SUBTYPES.games_tech,
+  build: CANONICAL_SUBTYPES.software_ai,
   visual: CANONICAL_SUBTYPES.visual_art,
 };
+
 
 export const SOURCE_LABELS: Record<string, string> = {
   workshop: "Workshop",

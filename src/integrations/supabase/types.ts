@@ -406,6 +406,7 @@ export type Database = {
           created_by: string | null
           excerpt: string
           featured: boolean
+          fields: string[]
           id: string
           publication_type: string
           published_at: string | null
@@ -429,6 +430,7 @@ export type Database = {
           created_by?: string | null
           excerpt?: string
           featured?: boolean
+          fields?: string[]
           id?: string
           publication_type?: string
           published_at?: string | null
@@ -452,6 +454,7 @@ export type Database = {
           created_by?: string | null
           excerpt?: string
           featured?: boolean
+          fields?: string[]
           id?: string
           publication_type?: string
           published_at?: string | null
@@ -3029,6 +3032,7 @@ export type Database = {
           deleted_at: string | null
           description: string | null
           featured_at: string | null
+          fields: string[]
           id: string
           is_official: boolean
           join_mode: Database["public"]["Enums"]["group_join_mode"]
@@ -3058,6 +3062,7 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           featured_at?: string | null
+          fields?: string[]
           id?: string
           is_official?: boolean
           join_mode?: Database["public"]["Enums"]["group_join_mode"]
@@ -3087,6 +3092,7 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           featured_at?: string | null
+          fields?: string[]
           id?: string
           is_official?: boolean
           join_mode?: Database["public"]["Enums"]["group_join_mode"]
