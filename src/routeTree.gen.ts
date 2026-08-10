@@ -95,6 +95,7 @@ import { Route as AdminBlogSubscribersRouteImport } from './routes/admin.blog.su
 import { Route as AdminUsersIdRouteImport } from './routes/admin.users.$id'
 import { Route as ApiPublicGroupNewsMultiRouteImport } from './routes/api/public/group-news-multi'
 import { Route as ApiPublicOgRouteImport } from './routes/api/public/og'
+import { Route as ApiPublicTrafficRouteImport } from './routes/api/public/traffic'
 import { Route as BlogCCategoryRouteImport } from './routes/blog.c.$category'
 import { Route as CollabSlugEditRouteImport } from './routes/collab.$slug.edit'
 import { Route as CollabClaimTokenRouteImport } from './routes/collab.claim.$token'
@@ -551,6 +552,11 @@ const ApiPublicOgRoute = ApiPublicOgRouteImport.update({
   path: '/api/public/og',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicTrafficRoute = ApiPublicTrafficRouteImport.update({
+  id: '/api/public/traffic',
+  path: '/api/public/traffic',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BlogCCategoryRoute = BlogCCategoryRouteImport.update({
   id: '/blog/c/$category',
   path: '/blog/c/$category',
@@ -751,6 +757,7 @@ export interface FileRoutesByFullPath {
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/api/public/group-news-multi': typeof ApiPublicGroupNewsMultiRoute
   '/api/public/og': typeof ApiPublicOgRoute
+  '/api/public/traffic': typeof ApiPublicTrafficRoute
   '/blog/c/$category': typeof BlogCCategoryRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
@@ -855,6 +862,7 @@ export interface FileRoutesByTo {
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/api/public/group-news-multi': typeof ApiPublicGroupNewsMultiRoute
   '/api/public/og': typeof ApiPublicOgRoute
+  '/api/public/traffic': typeof ApiPublicTrafficRoute
   '/blog/c/$category': typeof BlogCCategoryRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
@@ -966,6 +974,7 @@ export interface FileRoutesById {
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/api/public/group-news-multi': typeof ApiPublicGroupNewsMultiRoute
   '/api/public/og': typeof ApiPublicOgRoute
+  '/api/public/traffic': typeof ApiPublicTrafficRoute
   '/blog/c/$category': typeof BlogCCategoryRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
@@ -1078,6 +1087,7 @@ export interface FileRouteTypes {
     | '/admin/users/$id'
     | '/api/public/group-news-multi'
     | '/api/public/og'
+    | '/api/public/traffic'
     | '/blog/c/$category'
     | '/collab/$slug/edit'
     | '/collab/claim/$token'
@@ -1182,6 +1192,7 @@ export interface FileRouteTypes {
     | '/admin/users/$id'
     | '/api/public/group-news-multi'
     | '/api/public/og'
+    | '/api/public/traffic'
     | '/blog/c/$category'
     | '/collab/$slug/edit'
     | '/collab/claim/$token'
@@ -1292,6 +1303,7 @@ export interface FileRouteTypes {
     | '/admin/users/$id'
     | '/api/public/group-news-multi'
     | '/api/public/og'
+    | '/api/public/traffic'
     | '/blog/c/$category'
     | '/collab/$slug/edit'
     | '/collab/claim/$token'
@@ -1369,6 +1381,7 @@ export interface RootRouteChildren {
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiPublicGroupNewsMultiRoute: typeof ApiPublicGroupNewsMultiRoute
   ApiPublicOgRoute: typeof ApiPublicOgRoute
+  ApiPublicTrafficRoute: typeof ApiPublicTrafficRoute
   BlogCCategoryRoute: typeof BlogCCategoryRoute
   MeBlogIdRoute: typeof MeBlogIdRoute
   WorksCollabNewRoute: typeof WorksCollabNewRoute
@@ -1988,6 +2001,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicOgRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/traffic': {
+      id: '/api/public/traffic'
+      path: '/api/public/traffic'
+      fullPath: '/api/public/traffic'
+      preLoaderRoute: typeof ApiPublicTrafficRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/blog/c/$category': {
       id: '/blog/c/$category'
       path: '/blog/c/$category'
@@ -2397,6 +2417,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiPublicGroupNewsMultiRoute: ApiPublicGroupNewsMultiRoute,
   ApiPublicOgRoute: ApiPublicOgRoute,
+  ApiPublicTrafficRoute: ApiPublicTrafficRoute,
   BlogCCategoryRoute: BlogCCategoryRoute,
   MeBlogIdRoute: MeBlogIdRoute,
   WorksCollabNewRoute: WorksCollabNewRoute,
