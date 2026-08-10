@@ -23,6 +23,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { submitPodcastApplication } from "@/lib/podcast.functions";
 
 const CANONICAL = "https://workshopindie.com/applypodcast";
+const PROCESS_MIN = 40;
 const DESCRIPTION =
   "Workshop Independent is a podcast about how independent creative people actually work. Tell us about your process and apply to be a guest.";
 
