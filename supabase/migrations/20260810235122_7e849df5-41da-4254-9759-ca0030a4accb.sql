@@ -1,0 +1,1 @@
+GRANT SELECT (categories_canonical) ON public.profiles TO anon, authenticated;
