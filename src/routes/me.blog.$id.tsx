@@ -422,6 +422,10 @@ function MemberBlogEditorPage() {
               }}
             />
           </div>
+
+          <div className="flex items-center justify-end border-t border-border pt-4">
+            <PostActions post={post} />
+          </div>
         </TabsContent>
 
         <TabsContent value="preview" className="mt-4">
