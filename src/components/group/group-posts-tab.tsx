@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { listPostsByAuthors } from "@/lib/blog.functions";
 import { listBlogPostsForEntity } from "@/lib/blog-entity-tags.functions";
 import { BlogPostPeek } from "@/components/blog-post-peek";
+import { useBlockedIds } from "@/hooks/use-blocked-ids";
 import { cn } from "@/lib/utils";
 
 type GroupPost = {
@@ -135,7 +136,14 @@ export function useGroupBlogPosts(groupId: string) {
 }
 
 export function GroupPostsTab({ group }: { group: { id: string } }) {
-  const { members, posts, isLoading } = useGroupBlogPosts(group.id);
+  const { members, posts: allPosts, isLoading } = useGroupBlogPosts(group.id);
+  const { ids: blockedIds } = useBlockedIds();
+  // A post disappears if any of its authors is blocked in either direction.
+  const posts = useMemo(
+    () => allPosts.filter((p) => !p.author_profile_ids.some((id) => blockedIds.has(id))),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [allPosts, Array.from(blockedIds).sort().join(",")],
+  );
   const [authorFilter, setAuthorFilter] = useState<string | null>(null);
   const [peekSlug, setPeekSlug] = useState<string | null>(null);
 
