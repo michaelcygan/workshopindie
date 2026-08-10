@@ -258,6 +258,7 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
     }
     default:
       return { title: n.kind, subtitle: "", href: "/me" };
+  }
 }
 
 export function NotificationsBell() {
