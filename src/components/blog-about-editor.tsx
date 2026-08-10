@@ -18,7 +18,9 @@ import { QuickCreateWorkSheet } from "@/components/quick-create-work-sheet";
 import type { BlogEntityKind, BlogEntityTag } from "@/lib/blog-entity-tags";
 import { MAX_BLOG_ENTITY_TAGS, tagKey } from "@/lib/blog-entity-tags";
 import { deriveBlogPostContext } from "@/lib/blog-post-context";
-import { BLOG_CATEGORIES, type BlogCategorySlug } from "@/lib/blog-categories";
+import { blogCategorySlugForField } from "@/lib/blog-categories";
+import { FieldPicker } from "@/components/field-picker";
+import { fieldClass, fieldLabel, type FieldId } from "@/lib/taxonomy";
 
 const KIND_ICONS: Record<BlogEntityKind, typeof Briefcase> = {
   work: Briefcase,
