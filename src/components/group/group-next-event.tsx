@@ -137,7 +137,7 @@ export function GroupNextEvent({ group }: Props) {
       <Link
         to="/g/$slug"
         params={{ slug: group.slug }}
-        search={{ tab: "events" } as never}
+        search={{ t: "events" } as never}
         className="mt-3 inline-flex items-center gap-1 text-[11px] font-medium text-ink-soft hover:text-ink"
       >
         All events <ArrowRight className="h-3 w-3" />
