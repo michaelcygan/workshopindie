@@ -20,6 +20,9 @@ function pathHidesIsland(pathname: string): boolean {
   if (HIDDEN_ISLAND_EXACT.has(pathname)) return true;
   // Individual lounge room (lounge dock owns bottom).
   if (/^\/lounge\/[^/]+/.test(pathname)) return true;
+  // A Group's own section bar is the navigation on its main surface; the
+  // mobile brand header still provides the way back to Workshop.
+  if (/^\/g\/[^/]+\/?$/.test(pathname)) return true;
   if (pathname.startsWith("/oauth/")) return true;
   if (pathname.startsWith("/redeem/")) return true;
   if (pathname.startsWith("/auth/")) return true;
@@ -27,6 +30,7 @@ function pathHidesIsland(pathname: string): boolean {
   if (/^\/me\/blog\/[^/]+/.test(pathname)) return true;
   return false;
 }
+
 
 function pathHidesComposer(pathname: string): boolean {
   if (pathname === "/works/new") return true;

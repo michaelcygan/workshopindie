@@ -18,19 +18,30 @@ type EventRow = {
   cover_url: string | null;
   ends_at?: string | null;
   series_key?: string | null;
+  timezone?: string | null;
 };
 
-function formatWhen(iso: string): { day: string; time: string; relative: string } {
+/** Format in the Event's own timezone — a local scene shows local time. */
+function formatWhen(
+  iso: string,
+  timeZone?: string | null,
+): { day: string; time: string; relative: string } {
   const d = new Date(iso);
-  const day = d.toLocaleDateString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
-  const time = d.toLocaleTimeString(undefined, {
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  const tz = timeZone || undefined;
+  let day: string;
+  let time: string;
+  try {
+    day = d.toLocaleDateString(undefined, {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      timeZone: tz,
+    });
+    time = d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", timeZone: tz });
+  } catch {
+    day = d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+    time = d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  }
   const diffMs = d.getTime() - Date.now();
   const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
   let relative = "";
@@ -43,26 +54,42 @@ function formatWhen(iso: string): { day: string; time: string; relative: string 
   return { day, time, relative };
 }
 
+
 export function GroupNextEvent({ group }: Props) {
   const { data: events = [], isLoading } = useQuery({
     queryKey: ["group", group.id, "upcoming-events"],
     queryFn: async (): Promise<EventRow[]> => {
+      // Every Event connected to this Group, not just the ones whose primary
+      // group_id is this Group.
+      const { data: links, error: linkErr } = await supabase
+        .from("event_groups")
+        .select("event_id")
+        .eq("group_id", group.id);
+      if (linkErr) throw linkErr;
+      const ids = Array.from(new Set((links ?? []).map((l) => l.event_id as string)));
+      if (ids.length === 0) return [];
+
       const { data, error } = await applyCurrentWindow(
         applyDiscoverable(
           supabase
             .from("group_events")
-            .select("id,slug,title,starts_at,ends_at,series_key,venue_name,going_count,cover_url")
-            .eq("group_id", group.id),
+            .select("id,slug,title,starts_at,ends_at,series_key,venue_name,going_count,cover_url,timezone")
+            .in("id", ids),
         ),
       )
         .order("starts_at", { ascending: true })
-        .limit(6);
+        .limit(12);
       if (error) throw error;
-      return collapseSeries<EventRow>((data ?? []) as EventRow[]).slice(0, 3);
+      const seen = new Set<string>();
+      const rows = ((data ?? []) as EventRow[]).filter((r) =>
+        seen.has(r.id) ? false : (seen.add(r.id), true),
+      );
+      return collapseSeries<EventRow>(rows).slice(0, 3);
     },
     staleTime: 60_000,
     refetchInterval: 5 * 60_000,
   });
+
 
   return (
     <section className="rounded-xl border border-border bg-surface p-4">
@@ -79,7 +106,7 @@ export function GroupNextEvent({ group }: Props) {
       ) : events.length > 0 ? (
         <ul className="space-y-2">
           {events.map((event) => {
-            const when = formatWhen(event.starts_at);
+            const when = formatWhen(event.starts_at, event.timezone);
             return (
               <li key={event.id}>
                 <Link
@@ -110,7 +137,7 @@ export function GroupNextEvent({ group }: Props) {
       <Link
         to="/g/$slug"
         params={{ slug: group.slug }}
-        search={{ tab: "events" } as never}
+        search={{ t: "events" } as never}
         className="mt-3 inline-flex items-center gap-1 text-[11px] font-medium text-ink-soft hover:text-ink"
       >
         All events <ArrowRight className="h-3 w-3" />

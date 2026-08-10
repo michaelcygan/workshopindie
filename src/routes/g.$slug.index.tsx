@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import type { Category } from "@/lib/categories";
 import { categoryLabel } from "@/lib/taxonomy";
 import { supabase } from "@/integrations/supabase/client";
-import { DISCOVERABLE_STATUSES, collapseSeries, effectiveEndMs } from "@/lib/events/filters";
+
 import {
   GroupEventDirectory,
   type DirectoryFilters,
@@ -48,7 +48,7 @@ import { GroupResourcesTab, useGroupResourceCount } from "@/components/group/gro
 import { GroupLiveShell } from "@/components/group/group-live-shell";
 
 import { GroupPostsTab, useGroupBlogPosts } from "@/components/group/group-posts-tab";
-import { GroupNewsTicker } from "@/components/group/group-news-ticker";
+
 import { setGroupNewsFeed, setGroupParent } from "@/lib/group-admin.functions";
 import { useEventsRealtime } from "@/hooks/use-events-realtime";
 import { workshopEntityUrl } from "@/lib/entities/kinds";
@@ -277,24 +277,9 @@ function GroupPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seedToken, user]);
 
-  const { data: nextEvent } = useQuery({
-    queryKey: ["group", group.id, "next-event"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("group_events")
-        .select("slug,title,starts_at")
-        .eq("group_id", group.id)
-        .in("status", DISCOVERABLE_STATUSES as never)
-        .not("published_at", "is", null)
-        .is("archived_at", null)
-        .is("deleted_at", null)
-        .gt("starts_at", new Date().toISOString())
-        .order("starts_at", { ascending: true })
-        .limit(1)
-        .maybeSingle();
-      return data;
-    },
-  });
+  // Upcoming events are read inside Today (via event_groups); the route no
+  // longer pays for a separate next-event query on cold load.
+
 
   // Cheap count-only query so the tab bar can show the Subgroups chip
   // without paying for the full row payload on every page load.
@@ -324,6 +309,9 @@ function GroupPage() {
   let viewTab: Tab = tab;
   if (tab === "posts" && !groupBlogLoading && !hasBlogPosts) viewTab = "today";
   if (tab === "resources" && !resourcesLoading && !hasResources) viewTab = "today";
+  // Members is a signed-in-only directory; stale deep links fall back to Today.
+  if (tab === "members" && !user) viewTab = "today";
+
 
 
   // Full child-group payload — only fetched when the Subgroups tab is opened.
@@ -390,15 +378,14 @@ function GroupPage() {
         )}
 
         <div className="space-y-2">
-          <GroupHero group={group} nextEvent={nextEvent} />
-
-          <GroupNewsTicker slug={group.slug} />
+          <GroupHero group={group} />
 
           <div className="px-4 md:px-6">
             <GroupTabBar
               tab={viewTab}
               setTab={setTab}
               slug={group.slug}
+              isAuthed={!!user}
               counts={{
                 collab: group.collab_count,
                 work: group.work_count,
@@ -408,6 +395,7 @@ function GroupPage() {
               showPosts={groupBlogLoading || hasBlogPosts}
               showResources={hasResources}
             />
+
 
             <div className="mt-5">
               {viewTab === "today" && <GroupTodayTab group={group} />}
@@ -889,7 +877,7 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
       </div>
 
       {isLoading ? (
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="h-44 animate-pulse rounded-2xl bg-surface-2" />
           ))}
@@ -920,7 +908,7 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
           </button>
         </div>
       ) : (
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
           {filtered.map((w) => {
             const author = w.author;
             const authorName = author?.display_name || author?.username || "";
@@ -932,7 +920,7 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
                 params={{ slug: w.slug }}
                 className="group relative rounded-2xl border border-border bg-surface transition hover:-translate-y-0.5 hover:shadow-lift"
               >
-                <div className="relative h-32 w-full overflow-hidden rounded-t-2xl isolate transform-gpu">
+                <div className="relative aspect-[4/3] w-full overflow-hidden rounded-t-2xl isolate transform-gpu sm:aspect-auto sm:h-32">
                   <div
                     className={cn(
                       "absolute inset-0 transition-transform duration-300 will-change-transform group-hover:scale-[1.03]",
@@ -987,6 +975,23 @@ type CollabRow = {
   status?: string | null;
   resulting_work_id?: string | null;
   category?: Category | null;
+  location_mode?: string | null;
+  compensation_type?: string | null;
+  timeline_text?: string | null;
+  roles?: { role_name: string; quantity: number; sort_order: number }[] | null;
+};
+
+const COMP_LABEL: Record<string, string> = {
+  paid: "Paid",
+  unpaid: "Unpaid",
+  credit: "Credit",
+  negotiable: "Negotiable",
+};
+
+const LOCATION_LABEL: Record<string, string> = {
+  online: "Remote",
+  in_person: "In person",
+  hybrid: "Hybrid",
 };
 
 function GroupCollabTab({ group }: { group: GroupRow }) {
@@ -1000,7 +1005,9 @@ function GroupCollabTab({ group }: { group: GroupRow }) {
     queryFn: async (): Promise<CollabRow[]> => {
       const { data } = await supabase
         .from("group_collabs")
-        .select("collab:collab_posts(id,title,slug,description,status,resulting_work_id,category)")
+        .select(
+          "collab:collab_posts(id,title,slug,description,status,resulting_work_id,category,location_mode,compensation_type,timeline_text,roles:collab_roles(role_name,quantity,sort_order))",
+        )
         .eq("group_id", group.id)
         .limit(48);
       return (
@@ -1163,10 +1170,43 @@ function GroupCollabTab({ group }: { group: GroupRow }) {
               {c.description && (
                 <p className="mt-1 line-clamp-2 text-sm text-ink-muted">{c.description}</p>
               )}
+              <CollabCardMeta collab={c} />
             </Link>
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * The three things someone decides on before tapping a Collab: what roles are
+ * open, whether it pays, and where it happens. Missing fields collapse.
+ */
+function CollabCardMeta({ collab }: { collab: CollabRow }) {
+  const roles = (collab.roles ?? [])
+    .slice()
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .slice(0, 3);
+  const comp = collab.compensation_type ? COMP_LABEL[collab.compensation_type] : null;
+  const where = collab.location_mode ? LOCATION_LABEL[collab.location_mode] : null;
+  const when = collab.timeline_text?.trim() || null;
+  if (roles.length === 0 && !comp && !where && !when) return null;
+
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[11px] text-ink-muted">
+      {roles.map((r) => (
+        <span
+          key={r.role_name}
+          className="rounded-full bg-surface-2 px-2 py-0.5 font-medium text-ink"
+        >
+          {r.role_name}
+          {r.quantity > 1 ? ` ×${r.quantity}` : ""}
+        </span>
+      ))}
+      {comp && <span className="rounded-full border border-border px-2 py-0.5">{comp}</span>}
+      {where && <span className="rounded-full border border-border px-2 py-0.5">{where}</span>}
+      {when && <span className="truncate">{when}</span>}
     </div>
   );
 }
