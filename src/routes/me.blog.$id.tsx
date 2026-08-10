@@ -69,6 +69,21 @@ type EditorPost = {
   updated_at: string;
 };
 
+type EditorPostPayload = {
+  post: EditorPost;
+  entity_tags?: BlogEntityTag[];
+  access: {
+    canPublish: boolean;
+    canEditExisting: boolean;
+    canUnpublish: boolean;
+    canDeleteNeverPublishedDraft: boolean;
+    reason: string | null;
+    mode: string;
+    publicationsThisMonth: number;
+    monthlyPublicationLimit: number | null;
+  };
+};
+
 function MemberBlogEditorPage() {
   const { id } = Route.useParams();
   const { user, loading: authLoading } = useAuth();
@@ -110,7 +125,7 @@ function MemberBlogEditorPage() {
   const [blogGateOpen, setBlogGateOpen] = useState(false);
   const [published, setPublished] = useState<PublishedPostSummary | null>(null);
 
-  const post = (q.data as { post: EditorPost; entity_tags?: BlogEntityTag[]; access: { canPublish: boolean; canEditExisting: boolean; canUnpublish: boolean; canDeleteNeverPublishedDraft: boolean; reason: string | null; mode: string; publicationsThisMonth: number; monthlyPublicationLimit: number | null } } | undefined);
+  const post = (q.data as EditorPostPayload | undefined);
 
   useEffect(() => {
     if (!post || loadedForId === post.post.id) return;
@@ -239,6 +254,73 @@ function MemberBlogEditorPage() {
   const generatedExcerpt = generateExcerpt(body);
   const effectiveExcerpt = excerpt.trim() || generatedExcerpt;
 
+  function PostActions({ post }: { post: EditorPostPayload }) {
+    return (
+      <div className="flex min-w-0 items-center gap-2">
+        {isPublished && (
+          <Link
+            to="/blog/$slug"
+            params={{ slug: post.post.slug }}
+            className="inline-flex h-11 shrink-0 items-center rounded-full border border-border px-4 text-sm text-ink-soft hover:bg-muted"
+          >
+            View live
+          </Link>
+        )}
+        <Button
+          variant="outline"
+          className="h-11 shrink-0 rounded-md px-4"
+          disabled={!dirty || saveMut.isPending || readOnly}
+          onClick={() => saveMut.mutate(undefined)}
+        >
+          {saveMut.isPending ? "Saving…" : "Save"}
+        </Button>
+        {!isPublished && (
+          <Button
+            className="h-11 shrink-0 px-5 bg-primary text-primary-foreground"
+            disabled={(!access.canPublish && !publishBlockedByQuota) || publishMut.isPending}
+            onClick={() => (publishBlockedByQuota ? setBlogGateOpen(true) : publishMut.mutate())}
+          >
+            {publishMut.isPending ? "Publishing…" : "Publish"}
+          </Button>
+        )}
+        {showOverflow && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label="More post actions"
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border text-ink-soft hover:bg-muted"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {isPublished && (
+                <DropdownMenuItem
+                  disabled={!access.canUnpublish || unpublishMut.isPending}
+                  onSelect={() => unpublishMut.mutate()}
+                >
+                  Unpublish
+                </DropdownMenuItem>
+              )}
+              {canDeleteDraft && (
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  disabled={deleteMut.isPending}
+                  onSelect={() => {
+                    if (confirm("Delete this draft? This can't be undone.")) deleteMut.mutate();
+                  }}
+                >
+                  Delete draft
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
+    );
+  }
+
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 md:px-6 md:py-12">
       <div className="flex items-center justify-between gap-2">
@@ -249,67 +331,9 @@ function MemberBlogEditorPage() {
           <ArrowLeft className="h-4 w-4" /> Your posts
         </Link>
         <div className="flex min-w-0 items-center gap-2">
-          {isPublished && (
-            <Link
-              to="/blog/$slug"
-              params={{ slug: post.post.slug }}
-              className="inline-flex h-11 shrink-0 items-center rounded-full border border-border px-4 text-sm text-ink-soft hover:bg-muted"
-            >
-              View live
-            </Link>
-          )}
-          <Button
-            variant="outline"
-            className="h-11 shrink-0 rounded-md px-4"
-            disabled={!dirty || saveMut.isPending || readOnly}
-            onClick={() => saveMut.mutate(undefined)}
-          >
-            {saveMut.isPending ? "Saving…" : "Save"}
-          </Button>
-          {!isPublished && (
-            <Button
-              className="h-11 shrink-0 px-5 bg-primary text-primary-foreground"
-              disabled={(!access.canPublish && !publishBlockedByQuota) || publishMut.isPending}
-              onClick={() => publishBlockedByQuota ? setBlogGateOpen(true) : publishMut.mutate()}
-            >
-              {publishMut.isPending ? "Publishing…" : "Publish"}
-            </Button>
-          )}
-          {showOverflow && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  aria-label="More post actions"
-                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border text-ink-soft hover:bg-muted"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {isPublished && (
-                  <DropdownMenuItem
-                    disabled={!access.canUnpublish || unpublishMut.isPending}
-                    onSelect={() => unpublishMut.mutate()}
-                  >
-                    Unpublish
-                  </DropdownMenuItem>
-                )}
-                {canDeleteDraft && (
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    disabled={deleteMut.isPending}
-                    onSelect={() => {
-                      if (confirm("Delete this draft? This can't be undone.")) deleteMut.mutate();
-                    }}
-                  >
-                    Delete draft
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+          <PostActions post={post} />
         </div>
+
       </div>
 
       {access.monthlyPublicationLimit != null && (
@@ -397,6 +421,10 @@ function MemberBlogEditorPage() {
                 setEntityPickerOpen(true);
               }}
             />
+          </div>
+
+          <div className="flex items-center justify-end border-t border-border pt-4">
+            <PostActions post={post} />
           </div>
         </TabsContent>
 
@@ -495,6 +523,10 @@ function MemberBlogEditorPage() {
               className="mt-1 w-full rounded-2xl border border-border bg-surface px-4 py-3 text-[16px] text-ink focus:border-primary focus:outline-none"
               placeholder="Defaults to the excerpt"
             />
+          </div>
+
+          <div className="flex items-center justify-end border-t border-border pt-4">
+            <PostActions post={post} />
           </div>
         </TabsContent>
       </Tabs>
