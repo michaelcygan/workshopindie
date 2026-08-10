@@ -1139,13 +1139,7 @@ function GroupCollabTab({ group }: { group: GroupRow }) {
         <GroupEmpty
           title="No Collabs yet."
           hint="Post the first one — it shows up across Workshop."
-          action={
-            <Button asChild size="sm" className="rounded-md">
-              <Link to="/collab/new" search={{ group: group.slug }}>
-                <Plus className="h-4 w-4" /> Post a Collab
-              </Link>
-            </Button>
-          }
+          action={<PostCollabCta group={group} />}
         />
       ) : filtered.length === 0 ? (
         <div className="mt-8 text-center text-sm text-ink-muted">
@@ -1163,25 +1157,31 @@ function GroupCollabTab({ group }: { group: GroupRow }) {
               Clear
             </button>
           )}
+          <PostCollabCta group={group} variant="card" />
         </div>
       ) : (
-        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-          {filtered.map((c) => (
-            <Link
-              key={c.id}
-              to="/collab/$slug"
-              params={{ slug: c.slug }}
-              className="rounded-2xl border border-border bg-surface p-4 transition hover:-translate-y-0.5 hover:shadow-lift"
-            >
-              <h3 className="font-display text-lg text-ink line-clamp-2">{c.title}</h3>
-              {c.description && (
-                <p className="mt-1 line-clamp-2 text-sm text-ink-muted">{c.description}</p>
-              )}
-              <CollabCardMeta collab={c} />
-            </Link>
-          ))}
-        </div>
+        <>
+          <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+            {filtered.map((c) => (
+              <Link
+                key={c.id}
+                to="/collab/$slug"
+                params={{ slug: c.slug }}
+                className="rounded-2xl border border-border bg-surface p-4 transition hover:-translate-y-0.5 hover:shadow-lift"
+              >
+                <h3 className="font-display text-lg text-ink line-clamp-2">{c.title}</h3>
+                {c.description && (
+                  <p className="mt-1 line-clamp-2 text-sm text-ink-muted">{c.description}</p>
+                )}
+                <CollabCardMeta collab={c} />
+              </Link>
+            ))}
+          </div>
+          {/* The section ends with an ask, not dead space. */}
+          <PostCollabCta group={group} variant="card" />
+        </>
       )}
+
     </div>
   );
 }
