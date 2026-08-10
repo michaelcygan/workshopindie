@@ -9,37 +9,65 @@ import { useCallback, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SharedLinksList, type SharedLinkMessage } from "@/components/shared-links-list";
+import { extractUrls, isBlockedUrl } from "@/lib/moderation/url-blocklist";
 
 type TodayLinkRow = SharedLinkMessage & {
   author?: { username: string | null; display_name: string | null } | null;
 };
 
+function linksQueryKey(groupId: string) {
+  return ["group", groupId, "today-links"] as const;
+}
+
+async function fetchTodayLinkRows(groupId: string): Promise<TodayLinkRow[]> {
+  const { data, error } = await supabase
+    .from("group_today_posts")
+    .select(
+      "id,author_id,body,created_at,author:profiles!group_today_posts_author_profile_fkey(username,display_name)",
+    )
+    .eq("group_id", groupId)
+    .gt("expires_at", new Date().toISOString())
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (error) throw error;
+  return (data ?? []).map((r) => ({
+    id: r.id as string,
+    user_id: r.author_id as string,
+    body: (r.body as string) ?? "",
+    created_at: r.created_at as string,
+    author: (r as unknown as TodayLinkRow).author ?? null,
+  })) as TodayLinkRow[];
+}
+
+/**
+ * How many links are actually collected right now. Shares the Links tab's
+ * query, so the section bar badge costs nothing extra, and applies the same
+ * blocklist the list renders with — the count never promises more than the
+ * section shows.
+ */
+export function useGroupLinkCount(groupId: string) {
+  const { data: rows = [] } = useQuery({
+    queryKey: linksQueryKey(groupId),
+    staleTime: 30_000,
+    queryFn: () => fetchTodayLinkRows(groupId),
+  });
+  let count = 0;
+  for (const row of rows) {
+    for (const url of extractUrls(row.body)) {
+      if (!isBlockedUrl(url)) count += 1;
+    }
+  }
+  return count;
+}
+
 export function GroupLinksTab({ group }: { group: { id: string; name: string } }) {
   const qc = useQueryClient();
-  const queryKey = ["group", group.id, "today-links"] as const;
+  const queryKey = linksQueryKey(group.id);
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey,
     staleTime: 30_000,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("group_today_posts")
-        .select(
-          "id,author_id,body,created_at,author:profiles!group_today_posts_author_profile_fkey(username,display_name)",
-        )
-        .eq("group_id", group.id)
-        .gt("expires_at", new Date().toISOString())
-        .order("created_at", { ascending: false })
-        .limit(200);
-      if (error) throw error;
-      return (data ?? []).map((r) => ({
-        id: r.id as string,
-        user_id: r.author_id as string,
-        body: (r.body as string) ?? "",
-        created_at: r.created_at as string,
-        author: (r as unknown as TodayLinkRow).author ?? null,
-      })) as TodayLinkRow[];
-    },
+    queryFn: () => fetchTodayLinkRows(group.id),
   });
 
   useEffect(() => {
