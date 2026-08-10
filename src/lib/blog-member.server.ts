@@ -14,6 +14,7 @@ import {
   type BlogCategorySlug,
 } from "@/lib/blog-categories";
 import { normalizeField, type FieldId } from "@/lib/taxonomy";
+import { rowFields } from "@/lib/work-fields";
 
 type AuthContext = {
   supabase: SupabaseClient<Database>;
@@ -240,16 +241,17 @@ export async function createMyBlogDraftServer(
   if (seedTag?.kind === "work") {
     const { data: work } = await supabaseAdmin
       .from("works")
-      .select("category")
+      .select("category,categories,category_canonical,categories_canonical")
       .eq("id", seedTag.id)
       .maybeSingle();
+    const workFields = rowFields(work as Parameters<typeof rowFields>[0]);
     const slug = blogCategoryFromWorkCategory(
       (work as { category: string | null } | null)?.category,
     );
-    if (slug !== "general") {
+    if (slug !== "general" || workFields[0] !== "other") {
       await supabaseAdmin
         .from("blog_posts")
-        .update({ category_slug: slug })
+        .update({ category_slug: slug, fields: workFields })
         .eq("id", data as string)
         .eq("created_by", context.userId);
     }

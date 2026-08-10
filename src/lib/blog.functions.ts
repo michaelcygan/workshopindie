@@ -3,6 +3,7 @@ import { setResponseHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { BLOG_CATEGORY_SLUGS } from "@/lib/blog-categories";
+import { FIELD_IDS } from "@/lib/taxonomy";
 
 export const listPublishedPosts = createServerFn({ method: "GET" }).handler(async () => {
   const { blogPublicCacheHeader, listPublishedPostsServer } = await import("./blog.server");
@@ -143,6 +144,7 @@ export const adminCreateDraft = createServerFn({ method: "POST" })
         author_name: z.string().trim().min(1).max(120).default("Workshop"),
         author_profile_username: z.string().trim().max(80).nullable().optional(),
         category_slug: z.enum(BLOG_CATEGORY_SLUGS).default("general"),
+        fields: z.array(z.enum(FIELD_IDS)).max(3).optional(),
       })
       .parse(d),
   )
@@ -174,6 +176,7 @@ export const adminUpdatePost = createServerFn({ method: "POST" })
         author_name: z.string().trim().min(1).max(120).default("Workshop"),
         author_profile_username: z.string().trim().max(80).nullable().optional(),
         category_slug: z.enum(BLOG_CATEGORY_SLUGS).default("general"),
+        fields: z.array(z.enum(FIELD_IDS)).max(3).optional(),
       })
       .parse(d),
   )

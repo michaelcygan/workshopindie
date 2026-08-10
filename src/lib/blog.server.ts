@@ -143,7 +143,7 @@ export async function getPublishedPostServer(slug: string) {
   const { data, error } = await publicClient()
     .from("blog_posts")
     .select(
-      "id,title,slug,excerpt,body_markdown,cover_image_url,cover_image_alt,seo_title,seo_description,author_name,published_at,updated_at,show_in_blog_index,publication_type,category_slug,created_by,author_profile_id,author_profile:profiles!blog_posts_author_profile_id_fkey(username,display_name,avatar_url)",
+      "id,title,slug,excerpt,body_markdown,cover_image_url,cover_image_alt,seo_title,seo_description,author_name,published_at,updated_at,show_in_blog_index,publication_type,category_slug,fields,created_by,author_profile_id,author_profile:profiles!blog_posts_author_profile_id_fkey(username,display_name,avatar_url)",
     )
     .eq("slug", slug)
     .eq("status", "published")
@@ -443,6 +443,7 @@ export async function adminCreateDraftServer(context: AuthContext, data: BlogWri
       author_name: data.author_name,
       author_profile_id: authorProfileId,
       category_slug: data.category_slug ?? "general",
+      ...(data.fields ? { fields: data.fields } : {}),
       status: "draft",
       created_by: context.userId,
       updated_by: context.userId,
@@ -488,6 +489,7 @@ export async function adminUpdatePostServer(
       author_name: data.author_name,
       author_profile_id: authorProfileId,
       ...(data.category_slug ? { category_slug: data.category_slug } : {}),
+      ...(data.fields ? { fields: data.fields } : {}),
       updated_by: context.userId,
     })
     .eq("id", data.id);
