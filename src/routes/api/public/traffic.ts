@@ -53,7 +53,12 @@ export const Route = createFileRoute("/api/public/traffic")({
             ? claimed
             : referrerHost(request.headers.get("referer"));
           const self = new URL(request.url).hostname.toLowerCase();
-          const external = host && host !== self && !host.endsWith("lovable.app") ? host : null;
+          // Preview/editor hosts are Workshop looking at itself, not acquisition.
+          const INTERNAL = ["lovable.app", "lovableproject.com", "workshopindie.com", "localhost"];
+          const external =
+            host && host !== self && !INTERNAL.some((h) => host === h || host.endsWith(`.${h}`))
+              ? host
+              : null;
 
           const geo = coarseGeoFromHeaders(request.headers);
 
