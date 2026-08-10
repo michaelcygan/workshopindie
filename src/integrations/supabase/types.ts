@@ -4952,6 +4952,66 @@ export type Database = {
           },
         ]
       }
+      podcast_applications: {
+        Row: {
+          city: string | null
+          conversation_topics: string | null
+          created_at: string
+          current_work: string | null
+          email: string
+          field: string
+          id: string
+          internal_notes: string | null
+          marketing_opt_in: boolean
+          name: string
+          portfolio_url: string
+          process_description: string
+          social_handle: string | null
+          specialization: string | null
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          city?: string | null
+          conversation_topics?: string | null
+          created_at?: string
+          current_work?: string | null
+          email: string
+          field: string
+          id?: string
+          internal_notes?: string | null
+          marketing_opt_in?: boolean
+          name: string
+          portfolio_url: string
+          process_description: string
+          social_handle?: string | null
+          specialization?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          city?: string | null
+          conversation_topics?: string | null
+          created_at?: string
+          current_work?: string | null
+          email?: string
+          field?: string
+          id?: string
+          internal_notes?: string | null
+          marketing_opt_in?: boolean
+          name?: string
+          portfolio_url?: string
+          process_description?: string
+          social_handle?: string | null
+          specialization?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       processed_stripe_events: {
         Row: {
           event_id: string

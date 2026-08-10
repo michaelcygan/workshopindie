@@ -55,33 +55,9 @@ export const subscribeToNewsletter = createServerFn({ method: "POST" })
       }
     }
 
-    // Upsert-style: check existing case-insensitive.
-    const { data: existing } = await supabaseAdmin
-      .from("newsletter_subscribers")
-      .select("id,status")
-      .ilike("email", data.email)
-      .maybeSingle();
+    const { upsertNewsletterSubscriber } = await import("@/lib/newsletter.server");
+    await upsertNewsletterSubscriber(data.email, data.source?.trim() || "footer");
 
-    if (existing) {
-      if (existing.status === "unsubscribed") {
-        await supabaseAdmin
-          .from("newsletter_subscribers")
-          .update({
-            status: "subscribed",
-            unsubscribed_at: null,
-            subscribed_at: new Date().toISOString(),
-          })
-          .eq("id", existing.id);
-      }
-      // Already subscribed — generic success (don't reveal presence).
-      return { ok: true };
-    }
-
-    await supabaseAdmin.from("newsletter_subscribers").insert({
-      email: data.email,
-      status: "subscribed",
-      source: data.source?.trim() || "footer",
-    });
 
     return { ok: true };
   });
@@ -103,14 +79,19 @@ export const adminListSubscribers = createServerFn({ method: "GET" })
 
 export const adminExportSubscribersCsv = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((d: { source?: string } | undefined) =>
+    z.object({ source: z.string().max(60).optional() }).parse(d ?? {}),
+  )
+  .handler(async ({ data: input, context }) => {
     await requireAdmin(context.supabase, context.userId);
-    const { data, error } = await supabaseAdmin
+    let q = supabaseAdmin
       .from("newsletter_subscribers")
       .select("email,subscribed_at,source")
-      .eq("status", "subscribed")
-      .order("subscribed_at", { ascending: false });
+      .eq("status", "subscribed");
+    if (input.source) q = q.eq("source", input.source);
+    const { data, error } = await q.order("subscribed_at", { ascending: false });
     if (error) throw new Error(error.message);
+
     const lines = ["email,subscribed_at,source"];
     for (const r of data ?? []) {
       const esc = (s: string) => `"${(s ?? "").replace(/"/g, '""')}"`;

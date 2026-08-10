@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
 import { adminListSubscribers, adminExportSubscribersCsv } from "@/lib/newsletter.functions";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
@@ -12,18 +13,35 @@ export const Route = createFileRoute("/admin/blog/subscribers")({
 function SubscribersPage() {
   const list = useServerFn(adminListSubscribers);
   const exp = useServerFn(adminExportSubscribersCsv);
+  const [source, setSource] = useState<string | null>(null);
   const { data, isLoading } = useQuery({
     queryKey: ["admin-newsletter-subscribers"],
     queryFn: () => list(),
   });
 
+  const sources = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of data?.rows ?? []) {
+      const key = r.source || "unknown";
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+  }, [data]);
+
+  const rows = useMemo(
+    () => (data?.rows ?? []).filter((r) => !source || (r.source || "unknown") === source),
+    [data, source],
+  );
+
   async function download() {
-    const res = await exp();
+    const res = await exp(source ? { data: { source } } : ({} as any));
     const blob = new Blob([res.csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `workshop-subscribers-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `workshop-subscribers${source ? `-${source}` : ""}-${new Date()
+      .toISOString()
+      .slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -33,7 +51,7 @@ function SubscribersPage() {
       <div className="mb-6 flex flex-wrap items-center gap-3">
         <div className="flex-1">
           <Link to="/admin/blog" className="text-sm text-ink-muted hover:text-ink">← Blog</Link>
-          <h2 className="mt-1 font-display text-2xl text-ink">Subscribers</h2>
+          <h2 className="mt-1 font-display text-2xl text-ink">Email list</h2>
           <p className="text-sm text-ink-muted">
             {data ? `${data.active} active · ${data.total} total` : "Loading…"}
           </p>
@@ -42,6 +60,30 @@ function SubscribersPage() {
           <Download className="h-4 w-4" /> Export CSV
         </Button>
       </div>
+
+      {sources.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-1 rounded-full bg-muted p-1">
+          <button
+            onClick={() => setSource(null)}
+            className={`rounded-full px-3 py-1 text-sm ${
+              source === null ? "bg-background font-medium text-ink shadow-sm" : "text-ink-soft"
+            }`}
+          >
+            All · {data?.total ?? 0}
+          </button>
+          {sources.map(([s, n]) => (
+            <button
+              key={s}
+              onClick={() => setSource(s)}
+              className={`rounded-full px-3 py-1 text-sm ${
+                source === s ? "bg-background font-medium text-ink shadow-sm" : "text-ink-soft"
+              }`}
+            >
+              {s} · {n}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="overflow-hidden rounded-2xl border border-border bg-surface">
         <table className="w-full text-sm">
@@ -56,10 +98,10 @@ function SubscribersPage() {
           <tbody>
             {isLoading ? (
               <tr><td className="px-4 py-6 text-ink-muted" colSpan={4}>Loading…</td></tr>
-            ) : (data?.rows.length ?? 0) === 0 ? (
+            ) : rows.length === 0 ? (
               <tr><td className="px-4 py-6 text-ink-muted" colSpan={4}>No subscribers yet.</td></tr>
             ) : (
-              data!.rows.map((r) => (
+              rows.map((r) => (
                 <tr key={r.id} className="border-t border-border">
                   <td className="px-4 py-3 text-ink">{r.email}</td>
                   <td className="px-4 py-3 text-ink-muted">{new Date(r.subscribed_at).toLocaleString()}</td>
