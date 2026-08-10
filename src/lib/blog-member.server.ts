@@ -9,9 +9,11 @@ import { moderateFields } from "@/lib/moderation/service.server";
 import { resolveBlogAccess } from "@/lib/blog-access.server";
 import {
   blogCategoryFromWorkCategory,
+  blogCategorySlugForField,
   isBlogCategorySlug,
   type BlogCategorySlug,
 } from "@/lib/blog-categories";
+import { normalizeField, type FieldId } from "@/lib/taxonomy";
 
 type AuthContext = {
   supabase: SupabaseClient<Database>;
