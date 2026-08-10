@@ -320,6 +320,14 @@ function GroupPage() {
   if (tab === "members" && !user) viewTab = "today";
   if (tab === "links" && linkCount === 0) viewTab = "today";
 
+  // Return-visit nudge only: signed-out visitors never see it, and reading
+  // Today clears it.
+  const todayUnread = useTodayUnread({
+    groupId: group.id,
+    enabled: !!user,
+    active: viewTab === "today",
+  });
+
 
 
   // Full child-group payload — only fetched when the Subgroups tab is opened.
