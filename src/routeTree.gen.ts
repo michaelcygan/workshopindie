@@ -49,6 +49,7 @@ import { Route as AdminOpsRouteImport } from './routes/admin.ops'
 import { Route as AdminPlusRouteImport } from './routes/admin.plus'
 import { Route as AdminPodcastRouteImport } from './routes/admin.podcast'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
+import { Route as AdminResourcesRouteImport } from './routes/admin.resources'
 import { Route as AdminRevenueRouteImport } from './routes/admin.revenue'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AuthCompleteRouteImport } from './routes/auth.complete'
@@ -317,6 +318,11 @@ const AdminPodcastRoute = AdminPodcastRouteImport.update({
 const AdminReportsRoute = AdminReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminResourcesRoute = AdminResourcesRouteImport.update({
+  id: '/resources',
+  path: '/resources',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminRevenueRoute = AdminRevenueRouteImport.update({
@@ -699,6 +705,7 @@ export interface FileRoutesByFullPath {
   '/admin/plus': typeof AdminPlusRoute
   '/admin/podcast': typeof AdminPodcastRoute
   '/admin/reports': typeof AdminReportsRoute
+  '/admin/resources': typeof AdminResourcesRoute
   '/admin/revenue': typeof AdminRevenueRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/auth/complete': typeof AuthCompleteRoute
@@ -802,6 +809,7 @@ export interface FileRoutesByTo {
   '/admin/plus': typeof AdminPlusRoute
   '/admin/podcast': typeof AdminPodcastRoute
   '/admin/reports': typeof AdminReportsRoute
+  '/admin/resources': typeof AdminResourcesRoute
   '/admin/revenue': typeof AdminRevenueRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/auth/complete': typeof AuthCompleteRoute
@@ -912,6 +920,7 @@ export interface FileRoutesById {
   '/admin/plus': typeof AdminPlusRoute
   '/admin/podcast': typeof AdminPodcastRoute
   '/admin/reports': typeof AdminReportsRoute
+  '/admin/resources': typeof AdminResourcesRoute
   '/admin/revenue': typeof AdminRevenueRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/auth/complete': typeof AuthCompleteRoute
@@ -1023,6 +1032,7 @@ export interface FileRouteTypes {
     | '/admin/plus'
     | '/admin/podcast'
     | '/admin/reports'
+    | '/admin/resources'
     | '/admin/revenue'
     | '/admin/users'
     | '/auth/complete'
@@ -1126,6 +1136,7 @@ export interface FileRouteTypes {
     | '/admin/plus'
     | '/admin/podcast'
     | '/admin/reports'
+    | '/admin/resources'
     | '/admin/revenue'
     | '/admin/users'
     | '/auth/complete'
@@ -1235,6 +1246,7 @@ export interface FileRouteTypes {
     | '/admin/plus'
     | '/admin/podcast'
     | '/admin/reports'
+    | '/admin/resources'
     | '/admin/revenue'
     | '/admin/users'
     | '/auth/complete'
@@ -1652,6 +1664,13 @@ declare module '@tanstack/react-router' {
       path: '/reports'
       fullPath: '/admin/reports'
       preLoaderRoute: typeof AdminReportsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/resources': {
+      id: '/admin/resources'
+      path: '/resources'
+      fullPath: '/admin/resources'
+      preLoaderRoute: typeof AdminResourcesRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/revenue': {
@@ -2154,6 +2173,7 @@ interface AdminRouteChildren {
   AdminPlusRoute: typeof AdminPlusRoute
   AdminPodcastRoute: typeof AdminPodcastRoute
   AdminReportsRoute: typeof AdminReportsRoute
+  AdminResourcesRoute: typeof AdminResourcesRoute
   AdminRevenueRoute: typeof AdminRevenueRoute
   AdminUsersRoute: typeof AdminUsersRouteWithChildren
   AdminIndexRoute: typeof AdminIndexRoute
@@ -2179,6 +2199,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminPlusRoute: AdminPlusRoute,
   AdminPodcastRoute: AdminPodcastRoute,
   AdminReportsRoute: AdminReportsRoute,
+  AdminResourcesRoute: AdminResourcesRoute,
   AdminRevenueRoute: AdminRevenueRoute,
   AdminUsersRoute: AdminUsersRouteWithChildren,
   AdminIndexRoute: AdminIndexRoute,
