@@ -18,10 +18,6 @@ import { getMemberHome } from "@/lib/home.functions";
 import { categoryLabel } from "@/lib/taxonomy";
 import type { HomeCircleStory, MemberHomePayload } from "@/lib/home-types";
 
-function fieldLabelText(id: string) {
-  return categoryLabel(id);
-}
-
 /* ──────────────────────────── Circles ──────────────────────────── */
 
 const CIRCLE_ICON: Record<HomeCircleStory["kind"], typeof Radio> = {
