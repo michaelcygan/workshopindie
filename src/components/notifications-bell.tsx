@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Bell, Mail, UserPlus, MessageCircle, CreditCard, Sparkles, Radio, Gift, Calendar, Ticket } from "lucide-react";
+import { Bell, Mail, UserPlus, MessageCircle, CreditCard, Sparkles, Radio, Gift, Calendar, Ticket, Mic } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { playNotifySound } from "@/lib/notify-sound";
