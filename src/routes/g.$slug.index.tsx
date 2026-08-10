@@ -43,7 +43,9 @@ import { GroupHero } from "@/components/group/group-hero";
 import { GroupTabBar, type GroupTab } from "@/components/group/group-tab-bar";
 import { GroupEmpty } from "@/components/group/group-empty";
 import { GroupTodayTab } from "@/components/group/group-today-tab";
-import { GroupLinksTab } from "@/components/group/group-links-tab";
+import { GroupLinksTab, useGroupLinkCount } from "@/components/group/group-links-tab";
+import { useTodayUnread } from "@/components/group/use-today-unread";
+import { useGroupUpcomingEventCount } from "@/components/group/group-event-directory";
 import { GroupResourcesTab, useGroupResourceCount } from "@/components/group/group-resources-tab";
 import { GroupLiveShell } from "@/components/group/group-live-shell";
 
@@ -306,11 +308,17 @@ function GroupPage() {
   const { count: resourceCount, isLoading: resourcesLoading } = useGroupResourceCount(group.id);
   const hasResources = resourceCount > 0;
 
+  // Events, Links, and the Today signal round out the section bar so every
+  // label answers "is there anything in here?" before it's tapped.
+  const eventCount = useGroupUpcomingEventCount(group.id);
+  const linkCount = useGroupLinkCount(group.id);
+
   let viewTab: Tab = tab;
   if (tab === "posts" && !groupBlogLoading && !hasBlogPosts) viewTab = "today";
   if (tab === "resources" && !resourcesLoading && !hasResources) viewTab = "today";
   // Members is a signed-in-only directory; stale deep links fall back to Today.
   if (tab === "members" && !user) viewTab = "today";
+  if (tab === "links" && linkCount === 0) viewTab = "today";
 
 
 
@@ -390,10 +398,16 @@ function GroupPage() {
                 collab: group.collab_count,
                 work: group.work_count,
                 members: group.member_count,
+                events: eventCount,
+                posts: groupBlogPosts.length,
+                resources: resourceCount,
+                links: linkCount,
               }}
               childCount={childCount}
               showPosts={groupBlogLoading || hasBlogPosts}
               showResources={hasResources}
+              showLinks={linkCount > 0}
+              todayUnread={todayUnread}
             />
 
 
