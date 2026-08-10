@@ -72,6 +72,24 @@ function clientIpHash(): string | null {
   const salt = new Date().toISOString().slice(0, 10);
   return createHash("sha256").update(`${raw}::${salt}::podcast`).digest("hex");
 }
+/**
+ * Accepts a full Workshop profile URL or a bare handle and returns the
+ * normalized username. Anything unusable becomes null — this field is a
+ * convenience, never a validation gate on the application.
+ */
+function parseWorkshopUsername(raw: string | null): string | null {
+  if (!raw) return null;
+  let s = raw.trim();
+  const m = s.match(/^(?:https?:\/\/)?(?:www\.)?workshopindie\.com\/(.+)$/i);
+  if (m?.[1]) s = m[1];
+  s = s.split(/[?#]/)[0] ?? "";
+  s = s.replace(/\/+$/, "");
+  const last = s.split("/").filter(Boolean).pop() ?? "";
+  const username = normalizeUsername(last.replace(/^@/, ""));
+  if (username.length < USERNAME_MIN || username.length > USERNAME_MAX) return null;
+  return username;
+}
+
 
 const optionalLine = (max: number) =>
   z
