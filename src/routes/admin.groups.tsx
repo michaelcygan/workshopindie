@@ -227,7 +227,7 @@ function CreateGroupDialog() {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="city">City</SelectItem>
-                <SelectItem value="genre">Genre</SelectItem>
+                <SelectItem value="genre">Field</SelectItem>
                 <SelectItem value="micro">Micro</SelectItem>
                 <SelectItem value="scene">Scene</SelectItem>
               </SelectContent>

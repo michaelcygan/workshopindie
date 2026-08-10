@@ -23,7 +23,7 @@ export type GroupCardData = {
 
 const KIND_LABEL: Record<GroupCardData["kind"], string> = {
   city: "City",
-  genre: "Genre",
+  genre: "Field",
   micro: "Micro",
   scene: "Scene",
 };

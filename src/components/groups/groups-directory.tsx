@@ -30,7 +30,7 @@ const SORT_LABELS: Record<GroupsSort, string> = {
 
 const KIND_LABELS: Record<GroupCardData["kind"], string> = {
   city: "City",
-  genre: "Genre",
+  genre: "Field",
   micro: "Micro",
   scene: "Scene",
 };
@@ -38,7 +38,7 @@ const KIND_LABELS: Record<GroupCardData["kind"], string> = {
 const TITLE_BY_TAB: Record<GroupsTab, string> = {
   all: "All Groups",
   "for-you": "Your groups",
-  genre: "Genres",
+  genre: "Fields",
   scene: "Scenes",
   micro: "Micro Groups",
   city: "Cities",
