@@ -49,6 +49,7 @@ export type EventLite = {
   tagline: string | null;
   kind: string;
   creative_category: string | null;
+  subcategory: string | null;
   format: "in_person" | "online" | "hybrid";
   cover_url: string | null;
   starts_at: string;
@@ -78,7 +79,7 @@ export type DirectoryFilters = {
 };
 
 const EVENT_COLUMNS =
-  "id,slug,title,tagline,kind,creative_category,format,cover_url,starts_at,ends_at,venue_name,venue_address,going_count,capacity,featured_at,source,external_url,external_organizer,is_recurring,recurrence_label,pinned_at,online_url,series_key,group_id";
+  "id,slug,title,tagline,kind,creative_category,subcategory,format,cover_url,starts_at,ends_at,venue_name,venue_address,going_count,capacity,featured_at,source,external_url,external_organizer,is_recurring,recurrence_label,pinned_at,online_url,series_key,group_id";
 
 /** Every event connected to this Group, deduplicated and series-collapsed. */
 export function useGroupDirectoryEvents(groupId: string) {
@@ -462,6 +463,7 @@ export function EventCardLite({ ev }: { ev: EventLite }) {
   const isOnline = ev.format === "online" || ev.format === "hybrid";
   const locationLine = isOnline ? "Online" : (ev.venue_name ?? ev.venue_address ?? "TBA");
   const category = ev.creative_category ? { label: categoryLabel(ev.creative_category) } : null;
+  const specialization = ev.subcategory ? subcategoryLabel(ev.subcategory) : null;
 
   // Canonical destination only — outbound links live on the event page.
   return (
