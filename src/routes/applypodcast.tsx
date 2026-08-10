@@ -105,11 +105,25 @@ function ApplyPodcastPage() {
     ? [location.name, location.sublabel].filter(Boolean).join(", ")
     : "";
 
+  const processLength = processDescription.trim().length;
+  const processTooShort = processLength > 0 && processLength < PROCESS_MIN;
+
+  function focusProcess() {
+    const el = document.getElementById("podcast-process");
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    (el as HTMLTextAreaElement | null)?.focus({ preventScroll: true });
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
     if (!field) {
       toast.error("Please choose a field.");
+      return;
+    }
+    if (processDescription.trim().length < PROCESS_MIN) {
+      toast.error("Tell us a little more about how you work — a few sentences is plenty.");
+      focusProcess();
       return;
     }
     setBusy(true);
