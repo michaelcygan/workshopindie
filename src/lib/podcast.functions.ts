@@ -140,7 +140,15 @@ const applicationSchema = z.object({
 });
 
 export const submitPodcastApplication = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => applicationSchema.parse(d))
+  .inputValidator((d: unknown) =>
+    parseFriendly(applicationSchema, d, {
+      name: "Name",
+      email: "Email",
+      field: "Field",
+      portfolioUrl: "Link to your work",
+      processDescription: "Your process",
+    }),
+  )
   .handler(async ({ data }) => {
     // Honeypot: silently succeed (bots get no signal).
     if (data.website && data.website.trim().length > 0) return { ok: true };
