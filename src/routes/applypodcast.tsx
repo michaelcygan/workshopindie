@@ -17,9 +17,10 @@ import {
   GlobalLocationCombobox,
   type SelectedLocation,
 } from "@/components/global-location-combobox";
-import { FIELD_OPTIONS, formatSuggestionsFor } from "@/lib/taxonomy";
+import { FIELD_OPTIONS, formatSuggestionsFor, isFieldId } from "@/lib/taxonomy";
 import { normalizeUrlOrKeep } from "@/lib/url-normalize";
 import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
 import { submitPodcastApplication } from "@/lib/podcast.functions";
 
 const CANONICAL = "https://workshopindie.com/applypodcast";
