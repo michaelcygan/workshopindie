@@ -14,9 +14,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUpload } from "@/components/image-upload";
 import { CoverImagePicker } from "@/components/cover-image-picker";
-import { type Category, categoryClass } from "@/lib/categories";
+import { FIELD_OPTIONS, fieldClass, type FieldId } from "@/lib/taxonomy";
+import { profileFieldWritePayload, profileFields } from "@/lib/work-fields";
 import {
-  WORK_MEDIUMS,
   EXTRA_MEDIUMS,
   isExtraMedium,
   MAX_TOOLS,
@@ -75,7 +75,7 @@ type FormState = {
   avatar: string | null;
   cover: string | null;
   coverWorkId: string | null;
-  cats: Category[];
+  cats: FieldId[];
   mediums: ExtraMedium[];
   tools: string[];
   languages: string[];
@@ -252,7 +252,7 @@ function EditProfile() {
     supabase
       .from("profiles")
       .select(
-        "id,username,first_name,last_name,aliases,alias_urls,instagram_handle,headline,bio,artist_statement,avatar_url,cover_url,cover_work_id,categories,mediums,tools,languages,external_links,city_id,pinned_work_ids",
+        "id,username,first_name,last_name,aliases,alias_urls,instagram_handle,headline,bio,artist_statement,avatar_url,cover_url,cover_work_id,categories,categories_canonical,mediums,tools,languages,external_links,city_id,pinned_work_ids",
       )
       .eq("id", user.id)
       .maybeSingle()
@@ -283,7 +283,7 @@ function EditProfile() {
           avatar: data.avatar_url ?? null,
           cover: data.cover_url ?? null,
           coverWorkId: (data as { cover_work_id?: string | null }).cover_work_id ?? null,
-          cats: (data.categories ?? []) as Category[],
+          cats: profileFields(data as { categories?: string[] | null; categories_canonical?: string[] | null }),
           mediums: ((data.mediums as string[] | null) ?? []).filter(isExtraMedium) as ExtraMedium[],
           tools: (data.tools as string[] | null) ?? [],
           languages: (data as { languages?: string[] | null }).languages ?? [],
@@ -401,7 +401,7 @@ function EditProfile() {
         avatar_url: form.avatar,
         cover_url: form.cover,
         cover_work_id: form.cover ? form.coverWorkId : null,
-        categories: form.cats,
+        ...profileFieldWritePayload(form.cats),
         mediums: form.mediums,
         tools: form.tools,
         languages: cleanLangs,
@@ -775,14 +775,14 @@ function EditProfile() {
           {/* MEDIUMS & BIO */}
           <Section
             id="mediums"
-            title="Mediums & bio"
+            title="Fields & bio"
             subtitle="Drives your Gallery tabs, gallery filters, and which Groups show up for you."
             refMap={sectionRefs}
           >
             <div className="space-y-2">
-              <Label>Mediums</Label>
+              <Label>Fields</Label>
               <div className="flex flex-wrap gap-2">
-                {WORK_MEDIUMS.map((c) => {
+                {FIELD_OPTIONS.map((c) => {
                   const on = form.cats.includes(c.id);
                   return (
                     <button
@@ -794,7 +794,7 @@ function EditProfile() {
                       className={cn(
                         "rounded-full border px-3 py-1.5 text-sm transition",
                         on
-                          ? cn("border-transparent", categoryClass(c.id))
+                          ? cn("border-transparent", fieldClass(c.id))
                           : "border-border bg-surface text-ink-soft hover:bg-muted",
                       )}
                     >
