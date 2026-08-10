@@ -39,6 +39,9 @@ export type PodcastApplication = {
   portfolio_url: string;
   social_handle: string | null;
   city: string | null;
+  city_id: string | null;
+  workshop_username: string | null;
+  wants_account: boolean;
   process_description: string;
   current_work: string | null;
   conversation_topics: string | null;
@@ -47,6 +50,7 @@ export type PodcastApplication = {
   internal_notes: string | null;
   created_at: string;
 };
+
 
 async function requireAdmin(supabase: any, userId: string) {
   const { data, error } = await supabase
