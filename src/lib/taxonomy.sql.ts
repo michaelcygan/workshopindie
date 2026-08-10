@@ -29,11 +29,17 @@ export const MEDIUM_CANONICALS: readonly CanonicalCategory[] = [
   "film_video",
   "writing",
   "visual_art",
-  "games_tech",
+  "software_ai",
   "performance",
   "audio",
   "design",
+  "journalism_media",
+  "making_engineering",
+  "science_research",
+  "architecture_cities",
+  "environment_nature",
 ];
+
 
 function whenClauses(pairs: Array<[string, string]>): string {
   return pairs.map(([from, to]) => `    WHEN '${from}' THEN '${to}'`).join("\n");

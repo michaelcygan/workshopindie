@@ -12,9 +12,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUpload } from "@/components/image-upload";
 import { WorkAssetsEditor } from "@/components/work/work-assets-editor";
-import { CategoryMultiPicker } from "@/components/category-multi-picker";
+import { FieldPicker } from "@/components/field-picker";
+import { FormatInput } from "@/components/format-input";
 import { BookDetailsSection, emptyBookDetails, type BookDetails } from "@/components/book-details-section";
-import { WORK_SUBTYPES, type WorkCategory, type Category } from "@/lib/categories";
+import { isBookWork, type FieldId } from "@/lib/taxonomy";
+import { fieldWritePayload, rowFields } from "@/lib/work-fields";
 import {
   Select,
   SelectContent,
@@ -48,7 +50,7 @@ function EditWork() {
       const { data, error } = await supabase
         .from("works")
         .select(
-          "id,title,slug,category,categories,subtype,excerpt,description,cover_url,primary_url,embed_url,license_type,created_by,book_author,book_publisher,book_isbn,book_published_on,book_page_count,book_buy_links,book_excerpt_url",
+          "id,title,slug,category,categories,category_canonical,categories_canonical,subtype,excerpt,description,cover_url,primary_url,embed_url,license_type,created_by,book_author,book_publisher,book_isbn,book_published_on,book_page_count,book_buy_links,book_excerpt_url",
         )
         .eq("slug", slug)
         .maybeSingle();
@@ -60,9 +62,9 @@ function EditWork() {
   const [title, setTitle] = useState("");
   const [excerpt, setExcerpt] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState<WorkCategory>("visual");
-  const [extraCategories, setExtraCategories] = useState<WorkCategory[]>([]);
-  const [subtype, setSubtype] = useState<string | null>(null);
+  const [field, setField] = useState<FieldId>("visual_art");
+  const [extraFields, setExtraFields] = useState<FieldId[]>([]);
+  const [format, setFormat] = useState<string | null>(null);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [primaryUrl, setPrimaryUrl] = useState("");
   const [embedUrl, setEmbedUrl] = useState("");
@@ -76,17 +78,16 @@ function EditWork() {
     setTitle(work.title ?? "");
     setExcerpt(work.excerpt ?? "");
     setDescription(work.description ?? "");
-    setCategory((work.category ?? "visual") as WorkCategory);
-    const cats = ((work.categories ?? []) as WorkCategory[]).filter(
-      (c) => c !== work.category,
-    );
-    setExtraCategories(cats);
-    setSubtype(work.subtype ?? null);
+    const [primaryField, ...restFields] = rowFields(work);
+    setField(primaryField);
+    setExtraFields(restFields);
+    // "Book" was a category before it was a Format — carry old rows across.
+    setFormat(work.subtype ?? (work.category === "writing_book" ? "Book" : null));
     setCoverUrl(work.cover_url ?? null);
     setPrimaryUrl(work.primary_url ?? "");
     setEmbedUrl(work.embed_url ?? "");
     setLicenseType(work.license_type ?? "portfolio_credit_only");
-    if (work.category === "writing_book") {
+    if (isBookWork(work.category, work.subtype)) {
       setBook({
         author: work.book_author ?? "",
         publisher: work.book_publisher ?? "",
@@ -118,7 +119,7 @@ function EditWork() {
     if (!work || !user) return;
     if (!title.trim()) return toast.error("Give it a title.");
 
-    const isBook = category === "writing_book";
+    const isBook = isBookWork(null, format);
     let bookFields: Record<string, unknown> = {};
     if (isBook) {
       const cleanLinks = book.buyLinks
@@ -146,9 +147,8 @@ function EditWork() {
       .from("works")
       .update({
         title: title.trim(),
-        category: category as Category,
-        categories: [category, ...extraCategories.filter((c) => c !== category)] as Category[],
-        subtype,
+        ...fieldWritePayload(field, extraFields),
+        subtype: format,
         excerpt: excerpt.trim() || null,
         description: description.trim() || null,
         cover_url: coverUrl,
@@ -184,8 +184,6 @@ function EditWork() {
       </main>
     );
   }
-
-  const subtypes = WORK_SUBTYPES[category] ?? [];
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 md:px-6 md:py-12">
@@ -224,32 +222,15 @@ function EditWork() {
           />
         </div>
 
-        <div className="space-y-2">
-          <Label>Categories</Label>
-          <CategoryMultiPicker
-            primary={category}
-            extras={extraCategories}
-            onPrimaryChange={(c) => {
-              setCategory(c);
-              setSubtype(null);
-            }}
-            onExtrasChange={setExtraCategories}
-          />
-        </div>
+        <FieldPicker
+          primary={field}
+          extras={extraFields}
+          onPrimaryChange={setField}
+          onExtrasChange={setExtraFields}
+          onPrimaryReset={() => setFormat(null)}
+        />
 
-        {subtypes.length > 0 && (
-          <div className="space-y-2">
-            <Label>Type</Label>
-            <Select value={subtype ?? ""} onValueChange={(v) => setSubtype(v || null)}>
-              <SelectTrigger><SelectValue placeholder="Pick a type (optional)" /></SelectTrigger>
-              <SelectContent>
-                {subtypes.map((s) => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
+        <FormatInput fields={[field, ...extraFields]} value={format} onChange={setFormat} />
 
         <div className="space-y-2">
           <Label>Cover image</Label>
@@ -261,13 +242,13 @@ function EditWork() {
           />
         </div>
 
-        {category !== "writing_book" && work?.id && user?.id && (
+        {!isBookWork(null, format) && work?.id && user?.id && (
           <div className="border-t border-border pt-6">
             <WorkAssetsEditor workId={work.id} userId={user.id} license={licenseType} />
           </div>
         )}
 
-        {category !== "writing_book" && (
+        {!isBookWork(null, format) && (
           <>
             <div className="space-y-2">
               <Label>Primary link</Label>
@@ -300,7 +281,7 @@ function EditWork() {
           </Select>
         </div>
 
-        {category === "writing_book" && (
+        {isBookWork(null, format) && (
           <BookDetailsSection value={book} onChange={setBook} />
         )}
 

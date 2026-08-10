@@ -13,8 +13,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { COLLAB_CATEGORIES, type Category, type CollabCategory } from "@/lib/categories";
-import { CategoryMultiPicker } from "@/components/category-multi-picker";
+import { normalizeField, type FieldId } from "@/lib/taxonomy";
+import { fieldWritePayload } from "@/lib/work-fields";
+import { FieldPicker } from "@/components/field-picker";
 import { type CityValue } from "@/components/city-combobox";
 import { AuthoringLocationPicker } from "@/components/authoring-location-picker";
 import { TimelinePicker, type TimelineValue } from "@/components/timeline-picker";
@@ -103,27 +104,21 @@ const LOCATION_LABELS: Record<LocationMode, string> = {
   hybrid: "Either",
 };
 
-const ROLE_PRESETS: Record<Category, string[]> = {
-  film: ["Actor", "Director", "Cinematographer", "Editor", "Sound", "Producer", "Writer"],
+const ROLE_PRESETS: Record<FieldId, string[]> = {
+  film_video: ["Actor", "Director", "Cinematographer", "Editor", "Sound", "Producer", "Writer"],
   music: ["Vocalist", "Producer", "Instrumentalist", "Songwriter", "Mixer", "Featured artist"],
   writing: ["Co-writer", "Editor", "Beta reader", "Illustrator", "Researcher"],
-  writing_book: ["Co-author", "Editor", "Beta reader", "Cover designer", "Illustrator", "Audiobook narrator"],
-  build: ["Designer", "Engineer", "Product", "Researcher", "Co-founder"],
-  visual: ["Photographer", "Model", "Stylist", "MUA", "Hair", "Art director", "Retoucher"],
-  critique: ["Reader", "Reviewer", "Listener"],
-  business: ["Co-founder", "Advisor", "Designer", "Engineer", "Marketer"],
-  coworking: [],
-  office_hours: [],
-  roundtable: [],
-  pitch: [],
-  listen_party: [],
-  open_mic: [],
-  jam: [],
-  standup: [],
+  visual_art: ["Photographer", "Model", "Stylist", "MUA", "Hair", "Art director", "Retoucher"],
+  design: ["Designer", "Art director", "Typographer", "Illustrator", "Motion designer"],
+  performance: ["Performer", "Director", "Stage manager", "Musician", "Host"],
+  journalism_media: ["Reporter", "Editor", "Photographer", "Fact checker", "Producer"],
+  software_ai: ["Designer", "Engineer", "Product", "Researcher", "Co-founder"],
+  making_engineering: ["Fabricator", "Engineer", "Designer", "Electronics", "Installer"],
+  science_research: ["Researcher", "Analyst", "Field assistant", "Writer", "Reviewer"],
+  architecture_cities: ["Architect", "Designer", "Modeler", "Researcher", "Photographer"],
+  environment_nature: ["Field researcher", "Photographer", "Writer", "Organizer", "Analyst"],
   other: ["Collaborator", "Producer", "Designer", "Writer", "Editor"],
-
 };
-
 export function CollabComposer({
   embed = false,
   groupPreselectId = null,
@@ -154,8 +149,8 @@ export function CollabComposer({
   }, [preselect.data]);
 
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState<CollabCategory>("other");
-  const [extraCategories, setExtraCategories] = useState<CollabCategory[]>([]);
+  const [category, setCategory] = useState<FieldId>("other");
+  const [extraCategories, setExtraCategories] = useState<FieldId[]>([]);
   const [description, setDescription] = useState("");
   const [timeline, setTimeline] = useState<TimelineValue>({ mode: "flexible", starts_on: null, ends_on: null });
   const [timelineNote, setTimelineNote] = useState("");
@@ -186,7 +181,7 @@ export function CollabComposer({
     promptSeeded.current = true;
     setTitle((t) => (t.trim() ? t : seed.title));
     setDescription((d) => (d.trim() ? d : seed.description));
-    setCategory((c) => (c === "other" ? seed.category : c));
+    setCategory((c) => (c === "other" ? normalizeField(seed.category) : c));
   }, [promptId]);
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/login" }); }, [user, loading, navigate]);
@@ -252,8 +247,7 @@ export function CollabComposer({
     const { data: post, error } = await supabase.from("collab_posts").insert({
       title: title.trim(),
       slug: "",
-      category: category as Category,
-      categories: [category, ...extraCategories.filter((c) => c !== category)] as Category[],
+      ...fieldWritePayload(category, extraCategories),
       description: description || null,
       timeline_text: timelineNote.trim() || null,
       timeline_mode: timeline.mode,
@@ -394,14 +388,13 @@ export function CollabComposer({
             <Input id="title" required maxLength={140} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Looking for a vocalist for a moody synthwave EP" />
           </section>
 
-          <CategoryMultiPicker
-            label="Medium"
-            options={COLLAB_CATEGORIES}
+          <FieldPicker
+            label="Field"
             primary={category}
             onPrimaryChange={(next) => setCategory(next)}
             extras={extraCategories}
             onExtrasChange={setExtraCategories}
-            hint="A Collab can span mediums (e.g. Music + Visual). Star an extra to make it the primary."
+            hint="A Collab can span fields (e.g. Music + Visual Art). Star an extra to make it the primary."
           />
 
           <section className="space-y-1.5">
