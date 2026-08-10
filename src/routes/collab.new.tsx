@@ -360,7 +360,10 @@ export function CollabComposer({
       embed ? "py-6 pb-6" : "py-10 pb-32 md:py-14 md:pb-32",
     )}>
 
+      <CollabComposerWalkthrough />
+
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+
         <h1 className="font-display text-4xl text-ink">Start a Collab</h1>
         <p className="mt-1 text-ink-muted">Start with an idea. Add roles, timing and detail whenever you want — it's In Progress from the moment you start it.</p>
         <div className="mt-4 flex items-center gap-2" aria-label="Form progress">
