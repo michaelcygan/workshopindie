@@ -277,24 +277,9 @@ function GroupPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seedToken, user]);
 
-  const { data: nextEvent } = useQuery({
-    queryKey: ["group", group.id, "next-event"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("group_events")
-        .select("slug,title,starts_at")
-        .eq("group_id", group.id)
-        .in("status", DISCOVERABLE_STATUSES as never)
-        .not("published_at", "is", null)
-        .is("archived_at", null)
-        .is("deleted_at", null)
-        .gt("starts_at", new Date().toISOString())
-        .order("starts_at", { ascending: true })
-        .limit(1)
-        .maybeSingle();
-      return data;
-    },
-  });
+  // Upcoming events are read inside Today (via event_groups); the route no
+  // longer pays for a separate next-event query on cold load.
+
 
   // Cheap count-only query so the tab bar can show the Subgroups chip
   // without paying for the full row payload on every page load.
