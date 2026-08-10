@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Bell, Mail, UserPlus, MessageCircle, CreditCard, Sparkles, Radio, Gift, Calendar, Ticket } from "lucide-react";
+import { Bell, Mail, UserPlus, MessageCircle, CreditCard, Sparkles, Radio, Gift, Calendar, Ticket, Mic } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { playNotifySound } from "@/lib/notify-sound";
@@ -50,6 +50,7 @@ const ICONS: Record<string, typeof Bell> = {
   
   event_recap: Calendar,
   event_new_in_my_group: Calendar,
+  podcast_application_new: Mic,
 };
 
 function labelFor(n: Row): { title: string; subtitle: string; href: string } {
@@ -199,6 +200,17 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
       const gSlug = (n.payload?.group_slug as string) || "";
       const evSlug = (n.payload?.event_slug as string) || "";
       return { title: `${evTitle} — new in ${groupName}`, subtitle: "Tap to RSVP.", href: gSlug && evSlug ? workshopEntityUrl({ kind: "event", groupSlug: gSlug, slug: evSlug }) : "/groups" };
+    }
+    case "podcast_application_new": {
+      const who = (n.payload?.name as string) || "Someone";
+      const bits = [n.payload?.field as string | undefined, n.payload?.city as string | undefined]
+        .filter(Boolean)
+        .join(" · ");
+      return {
+        title: `New podcast application — ${who}`,
+        subtitle: bits || "Tap to review.",
+        href: "/admin/podcast",
+      };
     }
     default:
       return { title: n.kind, subtitle: "", href: "/me" };
