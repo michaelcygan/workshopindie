@@ -918,34 +918,40 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
             const authorName = author?.display_name || author?.username || "";
             const initials = (authorName || "?").slice(0, 1).toUpperCase();
             return (
-              <Link
-                key={w.id}
-                to="/works/$slug"
-                params={{ slug: w.slug }}
-                className="group relative rounded-2xl border border-border bg-surface transition hover:-translate-y-0.5 hover:shadow-lift"
-              >
-                <div className="relative aspect-[4/3] w-full overflow-hidden rounded-t-2xl isolate transform-gpu sm:aspect-auto sm:h-32">
-                  <div
-                    className={cn(
-                      "absolute inset-0 transition-transform duration-300 will-change-transform group-hover:scale-[1.03]",
-                      w.cover_url ? "bg-cover bg-center" : "bg-surface-2",
+              <div key={w.id} className="group relative">
+                <Link
+                  to="/works/$slug"
+                  params={{ slug: w.slug }}
+                  className="block rounded-2xl border border-border bg-surface transition hover:-translate-y-0.5 hover:shadow-lift"
+                >
+                  <div className="relative aspect-[4/3] w-full overflow-hidden rounded-t-2xl isolate transform-gpu sm:aspect-auto sm:h-32">
+                    <div
+                      className={cn(
+                        "absolute inset-0 transition-transform duration-300 will-change-transform group-hover:scale-[1.03]",
+                        w.cover_url ? "bg-cover bg-center" : "bg-surface-2",
+                      )}
+                      style={w.cover_url ? { backgroundImage: `url(${w.cover_url})` } : undefined}
+                    />
+                    {w.category && (
+                      <span
+                        aria-hidden
+                        className="absolute right-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur"
+                      >
+                        {categoryLabel(w.category)}
+                      </span>
                     )}
-                    style={w.cover_url ? { backgroundImage: `url(${w.cover_url})` } : undefined}
-                  />
-                  {w.category && (
-                    <span
-                      aria-hidden
-                      className="absolute right-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur"
-                    >
-                      {categoryLabel(w.category)}
-                    </span>
-                  )}
-                </div>
+                  </div>
+                  <div className="p-3 pt-5">
+                    <div className="font-display text-base text-ink line-clamp-2">{w.title}</div>
+                    {authorName && (
+                      <div className="mt-0.5 text-xs text-ink-muted">by {authorName}</div>
+                    )}
+                  </div>
+                </Link>
                 {author?.username && (
                   <Link
                     to="/$username"
                     params={{ username: author.username }}
-                    onClick={(e) => e.stopPropagation()}
                     aria-label={`View ${authorName || author.username}'s profile`}
                     className="absolute left-3 top-32 z-10 -translate-y-1/2"
                   >
@@ -955,13 +961,7 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
                     </Avatar>
                   </Link>
                 )}
-                <div className="p-3 pt-5">
-                  <div className="font-display text-base text-ink line-clamp-2">{w.title}</div>
-                  {authorName && (
-                    <div className="mt-0.5 text-xs text-ink-muted">by {authorName}</div>
-                  )}
-                </div>
-              </Link>
+              </div>
             );
           })}
         </div>
