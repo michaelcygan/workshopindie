@@ -42,18 +42,62 @@ type GroupRefForToday = {
 };
 
 /**
- * Today tab — modernized layout.
- *  Left  : ephemeral chat (auto-expires 24h).
- *  Right : Next event · Recent collabs · Recent works.
+ * Today tab — the Group's daily front page.
+ *
+ * Signed in: the live conversation leads, with the scene modules under it.
+ * Logged out: the public scene pulse leads (Events, Collabs, Work) and the
+ * conversation becomes a quiet invitation — never an auth wall over the
+ * useful content, and never message bodies.
  */
 export function GroupTodayTab({ group }: { group: GroupRefForToday }) {
+  const { user } = useAuth();
+
+  if (!user) {
+    return (
+      <div className="space-y-4">
+        <TodayModuleRail group={group} />
+        <PublicConversationInvite group={group} />
+        <GroupNewsTicker slug={group.slug} className="hidden md:block" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <TodayChat group={group} />
       <TodayModuleRail group={group} />
+      <GroupNewsTicker slug={group.slug} className="hidden md:block" />
     </div>
   );
 }
+
+/**
+ * Logged-out conversation signal. Shows that people are here without
+ * exposing identities or message bodies to anonymous visitors.
+ */
+function PublicConversationInvite({ group }: { group: GroupRefForToday }) {
+  return (
+    <section className="rounded-2xl border border-border/60 bg-surface p-4">
+      <h2 className="font-display text-base text-ink">Live conversation</h2>
+      <p className="mt-1 text-sm text-ink-muted">
+        Members are talking in {group.name} today. Messages clear after 24 hours.
+      </p>
+      <Link
+        to="/login"
+        search={{
+          redirect:
+            typeof window !== "undefined"
+              ? window.location.pathname + window.location.search
+              : workshopEntityUrl({ kind: "group", slug: group.slug }),
+        }}
+        className="mt-3 inline-flex h-10 items-center rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+      >
+        Sign in to join in
+      </Link>
+    </section>
+  );
+}
+
 
 /* ---------- Swipeable module rail ---------- */
 
