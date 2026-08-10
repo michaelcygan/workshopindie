@@ -7,6 +7,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { domainError } from "@/lib/errors";
 import { normalizeUrl } from "@/lib/url-normalize";
 import { isFieldId } from "@/lib/taxonomy";
+import { normalizeUsername, USERNAME_MIN, USERNAME_MAX } from "@/lib/usernames";
+
 
 export const PODCAST_STATUSES = [
   "new",
