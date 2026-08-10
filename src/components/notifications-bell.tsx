@@ -217,7 +217,6 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
         href: "/admin/podcast",
       };
     }
-    default:
     case "admin_new_member": {
       const who = (n.payload?.name as string) || "A new member";
       const uname = (n.payload?.username as string) || "";
