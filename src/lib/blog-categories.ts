@@ -10,7 +10,7 @@
  * Normalization of Work categories is delegated to `@/lib/taxonomy` so this
  * module never becomes a competing taxonomy.
  */
-import { normalizeCategory, type CanonicalCategory } from "@/lib/taxonomy";
+import { normalizeCategory, normalizeField, type CanonicalCategory, type FieldId } from "@/lib/taxonomy";
 
 export const BLOG_CATEGORY_SLUGS = [
   "general",
@@ -112,4 +112,55 @@ export function blogCategoryFromWorkCategory(
   const canonical = normalizeCategory(workCategory);
   if (!canonical) return DEFAULT_BLOG_CATEGORY;
   return BY_CANONICAL.get(canonical)?.slug ?? DEFAULT_BLOG_CATEGORY;
+}
+
+/**
+ * Fields <-> legacy Blog category slugs.
+ *
+ * Blog posts now classify with the canonical Field vocabulary
+ * (`blog_posts.fields`). `category_slug` is kept in sync as a *derived* value
+ * so the six historic `/blog/c/<slug>` URLs, RSS and old rows keep working.
+ * Fields with no legacy slug fall back to General.
+ */
+const FIELD_TO_BLOG_SLUG: Partial<Record<FieldId, BlogCategorySlug>> = {
+  music: "music",
+  film_video: "film-video",
+  writing: "writing",
+  journalism_media: "writing",
+  visual_art: "visual-art",
+  design: "visual-art",
+  performance: "music",
+  software_ai: "games-tech",
+  making_engineering: "games-tech",
+  science_research: "games-tech",
+};
+
+export function blogCategorySlugForField(field: string | null | undefined): BlogCategorySlug {
+  return FIELD_TO_BLOG_SLUG[normalizeField(field)] ?? DEFAULT_BLOG_CATEGORY;
+}
+
+const BLOG_SLUG_TO_FIELD: Record<BlogCategorySlug, FieldId> = {
+  general: "other",
+  music: "music",
+  "film-video": "film_video",
+  writing: "writing",
+  "visual-art": "visual_art",
+  "games-tech": "software_ai",
+};
+
+export function fieldForBlogCategory(slug: string | null | undefined): FieldId {
+  return BLOG_SLUG_TO_FIELD[toBlogCategorySlug(slug)];
+}
+
+/** A post's Fields, primary first: stored Fields win, legacy slug is fallback. */
+export function blogPostFields(
+  fields: readonly (string | null)[] | null | undefined,
+  categorySlug?: string | null,
+): FieldId[] {
+  const stored = (fields ?? []).filter(Boolean).map((f) => normalizeField(f));
+  const deduped: FieldId[] = [];
+  for (const f of stored) if (!deduped.includes(f)) deduped.push(f);
+  if (deduped.length > 0) return deduped;
+  const fallback = fieldForBlogCategory(categorySlug);
+  return fallback === "other" ? [] : [fallback];
 }
