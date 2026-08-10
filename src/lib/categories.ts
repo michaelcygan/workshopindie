@@ -1,17 +1,15 @@
 /**
- * Compatibility layer over the canonical taxonomy (`src/lib/taxonomy.ts`).
+ * LEGACY ENUM COMPATIBILITY ONLY.
  *
- * `Category` values are the ones actually stored in the `category` Postgres
- * enum. Labels and colors are derived from the canonical taxonomy so a concept
- * renders identically everywhere (Work, Collab, Group, Profile).
+ * `Category` values are the ones the `category` Postgres enum physically
+ * stores. This module is not a taxonomy: the single user-facing vocabulary is
+ * Fields in `src/lib/taxonomy.ts` (`FIELD_OPTIONS`, `FIELD_FILTER_OPTIONS`,
+ * `fieldLabel`, `categoryLabel`). Nothing new should classify content here —
+ * these exports exist so surfaces still writing the legacy enum (workshops,
+ * instant rooms, workshop links) keep working, with labels always resolved
+ * through the canonical taxonomy so a concept reads identically everywhere.
  */
-import {
-  CANONICAL_SUBTYPES,
-  categoryClassFor,
-  categoryLabel,
-  TOPICS,
-  WORK_CANONICAL_IDS,
-} from "@/lib/taxonomy";
+import { categoryClassFor, categoryLabel, TOPICS } from "@/lib/taxonomy";
 
 export {
   normalizeCategory,
@@ -43,7 +41,7 @@ export type Category =
   | "jam"
   | "standup";
 
-/** Stored category values that can be published as a Work (excludes topics). */
+/** Stored enum values that can be published as a Work (excludes topics). */
 export const WORK_CATEGORY_IDS = [
   "film",
   "music",
@@ -54,19 +52,11 @@ export const WORK_CATEGORY_IDS = [
 ] as const;
 export type WorkCategory = (typeof WORK_CATEGORY_IDS)[number];
 
-/** Collabs may start uncategorised — "Other" is a valid stored primary there. */
-export const COLLAB_CATEGORY_IDS = [...WORK_CATEGORY_IDS, "other"] as const;
-export type CollabCategory = (typeof COLLAB_CATEGORY_IDS)[number];
-export const COLLAB_CATEGORIES: { id: CollabCategory; label: string }[] = COLLAB_CATEGORY_IDS.map(
-  (id) => ({ id, label: categoryLabel(id) }),
-);
-
-/** Canonical work categories, for filter tabs and pickers that want one entry per concept. */
-export const CANONICAL_WORK_CATEGORIES = WORK_CANONICAL_IDS.map((id) => ({
-  id,
-  label: categoryLabel(id),
-}));
-
+/**
+ * Stored enum values plus conversation topics, for the workshop / instant
+ * pickers that still write the legacy enum. Labels come from the canonical
+ * taxonomy, so "build" renders as "Software & AI".
+ */
 export const CATEGORIES: { id: Category; label: string }[] = [
   ...(WORK_CATEGORY_IDS.map((id) => ({ id, label: categoryLabel(id) })) as {
     id: Category;
@@ -77,38 +67,6 @@ export const CATEGORIES: { id: Category; label: string }[] = [
     label: string;
   }[]),
 ];
-
-export const CATEGORY_LABELS: Record<Category, string> = Object.fromEntries(
-  CATEGORIES.map((c) => [c.id, c.label]),
-) as Record<Category, string>;
-
-export const WORK_CATEGORIES = CATEGORIES.filter((c) =>
-  (WORK_CATEGORY_IDS as readonly string[]).includes(c.id),
-);
-
-/**
- * @deprecated Formats are now Field-driven — use `formatSuggestionsFor()` from
- * `@/lib/taxonomy`. Kept while the last legacy callers migrate.
- */
-export const WORK_SUBTYPES: Record<WorkCategory, string[]> = {
-  film: CANONICAL_SUBTYPES.film_video,
-  music: CANONICAL_SUBTYPES.music,
-  writing: CANONICAL_SUBTYPES.writing,
-  writing_book: [
-    "Novel",
-    "Novella",
-    "Short story collection",
-    "Poetry",
-    "Memoir",
-    "Nonfiction",
-    "Anthology",
-    "Zine",
-    "Serial",
-  ],
-  build: CANONICAL_SUBTYPES.software_ai,
-  visual: CANONICAL_SUBTYPES.visual_art,
-};
-
 
 export const SOURCE_LABELS: Record<string, string> = {
   workshop: "Workshop",
