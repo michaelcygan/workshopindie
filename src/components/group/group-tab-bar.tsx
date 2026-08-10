@@ -87,7 +87,8 @@ export function GroupTabBar({
 
   return (
     // Outer: sticky, no overflow — overscroll can't pull this out of place.
-    <div className="sticky top-[var(--app-header-h,3.5rem)] z-20 -mx-4 border-b border-border bg-background/85 px-4 backdrop-blur md:-mx-6 md:px-6">
+    // Top offset matches the mobile brand header (44px) and desktop nav (56px).
+    <div className="sticky top-11 z-20 -mx-4 border-b border-border bg-background/85 px-4 backdrop-blur md:-mx-6 md:top-14 md:px-6">
       <div className="flex items-center gap-1">
         {/* Inner: horizontal scroller, isolated from vertical rubber-band */}
         <div
