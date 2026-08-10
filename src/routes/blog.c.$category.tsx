@@ -1,4 +1,4 @@
-import { createFileRoute, notFound } from "@tanstack/react-router";
+import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 
 import type { BlogListItem } from "@/components/blog-featured-carousel";
 import { BlogCategoryNav } from "@/components/blog/blog-category-nav";
@@ -9,12 +9,28 @@ import {
   toBlogCard,
 } from "@/components/blog/blog-editorial-sections";
 import { PublicFeaturedStories } from "@/components/home/public-featured-stories";
-import { getBlogCategory, isBlogCategorySlug, toBlogCategorySlug } from "@/lib/blog-categories";
+import {
+  getBlogCategory,
+  isBlogCategorySlug,
+  isLegacyBlogSlug,
+  resolveBlogSlug,
+  toBlogCategorySlug,
+} from "@/lib/blog-categories";
 import { listPublishedPosts } from "@/lib/blog.functions";
 
 const SITE = "https://workshopindie.com";
 
 export const Route = createFileRoute("/blog/c/$category")({
+  beforeLoad: ({ params }) => {
+    // Historic section slugs keep resolving, but only ever at one canonical URL.
+    if (isLegacyBlogSlug(params.category)) {
+      throw redirect({
+        to: "/blog/c/$category",
+        params: { category: resolveBlogSlug(params.category)! },
+        statusCode: 301,
+      });
+    }
+  },
   loader: async ({ params }) => {
     if (!isBlogCategorySlug(params.category)) throw notFound();
     const all = (await listPublishedPosts()) as BlogListItem[];

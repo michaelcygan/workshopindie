@@ -146,6 +146,7 @@ export const adminCreateDraft = createServerFn({ method: "POST" })
         author_profile_username: z.string().trim().max(80).nullable().optional(),
         category_slug: z.enum(BLOG_CATEGORY_SLUGS).default("general"),
         fields: z.array(z.enum(FIELD_IDS)).max(3).optional(),
+        subcategories: z.array(z.string().max(80)).max(1).optional(),
         story_type: z.enum(BLOG_STORY_TYPE_IDS).nullable().optional(),
       })
       .parse(d),
@@ -179,6 +180,7 @@ export const adminUpdatePost = createServerFn({ method: "POST" })
         author_profile_username: z.string().trim().max(80).nullable().optional(),
         category_slug: z.enum(BLOG_CATEGORY_SLUGS).default("general"),
         fields: z.array(z.enum(FIELD_IDS)).max(3).optional(),
+        subcategories: z.array(z.string().max(80)).max(1).optional(),
         story_type: z.enum(BLOG_STORY_TYPE_IDS).nullable().optional(),
       })
       .parse(d),

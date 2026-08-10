@@ -1,94 +1,108 @@
 /**
- * Blog editorial taxonomy — the single source of truth for Blog category
- * slugs, labels, descriptions and their Work-category mapping.
+ * Blog editorial taxonomy — Blog sections are the canonical Fields.
  *
- * Deliberately NOT the Postgres `category` enum: that enum stores legacy Work
- * identifiers and gathering topics shared by Works, Collabs, Groups and
- * Profiles. The Blog stores its own `blog_posts.category_slug` text column
- * guarded by a check constraint with exactly these six slugs.
+ * Every one of the 13 Fields is an editorial section at `/blog/c/<slug>`.
+ * Slugs are derived from the Field ids so this module can never become a
+ * competing vocabulary; `games-tech` is preserved as a legacy alias (and a
+ * legal stored value) for the Software & AI section.
  *
- * Normalization of Work categories is delegated to `@/lib/taxonomy` so this
- * module never becomes a competing taxonomy.
+ * `blog_posts.category_slug` stores the primary section; `blog_posts.fields`
+ * stores the full Field selection; `blog_posts.subcategories` stores the
+ * optional specialization.
  */
-import { normalizeCategory, normalizeField, type CanonicalCategory, type FieldId } from "@/lib/taxonomy";
+import {
+  FIELD_IDS,
+  fieldLabel,
+  normalizeField,
+  type CanonicalCategory,
+  type FieldId,
+} from "@/lib/taxonomy";
 
-export const BLOG_CATEGORY_SLUGS = [
-  "general",
-  "music",
-  "film-video",
-  "writing",
-  "visual-art",
-  "games-tech",
-] as const;
+/** Field id -> url slug. Stable; do not re-derive from labels. */
+const FIELD_SLUGS: Record<FieldId, string> = {
+  other: "general",
+  music: "music",
+  film_video: "film-video",
+  writing: "writing",
+  visual_art: "visual-art",
+  design: "design",
+  performance: "performance",
+  journalism_media: "journalism-media",
+  software_ai: "software-ai",
+  making_engineering: "making-engineering",
+  science_research: "science-research",
+  architecture_cities: "architecture-urbanism",
+  environment_nature: "environment-nature",
+};
 
-export type BlogCategorySlug = (typeof BLOG_CATEGORY_SLUGS)[number];
+/** Historic slugs that must keep resolving. Value is the modern slug. */
+export const LEGACY_BLOG_SLUG_ALIASES: Record<string, string> = {
+  "games-tech": "software-ai",
+};
 
-export const DEFAULT_BLOG_CATEGORY: BlogCategorySlug = "general";
+export const BLOG_CATEGORY_SLUGS = FIELD_IDS.map((id) => FIELD_SLUGS[id]) as readonly string[];
+
+export type BlogCategorySlug = string;
+
+export const DEFAULT_BLOG_CATEGORY = "general";
+
+const DESCRIPTIONS: Record<FieldId, string> = {
+  other: "Notes on making things independently — process, craft, business, and how Workshop works.",
+  music: "Writing, recording, releasing, and playing music and audio outside the major-label pipeline.",
+  film_video: "Independent film and video: crews, shoots, edits, festivals, and getting work seen.",
+  writing: "Essays, books, zines, and scripts — drafting, editing, and publishing on your own terms.",
+  visual_art: "Painting, photography, illustration, and studio practice — making and showing the work.",
+  design: "Graphic, product, motion, and systems design practiced independently.",
+  performance: "Theatre, dance, comedy, and live art — rehearsal, staging, and the room itself.",
+  journalism_media: "Reporting, criticism, and independent media built outside legacy newsrooms.",
+  software_ai: "Software, games, and AI built by small independent teams.",
+  making_engineering: "Woodworking, textiles, electronics, fabrication — building things with your hands.",
+  science_research: "Independent and academic research, methods, and communicating findings.",
+  architecture_cities: "Buildings, public space, infrastructure, and the practice of shaping cities.",
+  environment_nature: "Ecology, climate, land, and the work of tending to the world around us.",
+};
 
 export type BlogCategory = {
-  slug: BlogCategorySlug;
+  slug: string;
   label: string;
-  /** Short editorial line used on category pages and their metadata. */
   description: string;
-  /** Canonical Work category this Blog category represents, when it maps. */
+  /** The Field this section represents. `other` is General. */
+  field: FieldId;
+  /** Canonical Work category this section represents, when it maps. */
   canonical: CanonicalCategory | null;
 };
 
-export const BLOG_CATEGORIES: readonly BlogCategory[] = [
-  {
-    slug: "general",
-    label: "General",
-    description: "Notes on making things independently — process, craft, and how Workshop works.",
-    canonical: null,
-  },
-  {
-    slug: "music",
-    label: "Music",
-    description:
-      "Writing, recording, releasing, and playing music outside the major-label pipeline.",
-    canonical: "music",
-  },
-  {
-    slug: "film-video",
-    label: "Film & Video",
-    description:
-      "Independent film and video: crews, shoots, edits, festivals, and getting work seen.",
-    canonical: "film_video",
-  },
-  {
-    slug: "writing",
-    label: "Writing",
-    description:
-      "Essays, books, zines, and scripts — drafting, editing, and publishing on your own terms.",
-    canonical: "writing",
-  },
-  {
-    slug: "visual-art",
-    label: "Visual Art",
-    description:
-      "Painting, photography, illustration, and design — studio practice and showing the work.",
-    canonical: "visual_art",
-  },
-  {
-    slug: "games-tech",
-    label: "Software & AI",
-    description: "Games, software, and hardware built by small independent teams.",
-    canonical: "games_tech",
-  },
-] as const;
+export const BLOG_CATEGORIES: readonly BlogCategory[] = FIELD_IDS.map((id) => ({
+  slug: FIELD_SLUGS[id],
+  label: fieldLabel(id),
+  description: DESCRIPTIONS[id],
+  field: id,
+  canonical: id === "other" ? null : (id as CanonicalCategory),
+}));
 
 const BY_SLUG = new Map(BLOG_CATEGORIES.map((c) => [c.slug, c]));
-const BY_CANONICAL = new Map(
-  BLOG_CATEGORIES.filter((c) => c.canonical).map((c) => [c.canonical as CanonicalCategory, c]),
-);
+const BY_FIELD = new Map(BLOG_CATEGORIES.map((c) => [c.field, c]));
+
+/** Resolve a slug through legacy aliases. Returns null for unknown slugs. */
+export function resolveBlogSlug(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const direct = BY_SLUG.has(value) ? value : LEGACY_BLOG_SLUG_ALIASES[value];
+  return direct ?? null;
+}
 
 export function isBlogCategorySlug(value: unknown): value is BlogCategorySlug {
-  return typeof value === "string" && BY_SLUG.has(value as BlogCategorySlug);
+  return resolveBlogSlug(value) !== null;
+}
+
+/** True when the slug only resolves through a legacy alias (301 candidates). */
+export function isLegacyBlogSlug(value: string): boolean {
+  return !BY_SLUG.has(value) && !!LEGACY_BLOG_SLUG_ALIASES[value];
 }
 
 /** Always returns a category; unknown/missing values fall back to General. */
 export function getBlogCategory(value: string | null | undefined): BlogCategory {
-  return (isBlogCategorySlug(value) ? BY_SLUG.get(value) : BY_SLUG.get(DEFAULT_BLOG_CATEGORY))!;
+  const slug = resolveBlogSlug(value) ?? DEFAULT_BLOG_CATEGORY;
+  return BY_SLUG.get(slug)!;
 }
 
 export function blogCategoryLabel(value: string | null | undefined): string {
@@ -97,59 +111,22 @@ export function blogCategoryLabel(value: string | null | undefined): string {
 
 /** Coerce any input to a stored slug. Never throws; defaults to General. */
 export function toBlogCategorySlug(value: unknown): BlogCategorySlug {
-  return isBlogCategorySlug(value) ? value : DEFAULT_BLOG_CATEGORY;
+  return resolveBlogSlug(value) ?? DEFAULT_BLOG_CATEGORY;
 }
 
-/**
- * Map a stored Work category (`music`, `film`, `writing`, `writing_book`,
- * `visual`, `build`, …) to the Blog category it belongs under.
- * `writing_book` normalizes to Writing. Anything outside the Work families
- * (topics, community categories, null) falls back to General.
- */
+/** Map a stored Work/legacy category to the Blog section it belongs under. */
 export function blogCategoryFromWorkCategory(
   workCategory: string | null | undefined,
 ): BlogCategorySlug {
-  const canonical = normalizeCategory(workCategory);
-  if (!canonical) return DEFAULT_BLOG_CATEGORY;
-  return BY_CANONICAL.get(canonical)?.slug ?? DEFAULT_BLOG_CATEGORY;
+  return blogCategorySlugForField(workCategory);
 }
-
-/**
- * Fields <-> legacy Blog category slugs.
- *
- * Blog posts now classify with the canonical Field vocabulary
- * (`blog_posts.fields`). `category_slug` is kept in sync as a *derived* value
- * so the six historic `/blog/c/<slug>` URLs, RSS and old rows keep working.
- * Fields with no legacy slug fall back to General.
- */
-const FIELD_TO_BLOG_SLUG: Partial<Record<FieldId, BlogCategorySlug>> = {
-  music: "music",
-  film_video: "film-video",
-  writing: "writing",
-  journalism_media: "writing",
-  visual_art: "visual-art",
-  design: "visual-art",
-  performance: "music",
-  software_ai: "games-tech",
-  making_engineering: "games-tech",
-  science_research: "games-tech",
-};
 
 export function blogCategorySlugForField(field: string | null | undefined): BlogCategorySlug {
-  return FIELD_TO_BLOG_SLUG[normalizeField(field)] ?? DEFAULT_BLOG_CATEGORY;
+  return BY_FIELD.get(normalizeField(field))?.slug ?? DEFAULT_BLOG_CATEGORY;
 }
 
-const BLOG_SLUG_TO_FIELD: Record<BlogCategorySlug, FieldId> = {
-  general: "other",
-  music: "music",
-  "film-video": "film_video",
-  writing: "writing",
-  "visual-art": "visual_art",
-  "games-tech": "software_ai",
-};
-
 export function fieldForBlogCategory(slug: string | null | undefined): FieldId {
-  return BLOG_SLUG_TO_FIELD[toBlogCategorySlug(slug)];
+  return getBlogCategory(slug).field;
 }
 
 /** A post's Fields, primary first: stored Fields win, legacy slug is fallback. */

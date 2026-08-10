@@ -58,7 +58,7 @@ describe("label resolution never leaks raw ids", () => {
   it("labels legacy stored values with the modern Field name", () => {
     expect(categoryLabel("build")).toBe("Software & AI");
     expect(categoryLabel("games_tech")).toBe("Software & AI");
-    expect(categoryLabel("visual")).toBe("Visual Art");
+    expect(categoryLabel("visual")).toBe("Visual Art & Photography");
     expect(categoryLabel("film")).toBe("Film & Video");
   });
 
@@ -67,17 +67,15 @@ describe("label resolution never leaks raw ids", () => {
     expect(normalizeField("open_mic")).toBe("other");
   });
 
-  it("degrades unknown values to Other rather than echoing them", () => {
-    expect(categoryLabel("wildly_unknown")).toBe("Other");
-    expect(fieldLabel(null)).toBe("Other");
+  it("degrades unknown values to General rather than echoing them", () => {
+    expect(categoryLabel("wildly_unknown")).toBe("General");
+    expect(fieldLabel(null)).toBe("General");
   });
 });
 
 describe("discovery filters", () => {
-  it("offers every Field except the Other fallback", () => {
-    expect(FIELD_FILTER_OPTIONS.map((o) => o.id)).toEqual(
-      FIELD_IDS.filter((id) => id !== "other"),
-    );
+  it("offers every Field, including General", () => {
+    expect(FIELD_FILTER_OPTIONS.map((o) => o.id)).toEqual([...FIELD_IDS]);
   });
 });
 

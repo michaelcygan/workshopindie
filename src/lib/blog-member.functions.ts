@@ -76,6 +76,7 @@ export const updateMyBlogPost = createServerFn({ method: "POST" })
         show_in_blog_index: z.boolean().optional(),
         category_slug: z.enum(BLOG_CATEGORY_SLUGS).optional(),
         fields: z.array(z.enum(FIELD_IDS)).max(3).optional(),
+        subcategories: z.array(z.string().max(80)).max(1).optional(),
         story_type: z.enum(BLOG_STORY_TYPE_IDS).nullable().optional(),
         tags: z
           .array(

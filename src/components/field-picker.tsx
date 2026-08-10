@@ -1,6 +1,12 @@
 import { Star } from "lucide-react";
 import { toast } from "sonner";
-import { FIELD_OPTIONS, fieldClass, normalizeField, type FieldId } from "@/lib/taxonomy";
+import {
+  FIELD_OPTIONS,
+  GENERAL_FIELD_ID,
+  fieldClass,
+  normalizeField,
+  type FieldId,
+} from "@/lib/taxonomy";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 
@@ -19,7 +25,7 @@ export function FieldPicker({
   extras,
   onExtrasChange,
   onPrimaryReset,
-  hint = "Pick the field this belongs to. Add up to 3 — star one to lead with it.",
+  hint = "Pick the field this belongs to. Add up to 3 — star one to lead with it. General stands on its own.",
   options = FIELD_OPTIONS,
   max = 3,
 }: {
@@ -37,6 +43,21 @@ export function FieldPicker({
   const extrasCap = Math.max(0, max - 1);
 
   function toggle(id: FieldId) {
+    // General is the encompassing option: it never rides along with a
+    // specific Field, in either direction.
+    if (id === GENERAL_FIELD_ID) {
+      if (primary === GENERAL_FIELD_ID) return;
+      onPrimaryChange(GENERAL_FIELD_ID);
+      onExtrasChange([]);
+      onPrimaryReset?.();
+      return;
+    }
+    if (primary === GENERAL_FIELD_ID) {
+      onPrimaryChange(id);
+      onExtrasChange([]);
+      onPrimaryReset?.();
+      return;
+    }
     if (id === primary) {
       if (extras.length === 0) return;
       const [nextPrimary, ...rest] = extras;
@@ -57,7 +78,7 @@ export function FieldPicker({
   }
 
   function promote(id: FieldId) {
-    if (id === primary) return;
+    if (id === primary || id === GENERAL_FIELD_ID) return;
     const nextExtras = [primary, ...extras.filter((x) => x !== id)].slice(0, extrasCap);
     onPrimaryChange(id);
     onExtrasChange(nextExtras);

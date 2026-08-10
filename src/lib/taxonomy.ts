@@ -41,10 +41,10 @@ export type CategoryEntry = {
 };
 
 export const CANONICAL_CATEGORIES: CategoryEntry[] = [
-  { id: "music", label: "Music", className: "bg-cat-music text-cat-music-ink" },
+  { id: "music", label: "Music & Audio", className: "bg-cat-music text-cat-music-ink" },
   { id: "film_video", label: "Film & Video", className: "bg-cat-film text-cat-film-ink" },
-  { id: "writing", label: "Writing", className: "bg-cat-writing text-cat-writing-ink" },
-  { id: "visual_art", label: "Visual Art", className: "bg-cat-visual text-cat-visual-ink" },
+  { id: "writing", label: "Writing & Publishing", className: "bg-cat-writing text-cat-writing-ink" },
+  { id: "visual_art", label: "Visual Art & Photography", className: "bg-cat-visual text-cat-visual-ink" },
   { id: "design", label: "Design", className: "bg-cat-coworking text-cat-coworking-ink" },
   { id: "performance", label: "Performance", className: "bg-cat-standup text-cat-standup-ink" },
   {
@@ -55,7 +55,7 @@ export const CANONICAL_CATEGORIES: CategoryEntry[] = [
   { id: "software_ai", label: "Software & AI", className: "bg-cat-build text-cat-build-ink" },
   {
     id: "making_engineering",
-    label: "Making & Engineering",
+    label: "Making, Craft & Engineering",
     className: "bg-cat-pitch text-cat-pitch-ink",
   },
   {
@@ -65,7 +65,7 @@ export const CANONICAL_CATEGORIES: CategoryEntry[] = [
   },
   {
     id: "architecture_cities",
-    label: "Architecture & Cities",
+    label: "Architecture & Urbanism",
     className: "bg-cat-roundtable text-cat-roundtable-ink",
   },
   {
@@ -103,7 +103,7 @@ export const CANONICAL_CATEGORIES: CategoryEntry[] = [
     className: "bg-cat-office-hours text-cat-office-hours-ink",
     community: true,
   },
-  { id: "other", label: "Other", className: "bg-muted text-ink-soft" },
+  { id: "other", label: "General", className: "bg-muted text-ink-soft" },
 ];
 
 
@@ -149,11 +149,16 @@ export const isFieldId = (value: unknown): value is FieldId =>
 
 /**
  * Field options for discovery filters (Gallery, Collabs, directories).
- * "Other" is deliberately excluded — it is a fallback, not a thing to browse.
+ * General is a real, browsable Field — it is the encompassing option for
+ * business, personal practice, process, culture and interdisciplinary work.
  */
-export const FIELD_FILTER_OPTIONS: readonly FieldOption[] = FIELD_OPTIONS.filter(
-  (o) => o.id !== "other",
-);
+export const FIELD_FILTER_OPTIONS: readonly FieldOption[] = FIELD_OPTIONS;
+
+/** General — the encompassing Field. Has no subcategories and stands alone. */
+export const GENERAL_FIELD_ID = "other" as const satisfies FieldId;
+
+export const isGeneralField = (value: unknown): boolean =>
+  normalizeField(typeof value === "string" ? value : null) === GENERAL_FIELD_ID;
 
 /** Canonical categories a Work or Collab can be published under. */
 export const WORK_CANONICAL_IDS = FIELD_IDS.filter(
@@ -318,11 +323,11 @@ export function normalizeCategory(value: string | null | undefined): CanonicalCa
 
 /** Safe label for any stored or canonical value, including topics. */
 export function categoryLabel(value: string | null | undefined): string {
-  if (!value) return "Other";
+  if (!value) return "General";
   if (STORAGE_LABEL_OVERRIDES[value]) return STORAGE_LABEL_OVERRIDES[value];
   const topic = TOPIC_BY_ID.get(value);
   if (topic) return topic.label;
-  return BY_ID.get(normalizeCategory(value))?.label ?? "Other";
+  return BY_ID.get(normalizeCategory(value))?.label ?? "General";
 }
 
 /** Safe chip classes for any stored or canonical value, including topics. */
@@ -424,7 +429,7 @@ export function normalizeField(value: string | null | undefined): FieldId {
 export const legacyCategoryToField = normalizeField;
 
 export function fieldLabel(value: string | null | undefined): string {
-  return BY_ID.get(normalizeField(value))?.label ?? "Other";
+  return BY_ID.get(normalizeField(value))?.label ?? "General";
 }
 
 export function fieldClass(value: string | null | undefined): string {
@@ -565,3 +570,150 @@ export function isBookWork(
  */
 export const CANONICAL_SUBTYPES: Record<string, string[]> = FORMAT_SUGGESTIONS;
 
+
+// ---------------------------------------------------------------------------
+// SUBCATEGORIES — the optional specialization beneath a Field.
+// Vocabulary lives in `taxonomy-subcategories.ts`; the API lives here so every
+// caller keeps importing one module.
+// ---------------------------------------------------------------------------
+
+export {
+  SUBCATEGORIES,
+  SUBCATEGORIES_BY_FIELD,
+  SUBCATEGORY_BY_ID,
+  subcategorySlug,
+  type Subcategory,
+} from "@/lib/taxonomy-subcategories";
+
+import {
+  SUBCATEGORIES_BY_FIELD as _SUBS_BY_FIELD,
+  SUBCATEGORY_BY_ID as _SUB_BY_ID,
+  type Subcategory as _Subcategory,
+} from "@/lib/taxonomy-subcategories";
+
+/** Every subcategory under a Field, in authored order. General returns []. */
+export function subcategoriesForField(field: string | null | undefined): readonly _Subcategory[] {
+  return _SUBS_BY_FIELD[normalizeField(field)] ?? [];
+}
+
+/** The Field a subcategory id belongs to, or null when unknown. */
+export function fieldForSubcategory(id: string | null | undefined): FieldId | null {
+  if (!id) return null;
+  return _SUB_BY_ID.get(id)?.field ?? null;
+}
+
+export const isSubcategoryId = (value: unknown): value is string =>
+  typeof value === "string" && _SUB_BY_ID.has(value);
+
+/** True when `id` is a real subcategory whose parent is `field`. */
+export function isSubcategoryOf(id: string | null | undefined, field: string | null | undefined): boolean {
+  if (!id) return false;
+  const parent = fieldForSubcategory(id);
+  return !!parent && parent === normalizeField(field);
+}
+
+/** Human label for a subcategory id. Falls back to the id's own fragment. */
+export function subcategoryLabel(id: string | null | undefined): string {
+  if (!id) return "";
+  const hit = _SUB_BY_ID.get(id);
+  if (hit) return hit.label;
+  const tail = id.includes(".") ? id.slice(id.indexOf(".") + 1) : id;
+  return tail.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/** Known subcategory id, or null. Never invents a value. */
+export function normalizeSubcategory(id: string | null | undefined): string | null {
+  return isSubcategoryId(id) ? id : null;
+}
+
+/**
+ * Keep a subcategory only while it still belongs to the primary Field.
+ * Call this whenever the primary Field changes.
+ */
+export function subcategoryForPrimary(
+  subcategory: string | null | undefined,
+  primaryField: string | null | undefined,
+): string | null {
+  return isSubcategoryOf(subcategory, primaryField) ? (subcategory as string) : null;
+}
+
+/**
+ * Normalize a Field selection: dedupe, cap, and enforce that General stands
+ * alone. Returns primary-first. Never empty.
+ */
+export function normalizeFieldSelection(
+  primary: string | null | undefined,
+  extras: readonly (string | null | undefined)[] = [],
+  max = 3,
+): { primary: FieldId; extras: FieldId[]; fields: FieldId[] } {
+  const primaryField = normalizeField(primary);
+  if (primaryField === GENERAL_FIELD_ID) {
+    return { primary: GENERAL_FIELD_ID, extras: [], fields: [GENERAL_FIELD_ID] };
+  }
+  const out: FieldId[] = [primaryField];
+  for (const e of extras) {
+    const f = normalizeField(e);
+    if (f === GENERAL_FIELD_ID) continue; // General never rides along.
+    if (!out.includes(f) && out.length < max) out.push(f);
+  }
+  return { primary: primaryField, extras: out.slice(1), fields: out };
+}
+
+/** Same rules for the flat, no-primary case (Profiles, Groups). */
+export function normalizeFieldList(
+  values: readonly (string | null | undefined)[] | null | undefined,
+  max = 3,
+): FieldId[] {
+  const out: FieldId[] = [];
+  for (const v of values ?? []) {
+    if (!v) continue;
+    const f = normalizeField(v);
+    if (!out.includes(f) && out.length < max) out.push(f);
+  }
+  if (out.length > 1) {
+    const specific = out.filter((f) => f !== GENERAL_FIELD_ID);
+    return specific.length > 0 ? specific : [GENERAL_FIELD_ID];
+  }
+  return out;
+}
+
+/**
+ * Profile specialties: subcategory ids restricted to the profile's Fields,
+ * deduplicated and capped. Unknown ids are dropped, never coerced.
+ */
+export function normalizeSpecialties(
+  values: readonly (string | null | undefined)[] | null | undefined,
+  fields: readonly (string | null | undefined)[],
+  max = 12,
+): string[] {
+  const allowed = new Set(fields.map((f) => normalizeField(f)));
+  const out: string[] = [];
+  for (const v of values ?? []) {
+    const id = normalizeSubcategory(v);
+    if (!id) continue;
+    const parent = fieldForSubcategory(id);
+    if (!parent || !allowed.has(parent)) continue;
+    if (!out.includes(id) && out.length < max) out.push(id);
+  }
+  return out;
+}
+
+/**
+ * Server-side guard for content primitives. Throws a user-readable message
+ * rather than silently coercing, so bad input is visible in authoring.
+ */
+export function assertValidTaxonomy(input: {
+  primary: string;
+  extras?: readonly string[];
+  subcategory?: string | null;
+  maxFields?: number;
+}): { primary: FieldId; extras: FieldId[]; fields: FieldId[]; subcategory: string | null } {
+  if (!isFieldId(normalizeField(input.primary))) throw new Error("Unknown field.");
+  const sel = normalizeFieldSelection(input.primary, input.extras ?? [], input.maxFields ?? 3);
+  const sub = input.subcategory ? normalizeSubcategory(input.subcategory) : null;
+  if (input.subcategory && !sub) throw new Error("Unknown subcategory.");
+  if (sub && !isSubcategoryOf(sub, sel.primary)) {
+    throw new Error("That specialization doesn't belong to the selected field.");
+  }
+  return { ...sel, subcategory: sub };
+}

@@ -228,7 +228,7 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
       return {
         title: `New blog post — ${t}`,
         subtitle: (n.payload?.author as string) || "",
-        href: slug ? `/blog/${slug}` : "/blog",
+        href: slug ? workshopEntityUrl({ kind: "post", slug }) : "/blog",
       };
     }
     case "admin_work_published": {

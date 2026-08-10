@@ -431,6 +431,7 @@ export type Database = {
           slug: string
           status: string
           story_type: string | null
+          subcategories: string[]
           title: string
           updated_at: string
           updated_by: string | null
@@ -456,6 +457,7 @@ export type Database = {
           slug: string
           status?: string
           story_type?: string | null
+          subcategories?: string[]
           title: string
           updated_at?: string
           updated_by?: string | null
@@ -481,6 +483,7 @@ export type Database = {
           slug?: string
           status?: string
           story_type?: string | null
+          subcategories?: string[]
           title?: string
           updated_at?: string
           updated_by?: string | null
@@ -2533,6 +2536,7 @@ export type Database = {
           source: string
           starts_at: string
           status: Database["public"]["Enums"]["group_event_status"]
+          subcategory: string | null
           tagline: string | null
           timezone: string
           title: string
@@ -2588,6 +2592,7 @@ export type Database = {
           source?: string
           starts_at: string
           status?: Database["public"]["Enums"]["group_event_status"]
+          subcategory?: string | null
           tagline?: string | null
           timezone?: string
           title: string
@@ -2643,6 +2648,7 @@ export type Database = {
           source?: string
           starts_at?: string
           status?: Database["public"]["Enums"]["group_event_status"]
+          subcategory?: string | null
           tagline?: string | null
           timezone?: string
           title?: string
@@ -5244,6 +5250,7 @@ export type Database = {
           preferred_language: string
           referred_by: string | null
           show_online: boolean
+          specialties: string[]
           tools: string[]
           tour_completed_at: string | null
           updated_at: string
@@ -5295,6 +5302,7 @@ export type Database = {
           preferred_language?: string
           referred_by?: string | null
           show_online?: boolean
+          specialties?: string[]
           tools?: string[]
           tour_completed_at?: string | null
           updated_at?: string
@@ -5346,6 +5354,7 @@ export type Database = {
           preferred_language?: string
           referred_by?: string | null
           show_online?: boolean
+          specialties?: string[]
           tools?: string[]
           tour_completed_at?: string | null
           updated_at?: string

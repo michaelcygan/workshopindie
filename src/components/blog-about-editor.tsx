@@ -19,8 +19,9 @@ import type { BlogEntityKind, BlogEntityTag } from "@/lib/blog-entity-tags";
 import { MAX_BLOG_ENTITY_TAGS, tagKey } from "@/lib/blog-entity-tags";
 import { deriveBlogPostContext } from "@/lib/blog-post-context";
 import { blogCategorySlugForField } from "@/lib/blog-categories";
+import { SubcategoryPicker } from "@/components/subcategory-picker";
 import { FieldPicker } from "@/components/field-picker";
-import { fieldClass, fieldLabel, type FieldId } from "@/lib/taxonomy";
+import { fieldClass, fieldLabel, subcategoryLabel, type FieldId } from "@/lib/taxonomy";
 import { BLOG_STORY_TYPES, type BlogStoryType } from "@/lib/blog-story-types";
 
 const KIND_ICONS: Record<BlogEntityKind, typeof Briefcase> = {
@@ -55,6 +56,8 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
  */
 export function BlogAboutEditor({
   fields,
+  subcategory,
+  onChangeSubcategory,
   storyType,
   onChangeStoryType,
   tags,
@@ -65,6 +68,9 @@ export function BlogAboutEditor({
 }: {
   /** Canonical Fields, primary first. Never empty — default `["other"]`. */
   fields: FieldId[];
+  /** Optional specialization beneath the primary Field. */
+  subcategory?: string | null;
+  onChangeSubcategory?: (next: string | null) => void;
   /** Editorial kind of piece. Optional and independent of Fields. */
   storyType: BlogStoryType | null;
   onChangeStoryType: (next: BlogStoryType | null) => void;
@@ -262,6 +268,23 @@ export function BlogAboutEditor({
             />
           )}
         </Row>
+
+        {onChangeSubcategory && !readOnly && (
+          <Row label="Specialization">
+            <SubcategoryPicker
+              field={primaryField}
+              value={subcategory ?? null}
+              onChange={onChangeSubcategory}
+              label=""
+              hint="Optional. Narrows the field for search and discovery."
+            />
+          </Row>
+        )}
+        {readOnly && subcategory && (
+          <Row label="Specialization">
+            <div className="text-sm text-ink-soft">{subcategoryLabel(subcategory)}</div>
+          </Row>
+        )}
 
         <Row label={context.mediums.length === 1 ? "Format" : "Formats"}>
           {context.mediums.length > 0 ? (
