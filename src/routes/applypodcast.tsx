@@ -417,7 +417,9 @@ function ApplyPodcastPage() {
               <p className="text-sm text-ink-muted">
                 Applying while signed in — this application will be linked to your Workshop
                 account.
+                {prefilled ? " We filled in what we already know; edit anything that's off." : ""}
               </p>
+
             ) : (
               <label className="flex items-start gap-3 text-sm text-ink-soft">
                 <Checkbox
