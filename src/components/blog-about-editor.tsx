@@ -53,17 +53,18 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
  * what readers see under "About this post".
  */
 export function BlogAboutEditor({
-  categorySlug,
+  fields,
   tags,
   readOnly,
-  onChangeCategory,
+  onChangeFields,
   onChangeTags,
   canCreateWork = true,
 }: {
-  categorySlug: BlogCategorySlug;
+  /** Canonical Fields, primary first. Never empty — default `["other"]`. */
+  fields: FieldId[];
   tags: BlogEntityTag[];
   readOnly?: boolean;
-  onChangeCategory: (slug: BlogCategorySlug) => void;
+  onChangeFields: (next: FieldId[]) => void;
   onChangeTags: (next: BlogEntityTag[]) => void;
   /** Quick Work creation requires a signed-in member (not the admin CMS). */
   canCreateWork?: boolean;
@@ -71,6 +72,11 @@ export function BlogAboutEditor({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerKind, setPickerKind] = useState<BlogEntityKind | "all">("all");
   const [createWorkOpen, setCreateWorkOpen] = useState(false);
+
+  const primaryField: FieldId = fields[0] ?? "other";
+  const extraFields = fields.slice(1);
+  // `category_slug` stays a derived value so historic /blog/c/<slug> URLs work.
+  const categorySlug = blogCategorySlugForField(primaryField);
 
   const disabledKeys = useMemo(() => tags.map(tagKey), [tags]);
   const atCap = tags.length >= MAX_BLOG_ENTITY_TAGS;
