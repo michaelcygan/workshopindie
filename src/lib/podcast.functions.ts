@@ -89,6 +89,15 @@ const applicationSchema = z.object({
   portfolioUrl: z.string().trim().min(1, "Please add a link to your work.").max(500),
   socialHandle: optionalLine(120),
   city: optionalLine(120),
+  cityId: z
+    .string()
+    .uuid()
+    .nullable()
+    .optional()
+    .transform((v) => v ?? null),
+  workshopUrl: optionalLine(200),
+  wantsAccount: z.boolean().optional().default(false),
+
   processDescription: z
     .string()
     .trim()
