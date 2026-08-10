@@ -331,7 +331,7 @@ function MemberBlogEditorPage() {
           <ArrowLeft className="h-4 w-4" /> Your posts
         </Link>
         <div className="flex min-w-0 items-center gap-2">
-          <PostActions />
+          <PostActions post={post} />
         </div>
 
       </div>
