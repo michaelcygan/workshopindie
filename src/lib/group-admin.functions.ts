@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { FIELD_IDS } from "@/lib/taxonomy";
 
 async function assertAdmin(supabase: SupabaseClient<Database>, userId: string) {
   const { data } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
@@ -25,6 +26,8 @@ const createSchema = z.object({
   featured: z.boolean().optional(),
   visibility: z.enum(["public", "unlisted"]).optional(),
   news_feed_url: z.string().url().nullable().optional(),
+  /** Canonical Fields this Group is about. Max 3, primary first. */
+  fields: z.array(z.enum(FIELD_IDS)).max(3).optional(),
 });
 
 export const createGroup = createServerFn({ method: "POST" })
@@ -48,6 +51,7 @@ export const createGroup = createServerFn({ method: "POST" })
         is_official: data.is_official ?? true,
         featured_at: data.featured ? new Date().toISOString() : null,
         visibility: data.visibility ?? "public",
+        fields: data.fields ?? [],
         created_by: userId,
       })
       .select("id,slug")
@@ -71,6 +75,7 @@ type UpdatePatch = {
   visibility?: "public" | "unlisted";
   news_feed_url?: string | null;
   featured_at?: string | null;
+  fields?: string[];
 };
 
 export const updateGroup = createServerFn({ method: "POST" })
