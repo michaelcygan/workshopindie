@@ -206,37 +206,38 @@ export function BlogAboutEditor({
       </p>
 
       <div className="mt-2 divide-y divide-border border-t border-border">
-        <Row label="Category">
-          <div className="flex flex-wrap gap-2">
-            {BLOG_CATEGORIES.map((c) => {
-              const active = c.slug === categorySlug;
-              return (
-                <button
-                  key={c.slug}
-                  type="button"
-                  disabled={readOnly}
-                  aria-pressed={active}
-                  onClick={() => onChangeCategory(c.slug)}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
-                    active
-                      ? "border-ink bg-ink text-surface"
-                      : "border-border bg-background text-ink-soft hover:border-ink/40"
-                  }`}
+        <Row label={fields.length === 1 ? "Field" : "Fields"}>
+          {readOnly ? (
+            <div className="flex flex-wrap gap-2">
+              {fields.map((f) => (
+                <span
+                  key={f}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium ${fieldClass(f)}`}
                 >
-                  {c.label}
-                </button>
-              );
-            })}
-          </div>
+                  {fieldLabel(f)}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <FieldPicker
+              label=""
+              primary={primaryField}
+              extras={extraFields}
+              onPrimaryChange={(next) => onChangeFields([next, ...extraFields.filter((f) => f !== next)])}
+              onExtrasChange={(next) => onChangeFields([primaryField, ...next.filter((f) => f !== primaryField)])}
+              hint="What this story is about. Up to 3 — star one to lead with it."
+            />
+          )}
         </Row>
 
-        <Row label={context.mediums.length === 1 ? "Medium" : "Mediums"}>
+        <Row label={context.mediums.length === 1 ? "Format" : "Formats"}>
           {context.mediums.length > 0 ? (
             <div className="text-sm text-ink-soft">{context.mediums.join(" · ")}</div>
           ) : (
-            <div className="text-xs text-ink-muted">Mediums come from the Works you connect.</div>
+            <div className="text-xs text-ink-muted">Formats come from the Works you connect.</div>
           )}
         </Row>
+
 
         {ROWS.map((row) => {
           const items = byKind[row.kind];
