@@ -24,6 +24,8 @@ import {
 } from "@/lib/blog-member.functions";
 import { PlusGate } from "@/components/plus-gate";
 import { BlogPublishSuccessDialog, type PublishedPostSummary } from "@/components/blog-publish-success";
+import { BlogComposerWalkthrough } from "@/components/nudges/blog-composer-walkthrough";
+
 import { Switch } from "@/components/ui/switch";
 import { generateExcerpt } from "@/lib/blog-excerpt";
 import {
@@ -574,6 +576,8 @@ function MemberBlogEditorPage() {
         onOpenChange={setBlogGateOpen}
         reason="blog_limit"
       />
+      <BlogComposerWalkthrough />
+
     </main>
   );
 }
