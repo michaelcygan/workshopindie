@@ -44,6 +44,7 @@ import { GroupTabBar, type GroupTab } from "@/components/group/group-tab-bar";
 import { GroupEmpty } from "@/components/group/group-empty";
 import { GroupTodayTab } from "@/components/group/group-today-tab";
 import { GroupLinksTab } from "@/components/group/group-links-tab";
+import { GroupResourcesTab, useGroupResourceCount } from "@/components/group/group-resources-tab";
 import { GroupLiveShell } from "@/components/group/group-live-shell";
 
 import { GroupPostsTab, useGroupBlogPosts } from "@/components/group/group-posts-tab";
@@ -104,10 +105,12 @@ const TAB_VALUES = [
   "links",
   "posts",
   "events",
+  "resources",
   "members",
   "subgroups",
   "about",
 ] as const;
+
 type TabValue = (typeof TAB_VALUES)[number];
 
 export const Route = createFileRoute("/g/$slug/")({
@@ -313,7 +316,15 @@ function GroupPage() {
   // both the tab content and whether the tab is shown at all.
   const { posts: groupBlogPosts, isLoading: groupBlogLoading } = useGroupBlogPosts(group.id);
   const hasBlogPosts = groupBlogPosts.length > 0;
-  const viewTab: Tab = tab === "posts" && !groupBlogLoading && !hasBlogPosts ? "today" : tab;
+
+  // Resources are invisible until the Group has at least one published one.
+  const { count: resourceCount, isLoading: resourcesLoading } = useGroupResourceCount(group.id);
+  const hasResources = resourceCount > 0;
+
+  let viewTab: Tab = tab;
+  if (tab === "posts" && !groupBlogLoading && !hasBlogPosts) viewTab = "today";
+  if (tab === "resources" && !resourcesLoading && !hasResources) viewTab = "today";
+
 
   // Full child-group payload — only fetched when the Subgroups tab is opened.
   const { data: childGroups = [] } = useQuery({
@@ -395,6 +406,7 @@ function GroupPage() {
               }}
               childCount={childCount}
               showPosts={groupBlogLoading || hasBlogPosts}
+              showResources={hasResources}
             />
 
             <div className="mt-5">
@@ -404,6 +416,7 @@ function GroupPage() {
               {viewTab === "work" && <GroupWorkTab group={group} />}
               {viewTab === "links" && <GroupLinksTab group={group} />}
               {viewTab === "posts" && <GroupPostsTab group={group} />}
+              {viewTab === "resources" && <GroupResourcesTab group={group} />}
               {viewTab === "events" && (
                 <GroupEventDirectory
                   group={group}

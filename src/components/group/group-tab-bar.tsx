@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Calendar, FileText, Info, LayoutGrid, Link2, Megaphone, Plus, Sparkles, Sun, Users } from "lucide-react";
+import { BookMarked, Calendar, FileText, Info, LayoutGrid, Link2, Megaphone, Plus, Sparkles, Sun, Users } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +16,7 @@ export type GroupTab =
   | "work"
   | "links"
   | "posts"
+  | "resources"
   | "members"
   | "subgroups"
   | "about";
@@ -28,6 +29,7 @@ export function GroupTabBar({
   counts,
   childCount,
   showPosts = true,
+  showResources = false,
 }: {
   tab: GroupTab;
   setTab: (t: GroupTab) => void;
@@ -36,6 +38,8 @@ export function GroupTabBar({
   childCount: number;
   /** Hide the Blog tab when the Group has no tagged or member-authored posts. */
   showPosts?: boolean;
+  /** Hide the Resources tab entirely until the Group has published resources. */
+  showResources?: boolean;
 }) {
   const items: { id: GroupTab; label: string; icon: typeof LayoutGrid; count: number | null }[] = [
     { id: "today", label: "Today", icon: Sun, count: null },
@@ -47,12 +51,16 @@ export function GroupTabBar({
       ? [{ id: "posts" as const, label: "Blog", icon: FileText, count: null }]
       : []),
     { id: "events", label: "Events", icon: Calendar, count: null },
+    ...(showResources
+      ? [{ id: "resources" as const, label: "Resources", icon: BookMarked, count: null }]
+      : []),
     ...(childCount > 0
       ? [{ id: "subgroups" as const, label: "Groups", icon: Sparkles, count: childCount }]
       : []),
     { id: "members", label: "Members", icon: Users, count: counts.members },
     { id: "about", label: "About", icon: Info, count: null },
   ];
+
 
 
 
