@@ -414,3 +414,47 @@ export const getAdminDataHealth = createServerFn({ method: "GET" })
       fetchedAt: new Date().toISOString(),
     };
   });
+
+/**
+ * Traffic — anonymous first-party web analytics.
+ *
+ * Deliberately distinct from Growth (who joins), Product (what members do) and
+ * Geography (where members say they live). Every number is aggregated in SQL;
+ * raw pageviews never leave the database.
+ */
+export const getAdminTraffic = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { days?: number }) => ({ days: Number(input?.days ?? 30) || 0 }))
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context.supabase, context.userId);
+    const admin = await getAdmin();
+    const d = { _days: data.days };
+
+    const [overview, daily, pages, routes, locations, countries, referrers, entries, exits, transitions] =
+      await Promise.all([
+        panel(admin.rpc("traffic_overview" as never, d as never).maybeSingle()),
+        panel(admin.rpc("traffic_daily" as never, d as never)),
+        panel(admin.rpc("traffic_pages" as never, { ...d, _limit: 100 } as never)),
+        panel(admin.rpc("traffic_routes" as never, { ...d, _limit: 100 } as never)),
+        panel(admin.rpc("traffic_locations" as never, { ...d, _limit: 100 } as never)),
+        panel(admin.rpc("traffic_countries" as never, { ...d, _limit: 40 } as never)),
+        panel(admin.rpc("traffic_referrers" as never, { ...d, _limit: 40 } as never)),
+        panel(admin.rpc("traffic_entries" as never, { ...d, _limit: 40 } as never)),
+        panel(admin.rpc("traffic_exits" as never, { ...d, _limit: 40 } as never)),
+        panel(admin.rpc("traffic_transitions" as never, { ...d, _limit: 30 } as never)),
+      ]);
+
+    return {
+      overview,
+      daily,
+      pages,
+      routes,
+      locations,
+      countries,
+      referrers,
+      entries,
+      exits,
+      transitions,
+      fetchedAt: new Date().toISOString(),
+    };
+  });
