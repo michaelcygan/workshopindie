@@ -23,7 +23,7 @@ export function PublicGroupScenes({ groups }: { groups: PublicGroupScene[] }) {
             Find the people your work belongs with.
           </h2>
           <p className="mt-2 max-w-lg text-sm text-ink-soft">
-            Groups gather creative communities around places, practices, genres, and shared
+            Groups gather creative communities around places, practices, fields, and shared
             interests.
           </p>
         </div>
