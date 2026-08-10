@@ -315,7 +315,15 @@ function GroupPage() {
   // both the tab content and whether the tab is shown at all.
   const { posts: groupBlogPosts, isLoading: groupBlogLoading } = useGroupBlogPosts(group.id);
   const hasBlogPosts = groupBlogPosts.length > 0;
-  const viewTab: Tab = tab === "posts" && !groupBlogLoading && !hasBlogPosts ? "today" : tab;
+
+  // Resources are invisible until the Group has at least one published one.
+  const { count: resourceCount, isLoading: resourcesLoading } = useGroupResourceCount(group.id);
+  const hasResources = resourceCount > 0;
+
+  let viewTab: Tab = tab;
+  if (tab === "posts" && !groupBlogLoading && !hasBlogPosts) viewTab = "today";
+  if (tab === "resources" && !resourcesLoading && !hasResources) viewTab = "today";
+
 
   // Full child-group payload — only fetched when the Subgroups tab is opened.
   const { data: childGroups = [] } = useQuery({
