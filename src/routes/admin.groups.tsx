@@ -19,6 +19,40 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/groups")({ component: AdminGroups });
 
+function FieldChips({
+  value,
+  onChange,
+}: {
+  value: FieldId[];
+  onChange: (next: FieldId[]) => void;
+}) {
+  return (
+    <div>
+      <Label>Fields</Label>
+      <div className="mt-1 flex flex-wrap gap-1.5">
+        {FIELD_OPTIONS.map((f) => {
+          const on = value.includes(f.id);
+          return (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() =>
+                onChange(on ? value.filter((v) => v !== f.id) : [...value, f.id].slice(0, 3))
+              }
+              className={`rounded-full border px-2.5 py-1 text-xs transition ${
+                on ? `border-transparent ${fieldClass(f.id)}` : "border-border text-ink-soft hover:bg-muted"
+              }`}
+            >
+              {f.label}
+            </button>
+          );
+        })}
+      </div>
+      <p className="mt-1 text-[11px] text-ink-muted">Up to 3. First one leads.</p>
+    </div>
+  );
+}
+
 type GroupRow = {
   id: string;
   slug: string;
@@ -36,6 +70,7 @@ type GroupRow = {
   cover_url: string | null;
   parent_group_id: string | null;
   news_feed_url: string | null;
+  fields: string[] | null;
 };
 
 function AdminGroups() {
@@ -45,7 +80,7 @@ function AdminGroups() {
     queryFn: async () => {
       const { data } = await supabase
         .from("groups")
-        .select("id,slug,name,kind,member_count,workshop_count,collab_count,work_count,is_official,featured_at,visibility,tagline,description,cover_url,parent_group_id,news_feed_url,deleted_at")
+        .select("id,slug,name,kind,member_count,workshop_count,collab_count,work_count,is_official,featured_at,visibility,tagline,description,cover_url,parent_group_id,news_feed_url,fields,deleted_at")
         .is("deleted_at", null)
         .order("kind")
         .order("name");
@@ -177,6 +212,7 @@ function CreateGroupDialog() {
   const [description, setDescription] = useState("");
   const [coverUrl, setCoverUrl] = useState("");
   const [featured, setFeatured] = useState(false);
+  const [fields, setFields] = useState<FieldId[]>([]);
   const qc = useQueryClient();
   const createFn = useServerFn(createGroup);
 
@@ -191,6 +227,7 @@ function CreateGroupDialog() {
           description: description || null,
           cover_url: coverUrl || null,
           featured,
+          fields,
         },
       }),
     onSuccess: () => {
@@ -198,7 +235,7 @@ function CreateGroupDialog() {
       qc.invalidateQueries({ queryKey: ["admin-groups"] });
       qc.invalidateQueries({ queryKey: ["groups"] });
       setOpen(false);
-      setName(""); setSlug(""); setTagline(""); setDescription(""); setCoverUrl(""); setFeatured(false);
+      setName(""); setSlug(""); setTagline(""); setDescription(""); setCoverUrl(""); setFeatured(false); setFields([]);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -233,6 +270,7 @@ function CreateGroupDialog() {
               </SelectContent>
             </Select>
           </div>
+          <FieldChips value={fields} onChange={setFields} />
           <div>
             <Label>Tagline</Label>
             <Input value={tagline} onChange={(e) => setTagline(e.target.value)} maxLength={140} />
@@ -269,6 +307,7 @@ function EditGroupDialog({ group, allGroups }: { group: GroupRow; allGroups: Gro
   const [newsUrl, setNewsUrl] = useState(group.news_feed_url ?? "");
   const [visibility, setVisibility] = useState<"public" | "unlisted">(group.visibility);
   const [parentId, setParentId] = useState<string>(group.parent_group_id ?? "__none__");
+  const [fields, setFields] = useState<FieldId[]>(((group.fields ?? []) as string[]).map(normalizeField).slice(0, 3));
   const qc = useQueryClient();
   const updateFn = useServerFn(updateGroup);
   const setParentFn = useServerFn(setGroupParent);
@@ -298,6 +337,7 @@ function EditGroupDialog({ group, allGroups }: { group: GroupRow; allGroups: Gro
           cover_url: coverUrl || null,
           news_feed_url: newsUrl || null,
           visibility,
+          fields,
         },
       });
       const nextParent = parentId === "__none__" ? null : parentId;
@@ -326,6 +366,7 @@ function EditGroupDialog({ group, allGroups }: { group: GroupRow; allGroups: Gro
           <div><Label>Tagline</Label><Input value={tagline} onChange={(e) => setTagline(e.target.value)} maxLength={140} /></div>
           <div><Label>Description</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} /></div>
           <div><Label>Cover image URL</Label><Input value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} /></div>
+          <FieldChips value={fields} onChange={setFields} />
           <div>
             <Label>News RSS / Atom feed URL</Label>
             <Input
