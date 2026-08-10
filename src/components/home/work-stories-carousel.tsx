@@ -10,7 +10,7 @@ import { CategoryPlaceholder } from "@/components/home/category-placeholder";
 
 import { listHomeWorkStories } from "@/lib/home.functions";
 import { HOME_STORY_LABEL_TEXT, type HomeWorkStory } from "@/lib/home-types";
-import { CATEGORY_LABELS } from "@/lib/categories";
+import { categoryLabel } from "@/lib/taxonomy";
 
 function categoryLabel(id: string) {
   return (

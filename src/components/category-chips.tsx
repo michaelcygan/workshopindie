@@ -1,4 +1,5 @@
-import { CATEGORY_LABELS, categoryClass, type Category } from "@/lib/categories";
+import { categoryClass, type Category } from "@/lib/categories";
+import { categoryLabel } from "@/lib/taxonomy";
 import { cn } from "@/lib/utils";
 import { CategoryChip } from "./category-chip";
 

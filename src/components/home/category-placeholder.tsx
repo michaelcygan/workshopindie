@@ -1,4 +1,5 @@
-import { CATEGORY_LABELS, type Category } from "@/lib/categories";
+import type { Category } from "@/lib/categories";
+import { categoryLabel } from "@/lib/taxonomy";
 import { cn } from "@/lib/utils";
 
 /**

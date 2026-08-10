@@ -1,7 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import type { PublicWorkTile } from "@/lib/home-types";
-import { CATEGORY_LABELS, type Category } from "@/lib/categories";
+import type { Category } from "@/lib/categories";
+import { categoryLabel } from "@/lib/taxonomy";
 
 /**
  * A compact, horizontally scrollable carousel of recent published Work.
