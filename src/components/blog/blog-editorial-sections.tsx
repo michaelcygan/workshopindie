@@ -21,13 +21,9 @@ export function toBlogCard(p: BlogListItem): PublicBlogCard {
 }
 
 function formatDate(iso: string | null) {
-  if (!iso) return "";
-  return new Date(iso).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  return formatShortDate(iso);
 }
+
 
 function Byline({ post }: { post: PublicBlogCard }) {
   return (
