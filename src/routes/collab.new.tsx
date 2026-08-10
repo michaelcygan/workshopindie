@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { normalizeField, type FieldId } from "@/lib/taxonomy";
 import { fieldWritePayload } from "@/lib/work-fields";
 import { FieldPicker } from "@/components/field-picker";
+import { SubcategoryPicker } from "@/components/subcategory-picker";
 import { type CityValue } from "@/components/city-combobox";
 import { AuthoringLocationPicker } from "@/components/authoring-location-picker";
 import { TimelinePicker, type TimelineValue } from "@/components/timeline-picker";
@@ -153,6 +154,7 @@ export function CollabComposer({
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<FieldId>("other");
   const [extraCategories, setExtraCategories] = useState<FieldId[]>([]);
+  const [subcategory, setSubcategory] = useState<string | null>(null);
   const [description, setDescription] = useState("");
   const [timeline, setTimeline] = useState<TimelineValue>({ mode: "flexible", starts_on: null, ends_on: null });
   const [timelineNote, setTimelineNote] = useState("");
@@ -249,7 +251,7 @@ export function CollabComposer({
     const { data: post, error } = await supabase.from("collab_posts").insert({
       title: title.trim(),
       slug: "",
-      ...fieldWritePayload(category, extraCategories),
+      ...fieldWritePayload(category, extraCategories, subcategory),
       description: description || null,
       timeline_text: timelineNote.trim() || null,
       timeline_mode: timeline.mode,
@@ -396,11 +398,16 @@ export function CollabComposer({
           <FieldPicker
             label="Field"
             primary={category}
-            onPrimaryChange={(next) => setCategory(next)}
+            onPrimaryChange={(next) => {
+              setCategory(next);
+              setSubcategory(null);
+            }}
             extras={extraCategories}
             onExtrasChange={setExtraCategories}
             hint="A Collab can span fields (e.g. Music + Visual Art). Star an extra to make it the primary."
           />
+
+          <SubcategoryPicker field={category} value={subcategory} onChange={setSubcategory} />
 
           <section className="space-y-1.5">
             <Label htmlFor="desc">What's the idea (optional)</Label>

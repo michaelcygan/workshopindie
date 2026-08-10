@@ -9,7 +9,14 @@
  * does not supply them, so what we write here is what is stored.
  */
 import type { Database } from "@/integrations/supabase/types";
-import { fieldToLegacyEnum, fieldsForStoredValues, normalizeField, type FieldId } from "@/lib/taxonomy";
+import {
+  fieldToLegacyEnum,
+  fieldsForStoredValues,
+  normalizeField,
+  normalizeSpecialties,
+  subcategoryForPrimary,
+  type FieldId,
+} from "@/lib/taxonomy";
 
 type LegacyCategory = Database["public"]["Enums"]["category"];
 
@@ -18,10 +25,16 @@ export type FieldWritePayload = {
   categories: LegacyCategory[];
   category_canonical: FieldId;
   categories_canonical: FieldId[];
+  /** Optional specialization beneath the primary Field. At most one. */
+  subcategories: string[];
 };
 
 /** Normalize a picker selection into the columns a Work/Collab row expects. */
-export function fieldWritePayload(primary: string, extras: readonly string[] = []): FieldWritePayload {
+export function fieldWritePayload(
+  primary: string,
+  extras: readonly string[] = [],
+  subcategory?: string | null,
+): FieldWritePayload {
   const primaryField = normalizeField(primary);
   const fields: FieldId[] = [primaryField];
   for (const e of extras) {
@@ -38,7 +51,20 @@ export function fieldWritePayload(primary: string, extras: readonly string[] = [
     categories: legacy,
     category_canonical: primaryField,
     categories_canonical: fields,
+    subcategories: (() => {
+      const sub = subcategoryForPrimary(subcategory ?? null, primaryField);
+      return sub ? [sub] : [];
+    })(),
   };
+}
+
+/** The single specialization stored on a Work / Collab row, if any. */
+export function rowSubcategory(
+  row: { subcategories?: readonly (string | null)[] | null } | null | undefined,
+  primaryField: string | null | undefined,
+): string | null {
+  const first = (row?.subcategories ?? []).find(Boolean);
+  return subcategoryForPrimary(first ?? null, primaryField);
 }
 
 type FieldRow = {
@@ -65,6 +91,8 @@ export function rowPrimaryField(row: FieldRow | null | undefined): FieldId {
 export type ProfileFieldWritePayload = {
   categories: LegacyCategory[];
   categories_canonical: FieldId[];
+  /** Specialties, scoped to the claimed Fields and capped. */
+  specialties: string[];
 };
 
 /**
@@ -72,7 +100,10 @@ export type ProfileFieldWritePayload = {
  * `categories` stays populated with the legacy enum equivalents so old
  * profile queries and the medium-group triggers keep working.
  */
-export function profileFieldWritePayload(fields: readonly string[]): ProfileFieldWritePayload {
+export function profileFieldWritePayload(
+  fields: readonly string[],
+  specialties: readonly string[] = [],
+): ProfileFieldWritePayload {
   const canonical: FieldId[] = [];
   for (const f of fields) {
     const n = normalizeField(f);
@@ -83,7 +114,11 @@ export function profileFieldWritePayload(fields: readonly string[]): ProfileFiel
     const l = fieldToLegacyEnum(f) as LegacyCategory;
     if (!legacy.includes(l)) legacy.push(l);
   }
-  return { categories: legacy, categories_canonical: canonical };
+  return {
+    categories: legacy,
+    categories_canonical: canonical,
+    specialties: normalizeSpecialties(specialties, canonical),
+  };
 }
 
 /** Fields a profile row claims. May be empty — profiles need not pick any. */

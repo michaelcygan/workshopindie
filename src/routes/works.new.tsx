@@ -28,6 +28,7 @@ import { GroupPicker, usePreselectGroup, type PickerGroup } from "@/components/g
 import { tagWorkInGroup } from "@/lib/groups.functions";
 import { BookDetailsSection, emptyBookDetails, type BookDetails } from "@/components/book-details-section";
 import { FieldPicker } from "@/components/field-picker";
+import { SubcategoryPicker } from "@/components/subcategory-picker";
 import { FormatInput } from "@/components/format-input";
 import { normalizeUrl, normalizeUrlOrKeep } from "@/lib/url-normalize";
 import { WorkComposerWalkthrough } from "@/components/nudges/work-composer-walkthrough";
@@ -80,6 +81,7 @@ function NewWork() {
   const [field, setField] = useState<FieldId>("visual_art");
   const [extraFields, setExtraFields] = useState<FieldId[]>([]);
   const [format, setFormat] = useState<string | null>(null);
+  const [subcategory, setSubcategory] = useState<string | null>(null);
   const [excerpt, setExcerpt] = useState("");
   const [description, setDescription] = useState("");
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
@@ -204,7 +206,7 @@ function NewWork() {
       .insert({
         title: title.trim(),
         slug: "",
-        ...fieldWritePayload(field, extraFields),
+        ...fieldWritePayload(field, extraFields, subcategory),
         subtype: format,
         excerpt: excerpt || null,
         description: description || null,
@@ -396,8 +398,12 @@ function NewWork() {
               onPrimaryChange={setField}
               extras={extraFields}
               onExtrasChange={setExtraFields}
-              onPrimaryReset={() => setFormat(null)}
+              onPrimaryReset={() => {
+                setFormat(null);
+                setSubcategory(null);
+              }}
             />
+            <SubcategoryPicker field={field} value={subcategory} onChange={setSubcategory} />
             <FormatInput fields={[field, ...extraFields]} value={format} onChange={setFormat} />
           </section>
 

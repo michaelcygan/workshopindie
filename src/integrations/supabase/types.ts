@@ -9694,6 +9694,7 @@ export type Database = {
       }
       slugify: { Args: { _in: string }; Returns: string }
       start_host_claim: { Args: { _room_id: string }; Returns: undefined }
+      subcategory_field: { Args: { _id: string }; Returns: string }
       sweep_stale_lounge_speakers: { Args: never; Returns: number }
       sweep_stale_lounges: { Args: never; Returns: undefined }
       sweep_stale_presence: { Args: never; Returns: number }
