@@ -4955,6 +4955,7 @@ export type Database = {
       podcast_applications: {
         Row: {
           city: string | null
+          city_id: string | null
           conversation_topics: string | null
           created_at: string
           current_work: string | null
@@ -4971,9 +4972,12 @@ export type Database = {
           status: string
           updated_at: string
           user_id: string | null
+          wants_account: boolean
+          workshop_username: string | null
         }
         Insert: {
           city?: string | null
+          city_id?: string | null
           conversation_topics?: string | null
           created_at?: string
           current_work?: string | null
@@ -4990,9 +4994,12 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string | null
+          wants_account?: boolean
+          workshop_username?: string | null
         }
         Update: {
           city?: string | null
+          city_id?: string | null
           conversation_topics?: string | null
           created_at?: string
           current_work?: string | null
@@ -5009,8 +5016,32 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string | null
+          wants_account?: boolean
+          workshop_username?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "podcast_applications_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "podcast_applications_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "podcast_applications_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
+            referencedColumns: ["city_id"]
+          },
+        ]
       }
       processed_stripe_events: {
         Row: {

@@ -7,6 +7,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { domainError } from "@/lib/errors";
 import { normalizeUrl } from "@/lib/url-normalize";
 import { isFieldId } from "@/lib/taxonomy";
+import { normalizeUsername, USERNAME_MIN, USERNAME_MAX } from "@/lib/usernames";
+
 
 export const PODCAST_STATUSES = [
   "new",
@@ -39,6 +41,9 @@ export type PodcastApplication = {
   portfolio_url: string;
   social_handle: string | null;
   city: string | null;
+  city_id: string | null;
+  workshop_username: string | null;
+  wants_account: boolean;
   process_description: string;
   current_work: string | null;
   conversation_topics: string | null;
@@ -47,6 +52,7 @@ export type PodcastApplication = {
   internal_notes: string | null;
   created_at: string;
 };
+
 
 async function requireAdmin(supabase: any, userId: string) {
   const { data, error } = await supabase
@@ -68,6 +74,24 @@ function clientIpHash(): string | null {
   const salt = new Date().toISOString().slice(0, 10);
   return createHash("sha256").update(`${raw}::${salt}::podcast`).digest("hex");
 }
+/**
+ * Accepts a full Workshop profile URL or a bare handle and returns the
+ * normalized username. Anything unusable becomes null — this field is a
+ * convenience, never a validation gate on the application.
+ */
+function parseWorkshopUsername(raw: string | null): string | null {
+  if (!raw) return null;
+  let s = raw.trim();
+  const m = s.match(/^(?:https?:\/\/)?(?:www\.)?workshopindie\.com\/(.+)$/i);
+  if (m?.[1]) s = m[1];
+  s = s.split(/[?#]/)[0] ?? "";
+  s = s.replace(/\/+$/, "");
+  const last = s.split("/").filter(Boolean).pop() ?? "";
+  const username = normalizeUsername(last.replace(/^@/, ""));
+  if (username.length < USERNAME_MIN || username.length > USERNAME_MAX) return null;
+  return username;
+}
+
 
 const optionalLine = (max: number) =>
   z
@@ -85,6 +109,15 @@ const applicationSchema = z.object({
   portfolioUrl: z.string().trim().min(1, "Please add a link to your work.").max(500),
   socialHandle: optionalLine(120),
   city: optionalLine(120),
+  cityId: z
+    .string()
+    .uuid()
+    .nullable()
+    .optional()
+    .transform((v) => v ?? null),
+  workshopUrl: optionalLine(200),
+  wantsAccount: z.boolean().optional().default(false),
+
   processDescription: z
     .string()
     .trim()
@@ -167,11 +200,15 @@ export const submitPodcastApplication = createServerFn({ method: "POST" })
       portfolio_url: portfolioUrl,
       social_handle: data.socialHandle,
       city: data.city,
+      city_id: data.cityId,
+      workshop_username: parseWorkshopUsername(data.workshopUrl),
+      wants_account: !!data.wantsAccount,
       process_description: data.processDescription,
       current_work: data.currentWork,
       conversation_topics: data.conversationTopics,
       marketing_opt_in: !!data.marketingOptIn,
     });
+
     if (error) throw new Error(error.message);
 
     if (data.marketingOptIn) {

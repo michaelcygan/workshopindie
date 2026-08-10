@@ -201,10 +201,24 @@ function AdminPodcastPage() {
                   {selected.social_handle && (
                     <p className="text-ink-muted">Social: {selected.social_handle}</p>
                   )}
+                  {selected.workshop_username && (
+                    <a
+                      href={`/${selected.workshop_username}`}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="inline-flex items-center gap-1.5 text-primary hover:underline"
+                    >
+                      @{selected.workshop_username} <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  )}
                   {selected.city && <p className="text-ink-muted">{selected.city}</p>}
                   <p className="text-ink-muted">
                     Marketing opt-in: {selected.marketing_opt_in ? "Yes" : "No"}
                   </p>
+                  <p className="text-ink-muted">
+                    Asked to create an account: {selected.wants_account ? "Yes" : "No"}
+                  </p>
+
                   {selected.user_id && (
                     <p className="text-ink-muted">
                       Workshop account:{" "}
