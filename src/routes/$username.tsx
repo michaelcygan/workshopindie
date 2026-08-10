@@ -34,7 +34,6 @@ import { getFrequentCollaborators, type Collaborator } from "@/lib/network.funct
 import { useDocumentMeta, useJsonLd } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 import { categoryClass, type Category } from "@/lib/categories";
-import { categoryLabel } from "@/lib/taxonomy";
 import { CANONICAL_CATEGORIES, categoryClassFor, categoryLabel, normalizeCategory } from "@/lib/taxonomy";
 import { extraMediumLabel } from "@/lib/mediums";
 import { EntityBlogPosts } from "@/components/entity-blog-posts";

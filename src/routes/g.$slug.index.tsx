@@ -768,7 +768,7 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
   });
 
   const availableCategories = Array.from(
-    new Set(works.map((w) => w.category).filter((c): c is string => !!c)),
+    new Set(works.map((w) => w.category).filter((c): c is Category => !!c)),
   );
 
   const filtered = (() => {
@@ -1000,7 +1000,7 @@ function GroupCollabTab({ group }: { group: GroupRow }) {
   });
 
   const availableCategories = Array.from(
-    new Set(rows.map((r) => r.category).filter((c): c is string => !!c)),
+    new Set(rows.map((r) => r.category).filter((c): c is Category => !!c)),
   );
 
   const filtered = rows.filter((c) => {
@@ -1192,7 +1192,7 @@ function GroupMembersTab({ group }: { group: GroupRow }) {
     new Set(
       members
         .flatMap((m) => m.categories ?? [])
-        .filter((c): c is string => !!c),
+        .filter((c): c is Category => !!c),
     ),
   );
 
