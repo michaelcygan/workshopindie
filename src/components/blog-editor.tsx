@@ -19,7 +19,7 @@ import { BlogAboutEditor } from "@/components/blog-about-editor";
 import { BlogEntityTagPicker } from "@/components/blog-entity-tag-picker";
 import { entityMarkdown, tagKey, invalidateEntityTagCaches, type BlogEntityTag } from "@/lib/blog-entity-tags";
 import { blogCategorySlugForField, blogPostFields, type BlogCategorySlug } from "@/lib/blog-categories";
-import { fieldLabel, type FieldId } from "@/lib/taxonomy";
+import { fieldLabel, isSubcategoryOf, type FieldId } from "@/lib/taxonomy";
 import { toBlogStoryType, type BlogStoryType } from "@/lib/blog-story-types";
 import { CategoryPlaceholder } from "@/components/home/category-placeholder";
 
@@ -42,6 +42,7 @@ export type BlogEditorInitial = {
   author_name?: string;
   category_slug?: string | null;
   fields?: string[] | null;
+  subcategories?: string[] | null;
   story_type?: string | null;
   author_profile?: { username: string | null } | null;
   status?: "draft" | "published";
@@ -71,6 +72,9 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
     blogPostFields(initial?.fields, initial?.category_slug).length > 0
       ? blogPostFields(initial?.fields, initial?.category_slug)
       : ["other"],
+  );
+  const [subcategory, setSubcategory] = useState<string | null>(
+    (initial?.subcategories ?? [])[0] ?? null,
   );
   const [storyType, setStoryType] = useState<BlogStoryType | null>(toBlogStoryType(initial?.story_type));
   const categorySlug: BlogCategorySlug = blogCategorySlugForField(fields[0]);
@@ -217,6 +221,7 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
       author_profile_username: authorProfileUsername.trim().replace(/^@/, "") || null,
       category_slug: categorySlug,
       fields,
+      subcategories: subcategory ? [subcategory] : [],
       story_type: storyType,
     };
   }
@@ -496,10 +501,18 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
         <div className="mt-4">
           <BlogAboutEditor
             fields={fields}
+            subcategory={subcategory}
+            onChangeSubcategory={(next) => { setSubcategory(next); setDirty(true); }}
             storyType={storyType}
             onChangeStoryType={(next) => { setStoryType(next); setDirty(true); }}
             tags={entityTags}
-            onChangeFields={(next) => { setFields(next.length ? next : ["other"]); setDirty(true); }}
+            onChangeFields={(next) => {
+              const nextFields = next.length ? next : (["other"] as FieldId[]);
+              setFields(nextFields);
+              // A specialization can't outlive the Field it belongs to.
+              setSubcategory((prev) => (prev && isSubcategoryOf(prev, nextFields[0]) ? prev : null));
+              setDirty(true);
+            }}
             onChangeTags={(next) => {
               setEntityTags(next);
               setDirty(true);

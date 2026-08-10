@@ -1,0 +1,1 @@
+GRANT SELECT (specialties) ON public.profiles TO anon, authenticated;

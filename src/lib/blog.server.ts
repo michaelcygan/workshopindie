@@ -2,6 +2,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Database } from "@/integrations/supabase/types";
 import { moderateFields } from "@/lib/moderation/service.server";
+import { normalizeSpecialties } from "@/lib/taxonomy";
 
 const PUBLIC_CACHE = "public, s-maxage=60, stale-while-revalidate=600";
 
@@ -23,6 +24,8 @@ type BlogWrite = {
   author_profile_username?: string | null;
   category_slug?: string;
   fields?: string[];
+  /** Optional specialization beneath the primary Field. At most one. */
+  subcategories?: string[];
   story_type?: string | null;
 };
 
@@ -145,7 +148,7 @@ export async function getPublishedPostServer(slug: string) {
   const { data, error } = await publicClient()
     .from("blog_posts")
     .select(
-      "id,title,slug,excerpt,body_markdown,cover_image_url,cover_image_alt,seo_title,seo_description,author_name,published_at,updated_at,show_in_blog_index,publication_type,category_slug,fields,story_type,created_by,author_profile_id,author_profile:profiles!blog_posts_author_profile_id_fkey(username,display_name,avatar_url)",
+      "id,title,slug,excerpt,body_markdown,cover_image_url,cover_image_alt,seo_title,seo_description,author_name,published_at,updated_at,show_in_blog_index,publication_type,category_slug,fields,subcategories,story_type,created_by,author_profile_id,author_profile:profiles!blog_posts_author_profile_id_fkey(username,display_name,avatar_url)",
     )
     .eq("slug", slug)
     .eq("status", "published")
@@ -446,6 +449,9 @@ export async function adminCreateDraftServer(context: AuthContext, data: BlogWri
       author_profile_id: authorProfileId,
       category_slug: data.category_slug ?? "general",
       ...(data.fields ? { fields: data.fields } : {}),
+      ...(data.subcategories
+        ? { subcategories: normalizeSpecialties(data.subcategories, data.fields ?? []).slice(0, 1) }
+        : {}),
       ...(data.story_type !== undefined ? { story_type: data.story_type } : {}),
       status: "draft",
       created_by: context.userId,
@@ -493,6 +499,9 @@ export async function adminUpdatePostServer(
       author_profile_id: authorProfileId,
       ...(data.category_slug ? { category_slug: data.category_slug } : {}),
       ...(data.fields ? { fields: data.fields } : {}),
+      ...(data.subcategories
+        ? { subcategories: normalizeSpecialties(data.subcategories, data.fields ?? []).slice(0, 1) }
+        : {}),
       ...(data.story_type !== undefined ? { story_type: data.story_type } : {}),
       updated_by: context.userId,
     })
