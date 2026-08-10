@@ -352,7 +352,12 @@ function ApplyPodcastPage() {
           </div>
 
           <div className="space-y-2.5 border-t border-border/70 pt-4">
-            {!user && (
+            {user ? (
+              <p className="text-sm text-ink-muted">
+                Applying while signed in — this application will be linked to your Workshop
+                account.
+              </p>
+            ) : (
               <label className="flex items-start gap-3 text-sm text-ink-soft">
                 <Checkbox
                   checked={wantsAccount}
@@ -376,8 +381,9 @@ function ApplyPodcastPage() {
             <Button type="submit" size="lg" disabled={busy}>
               {busy ? "Sending…" : "Submit application"}
             </Button>
-            <p className="text-sm text-ink-muted">No account needed.</p>
+            {!user && <p className="text-sm text-ink-muted">No account needed.</p>}
           </div>
+
         </form>
       )}
 
