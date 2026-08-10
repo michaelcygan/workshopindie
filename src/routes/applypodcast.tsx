@@ -97,6 +97,66 @@ function ApplyPodcastPage() {
   const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [wantsAccount, setWantsAccount] = useState(false);
   const [website, setWebsite] = useState(""); // honeypot
+  const [prefilled, setPrefilled] = useState(false);
+
+  // Lite auto-fill: signed-in applicants get their profile basics filled in once.
+  const prefillOnce = useRef(false);
+  useEffect(() => {
+    if (!user || prefillOnce.current) return;
+    prefillOnce.current = true;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select(
+          "display_name, first_name, last_name, username, instagram_handle, categories_canonical, external_links, home_city_id, city_id, home_city:cities!profiles_home_city_id_fkey(name, state_region, country), city:cities!profiles_city_id_fkey(name, state_region, country)",
+        )
+        .eq("id", user.id)
+        .maybeSingle();
+      if (cancelled || !data) return;
+
+      const fullName =
+        data.display_name?.trim() ||
+        [data.first_name, data.last_name].filter(Boolean).join(" ").trim();
+      if (fullName) setName((v) => v || fullName);
+      if (user.email) setEmail((v) => v || user.email!);
+      if (data.username) setWorkshopUrl((v) => v || `workshopindie.com/${data.username}`);
+      if (data.instagram_handle)
+        setSocialHandle((v) => v || `@${data.instagram_handle!.replace(/^@/, "")}`);
+
+      const canonical = (data.categories_canonical ?? []).find((c) => isFieldId(c));
+      if (canonical) setField((v) => v || canonical);
+
+      const links = data.external_links;
+      if (links && typeof links === "object" && !Array.isArray(links)) {
+        const first = Object.values(links as Record<string, unknown>).find(
+          (v) => typeof v === "string" && v.trim().length > 0,
+        );
+        if (typeof first === "string") setPortfolioUrl((v) => v || normalizeUrlOrKeep(first));
+      }
+
+      const city = (data.home_city ?? data.city) as
+        | { name: string; state_region: string | null; country: string }
+        | null;
+      if (city) {
+        setLocation(
+          (v) =>
+            v ?? {
+              cityId: data.home_city_id ?? data.city_id ?? null,
+              providerId: null,
+              name: city.name,
+              sublabel: [city.state_region, city.country].filter(Boolean).join(", "),
+            },
+        );
+      }
+      setPrefilled(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+
 
   const specializationOptions = useMemo(
     () => (field ? formatSuggestionsFor([field]) : []),
