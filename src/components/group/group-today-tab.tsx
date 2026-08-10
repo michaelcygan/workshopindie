@@ -645,9 +645,9 @@ function RecentCollabs({ group }: { group: GroupRefForToday }) {
                   <div className="line-clamp-1 text-sm font-medium text-ink">{c.title}</div>
                   <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-ink-muted">
                     <span className="truncate">by {name}</span>
-                    {c.category && CATEGORY_LABELS[c.category] && (
+                    {c.category && (
                       <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-ink-soft">
-                        {CATEGORY_LABELS[c.category]}
+                        {categoryLabel(c.category)}
                       </span>
                     )}
                     {showStatus && (
@@ -742,9 +742,9 @@ function RecentWorks({ group }: { group: GroupRefForToday }) {
                     <div className="line-clamp-1 text-sm font-medium text-ink">{w.title}</div>
                     <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-ink-muted">
                       <span className="truncate">by {name}</span>
-                      {w.category && CATEGORY_LABELS[w.category] && (
+                      {w.category && (
                         <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-ink-soft">
-                          {CATEGORY_LABELS[w.category]}
+                          {categoryLabel(w.category)}
                         </span>
                       )}
                     </div>
