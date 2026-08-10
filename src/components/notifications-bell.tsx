@@ -51,6 +51,11 @@ const ICONS: Record<string, typeof Bell> = {
   event_recap: Calendar,
   event_new_in_my_group: Calendar,
   podcast_application_new: Mic,
+  admin_new_member: UserPlus,
+  admin_blog_published: FileText,
+  admin_work_published: Sparkles,
+  admin_collab_posted: Users,
+  admin_milestone: TrendingUp,
 };
 
 function labelFor(n: Row): { title: string; subtitle: string; href: string } {
