@@ -69,6 +69,21 @@ type EditorPost = {
   updated_at: string;
 };
 
+type EditorPostPayload = {
+  post: EditorPost;
+  entity_tags?: BlogEntityTag[];
+  access: {
+    canPublish: boolean;
+    canEditExisting: boolean;
+    canUnpublish: boolean;
+    canDeleteNeverPublishedDraft: boolean;
+    reason: string | null;
+    mode: string;
+    publicationsThisMonth: number;
+    monthlyPublicationLimit: number | null;
+  };
+};
+
 function MemberBlogEditorPage() {
   const { id } = Route.useParams();
   const { user, loading: authLoading } = useAuth();
