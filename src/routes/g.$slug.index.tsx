@@ -48,7 +48,7 @@ import { GroupResourcesTab, useGroupResourceCount } from "@/components/group/gro
 import { GroupLiveShell } from "@/components/group/group-live-shell";
 
 import { GroupPostsTab, useGroupBlogPosts } from "@/components/group/group-posts-tab";
-import { GroupNewsTicker } from "@/components/group/group-news-ticker";
+
 import { setGroupNewsFeed, setGroupParent } from "@/lib/group-admin.functions";
 import { useEventsRealtime } from "@/hooks/use-events-realtime";
 import { workshopEntityUrl } from "@/lib/entities/kinds";
