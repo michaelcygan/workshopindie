@@ -180,11 +180,15 @@ export const submitPodcastApplication = createServerFn({ method: "POST" })
       portfolio_url: portfolioUrl,
       social_handle: data.socialHandle,
       city: data.city,
+      city_id: data.cityId,
+      workshop_username: parseWorkshopUsername(data.workshopUrl),
+      wants_account: !!data.wantsAccount,
       process_description: data.processDescription,
       current_work: data.currentWork,
       conversation_topics: data.conversationTopics,
       marketing_opt_in: !!data.marketingOptIn,
     });
+
     if (error) throw new Error(error.message);
 
     if (data.marketingOptIn) {
