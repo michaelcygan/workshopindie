@@ -43,6 +43,7 @@ import { toast } from "sonner";
 import { GroupHero } from "@/components/group/group-hero";
 import { GroupTabBar, type GroupTab } from "@/components/group/group-tab-bar";
 import { GroupEmpty } from "@/components/group/group-empty";
+import { PostCollabCta } from "@/components/group/post-collab-cta";
 import { GroupTodayTab } from "@/components/group/group-today-tab";
 import { GroupLinksTab, useGroupLinkCount } from "@/components/group/group-links-tab";
 import { useTodayUnread } from "@/components/group/use-today-unread";
