@@ -257,8 +257,7 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
       const threshold = (n.payload?.threshold as number) ?? 0;
       return { title: `Milestone: ${threshold} ${label}`, subtitle: "Workshop just crossed a new line.", href: "/admin/growth" };
     }
-    default:
-      return { title: n.kind, subtitle: "", href: "/me" };
+    case "admin_new_member": {
   }
 }
 
