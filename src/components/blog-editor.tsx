@@ -18,7 +18,8 @@ import { BlogBodyEditor } from "@/components/blog-body-editor";
 import { BlogAboutEditor } from "@/components/blog-about-editor";
 import { BlogEntityTagPicker } from "@/components/blog-entity-tag-picker";
 import { entityMarkdown, tagKey, invalidateEntityTagCaches, type BlogEntityTag } from "@/lib/blog-entity-tags";
-import { blogCategoryLabel, toBlogCategorySlug, type BlogCategorySlug } from "@/lib/blog-categories";
+import { blogCategorySlugForField, blogPostFields, type BlogCategorySlug } from "@/lib/blog-categories";
+import { fieldLabel, type FieldId } from "@/lib/taxonomy";
 import { CategoryPlaceholder } from "@/components/home/category-placeholder";
 
 import { BlogPostContext } from "@/components/blog-post-context";
@@ -524,7 +525,7 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
             <TabsContent value="preview">
               <div className="mt-2 rounded-2xl border border-border bg-surface p-6">
                 <div className="text-[11px] uppercase tracking-[0.18em] text-ink-soft">
-                  {blogCategoryLabel(categorySlug)}
+                  {fieldLabel(fields[0])}
                 </div>
                 <h1 className="mt-2 font-display text-3xl text-ink">{title || "Untitled"}</h1>
                 {excerpt && <p className="mt-2 text-lg text-ink-soft">{excerpt}</p>}
@@ -564,7 +565,7 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
             ) : (
               <CategoryPlaceholder
                 size="cover"
-                category={blogCategoryLabel(categorySlug)}
+                category={fieldLabel(fields[0])}
                 className="aspect-video w-full"
               />
             )}
