@@ -5,7 +5,7 @@ import { GroupCardActions } from "@/components/group-card-actions";
 
 const KIND_LABEL: Record<GroupCardData["kind"], string> = {
   city: "City",
-  genre: "Genre",
+  genre: "Field",
   micro: "Micro",
   scene: "Scene",
 };

@@ -159,7 +159,7 @@ export function GroupPicker({
               }}
               onFocus={() => setOpen(true)}
               onBlur={() => setTimeout(() => setOpen(false), 150)}
-              placeholder={value.length === 0 ? "Search Groups (City, Genre, Scene…)" : "Add another"}
+              placeholder={value.length === 0 ? "Search Groups (City, Field, Scene…)" : "Add another"}
               className="flex-1 bg-transparent text-sm text-ink placeholder:text-ink-muted/70 focus:outline-none"
             />
           </div>

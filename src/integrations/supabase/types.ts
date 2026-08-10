@@ -415,6 +415,7 @@ export type Database = {
           show_in_blog_index: boolean
           slug: string
           status: string
+          story_type: string | null
           title: string
           updated_at: string
           updated_by: string | null
@@ -439,6 +440,7 @@ export type Database = {
           show_in_blog_index?: boolean
           slug: string
           status?: string
+          story_type?: string | null
           title: string
           updated_at?: string
           updated_by?: string | null
@@ -463,6 +465,7 @@ export type Database = {
           show_in_blog_index?: boolean
           slug?: string
           status?: string
+          story_type?: string | null
           title?: string
           updated_at?: string
           updated_by?: string | null

@@ -7,7 +7,7 @@ type Item = { id: KindTab; label: string; authOnly?: boolean };
 const ITEMS: readonly Item[] = [
   { id: "all", label: "All" },
   { id: "for-you", label: "Your groups", authOnly: true },
-  { id: "genre", label: "Genres" },
+  { id: "genre", label: "Fields" },
   { id: "scene", label: "Scenes" },
   { id: "micro", label: "Micro" },
   { id: "city", label: "Cities" },

@@ -9,9 +9,13 @@ import { moderateFields } from "@/lib/moderation/service.server";
 import { resolveBlogAccess } from "@/lib/blog-access.server";
 import {
   blogCategoryFromWorkCategory,
+  blogCategorySlugForField,
   isBlogCategorySlug,
   type BlogCategorySlug,
 } from "@/lib/blog-categories";
+import { normalizeField, type FieldId } from "@/lib/taxonomy";
+import { rowFields } from "@/lib/work-fields";
+import { toBlogStoryType } from "@/lib/blog-story-types";
 
 type AuthContext = {
   supabase: SupabaseClient<Database>;
@@ -19,10 +23,10 @@ type AuthContext = {
 };
 
 const DASHBOARD_FIELDS =
-  "id,title,slug,excerpt,status,publication_type,show_in_blog_index,cover_image_url,published_at,updated_at,created_at,category_slug";
+  "id,title,slug,excerpt,status,publication_type,show_in_blog_index,cover_image_url,published_at,updated_at,created_at,category_slug,fields";
 
 const EDITOR_FIELDS =
-  "id,title,slug,excerpt,body_markdown,cover_image_url,cover_image_alt,seo_title,seo_description,status,publication_type,show_in_blog_index,published_at,updated_at,created_at,created_by,author_name,category_slug";
+  "id,title,slug,excerpt,body_markdown,cover_image_url,cover_image_alt,seo_title,seo_description,status,publication_type,show_in_blog_index,published_at,updated_at,created_at,created_by,author_name,category_slug,fields,story_type";
 
 // ---------- helpers ----------
 
@@ -238,16 +242,17 @@ export async function createMyBlogDraftServer(
   if (seedTag?.kind === "work") {
     const { data: work } = await supabaseAdmin
       .from("works")
-      .select("category")
+      .select("category,categories,category_canonical,categories_canonical")
       .eq("id", seedTag.id)
       .maybeSingle();
+    const workFields = rowFields(work as Parameters<typeof rowFields>[0]);
     const slug = blogCategoryFromWorkCategory(
       (work as { category: string | null } | null)?.category,
     );
-    if (slug !== "general") {
+    if (slug !== "general" || workFields[0] !== "other") {
       await supabaseAdmin
         .from("blog_posts")
-        .update({ category_slug: slug })
+        .update({ category_slug: slug, fields: workFields })
         .eq("id", data as string)
         .eq("created_by", context.userId);
     }
@@ -292,6 +297,8 @@ type MemberUpdateInput = {
   seo_description?: string | null;
   show_in_blog_index?: boolean;
   category_slug?: BlogCategorySlug;
+  fields?: string[];
+  story_type?: string | null;
   expected_updated_at?: string;
   tags?: Array<{ kind: "work" | "collab" | "group" | "event" | "profile"; id: string }>;
 };
@@ -356,6 +363,20 @@ export async function updateMyBlogPostServer(
   // Allowlisted metadata: never moderated, never affects the article slug.
   if (input.category_slug !== undefined && isBlogCategorySlug(input.category_slug)) {
     patch.category_slug = input.category_slug;
+  }
+  // Canonical Fields are the source of truth; `category_slug` above is the
+  // derived legacy value that keeps /blog/c/<slug> URLs and RSS working.
+  if (input.story_type !== undefined) patch.story_type = toBlogStoryType(input.story_type);
+  if (input.fields !== undefined) {
+    const normalized: FieldId[] = [];
+    for (const f of input.fields.slice(0, 3)) {
+      const n = normalizeField(f);
+      if (!normalized.includes(n)) normalized.push(n);
+    }
+    patch.fields = normalized;
+    if (input.category_slug === undefined && normalized.length > 0) {
+      patch.category_slug = blogCategorySlugForField(normalized[0]);
+    }
   }
 
   // Slug editable only before first publish.

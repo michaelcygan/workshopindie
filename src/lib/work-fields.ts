@@ -61,3 +61,35 @@ export function rowFields(row: FieldRow | null | undefined): FieldId[] {
 export function rowPrimaryField(row: FieldRow | null | undefined): FieldId {
   return rowFields(row)[0]!;
 }
+
+export type ProfileFieldWritePayload = {
+  categories: LegacyCategory[];
+  categories_canonical: FieldId[];
+};
+
+/**
+ * Profiles carry Fields as broad disciplines (no single primary column).
+ * `categories` stays populated with the legacy enum equivalents so old
+ * profile queries and the medium-group triggers keep working.
+ */
+export function profileFieldWritePayload(fields: readonly string[]): ProfileFieldWritePayload {
+  const canonical: FieldId[] = [];
+  for (const f of fields) {
+    const n = normalizeField(f);
+    if (!canonical.includes(n)) canonical.push(n);
+  }
+  const legacy: LegacyCategory[] = [];
+  for (const f of canonical) {
+    const l = fieldToLegacyEnum(f) as LegacyCategory;
+    if (!legacy.includes(l)) legacy.push(l);
+  }
+  return { categories: legacy, categories_canonical: canonical };
+}
+
+/** Fields a profile row claims. May be empty — profiles need not pick any. */
+export function profileFields(row: FieldRow | null | undefined): FieldId[] {
+  if (!row) return [];
+  const canonical = (row.categories_canonical ?? []) as (string | null)[];
+  const legacy = (row.categories ?? []) as (string | null)[];
+  return fieldsForStoredValues(canonical, legacy);
+}

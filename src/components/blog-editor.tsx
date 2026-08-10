@@ -18,7 +18,9 @@ import { BlogBodyEditor } from "@/components/blog-body-editor";
 import { BlogAboutEditor } from "@/components/blog-about-editor";
 import { BlogEntityTagPicker } from "@/components/blog-entity-tag-picker";
 import { entityMarkdown, tagKey, invalidateEntityTagCaches, type BlogEntityTag } from "@/lib/blog-entity-tags";
-import { blogCategoryLabel, toBlogCategorySlug, type BlogCategorySlug } from "@/lib/blog-categories";
+import { blogCategorySlugForField, blogPostFields, type BlogCategorySlug } from "@/lib/blog-categories";
+import { fieldLabel, type FieldId } from "@/lib/taxonomy";
+import { toBlogStoryType, type BlogStoryType } from "@/lib/blog-story-types";
 import { CategoryPlaceholder } from "@/components/home/category-placeholder";
 
 import { BlogPostContext } from "@/components/blog-post-context";
@@ -39,6 +41,8 @@ export type BlogEditorInitial = {
   seo_description?: string | null;
   author_name?: string;
   category_slug?: string | null;
+  fields?: string[] | null;
+  story_type?: string | null;
   author_profile?: { username: string | null } | null;
   status?: "draft" | "published";
   published_at?: string | null;
@@ -63,7 +67,13 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
   const [seoTitle, setSeoTitle] = useState(initial?.seo_title ?? "");
   const [seoDesc, setSeoDesc] = useState(initial?.seo_description ?? "");
   const [authorName, setAuthorName] = useState(initial?.author_name ?? "Workshop");
-  const [categorySlug, setCategorySlug] = useState<BlogCategorySlug>(toBlogCategorySlug(initial?.category_slug));
+  const [fields, setFields] = useState<FieldId[]>(
+    blogPostFields(initial?.fields, initial?.category_slug).length > 0
+      ? blogPostFields(initial?.fields, initial?.category_slug)
+      : ["other"],
+  );
+  const [storyType, setStoryType] = useState<BlogStoryType | null>(toBlogStoryType(initial?.story_type));
+  const categorySlug: BlogCategorySlug = blogCategorySlugForField(fields[0]);
   const [authorProfileUsername, setAuthorProfileUsername] = useState(initial?.author_profile?.username ?? "");
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -206,6 +216,8 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
       author_name: authorName.trim() || "Workshop",
       author_profile_username: authorProfileUsername.trim().replace(/^@/, "") || null,
       category_slug: categorySlug,
+      fields,
+      story_type: storyType,
     };
   }
 
@@ -483,9 +495,11 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
         {/* "About this post" — category + connections, above the body. */}
         <div className="mt-4">
           <BlogAboutEditor
-            categorySlug={categorySlug}
+            fields={fields}
+            storyType={storyType}
+            onChangeStoryType={(next) => { setStoryType(next); setDirty(true); }}
             tags={entityTags}
-            onChangeCategory={(slug) => { setCategorySlug(slug); setDirty(true); }}
+            onChangeFields={(next) => { setFields(next.length ? next : ["other"]); setDirty(true); }}
             onChangeTags={(next) => {
               setEntityTags(next);
               setDirty(true);
@@ -517,7 +531,7 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
             <TabsContent value="preview">
               <div className="mt-2 rounded-2xl border border-border bg-surface p-6">
                 <div className="text-[11px] uppercase tracking-[0.18em] text-ink-soft">
-                  {blogCategoryLabel(categorySlug)}
+                  {fieldLabel(fields[0])}
                 </div>
                 <h1 className="mt-2 font-display text-3xl text-ink">{title || "Untitled"}</h1>
                 {excerpt && <p className="mt-2 text-lg text-ink-soft">{excerpt}</p>}
@@ -557,7 +571,7 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
             ) : (
               <CategoryPlaceholder
                 size="cover"
-                category={blogCategoryLabel(categorySlug)}
+                category={fieldLabel(fields[0])}
                 className="aspect-video w-full"
               />
             )}

@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { FIELD_IDS } from "@/lib/taxonomy";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
@@ -95,11 +96,8 @@ const baseSchema = z.object({
     "other",
     "lineup",
   ]),
-  /** Optional creative medium — auto-connects the event to its Medium Group. */
-  creative_category: z
-    .enum(["music", "film_video", "writing", "visual_art", "games_tech"])
-    .nullable()
-    .optional(),
+  /** Optional canonical Field — auto-connects the event to its Field Group. */
+  creative_category: z.enum(FIELD_IDS).nullable().optional(),
   format: z.enum(["in_person", "online", "hybrid"]),
   cover_url: safeHttpUrl.nullable().optional(),
   accent_color: z.string().max(20).nullable().optional(),

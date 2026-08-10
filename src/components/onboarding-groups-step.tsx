@@ -22,7 +22,7 @@ type Kind = "all" | "city" | "genre" | "micro" | "scene";
 
 const TABS: { id: Kind; label: string }[] = [
   { id: "all", label: "All" },
-  { id: "genre", label: "Genres" },
+  { id: "genre", label: "Fields" },
   { id: "scene", label: "Scenes" },
   { id: "micro", label: "Micro" },
   { id: "city", label: "Cities" },
@@ -123,7 +123,7 @@ export function OnboardingGroupsStep({
       </p>
       <h1 className="mt-1 font-display text-3xl text-ink">Pick a few Groups to fill your feed</h1>
       <p className="mt-1 text-sm text-ink-muted">
-        Groups are scenes, genres, and cities. Optional — you can join more anytime. Your home city is pre-selected.
+        Groups are scenes, fields, and cities. Optional — you can join more anytime. Your home city is pre-selected.
       </p>
 
       <div className="mt-5 flex h-11 items-center gap-2 rounded-full border border-border bg-surface px-4 shadow-soft">

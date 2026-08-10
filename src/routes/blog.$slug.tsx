@@ -6,6 +6,7 @@ import { BlogPostContext } from "@/components/blog-post-context";
 import { BlogComments } from "@/components/blog-comments";
 import { BlogAuthorActions } from "@/components/blog/blog-author-actions";
 import { deriveBlogPostContext, contextMentions } from "@/lib/blog-post-context";
+import { blogStoryTypeLabel } from "@/lib/blog-story-types";
 import { getBlogCategory } from "@/lib/blog-categories";
 import type { BlogEntityTag } from "@/lib/blog-entity-tags";
 import { ReportDialog } from "@/components/report-dialog";
@@ -140,6 +141,7 @@ function BlogPostPage() {
     authorUsernames: [...authors.map((a) => a.username), post.author_profile?.username ?? null],
   });
   const category = getBlogCategory(post.category_slug);
+  const storyTypeLabel = blogStoryTypeLabel(post.story_type);
 
   const publishedAt = post.published_at ? new Date(post.published_at) : null;
   const updatedAt = post.updated_at ? new Date(post.updated_at) : null;
@@ -153,13 +155,21 @@ function BlogPostPage() {
       </Link>
 
       <header className="mt-6">
-        <Link
-          to="/blog/c/$category"
-          params={{ category: category.slug }}
-          className="text-[11px] uppercase tracking-[0.18em] text-ink-soft hover:text-ink"
-        >
-          {category.label}
-        </Link>
+        <div className="flex flex-wrap items-center gap-x-2 text-[11px] uppercase tracking-[0.18em] text-ink-soft">
+          {storyTypeLabel && (
+            <>
+              <span className="text-ink">{storyTypeLabel}</span>
+              <span aria-hidden>·</span>
+            </>
+          )}
+          <Link
+            to="/blog/c/$category"
+            params={{ category: category.slug }}
+            className="hover:text-ink"
+          >
+            {category.label}
+          </Link>
+        </div>
         <h1 className="mt-2 font-display text-4xl leading-tight text-ink md:text-5xl">{post.title}</h1>
         <div className="mt-4 text-sm text-ink-muted">
           By{" "}
