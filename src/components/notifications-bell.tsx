@@ -201,6 +201,17 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
       const evSlug = (n.payload?.event_slug as string) || "";
       return { title: `${evTitle} — new in ${groupName}`, subtitle: "Tap to RSVP.", href: gSlug && evSlug ? workshopEntityUrl({ kind: "event", groupSlug: gSlug, slug: evSlug }) : "/groups" };
     }
+    case "podcast_application_new": {
+      const who = (n.payload?.name as string) || "Someone";
+      const bits = [n.payload?.field as string | undefined, n.payload?.city as string | undefined]
+        .filter(Boolean)
+        .join(" · ");
+      return {
+        title: `New podcast application — ${who}`,
+        subtitle: bits || "Tap to review.",
+        href: "/admin/podcast",
+      };
+    }
     default:
       return { title: n.kind, subtitle: "", href: "/me" };
   }
