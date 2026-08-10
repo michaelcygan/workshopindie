@@ -774,7 +774,7 @@ function EditProfile() {
 
           {/* MEDIUMS & BIO */}
           <Section
-            id="mediums"
+            id="fields"
             title="Fields & bio"
             subtitle="Drives your Gallery tabs, gallery filters, and which Groups show up for you."
             refMap={sectionRefs}
@@ -827,8 +827,8 @@ function EditProfile() {
                 })}
               </div>
               <p className="text-xs text-ink-muted">
-                Pick all that apply. Your Gallery tabs come from Film, Music, Writing, Build, and
-                Visual — the rest just describe your practice.
+                Pick all that apply. Fields are your broad disciplines; the darker chips below
+                describe the specific practices you work in.
               </p>
             </div>
 
