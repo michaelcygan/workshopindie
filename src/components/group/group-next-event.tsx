@@ -106,7 +106,7 @@ export function GroupNextEvent({ group }: Props) {
       ) : events.length > 0 ? (
         <ul className="space-y-2">
           {events.map((event) => {
-            const when = formatWhen(event.starts_at);
+            const when = formatWhen(event.starts_at, event.timezone);
             return (
               <li key={event.id}>
                 <Link
