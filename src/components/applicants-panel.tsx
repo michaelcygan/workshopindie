@@ -32,9 +32,18 @@ type Tab = "team" | "applicants" | "pitches" | "declined";
 const TABS: { key: Tab; label: string }[] = [
   { key: "team", label: "Team" },
   { key: "applicants", label: "Applicants" },
-  { key: "pitches", label: "Pitches" },
+  { key: "pitches", label: "Suggestions" },
   { key: "declined", label: "Declined" },
 ];
+
+/** Lets other parts of the Collab page jump straight to a tab in this panel. */
+export const COLLAB_PANEL_TAB_EVENT = "collab:focus-applicants-tab";
+
+export function focusCollabPanelTab(tab: Tab) {
+  document.getElementById("applicants")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  window.dispatchEvent(new CustomEvent(COLLAB_PANEL_TAB_EVENT, { detail: tab }));
+}
+
 
 const isDeclined = (s: CollabReviewStatus) => s === "declined" || s === "spam" || s === "withdrawn";
 
