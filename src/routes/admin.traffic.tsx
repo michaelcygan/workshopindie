@@ -258,19 +258,115 @@ function TrafficPage() {
         </section>
         <section>
           <SectionHeading
-            title="Locations"
+            title={geoView === "cities" ? "Cities" : "Countries"}
             hint="Visitor location from coarse edge request geography. Unknown where unavailable — this is not member geography."
+            right={
+              <div className="flex rounded-full border border-border bg-surface p-0.5">
+                {(["cities", "countries"] as const).map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => setGeoView(v)}
+                    className={`rounded-full px-3 py-1 text-xs capitalize ${
+                      geoView === v ? "bg-primary text-primary-foreground" : "text-ink-muted hover:text-ink"
+                    }`}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
+            }
           />
-          <Table
-            panel={data?.locations}
-            columns={["City", "Uniques", "Visits", "Views"]}
-            rowsData={rows<any>(data?.locations).map((r) => [
-              [r.city, r.region, r.country].filter(Boolean).join(", ") || "Unknown",
-              Number(r.unique_visitors),
-              Number(r.visits),
-              Number(r.page_views),
-            ])}
-          />
+          {geoView === "cities" ? (
+            <Table
+              panel={data?.locations}
+              columns={["City", "Uniques", "Visits", "Views"]}
+              rowsData={locationRows.map((r) => [
+                [r.city, r.region, r.country].filter(Boolean).join(", ") || "Unknown",
+                Number(r.unique_visitors),
+                Number(r.visits),
+                Number(r.page_views),
+              ])}
+            />
+          ) : data?.countries.status === "unavailable" ? (
+            <Unavailable />
+          ) : rows<any>(data?.countries).length === 0 ? (
+            <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-ink-muted">
+              No traffic yet
+            </p>
+          ) : (
+            <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-[11px] uppercase tracking-wider text-ink-muted">
+                    <th className="px-3 py-2 font-medium">Country</th>
+                    <th className="px-3 py-2 text-right font-medium">Uniques</th>
+                    <th className="px-3 py-2 text-right font-medium">Visits</th>
+                    <th className="px-3 py-2 text-right font-medium">Views</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows<any>(data?.countries).map((r) => {
+                    const code = r.country ?? "Unknown";
+                    const open = openCountry === code;
+                    // The cities already came down with `locations`; expanding
+                    // is a filter, never another request.
+                    const children = citiesByCountry.get(code) ?? [];
+                    return (
+                      <>
+                        <tr key={code} className="border-b border-border/50 last:border-0">
+                          <td className="px-3 py-2 text-ink">
+                            <button
+                              type="button"
+                              onClick={() => setOpenCountry(open ? null : code)}
+                              className="inline-flex items-center gap-1 hover:text-primary"
+                              disabled={children.length === 0}
+                            >
+                              <ChevronRight
+                                className={`h-3.5 w-3.5 transition-transform ${
+                                  open ? "rotate-90" : ""
+                                } ${children.length === 0 ? "opacity-0" : "opacity-60"}`}
+                              />
+                              {code}
+                            </button>
+                          </td>
+                          <td className="px-3 py-2 text-right tabular-nums text-ink-soft">
+                            {fmtNumber(Number(r.unique_visitors))}
+                          </td>
+                          <td className="px-3 py-2 text-right tabular-nums text-ink-soft">
+                            {fmtNumber(Number(r.visits))}
+                          </td>
+                          <td className="px-3 py-2 text-right tabular-nums text-ink-soft">
+                            {fmtNumber(Number(r.page_views))}
+                          </td>
+                        </tr>
+                        {open
+                          ? children.map((c, i) => (
+                              <tr
+                                key={`${code}-${i}`}
+                                className="border-b border-border/50 bg-muted/30 last:border-0"
+                              >
+                                <td className="py-1.5 pl-9 pr-3 text-xs text-ink-soft">
+                                  {[c.city, c.region].filter(Boolean).join(", ") || "Unknown"}
+                                </td>
+                                <td className="px-3 py-1.5 text-right text-xs tabular-nums text-ink-muted">
+                                  {fmtNumber(Number(c.unique_visitors))}
+                                </td>
+                                <td className="px-3 py-1.5 text-right text-xs tabular-nums text-ink-muted">
+                                  {fmtNumber(Number(c.visits))}
+                                </td>
+                                <td className="px-3 py-1.5 text-right text-xs tabular-nums text-ink-muted">
+                                  {fmtNumber(Number(c.page_views))}
+                                </td>
+                              </tr>
+                            ))
+                          : null}
+                      </>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
       </div>
 
