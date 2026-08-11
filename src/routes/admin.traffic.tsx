@@ -118,7 +118,7 @@ function TrafficPage() {
   const liveFn = useServerFn(getAdminTrafficLive);
   const { data: live } = useQuery({
     queryKey: ["admin", "traffic", "live"],
-    queryFn: () => liveFn({ data: {} }),
+    queryFn: () => liveFn(),
     refetchInterval: 10_000,
     refetchIntervalInBackground: false,
   });
