@@ -56,22 +56,18 @@ export function GroupTodayTab({ group }: { group: GroupRefForToday }) {
   if (!user) {
     return (
       <div className="space-y-4">
+        <GroupNewsTicker slug={group.slug} />
         <TodayModuleRail group={group} />
         <PublicConversationInvite group={group} />
-        <div className="hidden md:block">
-          <GroupNewsTicker slug={group.slug} />
-        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
+      <GroupNewsTicker slug={group.slug} />
       <TodayChat group={group} />
       <TodayModuleRail group={group} />
-      <div className="hidden md:block">
-        <GroupNewsTicker slug={group.slug} />
-      </div>
     </div>
   );
 }
