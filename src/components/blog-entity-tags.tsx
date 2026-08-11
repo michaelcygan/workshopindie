@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Briefcase, Users, MapPin, Calendar, User } from "lucide-react";
+import { Briefcase, Users, MapPin, Calendar, User, BookOpen } from "lucide-react";
 import type { BlogEntityKind, BlogEntityTag } from "@/lib/blog-entity-tags";
 
 const KIND_ICONS: Record<BlogEntityKind, typeof Briefcase> = {
@@ -8,6 +8,7 @@ const KIND_ICONS: Record<BlogEntityKind, typeof Briefcase> = {
   group: MapPin,
   event: Calendar,
   profile: User,
+  post: BookOpen,
 };
 
 function ChipInner({ tag }: { tag: BlogEntityTag }) {
@@ -68,6 +69,18 @@ export function BlogEntityTags({
                 key={`${tag.kind}:${tag.id}`}
                 to="/g/$slug/e/$eventSlug"
                 params={{ slug: tag.groupSlug, eventSlug: tag.slug }}
+                className={className}
+              >
+                <ChipInner tag={tag} />
+              </Link>
+            );
+          }
+          if (tag.kind === "post") {
+            return (
+              <Link
+                key={`${tag.kind}:${tag.id}`}
+                to="/blog/$slug"
+                params={{ slug: tag.slug }}
                 className={className}
               >
                 <ChipInner tag={tag} />

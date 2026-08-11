@@ -302,7 +302,7 @@ type MemberUpdateInput = {
   subcategories?: string[];
   story_type?: string | null;
   expected_updated_at?: string;
-  tags?: Array<{ kind: "work" | "collab" | "group" | "event" | "profile"; id: string }>;
+  tags?: Array<{ kind: "work" | "collab" | "group" | "event" | "profile" | "post"; id: string }>;
 };
 
 export async function updateMyBlogPostServer(

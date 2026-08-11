@@ -6,7 +6,7 @@ import { adminListPosts, adminSetPostFeatured } from "@/lib/blog.functions";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, ExternalLink, Pencil, EyeOff, Star, Briefcase, Users, MapPin, Calendar, User } from "lucide-react";
+import { Plus, ExternalLink, Pencil, EyeOff, Star, Briefcase, Users, MapPin, Calendar, User , BookOpen} from "lucide-react";
 import type { BlogEntityKind } from "@/lib/blog-entity-tags";
 import { BLOG_CATEGORIES, blogCategoryLabel, toBlogCategorySlug } from "@/lib/blog-categories";
 
@@ -28,6 +28,7 @@ const CONNECTION_ICONS: Record<BlogEntityKind, typeof Briefcase> = {
   group: MapPin,
   event: Calendar,
   profile: User,
+  post: BookOpen,
 };
 
 function AdminBlogIndex() {
