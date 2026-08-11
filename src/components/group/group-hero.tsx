@@ -38,6 +38,24 @@ export function GroupHero({ group }: { group: GroupHeroData }) {
   const isMember = useIsMemberOfGroup(group.id).data === true;
   const audioLive = !!live && !live.roomId && live.connectedCount > 0;
 
+  // Photo editing is admin-only. This is the convenience gate; `updateGroup`
+  // enforces the role server-side.
+  const { user } = useAuth();
+  const { data: isAdmin } = useQuery({
+    queryKey: ["is-admin", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user!.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      return !!data;
+    },
+  });
+
+
   const onShare = async () => {
     const url =
       typeof window !== "undefined"
