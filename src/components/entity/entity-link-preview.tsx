@@ -119,21 +119,39 @@ function SlugDialogPreview({
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const { data: id } = useEntityIdBySlug(kind === "work" ? "works" : "collab_posts", slug, open);
+  const [armed, setArmed] = useState(false);
+  // The id lookup is needed for the dialog and for the collab glance.
+  const { data: id } = useEntityIdBySlug(
+    kind === "work" ? "works" : "collab_posts",
+    slug,
+    open || (kind === "collab" && armed),
+  );
+  const anchor = (
+    <a
+      href={kind === "work" ? `/works/${slug}` : `/collab/${slug}`}
+      className={className}
+      onClick={(e) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setOpen(true);
+      }}
+    >
+      {children}
+    </a>
+  );
+  const arm = () => setArmed(true);
   return (
     <>
-      <a
-        href={kind === "work" ? `/works/${slug}` : `/collab/${slug}`}
-        className={className}
-        onClick={(e) => {
-          if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
-          e.preventDefault();
-          e.stopPropagation();
-          setOpen(true);
-        }}
-      >
-        {children}
-      </a>
+      {kind === "work" ? (
+        <WorkGlance slug={slug} armed={armed} onArm={arm}>
+          {anchor}
+        </WorkGlance>
+      ) : (
+        <CollabGlance collabId={armed ? (id ?? null) : null} onArm={arm}>
+          {anchor}
+        </CollabGlance>
+      )}
       {kind === "work" ? (
         <WorkPeek workId={id ?? null} open={open} onOpenChange={setOpen} />
       ) : (
@@ -153,20 +171,23 @@ function PostLinkPreview({
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const [armed, setArmed] = useState(false);
   return (
     <>
-      <a
-        href={`/blog/${slug}`}
-        className={className}
-        onClick={(e) => {
-          if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
-          e.preventDefault();
-          e.stopPropagation();
-          setOpen(true);
-        }}
-      >
-        {children}
-      </a>
+      <PostGlance slug={slug} armed={armed} onArm={() => setArmed(true)}>
+        <a
+          href={`/blog/${slug}`}
+          className={className}
+          onClick={(e) => {
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+            e.preventDefault();
+            e.stopPropagation();
+            setOpen(true);
+          }}
+        >
+          {children}
+        </a>
+      </PostGlance>
       {open ? (
         <Suspense fallback={null}>
           <BlogPostPeek slug={slug} open={open} onOpenChange={setOpen} />
@@ -175,3 +196,4 @@ function PostLinkPreview({
     </>
   );
 }
+
