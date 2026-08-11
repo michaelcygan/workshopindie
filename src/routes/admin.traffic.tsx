@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -312,8 +312,8 @@ function TrafficPage() {
                     // is a filter, never another request.
                     const children = citiesByCountry.get(code) ?? [];
                     return (
-                      <>
-                        <tr key={code} className="border-b border-border/50 last:border-0">
+                      <Fragment key={code}>
+                        <tr className="border-b border-border/50 last:border-0">
                           <td className="px-3 py-2 text-ink">
                             <button
                               type="button"
@@ -360,7 +360,7 @@ function TrafficPage() {
                               </tr>
                             ))
                           : null}
-                      </>
+                      </Fragment>
                     );
                   })}
                 </tbody>
@@ -405,19 +405,6 @@ function TrafficPage() {
         />
       </section>
 
-      <section>
-        <SectionHeading title="Countries" />
-        <Table
-          panel={data?.countries}
-          columns={["Country", "Uniques", "Visits", "Views"]}
-          rowsData={rows<any>(data?.countries).map((r) => [
-            r.country ?? "Unknown",
-            Number(r.unique_visitors),
-            Number(r.visits),
-            Number(r.page_views),
-          ])}
-        />
-      </section>
     </div>
   );
 }
