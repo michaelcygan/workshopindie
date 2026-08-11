@@ -123,7 +123,7 @@ export function HomeFeaturedBlog({
 
   if (count === 0) {
     return (
-      <header className="mx-auto max-w-7xl px-4 pb-4 pt-6 md:px-6 md:pt-8">
+      <header className="mx-auto max-w-7xl px-4 pb-3 pt-6 md:px-6 md:pt-8">
         <h1 className="font-display text-2xl leading-tight text-ink md:text-3xl">{greeting}.</h1>
       </header>
     );
@@ -133,7 +133,7 @@ export function HomeFeaturedBlog({
 
   return (
     <header
-      className="mx-auto max-w-7xl px-4 pb-4 pt-5 md:px-6 md:pt-8"
+      className="mx-auto max-w-7xl px-4 pb-3 pt-5 md:px-6 md:pt-8"
       aria-roledescription={multi ? "carousel" : undefined}
       aria-label={multi ? "Featured Blog posts" : undefined}
       onMouseEnter={() => setInteracting(true)}
