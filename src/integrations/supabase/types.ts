@@ -6034,6 +6034,39 @@ export type Database = {
         }
         Relationships: []
       }
+      traffic_live_sessions: {
+        Row: {
+          city: string | null
+          country: string | null
+          last_seen_at: string
+          path: string
+          region: string | null
+          session_id: string
+          source: string | null
+          visitor_type: string
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          last_seen_at?: string
+          path: string
+          region?: string | null
+          session_id: string
+          source?: string | null
+          visitor_type?: string
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          last_seen_at?: string
+          path?: string
+          region?: string | null
+          session_id?: string
+          source?: string | null
+          visitor_type?: string
+        }
+        Relationships: []
+      }
       traffic_pageviews: {
         Row: {
           city: string | null
@@ -9835,6 +9868,7 @@ export type Database = {
           visits: number
         }[]
       }
+      traffic_live_snapshot: { Args: never; Returns: Json }
       traffic_locations: {
         Args: { _days?: number; _limit?: number }
         Returns: {
