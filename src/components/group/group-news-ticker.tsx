@@ -63,7 +63,7 @@ export function GroupNewsTicker({ slug, slugs, label = "In the news" }: Props) {
   return (
     <div className="px-4 md:px-6">
       <div
-        className="gnt-pill relative isolate flex h-10 items-stretch overflow-hidden rounded-full border border-border bg-surface/70 backdrop-blur-sm"
+        className="gnt-pill relative isolate flex h-9 items-stretch overflow-hidden rounded-full border border-border bg-surface/70 backdrop-blur-sm sm:h-10"
         onMouseEnter={() => setHovering(true)}
         onMouseLeave={() => setHovering(false)}
       >
@@ -147,7 +147,7 @@ export function GroupNewsTicker({ slug, slugs, label = "In the news" }: Props) {
 
           {/* Marquee */}
           <div
-            className="gnt-marquee flex h-full items-center gap-5 whitespace-nowrap pl-4 text-[13px] text-ink will-change-transform motion-reduce:hidden"
+            className="gnt-marquee flex h-full items-center gap-5 whitespace-nowrap pl-3 text-[12px] sm:pl-4 sm:text-[13px] text-ink will-change-transform motion-reduce:hidden"
             data-paused={paused ? "true" : "false"}
             style={{
               animation: `gnt-scroll ${durationSec}s linear infinite`,
