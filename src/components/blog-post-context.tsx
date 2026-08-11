@@ -150,26 +150,29 @@ function CollabEntry({ tag }: { tag: BlogContextCollab }) {
 
 function EventEntry({ tag }: { tag: BlogContextEvent }) {
   return (
-    <Link
-      to="/g/$slug/e/$eventSlug"
-      params={{ slug: tag.groupSlug, eventSlug: tag.slug }}
-      className="group flex min-w-0 items-center gap-3"
-    >
-      {tag.image ? (
-        <img
-          src={tag.image}
-          alt=""
-          loading="lazy"
-          className="h-10 w-14 shrink-0 rounded-lg bg-muted object-cover"
-        />
-      ) : null}
-      <div className="min-w-0">
-        <div className="truncate text-sm text-ink group-hover:underline">{tag.label}</div>
-        {tag.sublabel && <div className="truncate text-xs text-ink-muted">{tag.sublabel}</div>}
-      </div>
-    </Link>
+    <EventPeek groupSlug={tag.groupSlug} eventSlug={tag.slug}>
+      <Link
+        to="/g/$slug/e/$eventSlug"
+        params={{ slug: tag.groupSlug, eventSlug: tag.slug }}
+        className="group flex min-w-0 items-center gap-3"
+      >
+        {tag.image ? (
+          <img
+            src={tag.image}
+            alt=""
+            loading="lazy"
+            className="h-10 w-14 shrink-0 rounded-lg bg-muted object-cover"
+          />
+        ) : null}
+        <div className="min-w-0">
+          <div className="truncate text-sm text-ink group-hover:underline">{tag.label}</div>
+          {tag.sublabel && <div className="truncate text-xs text-ink-muted">{tag.sublabel}</div>}
+        </div>
+      </Link>
+    </EventPeek>
   );
 }
+
 
 /**
  * "About this post" — the public expression of a Blog post's structured
