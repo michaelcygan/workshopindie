@@ -10,7 +10,7 @@ import { useIsMemberOfGroup } from "@/components/join-group-button";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { GroupNextEvent } from "@/components/group/group-next-event";
-import { GroupNewsTicker } from "@/components/group/group-news-ticker";
+
 
 import { TodayMentionPopover } from "@/components/group/today-mention-popover";
 import { renderTodayBody } from "@/lib/today-text";
