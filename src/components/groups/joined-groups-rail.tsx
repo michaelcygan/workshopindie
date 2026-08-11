@@ -36,7 +36,10 @@ function GroupTile({ group }: { group: GroupCardData }) {
       params={{ slug: group.slug }}
       className="group flex h-full w-[160px] shrink-0 snap-start flex-col overflow-hidden rounded-lg border border-border bg-surface transition hover:border-ink/30 hover:shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/30 sm:w-[190px]"
     >
-      <div className="relative min-h-0 w-full flex-1 overflow-hidden" style={coverStyle(group)}>
+      <div
+        className="relative aspect-[16/10] w-full shrink-0 overflow-hidden lg:aspect-auto lg:min-h-0 lg:flex-1"
+        style={coverStyle(group)}
+      >
         {!group.cover_url && (
           <Icon className="absolute -bottom-2 -right-2 h-14 w-14 text-white/15" aria-hidden />
         )}
