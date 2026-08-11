@@ -37,7 +37,7 @@ export function GroupFeaturedCard({
         aria-label={`Open ${group.name}`}
       />
       <div
-        className="relative aspect-[16/10] w-full overflow-hidden"
+        className="pointer-events-none relative aspect-[16/10] w-full overflow-hidden"
         style={
           group.cover_url
             ? { backgroundImage: `url(${group.cover_url})`, backgroundSize: "cover", backgroundPosition: "center" }
