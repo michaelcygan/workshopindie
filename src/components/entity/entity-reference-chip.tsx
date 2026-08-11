@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { BookOpen, Calendar, Image as ImageIcon, Megaphone, User, Users } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { GroupPeek } from "@/components/group-peek";
 import { EventPeek } from "@/components/event-peek";
 import { CollabPeek } from "@/components/collab-peek";
