@@ -91,27 +91,43 @@ export type PageviewPayload = {
 };
 
 /** Fire and forget. Navigation never waits on measurement, and never fails on it. */
-export function sendPageview(payload: PageviewPayload): void {
+function send(endpoint: string, payload: unknown): void {
   const body = JSON.stringify(payload);
   try {
     if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
       const blob = new Blob([body], { type: "application/json" });
-      if (navigator.sendBeacon(TRAFFIC_ENDPOINT, blob)) return;
+      if (navigator.sendBeacon(endpoint, blob)) return;
     }
   } catch {
     /* fall through to fetch */
   }
   try {
-    void fetch(TRAFFIC_ENDPOINT, {
+    void fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body,
       keepalive: true,
-credentials: "omit",
+      credentials: "omit",
     }).catch(() => {});
   } catch {
     /* measurement is optional */
   }
+}
+
+export function sendPageview(payload: PageviewPayload): void {
+  send(TRAFFIC_ENDPOINT, payload);
+}
+
+export type LiveHeartbeatPayload = {
+  sessionId: string;
+  path: string;
+  visitorType: "guest" | "member";
+  source: string | null;
+};
+
+/** "This tab is visible, on this page." Same fire-and-forget contract. */
+export function sendLiveHeartbeat(payload: LiveHeartbeatPayload): void {
+  send(TRAFFIC_LIVE_ENDPOINT, payload);
 }
 
 /** External referring host for the session entry, hostname only. */
