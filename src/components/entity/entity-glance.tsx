@@ -7,15 +7,13 @@
  * fetched with the exact query keys the dialogs use, so opening the dialog
  * after a hover costs nothing extra.
  */
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CategoryChipsCompact } from "@/components/category-chips";
 import { supabase } from "@/integrations/supabase/client";
-import { getWorkPeekDetail } from "@/lib/works-peek.functions";
 import { collabPeekQueryOptions } from "@/components/collab-peek";
 import { formatCount } from "@/lib/utils";
 import type { Category } from "@/lib/categories";
@@ -82,29 +80,49 @@ function GlanceCard({
   );
 }
 
-export function WorkGlance({ workId, onArm, children }: { workId: string | null } & GlanceProps) {
-  const fetchPeek = useServerFn(getWorkPeekDetail);
+type WorkSummary = {
+  title: string;
+  category: Category;
+  categories: Category[] | null;
+  cover_url: string | null;
+  excerpt: string | null;
+  description: string | null;
+  like_count: number | null;
+  view_count: number | null;
+};
+
+/**
+ * Hovering must not bump view counts, so the glance reads the row directly
+ * instead of reusing the dialog's peek server fn (which records a view).
+ */
+export function WorkGlance({ slug, armed, onArm, children }: { slug: string; armed: boolean } & GlanceProps) {
   const { data, isLoading } = useQuery({
-    queryKey: ["work-peek", workId],
-    queryFn: () => fetchPeek({ data: { workId: workId! } }),
-    enabled: !!workId,
-    staleTime: 30_000,
-    gcTime: 5 * 60_000,
+    queryKey: ["work-glance", slug],
+    enabled: armed,
+    staleTime: 5 * 60_000,
+    queryFn: async (): Promise<WorkSummary | null> => {
+      const { data: row } = await supabase
+        .from("works")
+        .select("title,category,categories,cover_url,excerpt,description,like_count,view_count")
+        .eq("slug", slug)
+        .eq("status", "published")
+        .maybeSingle();
+      return (row as WorkSummary | null) ?? null;
+    },
   });
-  const work = (data as any)?.work ?? null;
-  const body = isLoading || !workId ? (
+  const body = isLoading || !armed ? (
     <GlanceSkeleton />
-  ) : !work ? (
+  ) : !data ? (
     <div className="p-3 text-xs text-ink-muted">Preview unavailable.</div>
   ) : (
     <GlanceCard
-      cover={work.cover_url}
-      eyebrow={<CategoryChipsCompact primary={work.category as Category} categories={work.categories} />}
-      title={work.title}
-      excerpt={work.excerpt || work.description}
+      cover={data.cover_url}
+      eyebrow={<CategoryChipsCompact primary={data.category} categories={data.categories} />}
+      title={data.title}
+      excerpt={data.excerpt || data.description}
       meta={
         <span>
-          {formatCount(work.like_count ?? 0)} likes · {formatCount(work.view_count ?? 0)} views
+          {formatCount(data.like_count ?? 0)} likes · {formatCount(data.view_count ?? 0)} views
         </span>
       }
     />
