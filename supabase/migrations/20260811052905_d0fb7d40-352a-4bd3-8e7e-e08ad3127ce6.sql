@@ -1,0 +1,1 @@
+GRANT SELECT (review_status) ON public.collab_guest_applications TO authenticated;
