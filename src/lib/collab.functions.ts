@@ -250,9 +250,15 @@ export const listApplicants = createServerFn({ method: "POST" })
         .order("created_at", { ascending: false }),
     ]);
 
+    // Never swallow a failed read: an empty panel that silently hides real
+    // applicants is worse than an error state the owner can act on.
+    if (eventsRes.error) throw new Error(eventsRes.error.message);
+    if (guestsRes.error) throw new Error(guestsRes.error.message);
+
     // Legacy rows predate `is_application` (null) — treat those as applications.
     const events = (eventsRes.data ?? []).filter((e) => e.is_application !== false);
     const guestRows = (guestsRes.data ?? []).filter((g) => !g.matched_user_id);
+
 
     // Hydrate sender profiles in one batched query.
     const senderIds = Array.from(new Set(events.map((e) => e.sender_user_id).filter(Boolean)));
