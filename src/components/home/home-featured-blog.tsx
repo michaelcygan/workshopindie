@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { HomeBlogCard } from "@/lib/home-types";
 import { formatDayMonth as formatDate } from "@/lib/format-date";
 
-const INTERVAL_MS = 8000;
+const INTERVAL_MS = 5000;
 
 function greetingFor(name: string | null) {
   const hour = new Date().getHours();
