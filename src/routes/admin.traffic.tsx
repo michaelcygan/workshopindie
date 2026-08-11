@@ -24,6 +24,7 @@ import { cityLabel, isUnknownCity } from "@/lib/traffic/city-label";
 export const Route = createFileRoute("/admin/traffic")({ component: TrafficPage });
 
 const RANGES = [
+  { label: "24h", days: 1 },
   { label: "7d", days: 7 },
   { label: "30d", days: 30 },
   { label: "90d", days: 90 },
@@ -130,10 +131,16 @@ function TrafficPage() {
   const visits = o?.visits ?? null;
   const snapshot = (isOk(live?.snapshot) ? (live!.snapshot.data as LiveSnapshot) : null) ?? null;
   const agoSeconds = useAgo(liveOverview?.fetchedAt ?? data?.fetchedAt);
-  const daily = rows<any>(data?.daily).map((r) => ({
-    day: String(r.day).slice(5),
-    views: Number(r.page_views),
-  }));
+  const hourlyView = days === 1;
+  const daily = hourlyView
+    ? rows<any>(data?.hourly).map((r) => ({
+        day: new Date(String(r.hour)).toLocaleTimeString([], { hour: "numeric" }),
+        views: Number(r.page_views),
+      }))
+    : rows<any>(data?.daily).map((r) => ({
+        day: String(r.day).slice(5),
+        views: Number(r.page_views),
+      }));
 
   const locationRows = rows<any>(data?.locations);
   const citiesByCountry = useMemo(() => {
@@ -231,8 +238,12 @@ function TrafficPage() {
       </section>
 
       <section>
-        <SectionHeading title="Daily page views" />
-        {data?.daily.status === "unavailable" ? <Unavailable /> : <MetricChart data={daily} xKey="day" yKey="views" />}
+        <SectionHeading title={hourlyView ? "Hourly page views" : "Daily page views"} />
+        {(hourlyView ? data?.hourly.status : data?.daily.status) === "unavailable" ? (
+          <Unavailable />
+        ) : (
+          <MetricChart data={daily} xKey="day" yKey="views" />
+        )}
       </section>
 
       <section>
