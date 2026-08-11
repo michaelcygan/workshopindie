@@ -1,5 +1,13 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
+import { WorkPeek } from "@/components/work-peek";
+import { CollabPeek } from "@/components/collab-peek";
+import { GroupPeek } from "@/components/group-peek";
+import { EventPeek } from "@/components/event-peek";
+import { ProfilePeek } from "@/components/profile-peek";
+import { FollowButton } from "@/components/follow-button";
+import { useEntityIdBySlug } from "@/lib/entities/use-entity-id";
+
 import { ArrowRight } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { BlogWorkSummary } from "@/lib/blog-entity-tags";
@@ -33,17 +41,21 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 function WorkEntry({ tag }: { tag: BlogContextWork }) {
   const w = (tag as { work?: BlogWorkSummary | null }).work ?? null;
   const credits = (w?.credits ?? []).filter((c) => c.display_name || c.username);
+  const [open, setOpen] = useState(false);
+  const { data: workId } = useEntityIdBySlug("works", tag.slug, open);
   const meta = [
     w?.subtype ? titleCase(w.subtype) : null,
     ...(w?.categories ?? []).slice(0, 2).map(titleCase),
   ].filter(Boolean);
 
   return (
+    <div className="min-w-0">
     <Link
       to="/works/$slug"
       params={{ slug: tag.slug }}
       className="group flex flex-col gap-3 sm:flex-row sm:gap-4"
     >
+
       {w?.cover_url ? (
         <img
           src={w.cover_url}
@@ -97,79 +109,114 @@ function WorkEntry({ tag }: { tag: BlogContextWork }) {
         </div>
       </div>
     </Link>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mt-2 text-xs text-ink-muted underline decoration-border underline-offset-4 hover:text-ink"
+      >
+        Preview
+      </button>
+      <WorkPeek workId={workId ?? null} open={open} onOpenChange={setOpen} />
+    </div>
   );
 }
 
+
 function PersonEntry({ tag }: { tag: BlogContextPerson }) {
   return (
-    <Link
-      to="/$username"
-      params={{ username: tag.username }}
-      className="group flex items-center gap-3"
-    >
-      <Avatar className="h-8 w-8 shrink-0">
-        {tag.image ? <AvatarImage src={tag.image} alt="" /> : null}
-        <AvatarFallback className="text-[10px]">{initial(tag.label)}</AvatarFallback>
-      </Avatar>
-      <div className="min-w-0">
-        <div className="truncate text-sm text-ink group-hover:underline">{tag.label}</div>
-        {tag.sublabel && (
-          <div className="truncate text-xs text-ink-muted">{tag.sublabel}</div>
-        )}
+    <div className="flex items-center gap-3">
+      <ProfilePeek userId={tag.id}>
+        <Link
+          to="/$username"
+          params={{ username: tag.username }}
+          className="group flex min-w-0 flex-1 items-center gap-3"
+        >
+          <Avatar className="h-8 w-8 shrink-0">
+            {tag.image ? <AvatarImage src={tag.image} alt="" /> : null}
+            <AvatarFallback className="text-[10px]">{initial(tag.label)}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <div className="truncate text-sm text-ink group-hover:underline">{tag.label}</div>
+            {tag.sublabel && (
+              <div className="truncate text-xs text-ink-muted">{tag.sublabel}</div>
+            )}
+          </div>
+        </Link>
+      </ProfilePeek>
+      <div className="shrink-0">
+        <FollowButton targetUserId={tag.id} targetName={tag.label} />
       </div>
-    </Link>
+    </div>
   );
 }
 
 function GroupEntry({ tag }: { tag: BlogContextGroup }) {
   return (
-    <Link to="/g/$slug" params={{ slug: tag.slug }} className="group flex items-center gap-3">
-      <Avatar className="h-8 w-8 shrink-0 rounded-lg">
-        {tag.image ? <AvatarImage src={tag.image} alt="" className="rounded-lg" /> : null}
-        <AvatarFallback className="rounded-lg text-[10px]">{initial(tag.label)}</AvatarFallback>
-      </Avatar>
-      <div className="min-w-0">
-        <div className="truncate text-sm text-ink group-hover:underline">{tag.label}</div>
-        {tag.sublabel && <div className="truncate text-xs text-ink-muted">{tag.sublabel}</div>}
-      </div>
-    </Link>
+    <GroupPeek slug={tag.slug}>
+      <Link to="/g/$slug" params={{ slug: tag.slug }} className="group flex items-center gap-3">
+        <Avatar className="h-8 w-8 shrink-0 rounded-lg">
+          {tag.image ? <AvatarImage src={tag.image} alt="" className="rounded-lg" /> : null}
+          <AvatarFallback className="rounded-lg text-[10px]">{initial(tag.label)}</AvatarFallback>
+        </Avatar>
+        <div className="min-w-0">
+          <div className="truncate text-sm text-ink group-hover:underline">{tag.label}</div>
+          {tag.sublabel && <div className="truncate text-xs text-ink-muted">{tag.sublabel}</div>}
+        </div>
+      </Link>
+    </GroupPeek>
   );
 }
 
 function CollabEntry({ tag }: { tag: BlogContextCollab }) {
+  const [open, setOpen] = useState(false);
+  const { data: id } = useEntityIdBySlug("collab_posts", tag.slug, open);
   return (
-    <Link to="/collab/$slug" params={{ slug: tag.slug }} className="group block min-w-0">
+    <div className="min-w-0">
       <div className="flex min-w-0 items-center gap-1.5">
-        <span className="truncate text-sm text-ink group-hover:underline">{tag.label}</span>
+        <Link to="/collab/$slug" params={{ slug: tag.slug }} className="group min-w-0">
+          <span className="truncate text-sm text-ink group-hover:underline">{tag.label}</span>
+        </Link>
         <ArrowRight className="h-3.5 w-3.5 shrink-0 text-ink-muted" />
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="shrink-0 text-xs text-ink-muted underline decoration-border underline-offset-4 hover:text-ink"
+        >
+          Preview
+        </button>
       </div>
       {tag.sublabel && <div className="line-clamp-1 text-xs text-ink-muted">{tag.sublabel}</div>}
-    </Link>
+      <CollabPeek collabId={id ?? null} open={open} onOpenChange={setOpen} />
+    </div>
   );
 }
 
+
 function EventEntry({ tag }: { tag: BlogContextEvent }) {
   return (
-    <Link
-      to="/g/$slug/e/$eventSlug"
-      params={{ slug: tag.groupSlug, eventSlug: tag.slug }}
-      className="group flex min-w-0 items-center gap-3"
-    >
-      {tag.image ? (
-        <img
-          src={tag.image}
-          alt=""
-          loading="lazy"
-          className="h-10 w-14 shrink-0 rounded-lg bg-muted object-cover"
-        />
-      ) : null}
-      <div className="min-w-0">
-        <div className="truncate text-sm text-ink group-hover:underline">{tag.label}</div>
-        {tag.sublabel && <div className="truncate text-xs text-ink-muted">{tag.sublabel}</div>}
-      </div>
-    </Link>
+    <EventPeek groupSlug={tag.groupSlug} eventSlug={tag.slug}>
+      <Link
+        to="/g/$slug/e/$eventSlug"
+        params={{ slug: tag.groupSlug, eventSlug: tag.slug }}
+        className="group flex min-w-0 items-center gap-3"
+      >
+        {tag.image ? (
+          <img
+            src={tag.image}
+            alt=""
+            loading="lazy"
+            className="h-10 w-14 shrink-0 rounded-lg bg-muted object-cover"
+          />
+        ) : null}
+        <div className="min-w-0">
+          <div className="truncate text-sm text-ink group-hover:underline">{tag.label}</div>
+          {tag.sublabel && <div className="truncate text-xs text-ink-muted">{tag.sublabel}</div>}
+        </div>
+      </Link>
+    </EventPeek>
   );
 }
+
 
 /**
  * "About this post" — the public expression of a Blog post's structured
