@@ -121,9 +121,10 @@ export function BlogArticleFooter({
           </div>
         </form>
       </aside>
+      )}
 
       {/* Related */}
-      {relatedPosts && relatedPosts.length > 0 && (
+      {section !== "cta" && relatedPosts && relatedPosts.length > 0 && (
         <section className="mt-12">
           <h3 className="mb-4 font-display text-xl text-ink">More from the blog</h3>
           <div className="grid gap-4 md:grid-cols-3">
