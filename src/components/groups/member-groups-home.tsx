@@ -96,13 +96,8 @@ export function MemberGroupsHome({ state, onChange, onReset, myIds }: Props) {
                 {myIds.size} {myIds.size === 1 ? "group" : "groups"} joined
               </span>
             </div>
-            <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 md:mx-0 md:grid md:snap-none md:grid-cols-3 md:overflow-visible md:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {mine.map((g) => (
-                <div key={g.id} className="w-[85vw] shrink-0 snap-start sm:w-[70vw] md:w-auto">
-                  <GroupFeaturedCard group={g} joined avatars={avatarMap?.get(g.id)} />
-                </div>
-              ))}
-            </div>
+            <JoinedGroupsRail groups={mine} railGroups={mine.slice(0, 12)} />
+
           </>
         )}
       </section>
