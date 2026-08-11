@@ -24,34 +24,34 @@ function Slide({ post }: { post: HomeBlogCard }) {
     <Link
       to="/blog/$slug"
       params={{ slug: post.slug }}
-      className="group flex min-h-[132px] w-full shrink-0 snap-start items-stretch gap-3 md:gap-5"
+      className="group flex w-full shrink-0 snap-start items-center gap-3 md:gap-4"
     >
-      <div className="w-[36%] shrink-0 overflow-hidden rounded-2xl border border-border bg-surface sm:w-[34%] md:w-[30%]">
+      <div className="w-[34%] max-w-[220px] shrink-0 overflow-hidden rounded-2xl border border-border bg-surface sm:w-[32%] md:w-[28%]">
         {post.coverUrl ? (
           <img
             src={post.coverUrl}
             alt=""
             loading="lazy"
-            className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+            className="aspect-[16/10] w-full object-cover transition duration-500 group-hover:scale-[1.03]"
           />
         ) : (
-          <div className="flex h-full w-full items-end bg-secondary p-2 opacity-80">
-            <span className="font-display text-[11px] uppercase tracking-widest text-ink/70">
+          <div className="flex aspect-[16/10] w-full items-end bg-secondary p-2 opacity-80">
+            <span className="font-display text-[10px] uppercase tracking-widest text-ink/70">
               Workshop
             </span>
           </div>
         )}
       </div>
-      <div className="flex min-w-0 flex-1 flex-col justify-center">
-        <h2 className="line-clamp-2 font-display text-[19px] leading-snug text-ink group-hover:underline md:text-2xl">
+      <div className="flex min-w-0 flex-1 flex-col justify-center py-1">
+        <h2 className="line-clamp-2 font-display text-base leading-snug text-ink group-hover:underline md:text-lg">
           {post.title}
         </h2>
         {post.excerpt && (
-          <p className="mt-1 line-clamp-2 text-[13px] leading-snug text-ink-soft md:text-sm">
+          <p className="mt-1 line-clamp-2 text-[12px] leading-snug text-ink-soft md:text-[13px]">
             {post.excerpt}
           </p>
         )}
-        <div className="mt-2 flex min-w-0 items-center gap-2 text-[11px] text-ink-muted">
+        <div className="mt-1.5 flex min-w-0 items-center gap-2 text-[11px] text-ink-muted">
           {post.authorAvatar ? (
             <img
               src={post.authorAvatar}
@@ -156,7 +156,7 @@ export function HomeFeaturedBlog({
     >
       <p className="font-display text-lg leading-tight text-ink md:text-xl">{greeting}.</p>
 
-      <div className="mt-2 rounded-xl border border-border bg-surface p-3 md:p-4">
+      <div className="mt-2 rounded-xl border border-border bg-surface p-2.5 md:p-3">
         <div className="flex items-center justify-between gap-3">
           <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-ink-muted">
             {isFallback ? "Latest from the Blog" : "Featured from the Blog"}
@@ -170,7 +170,7 @@ export function HomeFeaturedBlog({
                   go(index - 1);
                 }}
                 aria-label="Previous featured post"
-                className="grid h-11 w-11 place-items-center text-ink-muted transition hover:text-ink"
+                className="grid h-8 w-8 place-items-center text-ink-muted transition hover:text-ink"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -186,11 +186,11 @@ export function HomeFeaturedBlog({
                       setPaused(true);
                       go(i);
                     }}
-                    className="grid h-11 w-4 place-items-center"
+                    className="grid h-8 w-4 place-items-center"
                   >
                     <span
-                      className={`h-1.5 rounded-full transition-all ${
-                        i === index ? "w-4 bg-ink" : "w-1.5 bg-border"
+                      className={`h-1 rounded-full transition-all ${
+                        i === index ? "w-4 bg-ink" : "w-1 bg-border"
                       }`}
                     />
                   </button>
@@ -203,7 +203,7 @@ export function HomeFeaturedBlog({
                   go(index + 1);
                 }}
                 aria-label="Next featured post"
-                className="grid h-11 w-11 place-items-center text-ink-muted transition hover:text-ink"
+                className="grid h-8 w-8 place-items-center text-ink-muted transition hover:text-ink"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -211,7 +211,7 @@ export function HomeFeaturedBlog({
           )}
         </div>
 
-        <div className="mt-2 grid">
+        <div className="mt-1.5 grid">
           {posts.map((p, i) => {
             const active = i === index;
             return (
