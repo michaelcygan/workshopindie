@@ -101,8 +101,18 @@ function WorkEntry({ tag }: { tag: BlogContextWork }) {
         </div>
       </div>
     </Link>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mt-2 text-xs text-ink-muted underline decoration-border underline-offset-4 hover:text-ink"
+      >
+        Preview
+      </button>
+      <WorkPeek workId={workId ?? null} open={open} onOpenChange={setOpen} />
+    </div>
   );
 }
+
 
 function PersonEntry({ tag }: { tag: BlogContextPerson }) {
   return (
