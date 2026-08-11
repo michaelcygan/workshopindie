@@ -185,32 +185,32 @@ function TrafficPage() {
             <Metric
               label="Page views"
               value={views}
-              status={data?.overview.status}
+              status={overviewPanel?.status}
               definition="Recorded page views in the selected window. Private surfaces (admin, DMs, auth) are never recorded."
             />
             <Metric
               label="Unique visitors"
               value={o?.unique_visitors ?? null}
-              status={data?.overview.status}
+              status={overviewPanel?.status}
               definition="Distinct anonymous browser IDs. One person on a phone and a laptop counts twice — we never fingerprint to merge devices."
             />
             <Metric
               label="Visits"
               value={visits}
-              status={data?.overview.status}
+              status={overviewPanel?.status}
               definition="Distinct sessions. A session ends after 30 minutes of inactivity."
             />
             <Metric
               label="Pages / visit"
               value={visits ? Math.round((views / visits) * 100) / 100 : null}
-              status={data?.overview.status}
+              status={overviewPanel?.status}
               definition="Page views divided by visits."
             />
             <RatioMetric
               label="Bounce rate"
               numerator={o?.bounced_visits}
               denominator={visits}
-              status={data?.overview.status}
+              status={overviewPanel?.status}
               definition="Visits containing exactly one recorded page view, divided by all visits."
             />
           </div>
