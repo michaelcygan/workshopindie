@@ -850,9 +850,13 @@ function CollabDetail() {
             )}
 
             {isOwner && (activity?.suggestions ?? 0) > 0 && (
-              <p className="mt-3 text-xs text-ink-muted">
-                {activity!.suggestions} open suggestion{activity!.suggestions === 1 ? "" : "s"}
-              </p>
+              <button
+                type="button"
+                onClick={() => focusCollabPanelTab("pitches")}
+                className="mt-3 inline-flex items-center gap-1 rounded-full text-xs font-medium text-primary underline underline-offset-4 hover:opacity-80"
+              >
+                {activity!.suggestions} open suggestion{activity!.suggestions === 1 ? "" : "s"} — review
+              </button>
             )}
           </section>
         )}
