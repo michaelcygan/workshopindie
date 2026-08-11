@@ -1,10 +1,12 @@
 import { useEffect, useRef } from "react";
 import { useRouter, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
+import { HEARTBEAT_INTERVAL_MS } from "@/lib/presence/policy";
 import {
   documentReferrerHost,
   getSessionId,
   getVisitorId,
+  sendLiveHeartbeat,
   sendPageview,
 } from "@/lib/traffic/identity";
 import {
