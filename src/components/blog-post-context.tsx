@@ -33,17 +33,21 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 function WorkEntry({ tag }: { tag: BlogContextWork }) {
   const w = (tag as { work?: BlogWorkSummary | null }).work ?? null;
   const credits = (w?.credits ?? []).filter((c) => c.display_name || c.username);
+  const [open, setOpen] = useState(false);
+  const { data: workId } = useEntityIdBySlug("works", tag.slug, open);
   const meta = [
     w?.subtype ? titleCase(w.subtype) : null,
     ...(w?.categories ?? []).slice(0, 2).map(titleCase),
   ].filter(Boolean);
 
   return (
+    <div className="min-w-0">
     <Link
       to="/works/$slug"
       params={{ slug: tag.slug }}
       className="group flex flex-col gap-3 sm:flex-row sm:gap-4"
     >
+
       {w?.cover_url ? (
         <img
           src={w.cover_url}
