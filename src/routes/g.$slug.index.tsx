@@ -41,6 +41,7 @@ import { resolveGroupSeedLink, redeemGroupSeedLink } from "@/lib/group-seed-link
 import { toast } from "sonner";
 
 import { GroupHero } from "@/components/group/group-hero";
+import { GroupNewsTicker } from "@/components/group/group-news-ticker";
 import { GroupTabBar, type GroupTab } from "@/components/group/group-tab-bar";
 import { GroupEmpty } from "@/components/group/group-empty";
 import { PostCollabCta } from "@/components/group/post-collab-cta";
@@ -397,6 +398,10 @@ function GroupPage() {
 
         <div className="space-y-2">
           <GroupHero group={group} />
+
+          <GroupNewsTicker slug={group.slug} />
+
+
 
           <div className="px-4 md:px-6">
             <GroupTabBar
