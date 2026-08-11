@@ -54,6 +54,20 @@ export function ApplicantsPanel({ postId }: Props) {
   const acceptFn = useServerFn(acceptCollabApplicant);
   const qc = useQueryClient();
   const [tab, setTab] = useState<Tab>("applicants");
+  const [tabTouched, setTabTouched] = useState(false);
+
+  useEffect(() => {
+    const onFocus = (e: Event) => {
+      const next = (e as CustomEvent<Tab>).detail;
+      if (next) {
+        setTab(next);
+        setTabTouched(true);
+      }
+    };
+    window.addEventListener(COLLAB_PANEL_TAB_EVENT, onFocus);
+    return () => window.removeEventListener(COLLAB_PANEL_TAB_EVENT, onFocus);
+  }, []);
+
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["collab-applicants", postId] });
