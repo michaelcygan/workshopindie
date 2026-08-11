@@ -56,7 +56,7 @@ export function GroupFeaturedCard({
             <Star className="h-3 w-3" /> Featured
           </span>
         </div>
-        <div className="absolute right-3 top-3 z-10">
+        <div className="pointer-events-auto absolute right-3 top-3 z-10">
           <GroupCardActions groupId={group.id} joined={joined} />
         </div>
       </div>
