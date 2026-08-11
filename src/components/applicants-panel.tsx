@@ -194,7 +194,7 @@ export function ApplicantsPanel({ postId }: Props) {
   const emptyCopy: Record<Tab, string> = {
     team: "No one has been accepted yet. Accept an applicant to build your team.",
     applicants: "No one has applied to a role yet. Share your post — the link is one tap from the top.",
-    pitches: "No open pitches yet. People who suggest their own way in show up here.",
+    pitches: "No suggestions yet. People who pitch their own way in show up here.",
     declined: "Nothing declined.",
   };
 
