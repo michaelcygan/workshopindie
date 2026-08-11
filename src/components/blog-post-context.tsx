@@ -102,51 +102,73 @@ function WorkEntry({ tag }: { tag: BlogContextWork }) {
 
 function PersonEntry({ tag }: { tag: BlogContextPerson }) {
   return (
-    <Link
-      to="/$username"
-      params={{ username: tag.username }}
-      className="group flex items-center gap-3"
-    >
-      <Avatar className="h-8 w-8 shrink-0">
-        {tag.image ? <AvatarImage src={tag.image} alt="" /> : null}
-        <AvatarFallback className="text-[10px]">{initial(tag.label)}</AvatarFallback>
-      </Avatar>
-      <div className="min-w-0">
-        <div className="truncate text-sm text-ink group-hover:underline">{tag.label}</div>
-        {tag.sublabel && (
-          <div className="truncate text-xs text-ink-muted">{tag.sublabel}</div>
-        )}
+    <div className="flex items-center gap-3">
+      <ProfilePeek userId={tag.id}>
+        <Link
+          to="/$username"
+          params={{ username: tag.username }}
+          className="group flex min-w-0 flex-1 items-center gap-3"
+        >
+          <Avatar className="h-8 w-8 shrink-0">
+            {tag.image ? <AvatarImage src={tag.image} alt="" /> : null}
+            <AvatarFallback className="text-[10px]">{initial(tag.label)}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <div className="truncate text-sm text-ink group-hover:underline">{tag.label}</div>
+            {tag.sublabel && (
+              <div className="truncate text-xs text-ink-muted">{tag.sublabel}</div>
+            )}
+          </div>
+        </Link>
+      </ProfilePeek>
+      <div className="shrink-0">
+        <FollowButton targetUserId={tag.id} targetName={tag.label} />
       </div>
-    </Link>
+    </div>
   );
 }
 
 function GroupEntry({ tag }: { tag: BlogContextGroup }) {
   return (
-    <Link to="/g/$slug" params={{ slug: tag.slug }} className="group flex items-center gap-3">
-      <Avatar className="h-8 w-8 shrink-0 rounded-lg">
-        {tag.image ? <AvatarImage src={tag.image} alt="" className="rounded-lg" /> : null}
-        <AvatarFallback className="rounded-lg text-[10px]">{initial(tag.label)}</AvatarFallback>
-      </Avatar>
-      <div className="min-w-0">
-        <div className="truncate text-sm text-ink group-hover:underline">{tag.label}</div>
-        {tag.sublabel && <div className="truncate text-xs text-ink-muted">{tag.sublabel}</div>}
-      </div>
-    </Link>
+    <GroupPeek slug={tag.slug}>
+      <Link to="/g/$slug" params={{ slug: tag.slug }} className="group flex items-center gap-3">
+        <Avatar className="h-8 w-8 shrink-0 rounded-lg">
+          {tag.image ? <AvatarImage src={tag.image} alt="" className="rounded-lg" /> : null}
+          <AvatarFallback className="rounded-lg text-[10px]">{initial(tag.label)}</AvatarFallback>
+        </Avatar>
+        <div className="min-w-0">
+          <div className="truncate text-sm text-ink group-hover:underline">{tag.label}</div>
+          {tag.sublabel && <div className="truncate text-xs text-ink-muted">{tag.sublabel}</div>}
+        </div>
+      </Link>
+    </GroupPeek>
   );
 }
 
 function CollabEntry({ tag }: { tag: BlogContextCollab }) {
+  const [open, setOpen] = useState(false);
+  const { data: id } = useEntityIdBySlug("collab_posts", tag.slug, open);
   return (
-    <Link to="/collab/$slug" params={{ slug: tag.slug }} className="group block min-w-0">
+    <div className="min-w-0">
       <div className="flex min-w-0 items-center gap-1.5">
-        <span className="truncate text-sm text-ink group-hover:underline">{tag.label}</span>
+        <Link to="/collab/$slug" params={{ slug: tag.slug }} className="group min-w-0">
+          <span className="truncate text-sm text-ink group-hover:underline">{tag.label}</span>
+        </Link>
         <ArrowRight className="h-3.5 w-3.5 shrink-0 text-ink-muted" />
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="shrink-0 text-xs text-ink-muted underline decoration-border underline-offset-4 hover:text-ink"
+        >
+          Preview
+        </button>
       </div>
       {tag.sublabel && <div className="line-clamp-1 text-xs text-ink-muted">{tag.sublabel}</div>}
-    </Link>
+      <CollabPeek collabId={id ?? null} open={open} onOpenChange={setOpen} />
+    </div>
   );
 }
+
 
 function EventEntry({ tag }: { tag: BlogContextEvent }) {
   return (
