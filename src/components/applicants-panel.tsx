@@ -229,7 +229,10 @@ export function ApplicantsPanel({ postId }: Props) {
           <button
             key={t.key}
             type="button"
-            onClick={() => setTab(t.key)}
+            onClick={() => {
+              setTab(t.key);
+              setTabTouched(true);
+            }}
             className={
               "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors " +
               (tab === t.key
