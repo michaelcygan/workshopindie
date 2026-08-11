@@ -7,7 +7,7 @@ import { WorkPeek } from "@/components/work-peek";
 import { ProfilePeek } from "@/components/profile-peek";
 import { useEntityIdBySlug, useProfileIdByUsername } from "@/lib/entities/use-entity-id";
 import { WorkGlance, CollabGlance, PostGlance } from "@/components/entity/entity-glance";
-import type { WorkshopEntityAddress } from "@/lib/entities/kinds";
+import { workshopEntityUrl, type WorkshopEntityAddress } from "@/lib/entities/kinds";
 
 // Lazy: BlogPostPeek renders BlogPostBody, which renders this component.
 const BlogPostPeek = lazy(() =>
@@ -129,7 +129,7 @@ function SlugDialogPreview({
   );
   const anchor = (
     <a
-      href={kind === "work" ? `/works/${slug}` : `/collab/${slug}`}
+      href={workshopEntityUrl(kind === "work" ? { kind: "work", slug } : { kind: "collab", slug })}
       className={className}
       onClick={(e) => {
         if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
@@ -177,7 +177,7 @@ function PostLinkPreview({
     <>
       <PostGlance slug={slug} armed={armed} onArm={() => setArmed(true)}>
         <a
-          href={`/blog/${slug}`}
+          href={workshopEntityUrl({ kind: "post", slug })}
           className={className}
           onClick={(e) => {
             if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;

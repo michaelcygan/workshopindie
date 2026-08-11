@@ -316,6 +316,7 @@ export type Database = {
           group_id: string | null
           id: string
           profile_id: string | null
+          related_blog_post_id: string | null
           sort_order: number
           work_id: string | null
         }
@@ -328,6 +329,7 @@ export type Database = {
           group_id?: string | null
           id?: string
           profile_id?: string | null
+          related_blog_post_id?: string | null
           sort_order?: number
           work_id?: string | null
         }
@@ -340,6 +342,7 @@ export type Database = {
           group_id?: string | null
           id?: string
           profile_id?: string | null
+          related_blog_post_id?: string | null
           sort_order?: number
           work_id?: string | null
         }
@@ -399,6 +402,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "vw_user_activation"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "blog_post_entity_tags_related_blog_post_id_fkey"
+            columns: ["related_blog_post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "blog_post_entity_tags_work_id_fkey"

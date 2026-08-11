@@ -19,6 +19,7 @@ export type BlogContextCollab = Extract<BlogEntityTag, { kind: "collab" }>;
 export type BlogContextGroup = Extract<BlogEntityTag, { kind: "group" }>;
 export type BlogContextEvent = Extract<BlogEntityTag, { kind: "event" }>;
 export type BlogContextPerson = Extract<BlogEntityTag, { kind: "profile" }>;
+export type BlogContextPost = Extract<BlogEntityTag, { kind: "post" }>;
 
 export type BlogPostContext = {
   editorialCategory: BlogCategory;
@@ -29,6 +30,8 @@ export type BlogPostContext = {
   collabs: BlogContextCollab[];
   groups: BlogContextGroup[];
   events: BlogContextEvent[];
+  /** Author-chosen Blog stories this post cites, continues, or recommends. */
+  posts: BlogContextPost[];
   /** True when at least one relationship group has content worth rendering. */
   hasContext: boolean;
 };
@@ -58,6 +61,7 @@ export function deriveBlogPostContext(input: DeriveBlogPostContextInput): BlogPo
   const collabs = tags.filter((t): t is BlogContextCollab => t.kind === "collab");
   const groups = tags.filter((t): t is BlogContextGroup => t.kind === "group");
   const events = tags.filter((t): t is BlogContextEvent => t.kind === "event");
+  const posts = tags.filter((t): t is BlogContextPost => t.kind === "post");
 
   const authorIds = new Set(
     (input.authorProfileIds ?? []).filter((v): v is string => typeof v === "string" && !!v),
@@ -89,9 +93,10 @@ export function deriveBlogPostContext(input: DeriveBlogPostContextInput): BlogPo
     people.length > 0 ||
     collabs.length > 0 ||
     groups.length > 0 ||
-    events.length > 0;
+    events.length > 0 ||
+    posts.length > 0;
 
-  return { editorialCategory, mediums, works, people, collabs, groups, events, hasContext };
+  return { editorialCategory, mediums, works, people, collabs, groups, events, posts, hasContext };
 }
 
 /** Schema.org `mentions` nodes describing exactly what "About this post" shows. */
@@ -103,6 +108,7 @@ export function contextMentions(ctx: BlogPostContext, site: string) {
   for (const p of ctx.people) push("Person", p.label, `/${p.username}`);
   for (const c of ctx.collabs) push("Thing", c.label, workshopEntityUrl({ kind: "collab", slug: c.slug }));
   for (const g of ctx.groups) push("Organization", g.label, workshopEntityUrl({ kind: "group", slug: g.slug }));
+  for (const p of ctx.posts) push("BlogPosting", p.label, workshopEntityUrl({ kind: "post", slug: p.slug }));
   for (const e of ctx.events) push("Event", e.label, workshopEntityUrl({ kind: "event", groupSlug: e.groupSlug, slug: e.slug }));
   return nodes;
 }

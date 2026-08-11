@@ -17,7 +17,13 @@ import { ChevronUp, ChevronDown, X } from "lucide-react";
 import { BlogBodyEditor } from "@/components/blog-body-editor";
 import { BlogAboutEditor } from "@/components/blog-about-editor";
 import { BlogEntityTagPicker } from "@/components/blog-entity-tag-picker";
-import { entityMarkdown, tagKey, invalidateEntityTagCaches, type BlogEntityTag } from "@/lib/blog-entity-tags";
+import {
+  entityMarkdown,
+  tagKey,
+  invalidateEntityTagCaches,
+  MAX_BLOG_ENTITY_TAGS,
+  type BlogEntityTag,
+} from "@/lib/blog-entity-tags";
 import { blogCategorySlugForField, blogPostFields, type BlogCategorySlug } from "@/lib/blog-categories";
 import { fieldLabel, isSubcategoryOf, type FieldId } from "@/lib/taxonomy";
 import { toBlogStoryType, type BlogStoryType } from "@/lib/blog-story-types";
@@ -500,6 +506,7 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
         {/* "About this post" — category + connections, above the body. */}
         <div className="mt-4">
           <BlogAboutEditor
+            {...(initial?.id ? { postId: initial.id } : {})}
             fields={fields}
             subcategory={subcategory}
             onChangeSubcategory={(next) => { setSubcategory(next); setDirty(true); }}
@@ -627,11 +634,25 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
         }
         disabledKeys={pendingInsertRef ? [] : entityTags.map(tagKey)}
 
+        excludeKeys={initial?.id ? [`post:${initial.id}`] : []}
         onPick={(tag) => {
+          const already = entityTags.some((t) => tagKey(t) === tagKey(tag));
           if (pendingInsertRef) {
+            // Inline tagging creates a real structured connection, not just a
+            // link — same gesture as the member editor.
             pendingInsertRef(entityMarkdown(tag));
             setPendingInsertRef(null);
-          } else if (!entityTags.some((t) => tagKey(t) === tagKey(tag))) {
+            if (!already) {
+              if (entityTags.length >= MAX_BLOG_ENTITY_TAGS) {
+                toast.message(
+                  `Linked, but you're at ${MAX_BLOG_ENTITY_TAGS} connections — not added to Connections.`,
+                );
+              } else {
+                setEntityTags([...entityTags, tag]);
+              }
+            }
+            setDirty(true);
+          } else if (!already) {
             setEntityTags([...entityTags, tag]);
             setDirty(true);
           }

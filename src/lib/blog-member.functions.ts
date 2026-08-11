@@ -81,7 +81,7 @@ export const updateMyBlogPost = createServerFn({ method: "POST" })
         tags: z
           .array(
             z.object({
-              kind: z.enum(["work", "collab", "group", "event", "profile"]),
+              kind: z.enum(["work", "collab", "group", "event", "profile", "post"]),
               id: z.string().uuid(),
             }),
           )

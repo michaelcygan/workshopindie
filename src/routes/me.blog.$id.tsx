@@ -403,6 +403,7 @@ function MemberBlogEditorPage() {
 
           {/* "About this post" — the authoring twin of the public colophon. */}
           <BlogAboutEditor
+            postId={post.post.id}
             fields={fields}
             storyType={storyType}
             onChangeStoryType={(next) => { setStoryType(next); setDirty(true); }}
@@ -543,6 +544,7 @@ function MemberBlogEditorPage() {
             : "Connect this post to the Work, Collab, Group, Event, or person it is substantially about."
         }
         disabledKeys={pendingInsertRef ? [] : entityTags.map(tagKey)}
+        excludeKeys={[`post:${post.post.id}`]}
 
         onPick={(tag) => {
           const already = entityTags.some((t) => tagKey(t) === tagKey(tag));
