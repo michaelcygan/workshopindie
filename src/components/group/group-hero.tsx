@@ -104,22 +104,36 @@ export function GroupHero({ group }: { group: GroupHeroData }) {
 
       {/* Compact identity row. */}
       <div
-        className={`relative z-10 px-4 py-2 md:px-6 md:py-2.5 ${group.cover_url ? "-mt-9 md:-mt-10" : ""}`}
+        className={`relative z-10 px-4 py-2 md:px-6 md:py-2.5 ${
+          group.cover_url || isAdmin ? "-mt-9 md:-mt-10" : ""
+        }`}
       >
         <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 sm:gap-4">
           {/* Avatar tile */}
-          <div className="relative isolate flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-surface ring-1 ring-border shadow-sm sm:h-16 sm:w-16">
-            {group.avatar_url ? (
-              <img src={group.avatar_url} alt={group.name} className="h-full w-full object-cover" />
-            ) : (
-              <span
-                aria-hidden
-                className="font-display text-2xl font-semibold leading-none text-ink-soft"
-              >
-                {group.name.trim().charAt(0).toUpperCase() || (
-                  <Icon className="h-6 w-6 text-ink-muted" />
-                )}
-              </span>
+          <div className="group/avatar relative shrink-0">
+            <div className="relative isolate flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-surface ring-1 ring-border shadow-sm sm:h-16 sm:w-16">
+              {group.avatar_url ? (
+                <img src={group.avatar_url} alt={group.name} className="h-full w-full object-cover" />
+              ) : (
+                <span
+                  aria-hidden
+                  className="font-display text-2xl font-semibold leading-none text-ink-soft"
+                >
+                  {group.name.trim().charAt(0).toUpperCase() || (
+                    <Icon className="h-6 w-6 text-ink-muted" />
+                  )}
+                </span>
+              )}
+            </div>
+            {isAdmin && (
+              <div className="absolute -bottom-1 -right-1 z-20 opacity-100 transition-opacity md:opacity-0 md:group-hover/avatar:opacity-100 md:focus-within:opacity-100">
+                <GroupPhotoEditor
+                  groupId={group.id}
+                  target="avatar"
+                  currentUrl={group.avatar_url}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-surface text-ink-soft shadow-sm transition-colors hover:text-ink"
+                />
+              </div>
             )}
           </div>
 
