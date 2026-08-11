@@ -57,10 +57,20 @@ export function BlogPostBody({ markdown, className }: Props) {
     p: (props: any) => <p className="my-5 text-[17px] leading-[1.75] text-ink-soft" {...props} />,
     a: ({ href, children, ...rest }: any) => {
       const external = !!href && /^https?:\/\//i.test(href);
+      const linkClass =
+        "text-primary underline decoration-primary/40 underline-offset-2 hover:decoration-primary";
+      const address = parseWorkshopHref(href);
+      if (address) {
+        return (
+          <EntityLinkPreview address={address} className={linkClass}>
+            {children}
+          </EntityLinkPreview>
+        );
+      }
       return (
         <a
           href={href}
-          className="text-primary underline decoration-primary/40 underline-offset-2 hover:decoration-primary"
+          className={linkClass}
           {...(external ? { target: "_blank", rel: "noopener noreferrer nofollow" } : {})}
           {...rest}
         >
@@ -68,6 +78,7 @@ export function BlogPostBody({ markdown, className }: Props) {
         </a>
       );
     },
+
     blockquote: (props: any) => (
       <blockquote
         className="my-6 border-l-4 border-primary/50 pl-4 italic text-ink-soft"
