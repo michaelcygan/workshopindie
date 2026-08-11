@@ -10,6 +10,7 @@ import { WorkPeek } from "@/components/work-peek";
 import { BlogPostPeek } from "@/components/blog-post-peek";
 import { ProfilePeek } from "@/components/profile-peek";
 import type { InlineEntityKind } from "@/lib/entities/parse";
+import { useEntityIdBySlug } from "@/lib/entities/use-entity-id";
 
 export type ChipEntityKind = InlineEntityKind | "profile";
 
@@ -57,22 +58,9 @@ function ChipLabel({ kind, label }: { kind: ChipEntityKind; label: string }) {
   );
 }
 
-/** Resolve a slug to an id only when a peek actually opens. */
-function useIdBySlug(table: "works" | "collab_posts", slug: string, enabled: boolean) {
-  return useQuery({
-    queryKey: [table === "works" ? "work-id-by-slug" : "collab-id-by-slug", slug],
-    enabled,
-    staleTime: 5 * 60_000,
-    queryFn: async () => {
-      const { data } = await supabase.from(table).select("id").eq("slug", slug).maybeSingle();
-      return (data?.id as string | undefined) ?? null;
-    },
-  });
-}
-
 function WorkChip({ label, slug }: { label: string; slug: string }) {
   const [open, setOpen] = useState(false);
-  const { data: id } = useIdBySlug("works", slug, open);
+  const { data: id } = useEntityIdBySlug("works", slug, open);
   return (
     <>
       <button
@@ -92,7 +80,7 @@ function WorkChip({ label, slug }: { label: string; slug: string }) {
 
 function CollabChip({ label, slug }: { label: string; slug: string }) {
   const [open, setOpen] = useState(false);
-  const { data: id } = useIdBySlug("collab_posts", slug, open);
+  const { data: id } = useEntityIdBySlug("collab_posts", slug, open);
   return (
     <>
       <button
