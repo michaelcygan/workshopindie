@@ -27,7 +27,7 @@ export const Route = createFileRoute("/api/public/traffic/live")({
     handlers: {
       POST: async ({ request }) => {
         try {
-          const { coarseGeoFromHeaders, isLikelyBot, measurementAdminClient } = await import(
+          const { coarseGeoFromRequest, isLikelyBot, measurementAdminClient } = await import(
             "@/lib/analytics/request.server"
           );
 
@@ -52,7 +52,7 @@ export const Route = createFileRoute("/api/public/traffic/live")({
               ? claimed
               : null;
 
-          const geo = coarseGeoFromHeaders(request.headers);
+          const geo = coarseGeoFromRequest(request);
 
           await admin.from("traffic_live_sessions").upsert(
             {

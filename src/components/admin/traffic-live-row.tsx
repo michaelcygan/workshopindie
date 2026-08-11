@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { pageLabel } from "@/lib/traffic/page-label";
+import { cityLabel } from "@/lib/traffic/city-label";
 
 export type LiveSnapshot = {
   total: number;
@@ -101,7 +102,7 @@ export function TrafficLiveRow({ snapshot }: { snapshot: LiveSnapshot | null }) 
             empty="No edge geography available"
             rows={snapshot.cities.map((c, i) => ({
               key: `${c.city}-${c.region}-${c.country}-${i}`,
-              label: [c.city, c.region ?? c.country].filter(Boolean).join(", ") || "Unknown",
+              label: cityLabel(c.city, c.region, c.country),
               value: c.live,
             }))}
           />

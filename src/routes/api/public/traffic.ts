@@ -31,7 +31,7 @@ export const Route = createFileRoute("/api/public/traffic")({
     handlers: {
       POST: async ({ request }) => {
         try {
-          const { coarseGeoFromHeaders, isLikelyBot, measurementAdminClient, referrerHost } =
+          const { coarseGeoFromRequest, isLikelyBot, measurementAdminClient, referrerHost } =
             await import("@/lib/analytics/request.server");
 
           if (isLikelyBot(request.headers.get("user-agent"))) return new Response(null, NO_CONTENT);
@@ -60,7 +60,7 @@ export const Route = createFileRoute("/api/public/traffic")({
               ? host
               : null;
 
-          const geo = coarseGeoFromHeaders(request.headers);
+          const geo = coarseGeoFromRequest(request);
 
           await admin.from("traffic_pageviews").insert({
             visitor_id: parsed.data.visitorId,

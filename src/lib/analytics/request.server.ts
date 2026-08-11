@@ -66,7 +66,46 @@ export function coarseGeoFromHeaders(headers: Headers): {
 } {
   return {
     city: clean(headers.get("cf-ipcity")),
-    region: clean(headers.get("cf-region") ?? headers.get("cf-region-code")),
+    region: clean(headers.get("cf-region-code") ?? headers.get("cf-region")),
     country: clean(headers.get("cf-ipcountry"), 8)?.toUpperCase() ?? null,
+  };
+}
+
+/**
+ * Cloudflare attaches request metadata to the incoming Request in the Worker
+ * runtime. Typed structurally so no Workers types package is required, and
+ * treated as optional: local dev, preview and tests simply won't have it.
+ */
+type RequestWithCf = Request & {
+  cf?: {
+    city?: unknown;
+    region?: unknown;
+    regionCode?: unknown;
+    country?: unknown;
+  };
+};
+
+function cfString(v: unknown): string | null {
+  return typeof v === "string" ? v : null;
+}
+
+/**
+ * Coarse geography for a request. Prefers Cloudflare's request metadata and
+ * falls back to the optional visitor-location headers. Never calls a
+ * geolocation service, never guesses: unknown stays null.
+ */
+export function coarseGeoFromRequest(request: Request): {
+  city: string | null;
+  region: string | null;
+  country: string | null;
+} {
+  const cf = (request as RequestWithCf).cf;
+  const h = request.headers;
+  const header = coarseGeoFromHeaders(h);
+  return {
+    city: clean(cfString(cf?.city)) ?? header.city,
+    region:
+      clean(cfString(cf?.regionCode)) ?? clean(cfString(cf?.region)) ?? header.region,
+    country: clean(cfString(cf?.country), 8)?.toUpperCase() ?? header.country,
   };
 }
