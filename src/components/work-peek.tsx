@@ -84,6 +84,10 @@ export function WorkPeek({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl p-0 overflow-hidden gap-0">
         <DialogTitle className="sr-only">{work?.title ?? "Work"}</DialogTitle>
+        <DialogDescription className="sr-only">
+          {work?.excerpt || "Preview of a Workshop piece."}
+        </DialogDescription>
+
         {isLoading || !work ? (
           <div className="space-y-0">
             <Skeleton className="aspect-video w-full rounded-none" />
