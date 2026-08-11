@@ -28,9 +28,16 @@ export function GroupFeaturedCard({
   const Icon = group.kind === "city" ? MapPin : Sparkles;
 
   return (
-    <article className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift">
+    <article className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-ink/30">
+      {/* Stretched link — whole card (cover included) opens the Group */}
+      <Link
+        to="/g/$slug"
+        params={{ slug: group.slug }}
+        className="absolute inset-0 z-0 focus:outline-none"
+        aria-label={`Open ${group.name}`}
+      />
       <div
-        className="relative aspect-[16/10] w-full overflow-hidden"
+        className="pointer-events-none relative aspect-[16/10] w-full overflow-hidden"
         style={
           group.cover_url
             ? { backgroundImage: `url(${group.cover_url})`, backgroundSize: "cover", backgroundPosition: "center" }
@@ -49,17 +56,12 @@ export function GroupFeaturedCard({
             <Star className="h-3 w-3" /> Featured
           </span>
         </div>
-        <div className="absolute right-3 top-3">
+        <div className="pointer-events-auto absolute right-3 top-3 z-10">
           <GroupCardActions groupId={group.id} joined={joined} />
         </div>
       </div>
 
-      <Link
-        to="/g/$slug"
-        params={{ slug: group.slug }}
-        className="flex flex-1 flex-col gap-1.5 p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/30"
-        aria-label={`Open ${group.name}`}
-      >
+      <div className="pointer-events-none relative z-0 flex flex-1 flex-col gap-1.5 p-4">
         <h3 className="font-display text-xl leading-snug text-ink line-clamp-2 group-hover:underline">
           {group.name}
         </h3>
@@ -86,7 +88,7 @@ export function GroupFeaturedCard({
               : "Be among the first"}
           </span>
         </div>
-      </Link>
+      </div>
     </article>
   );
 }

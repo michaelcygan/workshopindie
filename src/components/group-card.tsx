@@ -67,11 +67,19 @@ export function GroupCard({
 
   return (
     <article
-      className="group relative flex h-full flex-col rounded-2xl border border-border bg-surface p-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift"
+      className="group relative flex h-full flex-col rounded-2xl border border-border bg-surface p-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-ink/30"
       style={{ boxShadow: `inset 0 0 0 1px ${accent}14` }}
     >
+      {/* Stretched link — whole card opens the Group */}
+      <Link
+        to="/g/$slug"
+        params={{ slug: group.slug }}
+        className="absolute inset-0 z-0 rounded-2xl focus:outline-none"
+        aria-label={`Open ${group.name}`}
+      />
+
       {/* Header row: identity + featured chip + join */}
-      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
+      <div className="pointer-events-none relative z-10 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
         {group.avatar_url ? (
           <img
             src={group.avatar_url}
@@ -96,16 +104,15 @@ export function GroupCard({
             </span>
           )}
         </div>
-        <GroupCardActions groupId={group.id} joined={joined} className="shrink-0" />
+        <GroupCardActions
+          groupId={group.id}
+          joined={joined}
+          className="pointer-events-auto shrink-0"
+        />
       </div>
 
-      {/* Content link — covers name, tagline, and footer for full-card nav */}
-      <Link
-        to="/g/$slug"
-        params={{ slug: group.slug }}
-        className="mt-3 flex flex-1 flex-col rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/30"
-        aria-label={`Open ${group.name}`}
-      >
+      {/* Content sits under the stretched link */}
+      <div className="pointer-events-none relative z-0 mt-3 flex flex-1 flex-col">
         <h3 className="font-display text-lg leading-snug text-ink line-clamp-2 group-hover:underline">
           {group.name}
         </h3>
@@ -134,7 +141,7 @@ export function GroupCard({
             {activity ?? "New community"}
           </span>
         </div>
-      </Link>
+      </div>
     </article>
   );
 }
