@@ -9868,6 +9868,15 @@ export type Database = {
           visits: number
         }[]
       }
+      traffic_hourly: {
+        Args: { _hours?: number }
+        Returns: {
+          hour: string
+          page_views: number
+          unique_visitors: number
+          visits: number
+        }[]
+      }
       traffic_live_snapshot: { Args: never; Returns: Json }
       traffic_locations: {
         Args: { _days?: number; _limit?: number }

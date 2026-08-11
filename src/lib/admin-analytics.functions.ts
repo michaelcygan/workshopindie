@@ -430,10 +430,19 @@ export const getAdminTraffic = createServerFn({ method: "POST" })
     const admin = await getAdmin();
     const d = { _days: data.days };
 
-    const [overview, daily, pages, routes, locations, countries, referrers, entries, exits, transitions] =
+    // A one-day window has at most two calendar-day buckets, so the 24h view
+    // charts hours instead. Only one of the two is ever fetched.
+    const hourlyView = data.days === 1;
+
+    const [overview, daily, hourly, pages, routes, locations, countries, referrers, entries, exits, transitions] =
       await Promise.all([
         panel(admin.rpc("traffic_overview" as never, d as never).maybeSingle()),
-        panel(admin.rpc("traffic_daily" as never, d as never)),
+        hourlyView
+          ? Promise.resolve({ status: "ok" as const, data: [] as unknown[] })
+          : panel(admin.rpc("traffic_daily" as never, d as never)),
+        hourlyView
+          ? panel(admin.rpc("traffic_hourly" as never, { _hours: 24 } as never))
+          : Promise.resolve({ status: "ok" as const, data: [] as unknown[] }),
         panel(admin.rpc("traffic_pages" as never, { ...d, _limit: 100 } as never)),
         panel(admin.rpc("traffic_routes" as never, { ...d, _limit: 100 } as never)),
         panel(admin.rpc("traffic_locations" as never, { ...d, _limit: 100 } as never)),
@@ -447,6 +456,7 @@ export const getAdminTraffic = createServerFn({ method: "POST" })
     return {
       overview,
       daily,
+      hourly,
       pages,
       routes,
       locations,
