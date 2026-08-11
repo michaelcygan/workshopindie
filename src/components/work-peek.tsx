@@ -104,7 +104,7 @@ export function WorkPeek({
         ) : (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }}>
             {work.cover_url ? (
-              <div className="relative aspect-video max-h-[34vh] w-full overflow-hidden bg-surface-2">
+              <div className="relative aspect-video max-h-[min(34vh,280px)] w-full overflow-hidden bg-surface-2">
                 <img src={work.cover_url} alt={work.title} className="h-full w-full object-cover" />
                 <div className="absolute left-3 top-3 flex gap-1.5">
                   <CategoryChips primary={work.category} categories={work.categories} />
