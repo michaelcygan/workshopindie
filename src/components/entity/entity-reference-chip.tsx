@@ -1,6 +1,5 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { BookOpen, Calendar, Image as ImageIcon, Megaphone, User, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GroupPeek } from "@/components/group-peek";
