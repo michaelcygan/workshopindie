@@ -60,6 +60,7 @@ export function BlogArticleFooter({
   return (
     <>
       {/* Conversion + Newsletter */}
+      {section !== "related" && (
       <aside className="mt-12 rounded-xl border border-border bg-surface p-6 md:p-8">
         <h3 className="font-display text-2xl text-ink md:text-3xl">Make something with people.</h3>
         <p className="mt-2 text-ink-soft">
