@@ -1,9 +1,15 @@
-import { useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getAdminTraffic } from "@/lib/admin-analytics.functions";
+import { ChevronRight } from "lucide-react";
+import {
+  getAdminTraffic,
+  getAdminTrafficLive,
+  getAdminTrafficOverview,
+} from "@/lib/admin-analytics.functions";
 import { MetricChart } from "@/components/admin/metric-chart";
+import { TrafficLiveRow, type LiveSnapshot } from "@/components/admin/traffic-live-row";
 import {
   Metric,
   RatioMetric,
@@ -73,8 +79,24 @@ function pct(n: number | null | undefined, d: number | null | undefined): string
   return `${Math.round((n / d) * 1000) / 10}%`;
 }
 
+/** Seconds since a timestamp, ticking once a second for the live marker. */
+function useAgo(iso: string | undefined): number | null {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(t);
+  }, []);
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
+  if (!Number.isFinite(t)) return null;
+  return Math.max(0, Math.round((now - t) / 1000));
+}
+
 function TrafficPage() {
   const [days, setDays] = useState(30);
+  const [geoView, setGeoView] = useState<"cities" | "countries">("cities");
+  const [openCountry, setOpenCountry] = useState<string | null>(null);
+
   const fn = useServerFn(getAdminTraffic);
   const { data, isLoading } = useQuery({
     queryKey: ["admin", "traffic", days],
@@ -82,13 +104,48 @@ function TrafficPage() {
     refetchOnWindowFocus: false,
   });
 
-  const o = isOk(data?.overview) ? (data!.overview.data as any) : null;
+  // The headline numbers are the only historical query allowed to poll. Every
+  // other panel below stays bound to the selected window and is never
+  // recomputed on a timer.
+  const overviewFn = useServerFn(getAdminTrafficOverview);
+  const { data: liveOverview } = useQuery({
+    queryKey: ["admin", "traffic", "overview", days],
+    queryFn: () => overviewFn({ data: { days } }),
+    refetchInterval: 12_000,
+    refetchIntervalInBackground: false,
+  });
+
+  const liveFn = useServerFn(getAdminTrafficLive);
+  const { data: live } = useQuery({
+    queryKey: ["admin", "traffic", "live"],
+    queryFn: () => liveFn(),
+    refetchInterval: 10_000,
+    refetchIntervalInBackground: false,
+  });
+
+  const overviewPanel = isOk(liveOverview?.overview) ? liveOverview!.overview : data?.overview;
+  const o = isOk(overviewPanel) ? (overviewPanel.data as any) : null;
   const views = o?.page_views ?? null;
   const visits = o?.visits ?? null;
+  const snapshot = (isOk(live?.snapshot) ? (live!.snapshot.data as LiveSnapshot) : null) ?? null;
+  const agoSeconds = useAgo(liveOverview?.fetchedAt ?? data?.fetchedAt);
   const daily = rows<any>(data?.daily).map((r) => ({
     day: String(r.day).slice(5),
     views: Number(r.page_views),
   }));
+
+  const locationRows = rows<any>(data?.locations);
+  const citiesByCountry = useMemo(() => {
+    const map = new Map<string, any[]>();
+    for (const r of locationRows) {
+      const key = r.country ?? "Unknown";
+      const list = map.get(key) ?? [];
+      list.push(r);
+      map.set(key, list);
+    }
+    for (const list of map.values()) list.sort((a, b) => Number(b.visits) - Number(a.visits));
+    return map;
+  }, [locationRows]);
 
   return (
     <div className="space-y-10">
@@ -111,7 +168,13 @@ function TrafficPage() {
                   </button>
                 ))}
               </div>
-              <UpdatedAt at={data?.fetchedAt} />
+              {agoSeconds === null ? (
+                <UpdatedAt at={data?.fetchedAt} />
+              ) : (
+                <p className="text-xs text-ink-muted">
+                  <span className="text-primary">●</span> Live · updated {agoSeconds}s ago
+                </p>
+              )}
             </div>
           }
         />
@@ -122,32 +185,32 @@ function TrafficPage() {
             <Metric
               label="Page views"
               value={views}
-              status={data?.overview.status}
+              status={overviewPanel?.status}
               definition="Recorded page views in the selected window. Private surfaces (admin, DMs, auth) are never recorded."
             />
             <Metric
               label="Unique visitors"
               value={o?.unique_visitors ?? null}
-              status={data?.overview.status}
+              status={overviewPanel?.status}
               definition="Distinct anonymous browser IDs. One person on a phone and a laptop counts twice — we never fingerprint to merge devices."
             />
             <Metric
               label="Visits"
               value={visits}
-              status={data?.overview.status}
+              status={overviewPanel?.status}
               definition="Distinct sessions. A session ends after 30 minutes of inactivity."
             />
             <Metric
               label="Pages / visit"
               value={visits ? Math.round((views / visits) * 100) / 100 : null}
-              status={data?.overview.status}
+              status={overviewPanel?.status}
               definition="Page views divided by visits."
             />
             <RatioMetric
               label="Bounce rate"
               numerator={o?.bounced_visits}
               denominator={visits}
-              status={data?.overview.status}
+              status={overviewPanel?.status}
               definition="Visits containing exactly one recorded page view, divided by all visits."
             />
           </div>
@@ -157,6 +220,7 @@ function TrafficPage() {
             Member traffic {pct(o.member_views, views)} · Guest traffic {pct(o.guest_views, views)}
           </p>
         ) : null}
+        <TrafficLiveRow snapshot={snapshot} />
       </section>
 
       <section>
@@ -194,19 +258,115 @@ function TrafficPage() {
         </section>
         <section>
           <SectionHeading
-            title="Locations"
+            title={geoView === "cities" ? "Cities" : "Countries"}
             hint="Visitor location from coarse edge request geography. Unknown where unavailable — this is not member geography."
+            right={
+              <div className="flex rounded-full border border-border bg-surface p-0.5">
+                {(["cities", "countries"] as const).map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => setGeoView(v)}
+                    className={`rounded-full px-3 py-1 text-xs capitalize ${
+                      geoView === v ? "bg-primary text-primary-foreground" : "text-ink-muted hover:text-ink"
+                    }`}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
+            }
           />
-          <Table
-            panel={data?.locations}
-            columns={["City", "Uniques", "Visits", "Views"]}
-            rowsData={rows<any>(data?.locations).map((r) => [
-              [r.city, r.region, r.country].filter(Boolean).join(", ") || "Unknown",
-              Number(r.unique_visitors),
-              Number(r.visits),
-              Number(r.page_views),
-            ])}
-          />
+          {geoView === "cities" ? (
+            <Table
+              panel={data?.locations}
+              columns={["City", "Uniques", "Visits", "Views"]}
+              rowsData={locationRows.map((r) => [
+                [r.city, r.region, r.country].filter(Boolean).join(", ") || "Unknown",
+                Number(r.unique_visitors),
+                Number(r.visits),
+                Number(r.page_views),
+              ])}
+            />
+          ) : data?.countries.status === "unavailable" ? (
+            <Unavailable />
+          ) : rows<any>(data?.countries).length === 0 ? (
+            <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-ink-muted">
+              No traffic yet
+            </p>
+          ) : (
+            <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-[11px] uppercase tracking-wider text-ink-muted">
+                    <th className="px-3 py-2 font-medium">Country</th>
+                    <th className="px-3 py-2 text-right font-medium">Uniques</th>
+                    <th className="px-3 py-2 text-right font-medium">Visits</th>
+                    <th className="px-3 py-2 text-right font-medium">Views</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows<any>(data?.countries).map((r) => {
+                    const code = r.country ?? "Unknown";
+                    const open = openCountry === code;
+                    // The cities already came down with `locations`; expanding
+                    // is a filter, never another request.
+                    const children = citiesByCountry.get(code) ?? [];
+                    return (
+                      <Fragment key={code}>
+                        <tr className="border-b border-border/50 last:border-0">
+                          <td className="px-3 py-2 text-ink">
+                            <button
+                              type="button"
+                              onClick={() => setOpenCountry(open ? null : code)}
+                              className="inline-flex items-center gap-1 hover:text-primary"
+                              disabled={children.length === 0}
+                            >
+                              <ChevronRight
+                                className={`h-3.5 w-3.5 transition-transform ${
+                                  open ? "rotate-90" : ""
+                                } ${children.length === 0 ? "opacity-0" : "opacity-60"}`}
+                              />
+                              {code}
+                            </button>
+                          </td>
+                          <td className="px-3 py-2 text-right tabular-nums text-ink-soft">
+                            {fmtNumber(Number(r.unique_visitors))}
+                          </td>
+                          <td className="px-3 py-2 text-right tabular-nums text-ink-soft">
+                            {fmtNumber(Number(r.visits))}
+                          </td>
+                          <td className="px-3 py-2 text-right tabular-nums text-ink-soft">
+                            {fmtNumber(Number(r.page_views))}
+                          </td>
+                        </tr>
+                        {open
+                          ? children.map((c, i) => (
+                              <tr
+                                key={`${code}-${i}`}
+                                className="border-b border-border/50 bg-muted/30 last:border-0"
+                              >
+                                <td className="py-1.5 pl-9 pr-3 text-xs text-ink-soft">
+                                  {[c.city, c.region].filter(Boolean).join(", ") || "Unknown"}
+                                </td>
+                                <td className="px-3 py-1.5 text-right text-xs tabular-nums text-ink-muted">
+                                  {fmtNumber(Number(c.unique_visitors))}
+                                </td>
+                                <td className="px-3 py-1.5 text-right text-xs tabular-nums text-ink-muted">
+                                  {fmtNumber(Number(c.visits))}
+                                </td>
+                                <td className="px-3 py-1.5 text-right text-xs tabular-nums text-ink-muted">
+                                  {fmtNumber(Number(c.page_views))}
+                                </td>
+                              </tr>
+                            ))
+                          : null}
+                      </Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
       </div>
 
@@ -245,19 +405,6 @@ function TrafficPage() {
         />
       </section>
 
-      <section>
-        <SectionHeading title="Countries" />
-        <Table
-          panel={data?.countries}
-          columns={["Country", "Uniques", "Visits", "Views"]}
-          rowsData={rows<any>(data?.countries).map((r) => [
-            r.country ?? "Unknown",
-            Number(r.unique_visitors),
-            Number(r.visits),
-            Number(r.page_views),
-          ])}
-        />
-      </section>
     </div>
   );
 }

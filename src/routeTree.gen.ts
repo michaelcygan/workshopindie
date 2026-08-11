@@ -115,6 +115,7 @@ import { Route as ApiPublicEventsSweepRouteImport } from './routes/api/public/ev
 import { Route as ApiPublicGroupNewsSlugRouteImport } from './routes/api/public/group-news.$slug'
 import { Route as ApiPublicLoungeSweepRouteImport } from './routes/api/public/lounge.sweep'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
+import { Route as ApiPublicTrafficLiveRouteImport } from './routes/api/public/traffic/live'
 import { Route as ApiPublicWorkshopsSweepRouteImport } from './routes/api/public/workshops.sweep'
 import { Route as GSlugEEventSlugRouteImport } from './routes/g.$slug.e.$eventSlug'
 import { Route as WorkshopsSlugToolsToolRouteImport } from './routes/workshops.$slug.tools.$tool'
@@ -656,6 +657,11 @@ const ApiPublicPaymentsWebhookRoute =
     path: '/api/public/payments/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicTrafficLiveRoute = ApiPublicTrafficLiveRouteImport.update({
+  id: '/live',
+  path: '/live',
+  getParentRoute: () => ApiPublicTrafficRoute,
+} as any)
 const ApiPublicWorkshopsSweepRoute = ApiPublicWorkshopsSweepRouteImport.update({
   id: '/api/public/workshops/sweep',
   path: '/api/public/workshops/sweep',
@@ -764,7 +770,7 @@ export interface FileRoutesByFullPath {
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/api/public/group-news-multi': typeof ApiPublicGroupNewsMultiRoute
   '/api/public/og': typeof ApiPublicOgRoute
-  '/api/public/traffic': typeof ApiPublicTrafficRoute
+  '/api/public/traffic': typeof ApiPublicTrafficRouteWithChildren
   '/blog/c/$category': typeof BlogCCategoryRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
@@ -784,6 +790,7 @@ export interface FileRoutesByFullPath {
   '/api/public/group-news/$slug': typeof ApiPublicGroupNewsSlugRoute
   '/api/public/lounge/sweep': typeof ApiPublicLoungeSweepRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
+  '/api/public/traffic/live': typeof ApiPublicTrafficLiveRoute
   '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
   '/g/$slug/e/$eventSlug': typeof GSlugEEventSlugRoute
   '/workshops/$slug/tools/$tool': typeof WorkshopsSlugToolsToolRoute
@@ -870,7 +877,7 @@ export interface FileRoutesByTo {
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/api/public/group-news-multi': typeof ApiPublicGroupNewsMultiRoute
   '/api/public/og': typeof ApiPublicOgRoute
-  '/api/public/traffic': typeof ApiPublicTrafficRoute
+  '/api/public/traffic': typeof ApiPublicTrafficRouteWithChildren
   '/blog/c/$category': typeof BlogCCategoryRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
@@ -890,6 +897,7 @@ export interface FileRoutesByTo {
   '/api/public/group-news/$slug': typeof ApiPublicGroupNewsSlugRoute
   '/api/public/lounge/sweep': typeof ApiPublicLoungeSweepRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
+  '/api/public/traffic/live': typeof ApiPublicTrafficLiveRoute
   '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
   '/g/$slug/e/$eventSlug': typeof GSlugEEventSlugRoute
   '/workshops/$slug/tools/$tool': typeof WorkshopsSlugToolsToolRoute
@@ -983,7 +991,7 @@ export interface FileRoutesById {
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/api/public/group-news-multi': typeof ApiPublicGroupNewsMultiRoute
   '/api/public/og': typeof ApiPublicOgRoute
-  '/api/public/traffic': typeof ApiPublicTrafficRoute
+  '/api/public/traffic': typeof ApiPublicTrafficRouteWithChildren
   '/blog/c/$category': typeof BlogCCategoryRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
@@ -1003,6 +1011,7 @@ export interface FileRoutesById {
   '/api/public/group-news/$slug': typeof ApiPublicGroupNewsSlugRoute
   '/api/public/lounge/sweep': typeof ApiPublicLoungeSweepRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
+  '/api/public/traffic/live': typeof ApiPublicTrafficLiveRoute
   '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
   '/g/$slug/e/$eventSlug': typeof GSlugEEventSlugRoute
   '/workshops/$slug/tools/$tool': typeof WorkshopsSlugToolsToolRoute
@@ -1117,6 +1126,7 @@ export interface FileRouteTypes {
     | '/api/public/group-news/$slug'
     | '/api/public/lounge/sweep'
     | '/api/public/payments/webhook'
+    | '/api/public/traffic/live'
     | '/api/public/workshops/sweep'
     | '/g/$slug/e/$eventSlug'
     | '/workshops/$slug/tools/$tool'
@@ -1223,6 +1233,7 @@ export interface FileRouteTypes {
     | '/api/public/group-news/$slug'
     | '/api/public/lounge/sweep'
     | '/api/public/payments/webhook'
+    | '/api/public/traffic/live'
     | '/api/public/workshops/sweep'
     | '/g/$slug/e/$eventSlug'
     | '/workshops/$slug/tools/$tool'
@@ -1335,6 +1346,7 @@ export interface FileRouteTypes {
     | '/api/public/group-news/$slug'
     | '/api/public/lounge/sweep'
     | '/api/public/payments/webhook'
+    | '/api/public/traffic/live'
     | '/api/public/workshops/sweep'
     | '/g/$slug/e/$eventSlug'
     | '/workshops/$slug/tools/$tool'
@@ -1393,7 +1405,7 @@ export interface RootRouteChildren {
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiPublicGroupNewsMultiRoute: typeof ApiPublicGroupNewsMultiRoute
   ApiPublicOgRoute: typeof ApiPublicOgRoute
-  ApiPublicTrafficRoute: typeof ApiPublicTrafficRoute
+  ApiPublicTrafficRoute: typeof ApiPublicTrafficRouteWithChildren
   BlogCCategoryRoute: typeof BlogCCategoryRoute
   MeBlogIdRoute: typeof MeBlogIdRoute
   WorksCollabNewRoute: typeof WorksCollabNewRoute
@@ -2153,6 +2165,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/traffic/live': {
+      id: '/api/public/traffic/live'
+      path: '/live'
+      fullPath: '/api/public/traffic/live'
+      preLoaderRoute: typeof ApiPublicTrafficLiveRouteImport
+      parentRoute: typeof ApiPublicTrafficRoute
+    }
     '/api/public/workshops/sweep': {
       id: '/api/public/workshops/sweep'
       path: '/api/public/workshops/sweep'
@@ -2385,6 +2404,17 @@ const WorksSlugRouteWithChildren = WorksSlugRoute._addFileChildren(
   WorksSlugRouteChildren,
 )
 
+interface ApiPublicTrafficRouteChildren {
+  ApiPublicTrafficLiveRoute: typeof ApiPublicTrafficLiveRoute
+}
+
+const ApiPublicTrafficRouteChildren: ApiPublicTrafficRouteChildren = {
+  ApiPublicTrafficLiveRoute: ApiPublicTrafficLiveRoute,
+}
+
+const ApiPublicTrafficRouteWithChildren =
+  ApiPublicTrafficRoute._addFileChildren(ApiPublicTrafficRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   UsernameRoute: UsernameRoute,
@@ -2438,7 +2468,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiPublicGroupNewsMultiRoute: ApiPublicGroupNewsMultiRoute,
   ApiPublicOgRoute: ApiPublicOgRoute,
-  ApiPublicTrafficRoute: ApiPublicTrafficRoute,
+  ApiPublicTrafficRoute: ApiPublicTrafficRouteWithChildren,
   BlogCCategoryRoute: BlogCCategoryRoute,
   MeBlogIdRoute: MeBlogIdRoute,
   WorksCollabNewRoute: WorksCollabNewRoute,

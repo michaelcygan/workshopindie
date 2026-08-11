@@ -458,3 +458,32 @@ export const getAdminTraffic = createServerFn({ method: "POST" })
       fetchedAt: new Date().toISOString(),
     };
   });
+
+/**
+ * The headline numbers only. This is the one traffic query that is allowed to
+ * poll, so it must stay a single aggregation — never the full dashboard.
+ */
+export const getAdminTrafficOverview = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { days?: number }) => ({ days: Number(input?.days ?? 30) || 0 }))
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context.supabase, context.userId);
+    const admin = await getAdmin();
+    const overview = await panel(
+      admin.rpc("traffic_overview" as never, { _days: data.days } as never).maybeSingle(),
+    );
+    return { overview, fetchedAt: new Date().toISOString() };
+  });
+
+/**
+ * Who is on Workshop right now. One aggregate over the ephemeral live table —
+ * never raw sessions, and never anything that identifies a person.
+ */
+export const getAdminTrafficLive = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await requireAdmin(context.supabase, context.userId);
+    const admin = await getAdmin();
+    const snapshot = await panel(admin.rpc("traffic_live_snapshot" as never));
+    return { snapshot, fetchedAt: new Date().toISOString() };
+  });

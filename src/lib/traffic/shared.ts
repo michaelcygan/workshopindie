@@ -9,6 +9,8 @@ export const TRAFFIC_VISITOR_KEY = "workshop_visitor_id";
 export const TRAFFIC_SESSION_KEY = "workshop_traffic_session";
 export const TRAFFIC_SESSION_TIMEOUT_MS = 30 * 60 * 1000;
 export const TRAFFIC_ENDPOINT = "/api/public/traffic";
+/** Anonymous live-presence heartbeat: "this tab is visible, on this page". */
+export const TRAFFIC_LIVE_ENDPOINT = "/api/public/traffic/live";
 
 /**
  * Private, operational or credential-bearing surfaces. Traffic analytics is
