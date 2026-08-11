@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
@@ -32,9 +32,18 @@ type Tab = "team" | "applicants" | "pitches" | "declined";
 const TABS: { key: Tab; label: string }[] = [
   { key: "team", label: "Team" },
   { key: "applicants", label: "Applicants" },
-  { key: "pitches", label: "Pitches" },
+  { key: "pitches", label: "Suggestions" },
   { key: "declined", label: "Declined" },
 ];
+
+/** Lets other parts of the Collab page jump straight to a tab in this panel. */
+export const COLLAB_PANEL_TAB_EVENT = "collab:focus-applicants-tab";
+
+export function focusCollabPanelTab(tab: Tab) {
+  document.getElementById("applicants")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  window.dispatchEvent(new CustomEvent(COLLAB_PANEL_TAB_EVENT, { detail: tab }));
+}
+
 
 const isDeclined = (s: CollabReviewStatus) => s === "declined" || s === "spam" || s === "withdrawn";
 
@@ -45,6 +54,20 @@ export function ApplicantsPanel({ postId }: Props) {
   const acceptFn = useServerFn(acceptCollabApplicant);
   const qc = useQueryClient();
   const [tab, setTab] = useState<Tab>("applicants");
+  const [tabTouched, setTabTouched] = useState(false);
+
+  useEffect(() => {
+    const onFocus = (e: Event) => {
+      const next = (e as CustomEvent<Tab>).detail;
+      if (next) {
+        setTab(next);
+        setTabTouched(true);
+      }
+    };
+    window.addEventListener(COLLAB_PANEL_TAB_EVENT, onFocus);
+    return () => window.removeEventListener(COLLAB_PANEL_TAB_EVENT, onFocus);
+  }, []);
+
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["collab-applicants", postId] });
@@ -117,6 +140,19 @@ export function ApplicantsPanel({ postId }: Props) {
     declined: buckets.declined.members.length + buckets.declined.guests.length,
   };
 
+  // Land on a tab that actually has something in it, so a lone suggestion is
+  // never hidden behind an empty "Applicants" default.
+  useEffect(() => {
+    if (tabTouched || !data) return;
+    if (counts.applicants > 0) return;
+    const next: Tab | null =
+      counts.pitches > 0 ? "pitches" : counts.team > 0 ? "team" : counts.declined > 0 ? "declined" : null;
+    if (next) setTab(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, tabTouched, counts.applicants, counts.pitches, counts.team, counts.declined]);
+
+
+
   const total = members.length + guests.length;
   const waiting =
     members.filter((m) => !m.accepted && m.review_status === "new").length +
@@ -158,7 +194,7 @@ export function ApplicantsPanel({ postId }: Props) {
   const emptyCopy: Record<Tab, string> = {
     team: "No one has been accepted yet. Accept an applicant to build your team.",
     applicants: "No one has applied to a role yet. Share your post — the link is one tap from the top.",
-    pitches: "No open pitches yet. People who suggest their own way in show up here.",
+    pitches: "No suggestions yet. People who pitch their own way in show up here.",
     declined: "Nothing declined.",
   };
 
@@ -193,7 +229,10 @@ export function ApplicantsPanel({ postId }: Props) {
           <button
             key={t.key}
             type="button"
-            onClick={() => setTab(t.key)}
+            onClick={() => {
+              setTab(t.key);
+              setTabTouched(true);
+            }}
             className={
               "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors " +
               (tab === t.key
