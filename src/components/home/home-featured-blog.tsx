@@ -156,7 +156,7 @@ export function HomeFeaturedBlog({
     >
       <p className="font-display text-lg leading-tight text-ink md:text-xl">{greeting}.</p>
 
-      <div className="mt-2 rounded-xl border border-border bg-surface p-3 md:p-4">
+      <div className="mt-2 rounded-xl border border-border bg-surface p-2.5 md:p-3">
         <div className="flex items-center justify-between gap-3">
           <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-ink-muted">
             {isFallback ? "Latest from the Blog" : "Featured from the Blog"}
@@ -170,7 +170,7 @@ export function HomeFeaturedBlog({
                   go(index - 1);
                 }}
                 aria-label="Previous featured post"
-                className="grid h-11 w-11 place-items-center text-ink-muted transition hover:text-ink"
+                className="grid h-8 w-8 place-items-center text-ink-muted transition hover:text-ink"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -186,11 +186,11 @@ export function HomeFeaturedBlog({
                       setPaused(true);
                       go(i);
                     }}
-                    className="grid h-11 w-4 place-items-center"
+                    className="grid h-8 w-4 place-items-center"
                   >
                     <span
-                      className={`h-1.5 rounded-full transition-all ${
-                        i === index ? "w-4 bg-ink" : "w-1.5 bg-border"
+                      className={`h-1 rounded-full transition-all ${
+                        i === index ? "w-4 bg-ink" : "w-1 bg-border"
                       }`}
                     />
                   </button>
@@ -203,7 +203,7 @@ export function HomeFeaturedBlog({
                   go(index + 1);
                 }}
                 aria-label="Next featured post"
-                className="grid h-11 w-11 place-items-center text-ink-muted transition hover:text-ink"
+                className="grid h-8 w-8 place-items-center text-ink-muted transition hover:text-ink"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -211,7 +211,7 @@ export function HomeFeaturedBlog({
           )}
         </div>
 
-        <div className="mt-2 grid">
+        <div className="mt-1.5 grid">
           {posts.map((p, i) => {
             const active = i === index;
             return (
