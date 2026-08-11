@@ -1461,7 +1461,10 @@ function toBlogCard(r: BlogCardRow): HomeBlogCard {
   };
 }
 
-/** Up to 5 admin-featured posts; falls back to the newest indexed post. */
+/**
+ * Up to 5 posts for the home header carousel: admin-featured first, topped up
+ * with the newest indexed posts so the card always has something to cycle.
+ */
 export async function featuredBlogServer(): Promise<{
   posts: HomeBlogCard[];
   isFallback: boolean;
@@ -1477,13 +1480,23 @@ export async function featuredBlogServer(): Promise<{
       .order("published_at", { ascending: false });
 
   const { data } = await base().eq("featured", true).limit(FEATURED_POST_CAP);
-  const rows = (data ?? []) as unknown as BlogCardRow[];
-  if (rows.length) return { posts: rows.map(toBlogCard), isFallback: false };
+  const featured = (data ?? []) as unknown as BlogCardRow[];
 
-  const { data: latest } = await base().limit(1);
-  const fb = (latest ?? []) as unknown as BlogCardRow[];
-  return { posts: fb.map(toBlogCard), isFallback: true };
+  const rows = [...featured];
+  if (rows.length < FEATURED_POST_CAP) {
+    const { data: latest } = await base().limit(FEATURED_POST_CAP * 2);
+    const seen = new Set(rows.map((r) => r.id));
+    for (const r of (latest ?? []) as unknown as BlogCardRow[]) {
+      if (rows.length >= FEATURED_POST_CAP) break;
+      if (seen.has(r.id)) continue;
+      seen.add(r.id);
+      rows.push(r);
+    }
+  }
+
+  return { posts: rows.map(toBlogCard), isFallback: featured.length === 0 };
 }
+
 
 /**
  * Candidate rows for the "From the Blog" rail. The exclusion set is applied in

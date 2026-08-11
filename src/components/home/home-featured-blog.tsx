@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { HomeBlogCard } from "@/lib/home-types";
 import { formatDayMonth as formatDate } from "@/lib/format-date";
 
-const INTERVAL_MS = 8000;
+const INTERVAL_MS = 5000;
 
 function greetingFor(name: string | null) {
   const hour = new Date().getHours();
@@ -211,25 +211,30 @@ export function HomeFeaturedBlog({
           )}
         </div>
 
-        <div className="mt-2 overflow-hidden">
-          <div
-            className={`flex ${reduceMotion ? "" : "transition-transform duration-500 ease-out"}`}
-            style={{ transform: `translateX(-${index * 100}%)` }}
-          >
-            {posts.map((p, i) => (
+        <div className="mt-2 grid">
+          {posts.map((p, i) => {
+            const active = i === index;
+            return (
               <div
                 key={p.id}
-                className="w-full shrink-0"
+                className={`col-start-1 row-start-1 ${
+                  reduceMotion ? "" : "transition-all duration-700 ease-out"
+                } ${
+                  active
+                    ? "translate-y-0 opacity-100"
+                    : "pointer-events-none translate-y-1 opacity-0"
+                }`}
                 role="group"
                 aria-roledescription={multi ? "slide" : undefined}
-                aria-hidden={i !== index}
-                {...(i !== index ? { inert: "" as unknown as boolean } : {})}
+                aria-hidden={!active}
+                {...(!active ? { inert: "" as unknown as boolean } : {})}
               >
                 <Slide post={p} />
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
+
       </div>
     </header>
   );
