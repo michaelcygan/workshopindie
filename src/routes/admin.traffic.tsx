@@ -19,6 +19,7 @@ import {
 } from "@/components/admin/metric";
 import { fmtNumber } from "@/lib/analytics";
 import { isOk, rows, type Panel } from "@/lib/analytics/envelope";
+import { cityLabel, isUnknownCity } from "@/lib/traffic/city-label";
 
 export const Route = createFileRoute("/admin/traffic")({ component: TrafficPage });
 
@@ -143,7 +144,13 @@ function TrafficPage() {
       list.push(r);
       map.set(key, list);
     }
-    for (const list of map.values()) list.sort((a, b) => Number(b.visits) - Number(a.visits));
+    // Visits descending, but known cities always ahead of the Unknown row.
+    for (const list of map.values())
+      list.sort(
+        (a, b) =>
+          Number(isUnknownCity(a.city)) - Number(isUnknownCity(b.city)) ||
+          Number(b.visits) - Number(a.visits),
+      );
     return map;
   }, [locationRows]);
 
@@ -281,7 +288,7 @@ function TrafficPage() {
               panel={data?.locations}
               columns={["City", "Uniques", "Visits", "Views"]}
               rowsData={locationRows.map((r) => [
-                [r.city, r.region, r.country].filter(Boolean).join(", ") || "Unknown",
+                cityLabel(r.city, r.region, r.country),
                 Number(r.unique_visitors),
                 Number(r.visits),
                 Number(r.page_views),
@@ -346,7 +353,7 @@ function TrafficPage() {
                                 className="border-b border-border/50 bg-muted/30 last:border-0"
                               >
                                 <td className="py-1.5 pl-9 pr-3 text-xs text-ink-soft">
-                                  {[c.city, c.region].filter(Boolean).join(", ") || "Unknown"}
+                                  {cityLabel(c.city, c.region, c.country)}
                                 </td>
                                 <td className="px-3 py-1.5 text-right text-xs tabular-nums text-ink-muted">
                                   {fmtNumber(Number(c.unique_visitors))}
