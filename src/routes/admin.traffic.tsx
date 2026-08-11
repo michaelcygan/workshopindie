@@ -79,8 +79,24 @@ function pct(n: number | null | undefined, d: number | null | undefined): string
   return `${Math.round((n / d) * 1000) / 10}%`;
 }
 
+/** Seconds since a timestamp, ticking once a second for the live marker. */
+function useAgo(iso: string | undefined): number | null {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(t);
+  }, []);
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
+  if (!Number.isFinite(t)) return null;
+  return Math.max(0, Math.round((now - t) / 1000));
+}
+
 function TrafficPage() {
   const [days, setDays] = useState(30);
+  const [geoView, setGeoView] = useState<"cities" | "countries">("cities");
+  const [openCountry, setOpenCountry] = useState<string | null>(null);
+
   const fn = useServerFn(getAdminTraffic);
   const { data, isLoading } = useQuery({
     queryKey: ["admin", "traffic", days],
@@ -88,13 +104,48 @@ function TrafficPage() {
     refetchOnWindowFocus: false,
   });
 
-  const o = isOk(data?.overview) ? (data!.overview.data as any) : null;
+  // The headline numbers are the only historical query allowed to poll. Every
+  // other panel below stays bound to the selected window and is never
+  // recomputed on a timer.
+  const overviewFn = useServerFn(getAdminTrafficOverview);
+  const { data: liveOverview } = useQuery({
+    queryKey: ["admin", "traffic", "overview", days],
+    queryFn: () => overviewFn({ data: { days } }),
+    refetchInterval: 12_000,
+    refetchIntervalInBackground: false,
+  });
+
+  const liveFn = useServerFn(getAdminTrafficLive);
+  const { data: live } = useQuery({
+    queryKey: ["admin", "traffic", "live"],
+    queryFn: () => liveFn({ data: {} }),
+    refetchInterval: 10_000,
+    refetchIntervalInBackground: false,
+  });
+
+  const overviewPanel = isOk(liveOverview?.overview) ? liveOverview!.overview : data?.overview;
+  const o = isOk(overviewPanel) ? (overviewPanel.data as any) : null;
   const views = o?.page_views ?? null;
   const visits = o?.visits ?? null;
+  const snapshot = (isOk(live?.snapshot) ? (live!.snapshot.data as LiveSnapshot) : null) ?? null;
+  const agoSeconds = useAgo(liveOverview?.fetchedAt ?? data?.fetchedAt);
   const daily = rows<any>(data?.daily).map((r) => ({
     day: String(r.day).slice(5),
     views: Number(r.page_views),
   }));
+
+  const locationRows = rows<any>(data?.locations);
+  const citiesByCountry = useMemo(() => {
+    const map = new Map<string, any[]>();
+    for (const r of locationRows) {
+      const key = r.country ?? "Unknown";
+      const list = map.get(key) ?? [];
+      list.push(r);
+      map.set(key, list);
+    }
+    for (const list of map.values()) list.sort((a, b) => Number(b.visits) - Number(a.visits));
+    return map;
+  }, [locationRows]);
 
   return (
     <div className="space-y-10">
