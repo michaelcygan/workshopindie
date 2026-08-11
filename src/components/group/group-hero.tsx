@@ -1,8 +1,12 @@
 import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { MapPin, Radio, Share2, Sparkles, Users } from "lucide-react";
 import { JoinGroupButton, useIsMemberOfGroup } from "@/components/join-group-button";
 import { Button } from "@/components/ui/button";
 import { useGroupLive } from "@/components/group/group-live-shell";
+import { GroupPhotoEditor } from "@/components/group/group-photo-editor";
+import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
 
 import { toast } from "sonner";
 import { workshopEntityUrl } from "@/lib/entities/kinds";
