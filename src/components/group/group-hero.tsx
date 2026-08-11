@@ -1,8 +1,12 @@
 import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { MapPin, Radio, Share2, Sparkles, Users } from "lucide-react";
 import { JoinGroupButton, useIsMemberOfGroup } from "@/components/join-group-button";
 import { Button } from "@/components/ui/button";
 import { useGroupLive } from "@/components/group/group-live-shell";
+import { GroupPhotoEditor } from "@/components/group/group-photo-editor";
+import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
 
 import { toast } from "sonner";
 import { workshopEntityUrl } from "@/lib/entities/kinds";
@@ -34,6 +38,24 @@ export function GroupHero({ group }: { group: GroupHeroData }) {
   const isMember = useIsMemberOfGroup(group.id).data === true;
   const audioLive = !!live && !live.roomId && live.connectedCount > 0;
 
+  // Photo editing is admin-only. This is the convenience gate; `updateGroup`
+  // enforces the role server-side.
+  const { user } = useAuth();
+  const { data: isAdmin } = useQuery({
+    queryKey: ["is-admin", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user!.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      return !!data;
+    },
+  });
+
+
   const onShare = async () => {
     const url =
       typeof window !== "undefined"
@@ -53,40 +75,65 @@ export function GroupHero({ group }: { group: GroupHeroData }) {
 
   return (
     <>
-      {group.cover_url && (
-        <div className="relative h-[168px] w-full overflow-hidden bg-surface-2 sm:h-[190px] md:h-[220px]">
-          <img
-            src={group.cover_url}
-            alt=""
-            width={1600}
-            height={600}
-            className="h-full w-full object-cover"
-          />
+      {(group.cover_url || isAdmin) && (
+        <div className="group/cover relative h-[168px] w-full overflow-hidden bg-surface-2 sm:h-[190px] md:h-[220px]">
+          {group.cover_url ? (
+            <img
+              src={group.cover_url}
+              alt=""
+              width={1600}
+              height={600}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="grid h-full w-full place-items-center text-xs text-ink-muted">
+              No banner photo yet
+            </div>
+          )}
           <div
             aria-hidden
             className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-background to-transparent"
           />
+          {isAdmin && (
+            <div className="absolute right-3 top-3 z-20 opacity-100 transition-opacity md:opacity-0 md:group-hover/cover:opacity-100 md:focus-within:opacity-100">
+              <GroupPhotoEditor groupId={group.id} target="cover" currentUrl={group.cover_url} />
+            </div>
+          )}
         </div>
       )}
 
       {/* Compact identity row. */}
       <div
-        className={`relative z-10 px-4 py-2 md:px-6 md:py-2.5 ${group.cover_url ? "-mt-9 md:-mt-10" : ""}`}
+        className={`relative z-10 px-4 py-2 md:px-6 md:py-2.5 ${
+          group.cover_url || isAdmin ? "-mt-9 md:-mt-10" : ""
+        }`}
       >
         <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 sm:gap-4">
           {/* Avatar tile */}
-          <div className="relative isolate flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-surface ring-1 ring-border shadow-sm sm:h-16 sm:w-16">
-            {group.avatar_url ? (
-              <img src={group.avatar_url} alt={group.name} className="h-full w-full object-cover" />
-            ) : (
-              <span
-                aria-hidden
-                className="font-display text-2xl font-semibold leading-none text-ink-soft"
-              >
-                {group.name.trim().charAt(0).toUpperCase() || (
-                  <Icon className="h-6 w-6 text-ink-muted" />
-                )}
-              </span>
+          <div className="group/avatar relative shrink-0">
+            <div className="relative isolate flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-surface ring-1 ring-border shadow-sm sm:h-16 sm:w-16">
+              {group.avatar_url ? (
+                <img src={group.avatar_url} alt={group.name} className="h-full w-full object-cover" />
+              ) : (
+                <span
+                  aria-hidden
+                  className="font-display text-2xl font-semibold leading-none text-ink-soft"
+                >
+                  {group.name.trim().charAt(0).toUpperCase() || (
+                    <Icon className="h-6 w-6 text-ink-muted" />
+                  )}
+                </span>
+              )}
+            </div>
+            {isAdmin && (
+              <div className="absolute -bottom-1 -right-1 z-20 opacity-100 transition-opacity md:opacity-0 md:group-hover/avatar:opacity-100 md:focus-within:opacity-100">
+                <GroupPhotoEditor
+                  groupId={group.id}
+                  target="avatar"
+                  currentUrl={group.avatar_url}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-surface text-ink-soft shadow-sm transition-colors hover:text-ink"
+                />
+              </div>
             )}
           </div>
 
