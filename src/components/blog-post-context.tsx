@@ -7,6 +7,7 @@ import { EventPeek } from "@/components/event-peek";
 import { ProfilePeek } from "@/components/profile-peek";
 import { FollowButton } from "@/components/follow-button";
 import { useEntityIdBySlug } from "@/lib/entities/use-entity-id";
+import { EntityLinkPreview } from "@/components/entity/entity-link-preview";
 
 import { ArrowRight } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -17,6 +18,7 @@ import {
   type BlogContextCollab,
   type BlogContextPerson,
   type BlogContextWork,
+  type BlogContextPost,
   type BlogPostContext as PostContext,
 } from "@/lib/blog-post-context";
 
@@ -219,6 +221,40 @@ function EventEntry({ tag }: { tag: BlogContextEvent }) {
 
 
 /**
+ * A connected Blog story. Restrained editorial list treatment: the hover glance
+ * and click-to-peek behaviour come from `EntityLinkPreview`, so nothing here
+ * loads the target article body.
+ */
+function PostEntry({ tag }: { tag: BlogContextPost }) {
+  const p = tag.post ?? null;
+  return (
+    <EntityLinkPreview
+      address={{ kind: "post", slug: tag.slug }}
+      className="group flex min-w-0 items-start gap-3 no-underline"
+    >
+      {p?.cover_url ? (
+        <img
+          src={p.cover_url}
+          alt=""
+          loading="lazy"
+          className="h-14 w-[72px] shrink-0 rounded-lg bg-muted object-cover sm:h-[55px] sm:w-[88px]"
+        />
+      ) : null}
+      <span className="min-w-0 block">
+        <span className="block text-sm text-ink group-hover:underline">{tag.label}</span>
+        {p?.author_name ? (
+          <span className="block truncate text-xs text-ink-muted">{p.author_name}</span>
+        ) : null}
+        {p?.excerpt ? (
+          <span className="mt-0.5 block line-clamp-1 text-xs text-ink-soft">{p.excerpt}</span>
+        ) : null}
+      </span>
+    </EntityLinkPreview>
+  );
+}
+
+
+/**
  * "About this post" — the public expression of a Blog post's structured
  * creative graph. Renders as a colophon after the article body; groups with no
  * content never render, and the whole section hides when a post has no
@@ -305,6 +341,15 @@ export function BlogPostContext({
             <div className="grid gap-3">
               {context.events.map((e) => (
                 <EventEntry key={e.id} tag={e} />
+              ))}
+            </div>
+          </Row>
+        )}
+        {context.posts.length > 0 && (
+          <Row label="Related posts">
+            <div className="grid gap-3">
+              {context.posts.map((p) => (
+                <PostEntry key={p.id} tag={p} />
               ))}
             </div>
           </Row>
