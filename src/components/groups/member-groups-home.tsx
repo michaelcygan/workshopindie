@@ -12,6 +12,8 @@ import {
   useAllPublicGroups,
   type DirectoryState,
 } from "@/components/groups/groups-directory";
+import { JoinedGroupsRail } from "@/components/groups/joined-groups-rail";
+
 
 type Props = {
   state: DirectoryState;
