@@ -31,10 +31,10 @@ export function MemberGroupsHome({ state, onChange, onReset, myIds }: Props) {
     () =>
       allGroups
         .filter((g) => myIds.has(g.id))
-        .sort((a, b) => scoreActivity(b) - scoreActivity(a))
-        .slice(0, 6),
+        .sort((a, b) => scoreActivity(b) - scoreActivity(a)),
     [allGroups, myIds],
   );
+
 
   const featured = useMemo(
     () => allGroups.filter((g) => !!g.featured_at && !myIds.has(g.id)).slice(0, 3),
