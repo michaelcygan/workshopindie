@@ -398,6 +398,10 @@ function GroupPage() {
         <div className="space-y-2">
           <GroupHero group={group} />
 
+          <GroupNewsTicker slug={group.slug} />
+
+
+
           <div className="px-4 md:px-6">
             <GroupTabBar
               tab={viewTab}
