@@ -11,6 +11,7 @@ import {
   X,
   Plus,
   ArrowUpRight,
+  BookOpen,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BlogEntityTagPicker } from "@/components/blog-entity-tag-picker";
@@ -30,6 +31,7 @@ const KIND_ICONS: Record<BlogEntityKind, typeof Briefcase> = {
   group: MapPin,
   event: Calendar,
   profile: User,
+  post: BookOpen,
 };
 
 const ROWS: Array<{ kind: BlogEntityKind; label: string; plural: string; add: string }> = [
@@ -38,6 +40,7 @@ const ROWS: Array<{ kind: BlogEntityKind; label: string; plural: string; add: st
   { kind: "collab", label: "Collab", plural: "Collabs", add: "Add a Collab" },
   { kind: "group", label: "Group", plural: "Groups", add: "Add a Group" },
   { kind: "event", label: "Event", plural: "Events", add: "Add an Event" },
+  { kind: "post", label: "Blog post", plural: "Blog posts", add: "Add a Blog post" },
 ];
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
@@ -65,6 +68,7 @@ export function BlogAboutEditor({
   onChangeFields,
   onChangeTags,
   canCreateWork = true,
+  postId,
 }: {
   /** Canonical Fields, primary first. Never empty — default `["other"]`. */
   fields: FieldId[];
@@ -80,6 +84,8 @@ export function BlogAboutEditor({
   onChangeTags: (next: BlogEntityTag[]) => void;
   /** Quick Work creation requires a signed-in member (not the admin CMS). */
   canCreateWork?: boolean;
+  /** The post being edited — never offered as its own connection. */
+  postId?: string;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerKind, setPickerKind] = useState<BlogEntityKind | "all">("all");
@@ -146,6 +152,19 @@ export function BlogAboutEditor({
           <div className="truncate text-sm text-ink">{tag.label}</div>
           {tag.sublabel && <div className="truncate text-[11px] text-ink-muted">{tag.sublabel}</div>}
         </div>
+        {tag.kind === "post" && (
+          <Link
+            to="/blog/$slug"
+            params={{ slug: tag.slug }}
+            target="_blank"
+            rel="noreferrer"
+            title="Open this Blog post"
+            aria-label={`Open Blog post ${tag.label} in a new tab`}
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-muted"
+          >
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          </Link>
+        )}
         {tag.kind === "work" && (
           <Link
             to="/works/$slug"
@@ -202,6 +221,7 @@ export function BlogAboutEditor({
     collab: context.collabs,
     group: context.groups,
     event: context.events,
+    post: context.posts,
   };
 
   return (
@@ -336,9 +356,20 @@ export function BlogAboutEditor({
         open={pickerOpen}
         onOpenChange={setPickerOpen}
         initialKind={pickerKind}
-        title={pickerKind === "work" ? "Connect a Work" : "Add a connection"}
-        description="Connect this post to the Work, Collab, Group, Event, or person it is substantially about."
+        title={
+          pickerKind === "work"
+            ? "Connect a Work"
+            : pickerKind === "post"
+              ? "Connect a Blog post"
+              : "Add a connection"
+        }
+        description={
+          pickerKind === "post"
+            ? "Connect a published Workshop story this post cites, continues, responds to, or recommends."
+            : "Connect this post to the Work, Collab, Group, Event, or person it is substantially about."
+        }
         disabledKeys={disabledKeys}
+        excludeKeys={postId ? [`post:${postId}`] : []}
         onPick={addTag}
         {...(canCreateWork ? { onRequestCreateWork: () => { setPickerOpen(false); setCreateWorkOpen(true); } } : {})}
       />

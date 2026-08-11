@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import type { BlogEntityKind, BlogEntityTag } from "@/lib/blog-entity-tags";
+import type { BlogEntityKind, BlogEntityTag, BlogRailSubjectKind } from "@/lib/blog-entity-tags";
 import { MAX_BLOG_ENTITY_TAGS } from "@/lib/blog-entity-tags";
 import { makeEntityRef } from "@/lib/entities/kinds";
 import {
@@ -8,6 +8,7 @@ import {
   isGroupPubliclyReferenceable,
   isEventPubliclyReferenceable,
   isProfilePubliclyReferenceable,
+  isBlogPostPubliclyReferenceable,
 } from "@/lib/entities/visibility";
 
 type Row = {
@@ -16,8 +17,13 @@ type Row = {
   group_id: string | null;
   group_event_id: string | null;
   profile_id: string | null;
+  related_blog_post_id: string | null;
   sort_order: number;
 };
+
+/** Columns every tag read selects. Keep in sync with `Row`. */
+const TAG_COLUMNS =
+  "work_id,collab_id,group_id,group_event_id,profile_id,related_blog_post_id,sort_order";
 
 type EntityInput = { kind: BlogEntityKind; id: string };
 
@@ -27,8 +33,9 @@ async function resolveTags(rows: Row[], opts: { publicOnly: boolean }): Promise<
   const groupIds = rows.map((r) => r.group_id).filter(Boolean) as string[];
   const eventIds = rows.map((r) => r.group_event_id).filter(Boolean) as string[];
   const profileIds = rows.map((r) => r.profile_id).filter(Boolean) as string[];
+  const relatedPostIds = rows.map((r) => r.related_blog_post_id).filter(Boolean) as string[];
 
-  const [works, collabs, groups, events, profiles, workCredits] = await Promise.all([
+  const [works, collabs, groups, events, profiles, workCredits, relatedPosts] = await Promise.all([
     workIds.length
       ? supabaseAdmin
           .from("works")
@@ -147,6 +154,27 @@ async function resolveTags(rows: Row[], opts: { publicOnly: boolean }): Promise<
             } | null;
           }>,
         }),
+    // One batched read for every connected Blog post — never one per row.
+    relatedPostIds.length
+      ? supabaseAdmin
+          .from("blog_posts")
+          .select(
+            "id,slug,title,excerpt,cover_image_url,author_name,published_at,status,show_in_blog_index",
+          )
+          .in("id", relatedPostIds)
+      : Promise.resolve({
+          data: [] as Array<{
+            id: string;
+            slug: string;
+            title: string;
+            excerpt: string | null;
+            cover_image_url: string | null;
+            author_name: string | null;
+            published_at: string | null;
+            status: string;
+            show_in_blog_index: boolean | null;
+          }>,
+        }),
   ]);
 
   const workMap = new Map((works.data ?? []).map((w) => [w.id, w]));
@@ -154,6 +182,7 @@ async function resolveTags(rows: Row[], opts: { publicOnly: boolean }): Promise<
   const groupMap = new Map((groups.data ?? []).map((g) => [g.id, g]));
   const eventMap = new Map((events.data ?? []).map((e) => [e.id, e]));
   const profileMap = new Map((profiles.data ?? []).map((p) => [p.id, p]));
+  const relatedPostMap = new Map((relatedPosts.data ?? []).map((p) => [p.id, p]));
 
   type CreditRow = {
     work_id: string;
@@ -270,6 +299,27 @@ async function resolveTags(rows: Row[], opts: { publicOnly: boolean }): Promise<
       });
       continue;
     }
+    if (r.related_blog_post_id) {
+      const post = relatedPostMap.get(r.related_blog_post_id);
+      if (!post) continue;
+      const isPublic = isBlogPostPubliclyReferenceable(post);
+      if (opts.publicOnly && !isPublic) continue;
+      out.push({
+        ...makeEntityRef(
+          { kind: "post", slug: post.slug },
+          { id: post.id, label: post.title, image: post.cover_image_url },
+        ),
+        sublabel: post.author_name ?? null,
+        image: post.cover_image_url,
+        post: {
+          excerpt: post.excerpt ?? null,
+          cover_url: post.cover_image_url ?? null,
+          author_name: post.author_name ?? null,
+          published_at: post.published_at ?? null,
+        },
+      });
+      continue;
+    }
   }
   return out;
 }
@@ -280,7 +330,7 @@ export async function getBlogPostEntityTagsServer(
 ): Promise<BlogEntityTag[]> {
   const { data, error } = await supabaseAdmin
     .from("blog_post_entity_tags")
-    .select("work_id,collab_id,group_id,group_event_id,profile_id,sort_order")
+    .select(TAG_COLUMNS)
     .eq("blog_post_id", postId)
     .order("sort_order", { ascending: true });
   if (error) throw new Error(error.message);
@@ -296,7 +346,7 @@ export async function getBlogPostEntityTagsBulkServer(
   if (!postIds.length) return out;
   const { data } = await supabaseAdmin
     .from("blog_post_entity_tags")
-    .select("blog_post_id,work_id,collab_id,group_id,group_event_id,profile_id,sort_order")
+    .select(`blog_post_id,${TAG_COLUMNS}`)
     .in("blog_post_id", postIds)
     .order("sort_order", { ascending: true });
   const rowsByPost = new Map<string, Row[]>();
@@ -318,6 +368,7 @@ async function validateEntitiesExist(inputs: EntityInput[]) {
     group: [],
     event: [],
     profile: [],
+    post: [],
   };
   for (const t of inputs) byKind[t.kind].push(t.id);
 
@@ -378,6 +429,18 @@ async function validateEntitiesExist(inputs: EntityInput[]) {
         .in("id", byKind.profile)
         .then(({ data }) => ({
           kind: "profile" as BlogEntityKind,
+          found: new Set((data ?? []).map((r) => r.id)),
+        })),
+    );
+  }
+  if (byKind.post.length) {
+    checks.push(
+      supabaseAdmin
+        .from("blog_posts")
+        .select("id")
+        .in("id", byKind.post)
+        .then(({ data }) => ({
+          kind: "post" as BlogEntityKind,
           found: new Set((data ?? []).map((r) => r.id)),
         })),
     );
@@ -460,7 +523,7 @@ export async function setBlogPostEntityTagsForAdminServer(
 export async function assertTaggedEntitiesPubliclyVisibleServer(postId: string): Promise<void> {
   const rows = await supabaseAdmin
     .from("blog_post_entity_tags")
-    .select("work_id,collab_id,group_id,group_event_id,profile_id,sort_order")
+    .select(TAG_COLUMNS)
     .eq("blog_post_id", postId)
     .order("sort_order", { ascending: true });
   const publicTags = await resolveTags((rows.data ?? []) as Row[], { publicOnly: true });
@@ -500,6 +563,7 @@ async function entityIsPublic(kind: BlogEntityKind, entityId: string): Promise<b
     group_id: kind === "group" ? entityId : null,
     group_event_id: kind === "event" ? entityId : null,
     profile_id: kind === "profile" ? entityId : null,
+    related_blog_post_id: kind === "post" ? entityId : null,
     sort_order: 0,
   };
   const tags = await resolveTags([row], { publicOnly: true });
@@ -518,7 +582,7 @@ async function entityIsPublic(kind: BlogEntityKind, entityId: string): Promise<b
  * Workshop editorial posts bypass this entirely (handled by the caller).
  */
 export async function resolveTrustedAuthorIds(
-  kind: BlogEntityKind,
+  kind: BlogRailSubjectKind,
   entityId: string,
 ): Promise<{ trusted: Set<string>; creditRole: Map<string, string> }> {
   const trusted = new Set<string>();
@@ -606,12 +670,12 @@ export async function resolveTrustedAuthorIds(
  * every kind — Works, Collabs, Groups, Events and profiles alike.
  */
 export async function listBlogPostsForEntityServer(
-  kind: BlogEntityKind,
+  kind: BlogRailSubjectKind,
   entityId: string,
   limit = 3,
   opts: { trustedOnly?: boolean } = {},
 ): Promise<PublicPostSummary[]> {
-  const column: Record<BlogEntityKind, string> = {
+  const column: Record<BlogRailSubjectKind, string> = {
     work: "work_id",
     collab: "collab_id",
     group: "group_id",
@@ -724,7 +788,7 @@ export async function getRelatedPostsRankedServer(
   // 1) Find this post's tagged entities.
   const { data: myRows } = await supabaseAdmin
     .from("blog_post_entity_tags")
-    .select("work_id,collab_id,group_id,group_event_id,profile_id")
+    .select(TAG_COLUMNS)
     .eq("blog_post_id", postId);
 
   const workIds: string[] = [];
@@ -732,13 +796,18 @@ export async function getRelatedPostsRankedServer(
   const groupIds: string[] = [];
   const eventIds: string[] = [];
   const profileIds: string[] = [];
+  // Author-chosen "Related posts" must never repeat inside the algorithmic
+  // "More from the blog" list.
+  const manualPostIds: string[] = [];
   for (const r of (myRows ?? []) as Row[]) {
     if (r.work_id) workIds.push(r.work_id);
     if (r.collab_id) collabIds.push(r.collab_id);
     if (r.group_id) groupIds.push(r.group_id);
     if (r.group_event_id) eventIds.push(r.group_event_id);
     if (r.profile_id) profileIds.push(r.profile_id);
+    if (r.related_blog_post_id) manualPostIds.push(r.related_blog_post_id);
   }
+  const manualSet = new Set(manualPostIds);
 
   const overlap = new Map<string, number>(); // post_id -> shared-entity count
   if (
@@ -758,7 +827,7 @@ export async function getRelatedPostsRankedServer(
     if (orParts.length) q = q.or(orParts.join(","));
     const { data: siblingRows } = await q;
     for (const r of (siblingRows ?? []) as Array<{ blog_post_id: string }>) {
-      if (r.blog_post_id === postId) continue;
+      if (r.blog_post_id === postId || manualSet.has(r.blog_post_id)) continue;
       overlap.set(r.blog_post_id, (overlap.get(r.blog_post_id) ?? 0) + 1);
     }
   }
@@ -787,7 +856,7 @@ export async function getRelatedPostsRankedServer(
   }
 
   if (out.length < limit) {
-    const excludeIds = [postId, ...out.map((p) => p.id)];
+    const excludeIds = [postId, ...manualPostIds, ...out.map((p) => p.id)];
     const { data } = await supabaseAdmin
       .from("blog_posts")
       .select(

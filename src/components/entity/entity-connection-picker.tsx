@@ -17,6 +17,7 @@ import {
   searchGroups,
   searchEvents,
   searchProfiles,
+  searchBlogPosts,
   type EntitySearchHit,
   type EntitySearchContext,
 } from "@/lib/entities/search";
@@ -40,6 +41,7 @@ const KIND_LABELS: Record<WorkshopEntityKind, string> = {
   post: "Posts",
 };
 
+/** Default kinds when a caller doesn't narrow. Posts are opt-in (Blog only). */
 const ALL_PICKABLE_KINDS: readonly WorkshopEntityKind[] = [
   "profile",
   "work",
@@ -48,11 +50,16 @@ const ALL_PICKABLE_KINDS: readonly WorkshopEntityKind[] = [
   "event",
 ];
 
+/** Display order for whatever subset a caller asks for. */
+const KIND_ORDER: readonly WorkshopEntityKind[] = [...ALL_PICKABLE_KINDS, "post"];
+
 export type EntityConnectionPickerProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onPick: (hit: EntitySearchHit) => void;
   disabledKeys?: string[];
+  /** Results to hide entirely (e.g. the post currently being edited). */
+  excludeKeys?: string[];
   title?: string;
   description?: string;
   initialKind?: WorkshopEntityKind | "all";
@@ -78,6 +85,7 @@ export function EntityConnectionPicker({
   onOpenChange,
   onPick,
   disabledKeys,
+  excludeKeys,
   title,
   description,
   initialKind = "all",
@@ -88,7 +96,7 @@ export function EntityConnectionPicker({
 }: EntityConnectionPickerProps) {
   const availableKinds = useMemo(() => {
     const set = new Set(kinds);
-    return ALL_PICKABLE_KINDS.filter((k) => set.has(k));
+    return KIND_ORDER.filter((k) => set.has(k));
   }, [kinds]);
 
   const defaultTab = useMemo(() => {
@@ -115,6 +123,7 @@ export function EntityConnectionPicker({
   }, [open]);
 
   const disabled = useMemo(() => new Set(disabledKeys ?? []), [disabledKeys]);
+  const excluded = useMemo(() => new Set(excludeKeys ?? []), [excludeKeys]);
 
   const query = q.trim().toLowerCase();
   const enabled = open;
@@ -136,6 +145,7 @@ export function EntityConnectionPicker({
   const groupQ = useKind("group", searchGroups);
   const eventQ = useKind("event", searchEvents);
   const profileQ = useKind("profile", searchProfiles, query.length >= profileSearchMinLength);
+  const postQ = useKind("post", searchBlogPosts);
 
   const groups: Array<{
     kind: WorkshopEntityKind;
@@ -156,11 +166,16 @@ export function EntityConnectionPicker({
             return { kind, label: KIND_LABELS.event, results: eventQ.data ?? [], loading: eventQ.isLoading };
           case "profile":
             return { kind, label: KIND_LABELS.profile, results: profileQ.data ?? [], loading: profileQ.isLoading };
+          case "post":
+            return { kind, label: KIND_LABELS.post, results: postQ.data ?? [], loading: postQ.isLoading };
           default:
             return { kind, label: KIND_LABELS[kind], results: [], loading: false };
         }
-      }),
-    [availableKinds, workQ, collabQ, groupQ, eventQ, profileQ],
+      }).map((g) => ({
+        ...g,
+        results: g.results.filter((r) => !excluded.has(`${r.kind}:${r.id}`)),
+      })),
+    [availableKinds, workQ, collabQ, groupQ, eventQ, profileQ, postQ, excluded],
   );
 
 

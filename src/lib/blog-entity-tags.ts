@@ -9,7 +9,14 @@
 
 import { workshopEntityUrl, type WorkshopEntityRef } from "@/lib/entities/kinds";
 
-export type BlogEntityKind = "work" | "collab" | "group" | "event" | "profile";
+export type BlogEntityKind = "work" | "collab" | "group" | "event" | "profile" | "post";
+
+/**
+ * Kinds an *entity page* can be the subject of in the reverse "From the Blog"
+ * rails. Blog posts are valid tag targets but have no inbound rail in v1, so
+ * that API stays deliberately narrower than `BlogEntityKind`.
+ */
+export type BlogRailSubjectKind = Exclude<BlogEntityKind, "post">;
 
 export const BLOG_ENTITY_KIND_LABEL: Record<BlogEntityKind, string> = {
   work: "Work",
@@ -17,6 +24,15 @@ export const BLOG_ENTITY_KIND_LABEL: Record<BlogEntityKind, string> = {
   group: "Group",
   event: "Event",
   profile: "Profile",
+  post: "Post",
+};
+
+/** Editorial payload for a connected Blog post ("Related posts" row). */
+export type BlogPostSummary = {
+  excerpt: string | null;
+  cover_url: string | null;
+  author_name: string | null;
+  published_at: string | null;
 };
 
 export type BlogWorkSummary = {
@@ -57,7 +73,8 @@ export type BlogEntityTag =
   | BlogRefOf<"collab">
   | BlogRefOf<"group">
   | BlogRefOf<"event">
-  | BlogRefOf<"profile">;
+  | BlogRefOf<"profile">
+  | (BlogRefOf<"post"> & { post?: BlogPostSummary | null });
 
 /**
  * Blog tags are Workshop entity references with extra editorial payload, so

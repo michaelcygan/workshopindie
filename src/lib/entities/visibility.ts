@@ -73,3 +73,25 @@ export function isEventPubliclyReferenceable(
 export function isProfilePubliclyReferenceable(p: ProfileVisibilityRecord): boolean {
   return !!p.username && p.discoverable !== false;
 }
+
+export type BlogPostVisibilityRecord = {
+  status?: string | null;
+  show_in_blog_index?: boolean | null;
+  published_at?: string | null;
+};
+
+/**
+ * Blog posts. A story is referenceable only once it is genuinely live: it must
+ * be published, listed in the Blog index, and past its publication time.
+ * Drafts, scheduled posts and unlisted posts stay out of public colophons.
+ */
+export function isBlogPostPubliclyReferenceable(
+  p: BlogPostVisibilityRecord,
+  now: Date = new Date(),
+): boolean {
+  if (p.status !== "published") return false;
+  if (p.show_in_blog_index !== true) return false;
+  if (!p.published_at) return false;
+  const at = new Date(p.published_at).getTime();
+  return Number.isFinite(at) && at <= now.getTime();
+}

@@ -41,8 +41,17 @@ function hitToBlogTag(hit: EntitySearchHit): BlogEntityTag {
     case "profile":
       return { kind: "profile", username: hit.username, ...common };
     case "post":
-      // The Blog picker never searches posts; keep the switch exhaustive.
-      throw new Error("Blog posts are not taggable as post-context");
+      return {
+        kind: "post",
+        slug: hit.slug,
+        ...common,
+        post: {
+          excerpt: null,
+          cover_url: hit.image ?? null,
+          author_name: hit.sublabel ?? null,
+          published_at: null,
+        },
+      };
   }
 }
 
@@ -51,6 +60,8 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   onPick: (tag: BlogEntityTag) => void;
   disabledKeys?: string[];
+  /** Hidden results — the post being edited can never connect to itself. */
+  excludeKeys?: string[];
   title?: string;
   description?: string;
   /** Tab the picker opens on. Defaults to every kind. */
@@ -59,7 +70,14 @@ type Props = {
   onRequestCreateWork?: () => void;
 };
 
-const BLOG_KINDS: readonly BlogEntityKind[] = ["work", "collab", "group", "event", "profile"];
+const BLOG_KINDS: readonly BlogEntityKind[] = [
+  "work",
+  "collab",
+  "group",
+  "event",
+  "profile",
+  "post",
+];
 
 /**
  * Blog-specific wrapper around the generic Workshop entity connection picker.
@@ -72,6 +90,7 @@ export function BlogEntityTagPicker({
   onOpenChange,
   onPick,
   disabledKeys,
+  excludeKeys,
   title,
   description,
   initialKind = "all",
@@ -83,6 +102,7 @@ export function BlogEntityTagPicker({
       onOpenChange={onOpenChange}
       onPick={(hit) => onPick(hitToBlogTag(hit))}
       disabledKeys={disabledKeys}
+      excludeKeys={excludeKeys}
       title={title}
       description={description}
       initialKind={initialKind === "all" ? "all" : initialKind}

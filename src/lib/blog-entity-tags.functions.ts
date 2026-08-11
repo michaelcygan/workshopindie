@@ -5,7 +5,9 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { domainError } from "@/lib/errors";
 import { MAX_BLOG_ENTITY_TAGS } from "@/lib/blog-entity-tags";
 
-const kindSchema = z.enum(["work", "collab", "group", "event", "profile"]);
+/** Tag targets include Blog posts; the reverse rail subjects deliberately do not. */
+const kindSchema = z.enum(["work", "collab", "group", "event", "profile", "post"]);
+const railKindSchema = z.enum(["work", "collab", "group", "event", "profile"]);
 
 const tagsInput = z
   .array(z.object({ kind: kindSchema, id: z.string().uuid() }))
@@ -64,7 +66,7 @@ export const listBlogPostsForEntity = createServerFn({ method: "GET" })
   .inputValidator((d: unknown) =>
     z
       .object({
-        kind: kindSchema,
+        kind: railKindSchema,
         entityId: z.string().uuid(),
         limit: z.number().int().min(1).max(6).optional(),
         trustedOnly: z.boolean().optional(),
