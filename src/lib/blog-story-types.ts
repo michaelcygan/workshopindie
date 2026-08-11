@@ -13,7 +13,9 @@ export const BLOG_STORY_TYPES = [
   { id: "interview", label: "Interview" },
   { id: "news", label: "News" },
   { id: "research_note", label: "Research note" },
+  { id: "review", label: "Review" },
   { id: "journal", label: "Journal" },
+
 ] as const;
 
 export const BLOG_STORY_TYPE_IDS = BLOG_STORY_TYPES.map((t) => t.id) as unknown as [

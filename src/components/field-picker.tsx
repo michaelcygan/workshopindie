@@ -24,6 +24,7 @@ export function FieldPicker({
   onPrimaryChange,
   extras,
   onExtrasChange,
+  onChange,
   onPrimaryReset,
   hint = "Pick the field this belongs to. Add up to 3 — star one to lead with it. General stands on its own.",
   options = FIELD_OPTIONS,
@@ -34,6 +35,13 @@ export function FieldPicker({
   onPrimaryChange: (next: FieldId) => void;
   extras: FieldId[];
   onExtrasChange: (next: FieldId[]) => void;
+  /**
+   * Atomic alternative to `onPrimaryChange` + `onExtrasChange`, primary first.
+   * Parents that keep primary and extras in ONE array must use this: two
+   * sequential callbacks are both derived from pre-update props, so the second
+   * clobbers the first and the selection snaps back.
+   */
+  onChange?: (next: FieldId[]) => void;
   /** Called when the primary changes so parents can clear a Format tied to it. */
   onPrimaryReset?: () => void;
   hint?: string;
@@ -42,48 +50,51 @@ export function FieldPicker({
 }) {
   const extrasCap = Math.max(0, max - 1);
 
+  function apply(nextPrimary: FieldId, nextExtras: FieldId[], primaryChanged: boolean) {
+    if (onChange) {
+      onChange([nextPrimary, ...nextExtras.filter((f) => f !== nextPrimary)]);
+    } else {
+      if (primaryChanged) onPrimaryChange(nextPrimary);
+      onExtrasChange(nextExtras);
+    }
+    if (primaryChanged) onPrimaryReset?.();
+  }
+
   function toggle(id: FieldId) {
     // General is the encompassing option: it never rides along with a
     // specific Field, in either direction.
     if (id === GENERAL_FIELD_ID) {
       if (primary === GENERAL_FIELD_ID) return;
-      onPrimaryChange(GENERAL_FIELD_ID);
-      onExtrasChange([]);
-      onPrimaryReset?.();
+      apply(GENERAL_FIELD_ID, [], true);
       return;
     }
     if (primary === GENERAL_FIELD_ID) {
-      onPrimaryChange(id);
-      onExtrasChange([]);
-      onPrimaryReset?.();
+      apply(id, [], true);
       return;
     }
     if (id === primary) {
       if (extras.length === 0) return;
       const [nextPrimary, ...rest] = extras;
-      onPrimaryChange(nextPrimary!);
-      onExtrasChange(rest);
-      onPrimaryReset?.();
+      apply(nextPrimary!, rest, true);
       return;
     }
     if (extras.includes(id)) {
-      onExtrasChange(extras.filter((x) => x !== id));
+      apply(primary, extras.filter((x) => x !== id), false);
       return;
     }
     if (extras.length >= extrasCap) {
       toast.info(`Up to ${max} fields. Remove one first.`);
       return;
     }
-    onExtrasChange([...extras, id]);
+    apply(primary, [...extras, id], false);
   }
 
   function promote(id: FieldId) {
     if (id === primary || id === GENERAL_FIELD_ID) return;
     const nextExtras = [primary, ...extras.filter((x) => x !== id)].slice(0, extrasCap);
-    onPrimaryChange(id);
-    onExtrasChange(nextExtras);
-    onPrimaryReset?.();
+    apply(id, nextExtras, true);
   }
+
 
   return (
     <section className="space-y-2">

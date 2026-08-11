@@ -1,0 +1,2 @@
+ALTER TABLE public.blog_posts DROP CONSTRAINT IF EXISTS blog_posts_story_type_check;
+ALTER TABLE public.blog_posts ADD CONSTRAINT blog_posts_story_type_check CHECK (story_type IS NULL OR story_type = ANY (ARRAY['essay'::text,'report'::text,'tutorial'::text,'interview'::text,'news'::text,'research_note'::text,'journal'::text,'review'::text]));

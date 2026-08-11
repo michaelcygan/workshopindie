@@ -262,10 +262,12 @@ export function BlogAboutEditor({
               label=""
               primary={primaryField}
               extras={extraFields}
+              onChange={(next) => onChangeFields(next)}
               onPrimaryChange={(next) => onChangeFields([next, ...extraFields.filter((f) => f !== next)])}
               onExtrasChange={(next) => onChangeFields([primaryField, ...next.filter((f) => f !== primaryField)])}
               hint="What this story is about. Up to 3 — star one to lead with it."
             />
+
           )}
         </Row>
 
