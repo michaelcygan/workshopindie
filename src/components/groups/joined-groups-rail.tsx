@@ -34,14 +34,17 @@ function GroupTile({ group }: { group: GroupCardData }) {
     <Link
       to="/g/$slug"
       params={{ slug: group.slug }}
-      className="group block w-[160px] shrink-0 snap-start overflow-hidden rounded-lg border border-border bg-surface transition hover:-translate-y-0.5 hover:shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/30 sm:w-[190px]"
+      className="group flex h-full w-[160px] shrink-0 snap-start flex-col overflow-hidden rounded-lg border border-border bg-surface transition hover:border-ink/30 hover:shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/30 sm:w-[190px]"
     >
-      <div className="relative aspect-[16/10] w-full overflow-hidden" style={coverStyle(group)}>
+      <div
+        className="relative aspect-[16/10] w-full shrink-0 overflow-hidden lg:aspect-auto lg:min-h-0 lg:flex-1"
+        style={coverStyle(group)}
+      >
         {!group.cover_url && (
           <Icon className="absolute -bottom-2 -right-2 h-14 w-14 text-white/15" aria-hidden />
         )}
       </div>
-      <div className="p-2.5">
+      <div className="flex-none p-2.5">
         <p className="truncate text-sm font-medium text-ink group-hover:underline">{group.name}</p>
         <p className="mt-0.5 truncate text-[11px] text-ink-muted">
           {KIND_LABEL[group.kind]} · {memberLabel(group.member_count)}
@@ -50,6 +53,7 @@ function GroupTile({ group }: { group: GroupCardData }) {
     </Link>
   );
 }
+
 
 /** Compact sidebar row listing every joined group. */
 function GroupRow({ group }: { group: GroupCardData }) {
@@ -89,21 +93,25 @@ export function JoinedGroupsRail({
   railGroups: GroupCardData[];
 }) {
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-stretch">
-      <div className="flex min-w-0 flex-col">
-        <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 md:mx-0 md:px-0 lg:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div className="grid gap-4 lg:h-[180px] lg:grid-cols-[minmax(0,1fr)_280px] lg:items-stretch">
+      <div className="relative min-w-0 lg:h-full">
+        <div className="-mx-4 flex h-full snap-x gap-3 overflow-x-auto overflow-y-hidden px-4 pb-2 md:mx-0 md:px-0 lg:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {railGroups.map((g) => (
             <GroupTile key={g.id} group={g} />
           ))}
         </div>
+        {/* overflow cue */}
+        <div
+          className="pointer-events-none absolute inset-y-0 right-0 hidden w-10 bg-gradient-to-l from-background to-transparent lg:block"
+          aria-hidden
+        />
       </div>
 
-      <aside className="hidden h-full flex-col rounded-xl border border-border bg-surface p-2 lg:flex">
-        <p className="px-2 pb-1.5 pt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
+      <aside className="hidden flex-col overflow-hidden rounded-lg border border-border bg-surface p-2 lg:flex lg:h-full">
+        <p className="flex-none px-2 pb-1.5 pt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
           All groups
         </p>
-        <div className="min-h-0 flex-1 space-y-0.5 overflow-y-auto pr-1">
-
+        <div className="min-h-0 flex-1 space-y-0.5 overflow-y-auto overscroll-contain pr-1 [scrollbar-width:thin]">
           {groups.map((g) => (
             <GroupRow key={g.id} group={g} />
           ))}
