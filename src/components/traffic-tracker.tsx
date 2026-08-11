@@ -60,5 +60,63 @@ export function TrafficTracker() {
     });
   }, [pathname, loading, user, router]);
 
+  // Live presence: the same anonymous session, beating once a minute while the
+  // tab is actually visible. Nothing new is identified — this only answers
+  // "how many tabs are here right now", and it is entirely expendable.
+  const liveRef = useRef({ path: null as string | null, type: "guest" as "guest" | "member" });
+  liveRef.current = {
+    path: (() => {
+      const p = normalizeTrafficPath(pathname);
+      return p && !isExcludedTrafficPath(p) ? p : null;
+    })(),
+    type: user ? "member" : "guest",
+  };
+
+  useEffect(() => {
+    if (loading) return;
+    if (typeof document === "undefined") return;
+
+    const beat = () => {
+      try {
+        if (document.visibilityState !== "visible") return;
+        const { path, type } = liveRef.current;
+        if (!path) return;
+        sendLiveHeartbeat({
+          sessionId: getSessionId(),
+          path,
+          visitorType: type,
+          source: documentReferrerHost(),
+        });
+      } catch {
+        /* measurement is optional */
+      }
+    };
+
+    beat();
+    const timer = window.setInterval(beat, HEARTBEAT_INTERVAL_MS);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") beat();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [loading]);
+
+  // A path change should be reflected promptly, not only on the next minute.
+  useEffect(() => {
+    if (loading) return;
+    if (typeof document === "undefined" || document.visibilityState !== "visible") return;
+    const { path, type } = liveRef.current;
+    if (!path) return;
+    sendLiveHeartbeat({
+      sessionId: getSessionId(),
+      path,
+      visitorType: type,
+      source: documentReferrerHost(),
+    });
+  }, [pathname, loading]);
+
   return null;
 }
