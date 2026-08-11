@@ -43,10 +43,8 @@ export function MemberGroupsHome({ state, onChange, onReset, myIds }: Props) {
     [allGroups, myIds],
   );
 
-  const avatarIds = useMemo(
-    () => [...mine, ...featured].map((g) => g.id),
-    [mine, featured],
-  );
+  const avatarIds = useMemo(() => featured.map((g) => g.id), [featured]);
+
   const { data: avatarMap } = useGroupMemberAvatars(avatarIds);
 
   return (
