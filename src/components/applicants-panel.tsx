@@ -140,6 +140,19 @@ export function ApplicantsPanel({ postId }: Props) {
     declined: buckets.declined.members.length + buckets.declined.guests.length,
   };
 
+  // Land on a tab that actually has something in it, so a lone suggestion is
+  // never hidden behind an empty "Applicants" default.
+  useEffect(() => {
+    if (tabTouched || !data) return;
+    if (counts.applicants > 0) return;
+    const next: Tab | null =
+      counts.pitches > 0 ? "pitches" : counts.team > 0 ? "team" : counts.declined > 0 ? "declined" : null;
+    if (next) setTab(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, tabTouched, counts.applicants, counts.pitches, counts.team, counts.declined]);
+
+
+
   const total = members.length + guests.length;
   const waiting =
     members.filter((m) => !m.accepted && m.review_status === "new").length +
