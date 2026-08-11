@@ -168,7 +168,13 @@ function TrafficPage() {
                   </button>
                 ))}
               </div>
-              <UpdatedAt at={data?.fetchedAt} />
+              {agoSeconds === null ? (
+                <UpdatedAt at={data?.fetchedAt} />
+              ) : (
+                <p className="text-xs text-ink-muted">
+                  <span className="text-primary">●</span> Live · updated {agoSeconds}s ago
+                </p>
+              )}
             </div>
           }
         />
