@@ -8,15 +8,18 @@ import { getRelatedPosts } from "@/lib/blog.functions";
 import { subscribeToNewsletter } from "@/lib/newsletter.functions";
 
 type Mode = "peek" | "article";
+type Section = "related" | "cta" | "both";
 
 export function BlogArticleFooter({
   postId,
   mode,
   onSelectPost,
+  section = "both",
 }: {
   postId: string;
   mode: Mode;
   onSelectPost?: (slug: string) => void;
+  section?: Section;
 }) {
   const { user } = useAuth();
   const subscribe = useServerFn(subscribeToNewsletter);
@@ -57,6 +60,7 @@ export function BlogArticleFooter({
   return (
     <>
       {/* Conversion + Newsletter */}
+      {section !== "related" && (
       <aside className="mt-12 rounded-xl border border-border bg-surface p-6 md:p-8">
         <h3 className="font-display text-2xl text-ink md:text-3xl">Make something with people.</h3>
         <p className="mt-2 text-ink-soft">
@@ -117,9 +121,10 @@ export function BlogArticleFooter({
           </div>
         </form>
       </aside>
+      )}
 
       {/* Related */}
-      {relatedPosts && relatedPosts.length > 0 && (
+      {section !== "cta" && relatedPosts && relatedPosts.length > 0 && (
         <section className="mt-12">
           <h3 className="mb-4 font-display text-xl text-ink">More from the blog</h3>
           <div className="grid gap-4 md:grid-cols-3">

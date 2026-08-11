@@ -250,6 +250,8 @@ function BlogPostPage() {
 
       <ShareRow slug={post.slug} title={post.title} postId={post.id} />
 
+      <BlogArticleFooter postId={post.id} mode="article" section="related" />
+
       <BlogComments
         postId={post.id}
         authorProfileIds={[
@@ -259,7 +261,7 @@ function BlogPostPage() {
         ]}
       />
 
-      <BlogArticleFooter postId={post.id} mode="article" />
+      <BlogArticleFooter postId={post.id} mode="article" section="cta" />
 
     </article>
   );
