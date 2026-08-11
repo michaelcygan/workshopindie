@@ -3,7 +3,7 @@ import { Heart, Bookmark, Eye, ExternalLink, MessageCircle } from "lucide-react"
 import { motion } from "framer-motion";
 import { useQuery, queryOptions } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { CategoryChips } from "@/components/category-chips";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -84,6 +84,10 @@ export function WorkPeek({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl p-0 overflow-hidden gap-0">
         <DialogTitle className="sr-only">{work?.title ?? "Work"}</DialogTitle>
+        <DialogDescription className="sr-only">
+          {work?.excerpt || "Preview of a Workshop piece."}
+        </DialogDescription>
+
         {isLoading || !work ? (
           <div className="space-y-0">
             <Skeleton className="aspect-video w-full rounded-none" />
@@ -100,7 +104,7 @@ export function WorkPeek({
         ) : (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }}>
             {work.cover_url ? (
-              <div className="relative aspect-video w-full overflow-hidden bg-surface-2">
+              <div className="relative aspect-video max-h-[min(34vh,280px)] w-full overflow-hidden bg-surface-2">
                 <img src={work.cover_url} alt={work.title} className="h-full w-full object-cover" />
                 <div className="absolute left-3 top-3 flex gap-1.5">
                   <CategoryChips primary={work.category} categories={work.categories} />
@@ -110,8 +114,9 @@ export function WorkPeek({
                 </div>
               </div>
             ) : (
-              <div className="aspect-video w-full gradient-soft" />
+              <div className="aspect-video max-h-[min(34vh,280px)] w-full gradient-soft" />
             )}
+
             <div className="p-5 space-y-4">
               <div>
                 <h2 className="font-display text-2xl text-ink leading-tight">{work.title}</h2>
