@@ -75,19 +75,30 @@ export function GroupHero({ group }: { group: GroupHeroData }) {
 
   return (
     <>
-      {group.cover_url && (
-        <div className="relative h-[168px] w-full overflow-hidden bg-surface-2 sm:h-[190px] md:h-[220px]">
-          <img
-            src={group.cover_url}
-            alt=""
-            width={1600}
-            height={600}
-            className="h-full w-full object-cover"
-          />
+      {(group.cover_url || isAdmin) && (
+        <div className="group/cover relative h-[168px] w-full overflow-hidden bg-surface-2 sm:h-[190px] md:h-[220px]">
+          {group.cover_url ? (
+            <img
+              src={group.cover_url}
+              alt=""
+              width={1600}
+              height={600}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="grid h-full w-full place-items-center text-xs text-ink-muted">
+              No banner photo yet
+            </div>
+          )}
           <div
             aria-hidden
             className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-background to-transparent"
           />
+          {isAdmin && (
+            <div className="absolute right-3 top-3 z-20 opacity-100 transition-opacity md:opacity-0 md:group-hover/cover:opacity-100 md:focus-within:opacity-100">
+              <GroupPhotoEditor groupId={group.id} target="cover" currentUrl={group.cover_url} />
+            </div>
+          )}
         </div>
       )}
 
