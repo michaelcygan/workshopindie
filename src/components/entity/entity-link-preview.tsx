@@ -6,6 +6,7 @@ import { CollabPeek } from "@/components/collab-peek";
 import { WorkPeek } from "@/components/work-peek";
 import { ProfilePeek } from "@/components/profile-peek";
 import { useEntityIdBySlug, useProfileIdByUsername } from "@/lib/entities/use-entity-id";
+import { WorkGlance, CollabGlance, PostGlance } from "@/components/entity/entity-glance";
 import type { WorkshopEntityAddress } from "@/lib/entities/kinds";
 
 // Lazy: BlogPostPeek renders BlogPostBody, which renders this component.
