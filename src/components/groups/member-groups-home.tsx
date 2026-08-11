@@ -48,27 +48,28 @@ export function MemberGroupsHome({ state, onChange, onReset, myIds }: Props) {
   const { data: avatarMap } = useGroupMemberAvatars(avatarIds);
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-10">
-      <header className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4 border-b border-border pb-6 sm:flex sm:flex-wrap sm:justify-between">
-        <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
-            Communities
-          </p>
-          <h1 className="mt-1 font-display text-[30px] leading-tight text-ink md:text-[44px]">
+    <main className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
+      <header className="flex flex-col border-b border-border pb-5 md:pb-6">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
+          Groups
+        </p>
+        <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
+          <h1 className="min-w-0 font-display text-[30px] leading-tight text-ink md:text-[44px]">
             Your scenes
           </h1>
-          <p className="mt-2 max-w-xl text-sm text-ink-muted md:text-base">
-            The cities, mediums, and movements your work belongs with.
-          </p>
+          <Link
+            to="/groups"
+            search={{ t: "all", q: "", c: "all", s: "members" }}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-[13px] font-medium text-ink-soft transition hover:bg-muted hover:text-ink"
+          >
+            <Compass className="h-3.5 w-3.5" /> Explore
+          </Link>
         </div>
-        <Link
-          to="/groups"
-          search={{ t: "all", q: "", c: "all", s: "members" }}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-surface px-4 py-2 text-sm font-medium text-ink transition hover:bg-muted"
-        >
-          <Compass className="h-4 w-4" /> Explore
-        </Link>
+        <p className="mt-2 max-w-xl text-sm text-ink-muted md:text-base">
+          The cities, mediums, and movements your work belongs with.
+        </p>
       </header>
+
 
       {/* Your groups */}
       <section className="mt-8">
