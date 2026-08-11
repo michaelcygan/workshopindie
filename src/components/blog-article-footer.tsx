@@ -8,15 +8,18 @@ import { getRelatedPosts } from "@/lib/blog.functions";
 import { subscribeToNewsletter } from "@/lib/newsletter.functions";
 
 type Mode = "peek" | "article";
+type Section = "related" | "cta" | "both";
 
 export function BlogArticleFooter({
   postId,
   mode,
   onSelectPost,
+  section = "both",
 }: {
   postId: string;
   mode: Mode;
   onSelectPost?: (slug: string) => void;
+  section?: Section;
 }) {
   const { user } = useAuth();
   const subscribe = useServerFn(subscribeToNewsletter);
