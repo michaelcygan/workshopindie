@@ -34,14 +34,14 @@ function GroupTile({ group }: { group: GroupCardData }) {
     <Link
       to="/g/$slug"
       params={{ slug: group.slug }}
-      className="group block w-[160px] shrink-0 snap-start overflow-hidden rounded-lg border border-border bg-surface transition hover:-translate-y-0.5 hover:shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/30 sm:w-[190px]"
+      className="group flex h-full w-[160px] shrink-0 snap-start flex-col overflow-hidden rounded-lg border border-border bg-surface transition hover:border-ink/30 hover:shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/30 sm:w-[190px]"
     >
-      <div className="relative aspect-[16/10] w-full overflow-hidden" style={coverStyle(group)}>
+      <div className="relative min-h-0 w-full flex-1 overflow-hidden" style={coverStyle(group)}>
         {!group.cover_url && (
           <Icon className="absolute -bottom-2 -right-2 h-14 w-14 text-white/15" aria-hidden />
         )}
       </div>
-      <div className="p-2.5">
+      <div className="flex-none p-2.5">
         <p className="truncate text-sm font-medium text-ink group-hover:underline">{group.name}</p>
         <p className="mt-0.5 truncate text-[11px] text-ink-muted">
           {KIND_LABEL[group.kind]} · {memberLabel(group.member_count)}
@@ -50,6 +50,7 @@ function GroupTile({ group }: { group: GroupCardData }) {
     </Link>
   );
 }
+
 
 /** Compact sidebar row listing every joined group. */
 function GroupRow({ group }: { group: GroupCardData }) {
