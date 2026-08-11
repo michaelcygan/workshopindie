@@ -72,7 +72,7 @@ export function MemberGroupsHome({ state, onChange, onReset, myIds }: Props) {
 
 
       {/* Your groups */}
-      <section className="mt-8">
+      <section className="mt-6">
         {isLoading ? (
           <div className="grid gap-5 md:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
