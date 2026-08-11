@@ -12,6 +12,8 @@ import {
   useAllPublicGroups,
   type DirectoryState,
 } from "@/components/groups/groups-directory";
+import { JoinedGroupsRail } from "@/components/groups/joined-groups-rail";
+
 
 type Props = {
   state: DirectoryState;
@@ -31,20 +33,18 @@ export function MemberGroupsHome({ state, onChange, onReset, myIds }: Props) {
     () =>
       allGroups
         .filter((g) => myIds.has(g.id))
-        .sort((a, b) => scoreActivity(b) - scoreActivity(a))
-        .slice(0, 6),
+        .sort((a, b) => scoreActivity(b) - scoreActivity(a)),
     [allGroups, myIds],
   );
+
 
   const featured = useMemo(
     () => allGroups.filter((g) => !!g.featured_at && !myIds.has(g.id)).slice(0, 3),
     [allGroups, myIds],
   );
 
-  const avatarIds = useMemo(
-    () => [...mine, ...featured].map((g) => g.id),
-    [mine, featured],
-  );
+  const avatarIds = useMemo(() => featured.map((g) => g.id), [featured]);
+
   const { data: avatarMap } = useGroupMemberAvatars(avatarIds);
 
   return (
@@ -96,13 +96,8 @@ export function MemberGroupsHome({ state, onChange, onReset, myIds }: Props) {
                 {myIds.size} {myIds.size === 1 ? "group" : "groups"} joined
               </span>
             </div>
-            <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 md:mx-0 md:grid md:snap-none md:grid-cols-3 md:overflow-visible md:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {mine.map((g) => (
-                <div key={g.id} className="w-[85vw] shrink-0 snap-start sm:w-[70vw] md:w-auto">
-                  <GroupFeaturedCard group={g} joined avatars={avatarMap?.get(g.id)} />
-                </div>
-              ))}
-            </div>
+            <JoinedGroupsRail groups={mine} railGroups={mine.slice(0, 12)} />
+
           </>
         )}
       </section>
