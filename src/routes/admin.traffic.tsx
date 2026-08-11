@@ -220,6 +220,7 @@ function TrafficPage() {
             Member traffic {pct(o.member_views, views)} · Guest traffic {pct(o.guest_views, views)}
           </p>
         ) : null}
+        <TrafficLiveRow snapshot={snapshot} />
       </section>
 
       <section>
