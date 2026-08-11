@@ -114,7 +114,7 @@ export function WorkPeek({
                 </div>
               </div>
             ) : (
-              <div className="aspect-video max-h-[34vh] w-full gradient-soft" />
+              <div className="aspect-video max-h-[min(34vh,280px)] w-full gradient-soft" />
             )}
 
             <div className="p-5 space-y-4">
