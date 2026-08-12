@@ -329,6 +329,7 @@ export function CollabComposer({
       }
     }
     setSubmitting(false);
+    draftStash.clear();
     qc.invalidateQueries({ queryKey: ["member-home"] });
 
     if (embed) {
