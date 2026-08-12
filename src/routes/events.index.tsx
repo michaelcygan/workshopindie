@@ -12,7 +12,11 @@ import { KickerChip } from "@/components/kicker-chip";
 import { EmptySpark } from "@/components/empty-spark";
 import { YourGroupsStrip } from "@/components/your-groups-strip";
 import { FeaturedEventsCompact } from "@/components/featured-events-compact";
-import { EventsMiniMap, type MapCityPoint } from "@/components/events/events-mini-map";
+import {
+  EventsMiniMap,
+  type MapCityPoint,
+  type MapVenuePoint,
+} from "@/components/events/events-mini-map";
 import { CityCombobox, type CityValue } from "@/components/city-combobox";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -160,8 +164,8 @@ function EventsIndexPage() {
     staleTime: 5 * 60_000,
     enabled: !mineActive && format !== "online",
   });
-  const mapVenues = ((mapData?.venues ?? []) as unknown as MapVenuePoint[]) ?? [];
-  const mapCities = ((mapData?.cities ?? []) as unknown as MapCityPoint[]) ?? [];
+  const mapVenues = (mapData?.venues ?? []) as unknown as MapVenuePoint[];
+  const mapCities = (mapData?.cities ?? []) as unknown as MapCityPoint[];
   const mapCount = mapVenues.length + mapCities.length;
 
 
