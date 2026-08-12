@@ -845,10 +845,23 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
 
           <div className="space-y-3">
             {imageDraft.url ? (
-              <div className="overflow-hidden rounded-xl border border-border bg-muted/30">
-                <img src={imageDraft.url} alt="" className="mx-auto block max-h-56 w-full object-contain" />
-              </div>
+              imagePreviewBroken ? (
+                <p className="rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2 text-[12px] text-destructive">
+                  That image URL didn't load. Check the address, or upload the photo instead.
+                </p>
+              ) : (
+                <div className="overflow-hidden rounded-xl border border-border bg-muted/30">
+                  <img
+                    src={imageDraft.url}
+                    alt=""
+                    className="mx-auto block max-h-56 w-full object-contain"
+                    onError={() => setImagePreviewBroken(true)}
+                    onLoad={() => setImagePreviewBroken(false)}
+                  />
+                </div>
+              )
             ) : null}
+
 
             <div className="flex flex-wrap items-center gap-2">
               <Button
