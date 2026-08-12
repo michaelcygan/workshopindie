@@ -22,8 +22,12 @@ import {
   Pencil,
   Trash2,
   ImagePlus,
+  Images,
   Upload,
   Loader2,
+  X,
+  ArrowLeft,
+  ArrowRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -46,6 +50,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { BlogEmbed } from "@/components/blog-embed";
 import { BlogFigure } from "@/components/blog-figure";
+import { BlogGallery } from "@/components/blog-gallery";
 import { uploadToBucket } from "@/lib/storage";
 import { resizeImageToJpeg } from "@/lib/image-resize";
 import { useAuth } from "@/hooks/use-auth";
@@ -53,9 +58,13 @@ import {
   parseSegments,
   serializeSegments,
   trimBlankLines,
+  MAX_GALLERY_ITEMS,
+  type BlogGallery as BlogGalleryData,
+  type BlogGalleryItem,
   type BlogImageMeta,
   type BodySegment,
 } from "@/lib/blog-body-segments";
+
 
 export type BlogBodyEditorProps = {
   value: string;
