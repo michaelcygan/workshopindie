@@ -274,7 +274,65 @@ function MemberBlogEditorPage() {
   });
 
 
+  // Autosave: drafts only. A live post never changes under readers without an
+  // explicit Save. Paused states (conflict) stay paused until reload.
+  const autosaveEnabled =
+    !!post &&
+    post.post.status !== "published" &&
+    post.access.canEditExisting &&
+    autosaveState !== "paused";
+  const saveRef = useRef(saveMut);
+  saveRef.current = saveMut;
+  const autosaveReady = autosaveEnabled && dirty && !composerBusy && !saveMut.isPending;
+
+  useEffect(() => {
+    if (!autosaveReady) return;
+    const t = setTimeout(() => {
+      setAutosaveState("saving");
+      saveRef.current.mutate({ silent: true, auto: true });
+    }, 2500);
+    return () => clearTimeout(t);
+  }, [autosaveReady, title, excerpt, body, cover, coverAlt, seoTitle, seoDesc, listInBlog, fields, storyTypes, entityTags]);
+
+  // Flush pending edits when the tab is hidden or the window loses focus.
+  useEffect(() => {
+    if (!autosaveEnabled) return;
+    const flush = () => {
+      if (!dirty || composerBusy || saveRef.current.isPending) return;
+      setAutosaveState("saving");
+      saveRef.current.mutate({ silent: true, auto: true });
+    };
+    const onVisibility = () => { if (document.visibilityState === "hidden") flush(); };
+    window.addEventListener("blur", flush);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("blur", flush);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [autosaveEnabled, dirty, composerBusy]);
+
+  // Warn before leaving with unsaved edits that autosave will not pick up.
+  useEffect(() => {
+    if (!dirty) return;
+    if (autosaveEnabled && autosaveState !== "error") return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [dirty, autosaveEnabled, autosaveState]);
+
+  const saveStatus = (() => {
+    if (saveMut.isPending || autosaveState === "saving") return "Saving…";
+    if (autosaveState === "paused") return "Paused — reload to continue";
+    if (autosaveState === "error") return "Couldn't autosave — press Save";
+    if (dirty) return "Unsaved changes";
+    if (lastSavedAt) {
+      return `Saved ${lastSavedAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+    }
+    return null;
+  })();
+
   if (authLoading || !user) return null;
+
   if (q.isLoading) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-10 md:px-6">
