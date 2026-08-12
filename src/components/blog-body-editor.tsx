@@ -79,7 +79,13 @@ export type BlogBodyEditorProps = {
    * the link in the body at the original cursor.
    */
   onRequestEntityInsert?: (insertMarkdown: (md: string) => void) => void;
+  /**
+   * Fires whenever a composer dialog is open or an upload is in flight, so a
+   * consumer's autosave can hold off on persisting a half-built block.
+   */
+  onBusyChange?: (busy: boolean) => void;
 };
+
 
 function normalizeUrl(input: string): string | null {
   const t = (input || "").trim();
