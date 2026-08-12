@@ -494,9 +494,9 @@ function GalleryPage() {
             )}
           </div>
 
-          {/* Expandable search */}
+          {/* Expandable search — overlays the row on desktop so it adds no height */}
           {searchOpen && (
-            <div className="relative mt-2">
+            <div className="relative mt-2 md:absolute md:inset-x-4 md:top-2.5 md:z-10 md:mt-0 md:px-0">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
               <input
                 value={qInput}
@@ -505,17 +505,19 @@ function GalleryPage() {
                 placeholder="Search works by title or description…"
                 className="w-full rounded-full border border-border bg-surface py-2 pl-9 pr-9 text-sm text-ink placeholder:text-ink-muted shadow-soft focus:outline-none focus:ring-2 focus:ring-ring"
               />
-              {qInput && (
-                <button
-                  onClick={() => setQInput("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink"
-                  aria-label="Clear search"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
+              <button
+                onClick={() => {
+                  setQInput("");
+                  setSearchOpen(false);
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink"
+                aria-label="Close search"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
           )}
+
 
           {/* Mobile-only quick controls: tabs + city */}
           <div className="mt-2 flex items-center gap-2 lg:hidden">
