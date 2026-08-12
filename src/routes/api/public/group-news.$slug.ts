@@ -76,6 +76,20 @@ export const Route = createFileRoute("/api/public/group-news/$slug")({
           return json(cachedItems, "ok", 200, SUCCESS);
         }
 
+        // Stale-but-usable snapshot: answer instantly and refresh in the
+        // background so a slow RSS host never delays the ticker.
+        if (cachedItems.length > 0) {
+          void (async () => {
+            try {
+              const bg = await fetchFeedItems(feedUrl, slug, 12);
+              if (bg.reason === "ok") await writeNewsCache(slug, bg.items);
+            } catch {
+              /* best effort */
+            }
+          })();
+          return json(cachedItems, "ok", 200, SHORT);
+        }
+
         const { items, reason } = await fetchFeedItems(feedUrl, slug, 12);
 
         if (reason !== "ok") {
