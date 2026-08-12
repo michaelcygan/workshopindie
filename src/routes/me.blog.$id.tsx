@@ -128,8 +128,22 @@ function MemberBlogEditorPage() {
   const [pendingInsertRef, setPendingInsertRef] = useState<((md: string) => void) | null>(null);
   const [blogGateOpen, setBlogGateOpen] = useState(false);
   const [published, setPublished] = useState<PublishedPostSummary | null>(null);
+  /** True while the body composer has a dialog open or an upload in flight. */
+  const [composerBusy, setComposerBusy] = useState(false);
+  const [autosaveState, setAutosaveState] = useState<"idle" | "saving" | "saved" | "error" | "paused">("idle");
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  /** Optimistic-concurrency token, kept fresh across repeated silent saves. */
+  const expectedUpdatedAt = useRef<string | undefined>(undefined);
+  const topActionsRef = useRef<HTMLDivElement | null>(null);
+  const bottomActionsRef = useRef<HTMLDivElement | null>(null);
+  const detailsActionsRef = useRef<HTMLDivElement | null>(null);
+  const saveAnchors = useMemo(
+    () => [topActionsRef, bottomActionsRef, detailsActionsRef],
+    [],
+  );
 
   const post = (q.data as EditorPostPayload | undefined);
+
 
   useEffect(() => {
     if (!post || loadedForId === post.post.id) return;
