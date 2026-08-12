@@ -1,38 +1,29 @@
-# Mobile bottom bar: always keep the compose button
+# Add missing specializations
 
-## The problem
+Add "Trailer" plus a short list of other obvious gaps to the specialization vocabulary (the searchable list under each Field).
 
-On create/edit screens the center slot of the mobile bar renders an empty grey circle instead of the + button. It reads as a broken hole in the bar. Screens affected today:
+## Additions (7)
 
-- Post a Work (`/works/new`) and Edit Work
-- Post a Collab (`/collab/new`) and Edit Collab
-- Any route ending in `/edit`
-- Blog editor (`/me/blog/:id`) — here the whole bar is hidden, not just the composer
+Film & Video
+- **Trailers & Promos** — every film and short has one; currently nothing covers it.
+- **Visualizers** — standard release format for music now, and not covered by "Music Videos".
+- **Color Grading** — a distinct craft and hire; "Editing & Post-production" hides it.
+- **Live Visuals & VJing** — big in the scenes Workshop serves; no home today.
 
-## What changes
+Performance
+- **Voice Acting** — sits outside "Acting" in practice (animation, games, audio drama, ads).
 
-1. **The + button is always there.** Remove the "hide the composer" rule entirely; delete the empty-circle placeholder. The bar keeps one shape on every screen.
-2. **Blog editor keeps its distraction-free mode** but no longer produces a half-bar: the bar stays fully hidden there (bar hidden = fine; bar with a hole = not fine). Same for the auth screens, lounge rooms, and group pages that already hide the whole bar.
-3. **Leaving a create flow via + doesn't lose work.**
-   - Blog editor: the existing draft save runs before navigating away.
-   - Post a Work / Post a Collab: the in-progress form is stashed in session storage and restored when the user returns to that screen, with a small "Restored your draft" note and a way to discard it.
-   - Edit screens: unsaved-changes confirm before navigating away (no silent discard of a live published item).
-4. The bar still hides while the keyboard is open, so the + never covers an active input.
+Visual Art
+- **Tattoo Art** — a major independent practice with no current match.
 
-## Audit result (for reference)
+Music
+- **Remixing & Sampling** — distinct from "Music Production" and very common.
 
-| Screen | Today | After |
-| --- | --- | --- |
-| Post a Work / Edit Work | empty circle | + button, form auto-stashed |
-| Post a Collab / Edit Collab | empty circle | + button, form auto-stashed |
-| Other `*/edit` routes | empty circle | + button, confirm on leave |
-| Blog editor | whole bar hidden | unchanged (draft saved on any exit) |
-| Login/signup/onboarding, lounge room, group page | whole bar hidden | unchanged |
+Considered and skipped as already covered: Beatmaking (Music Production), Graffiti (Street Art), Screen Printing (Printmaking), Essays (Creative Nonfiction), Motion Graphics (Motion Design), Podcast editing (Podcasting & Radio).
 
 ## Technical notes
 
-- `src/components/mobile-island/use-mobile-island-visibility.ts`: drop `pathHidesComposer` and always return `composerVisible = islandVisible`.
-- `src/components/mobile-island/mobile-action-island.tsx`: remove the `aria-hidden` placeholder branch and the conditional grid/flex switch — always the 3-column grid.
-- New small hook `src/hooks/use-form-draft-stash.ts` (sessionStorage, keyed by route) used by `works.new.tsx` and `collab.new.tsx`.
-- Blog editor: call the existing save mutation from a `beforeunload`/unmount path in `me.blog.$id.tsx`.
-- Frontend only; no schema or server-function changes.
+- Append the labels to the relevant arrays in `src/lib/taxonomy-subcategories.ts`. IDs derive from labels automatically (`film_video.trailers_promos`, etc.), so no id authoring.
+- The list is append-only — existing labels stay untouched so saved subcategories keep resolving.
+- Update the count assertion in `src/lib/taxonomy.subcategories.test.ts` from 210 to 217.
+- No database change: subcategories are validated in TypeScript; only Field canonicals are mirrored into SQL, and no new Fields are added.
