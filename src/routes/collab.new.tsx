@@ -1,6 +1,7 @@
 import { normalizeUrlOrKeep } from "@/lib/url-normalize";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useFormDraftStash } from "@/hooks/use-form-draft-stash";
 import { z } from "zod";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
@@ -174,6 +175,17 @@ export function CollabComposer({
   const [submitting, setSubmitting] = useState(false);
   const [postedDialog, setPostedDialog] = useState<{ id: string; slug: string } | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Keep typed work if the member navigates away (e.g. mobile composer "+").
+  const draftStash = useFormDraftStash(
+    "collab-new",
+    { title, description, externalUrl },
+    (v) => {
+      if (v.title) setTitle(v.title);
+      if (v.description) setDescription(v.description);
+      if (v.externalUrl) setExternalUrl(v.externalUrl);
+    },
+  );
 
   // Starter prompt: fills empty fields once, on first mount. Never overwrites
   // anything the member has already typed, and never submits on its own.
