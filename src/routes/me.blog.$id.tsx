@@ -371,14 +371,21 @@ function MemberBlogEditorPage() {
             View live
           </Link>
         )}
+        {saveStatus && (
+          <span className="hidden shrink-0 text-xs text-ink-muted sm:inline" aria-live="polite">
+            {saveStatus}
+          </span>
+        )}
         <Button
           variant="outline"
           className="h-11 shrink-0 rounded-md px-4"
           disabled={!dirty || saveMut.isPending || readOnly}
           onClick={() => saveMut.mutate(undefined)}
+          title={isPublished ? "Live post — changes save when you press Save." : undefined}
         >
           {saveMut.isPending ? "Saving…" : "Save"}
         </Button>
+
         {!isPublished && (
           <Button
             className="h-11 shrink-0 px-5 bg-primary text-primary-foreground"
