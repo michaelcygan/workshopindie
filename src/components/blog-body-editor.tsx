@@ -597,8 +597,9 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
   }
 
   useEffect(() => {
-    if (!linkOpen && !embedOpen && !imageOpen) savedSelection.current = null;
-  }, [linkOpen, embedOpen, imageOpen]);
+    if (!linkOpen && !embedOpen && !imageOpen && !galleryOpen) savedSelection.current = null;
+  }, [linkOpen, embedOpen, imageOpen, galleryOpen]);
+
 
   const onlyText = segments.length === 1;
 
