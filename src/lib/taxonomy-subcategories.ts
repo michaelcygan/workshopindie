@@ -38,6 +38,7 @@ const LABELS: Record<Exclude<FieldId, "other">, string[]> = {
     "Podcasting & Radio",
     "Field Recording",
     "Experimental Audio",
+    "Remixing & Sampling",
   ],
   film_video: [
     "Narrative Film",
@@ -55,6 +56,10 @@ const LABELS: Record<Exclude<FieldId, "other">, string[]> = {
     "Commercial & Branded Video",
     "Film Festivals & Distribution",
     "Online Video & Streaming",
+    "Trailers & Promos",
+    "Visualizers",
+    "Color Grading",
+    "Live Visuals & VJing",
   ],
   writing: [
     "Fiction",
@@ -94,6 +99,7 @@ const LABELS: Record<Exclude<FieldId, "other">, string[]> = {
     "Curating & Exhibitions",
     "Art History & Criticism",
     "Conservation & Restoration",
+    "Tattoo Art",
   ],
   design: [
     "Graphic Design",
@@ -133,6 +139,7 @@ const LABELS: Record<Exclude<FieldId, "other">, string[]> = {
     "Puppetry",
     "Stagecraft & Production",
     "Experimental & Live Art",
+    "Voice Acting",
   ],
   journalism_media: [
     "Reporting",
