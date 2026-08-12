@@ -412,7 +412,7 @@ function GalleryPage() {
 
       {/* Sticky one-row toolbar */}
       <div className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur md:top-14">
-        <div className="mx-auto max-w-7xl px-4 py-2.5 md:px-6">
+        <div className="relative mx-auto max-w-7xl px-4 py-2.5 md:px-6">
           <div className="relative flex items-center gap-2">
             {/* Tabs (desktop) — the primary lens sits first */}
             <div className="hidden shrink-0 gap-1 rounded-full border border-border bg-surface p-1 shadow-soft lg:flex">
