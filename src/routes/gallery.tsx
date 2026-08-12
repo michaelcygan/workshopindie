@@ -462,27 +462,6 @@ function GalleryPage() {
               ))}
             </div>
 
-            {/* Tabs (desktop) */}
-            <div className="hidden shrink-0 gap-1 rounded-full border border-border bg-surface p-1 shadow-soft lg:flex">
-              {(["for-you", "following", "favorites"] as const).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => {
-                    if (t !== "for-you" && !user) {
-                      navigate({ to: "/login" });
-                      return;
-                    }
-                    setSearch({ tab: t });
-                  }}
-                  className={cn(
-                    "rounded-full px-3 py-1 text-xs transition",
-                    tab === t ? "bg-ink text-background" : "text-ink-soft hover:bg-muted",
-                  )}
-                >
-                  {t === "for-you" ? "For you" : t === "following" ? "Following" : "Favorites"}
-                </button>
-              ))}
-            </div>
 
             {/* City filter */}
             <div className="hidden shrink-0 md:block">
