@@ -892,9 +892,13 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
               <Input
                 id="blog-image-url"
                 value={imageDraft.url}
-                onChange={(e) => setImageDraft((d) => ({ ...d, url: e.target.value }))}
+                onChange={(e) => {
+                  setImagePreviewBroken(false);
+                  setImageDraft((d) => ({ ...d, url: e.target.value }));
+                }}
                 placeholder="https://example.com/photo.jpg"
               />
+
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
