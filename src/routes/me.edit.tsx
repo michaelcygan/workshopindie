@@ -25,6 +25,8 @@ import {
   type ExtraMedium,
 } from "@/lib/mediums";
 import { cn } from "@/lib/utils";
+import { LANGUAGES, canonicalLanguageLabels, normalizeLanguage } from "@/lib/languages";
+
 import { toast } from "sonner";
 import { Plus, X, User, Sparkles, MapPin, Link2, Pin, Copy, Check, Library } from "lucide-react";
 import { sanitizeInstagramHandle } from "@/lib/display-name";
