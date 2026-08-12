@@ -10,6 +10,8 @@ export function markdownToPlainText(md: string): string {
   // Embed markers and images first (they carry URLs we never want in prose).
   t = t.replace(/\[\[embed:[^\]]*\]\]/g, " ");
   t = t.replace(/\[\[image:[^\]]*\]\]/g, " ");
+  t = t.replace(/\[\[gallery:[^\]]*\]\]/g, " ");
+
   t = t.replace(/!\[[^\]]*\]\([^)]*\)/g, " ");
   // Links: keep the label, drop the URL.
   t = t.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1");
