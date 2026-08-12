@@ -153,14 +153,16 @@ function EventsIndexPage() {
     }).length;
   }, [list]);
 
-  const mapCitiesFn = useServerFn(listEventMapCities);
-  const { data: mapCities } = useQuery({
-    queryKey: ["events", "map-cities", when],
-    queryFn: () => mapCitiesFn({ data: { when } }),
+  const mapPointsFn = useServerFn(listEventMapPoints);
+  const { data: mapData } = useQuery({
+    queryKey: ["events", "map-points", when, cityId ?? null],
+    queryFn: () => mapPointsFn({ data: { when, cityId: cityId ?? null } }),
     staleTime: 5 * 60_000,
     enabled: !mineActive && format !== "online",
   });
-  const mapPoints = (mapCities ?? []) as unknown as MapCityPoint[];
+  const mapVenues = ((mapData?.venues ?? []) as unknown as MapVenuePoint[]) ?? [];
+  const mapCities = ((mapData?.cities ?? []) as unknown as MapCityPoint[]) ?? [];
+  const mapCount = mapVenues.length + mapCities.length;
 
 
 
