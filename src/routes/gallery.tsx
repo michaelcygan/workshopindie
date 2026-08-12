@@ -583,11 +583,17 @@ function GalleryPage() {
         </div>
       </div>
 
-
-
+      {/* Editorial lead-in — only on the default, unfiltered view */}
+      {showFeatured && (
+        <>
+          <GallerySpotlight />
+          <FreshWorksStrip className="mt-5 border-y" />
+        </>
+      )}
 
       {/* Grid */}
       <section className="mx-auto max-w-7xl px-4 py-5 md:px-6 md:py-6">
+
         {(tab === "following" || tab === "favorites") && !user ? (
           <EmptyState
             title={tab === "favorites" ? "Sign in to see your Favorites" : "Sign in to see your Following feed"}
