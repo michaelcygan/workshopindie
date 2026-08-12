@@ -21,8 +21,8 @@ import {
 } from "@/lib/taxonomy";
 
 describe("subcategory vocabulary", () => {
-  it("has the canonical 210 subcategories", () => {
-    expect(SUBCATEGORIES).toHaveLength(210);
+  it("has the canonical 217 subcategories", () => {
+    expect(SUBCATEGORIES).toHaveLength(217);
   });
 
   it("gives General no subcategories", () => {
