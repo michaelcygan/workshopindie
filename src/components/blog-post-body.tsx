@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { BlogLightbox, type LightboxImage } from "./blog-lightbox";
 import { BlogEmbed } from "./blog-embed";
 import { parseSegments, type BodySegment } from "@/lib/blog-body-segments";
+import { BlogFigure } from "@/components/blog-figure";
 import { parseWorkshopHref } from "@/lib/entities/href";
 import { EntityLinkPreview } from "@/components/entity/entity-link-preview";
 
@@ -12,7 +13,7 @@ import { EntityLinkPreview } from "@/components/entity/entity-link-preview";
 type Props = { markdown: string; className?: string };
 
 function splitEmbeds(md: string): BodySegment[] {
-  return parseSegments(md).filter((s) => s.type === "embed" || s.text.trim().length > 0);
+  return parseSegments(md).filter((s) => s.type !== "text" || s.text.trim().length > 0);
 }
 
 
@@ -48,6 +49,31 @@ export function BlogPostBody({ markdown, className }: Props) {
   }, [images]);
 
   const segments = useMemo(() => splitEmbeds(markdown || ""), [markdown]);
+
+  // Figure images join the same lightbox set as inline Markdown images.
+  const figures = useMemo(() => {
+    const map = new Map<string, number>();
+    let next = images.length;
+    for (const seg of segments) {
+      if (seg.type !== "image" || seg.image.link) continue;
+      if (indexBySrc.has(seg.image.url) || map.has(seg.image.url)) continue;
+      map.set(seg.image.url, next++);
+    }
+    return map;
+  }, [segments, images, indexBySrc]);
+
+  const allImages = useMemo<LightboxImage[]>(() => {
+    const extra: LightboxImage[] = [];
+    for (const seg of segments) {
+      if (seg.type !== "image") continue;
+      if (!figures.has(seg.image.url)) continue;
+      extra[figures.get(seg.image.url)! - images.length] = {
+        src: seg.image.url,
+        alt: seg.image.alt ?? "",
+      };
+    }
+    return [...images, ...extra.filter(Boolean)];
+  }, [segments, images, figures]);
 
   const [open, setOpen] = useState(false);
   const [index, setIndex] = useState(0);
@@ -142,6 +168,19 @@ export function BlogPostBody({ markdown, className }: Props) {
         {segments.map((seg, i) =>
           seg.type === "embed" ? (
             <BlogEmbed key={`e-${i}`} url={seg.url} />
+          ) : seg.type === "image" ? (
+            <BlogFigure
+              key={`i-${i}`}
+              image={seg.image}
+              onOpen={
+                seg.image.link
+                  ? undefined
+                  : () => {
+                      setIndex(indexBySrc.get(seg.image.url) ?? figures.get(seg.image.url) ?? 0);
+                      setOpen(true);
+                    }
+              }
+            />
           ) : (
             <Fragment key={`m-${i}`}>
               <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents as any}>
@@ -152,7 +191,7 @@ export function BlogPostBody({ markdown, className }: Props) {
         )}
       </div>
       <BlogLightbox
-        images={images}
+        images={allImages}
         index={index}
         open={open}
         onClose={() => setOpen(false)}

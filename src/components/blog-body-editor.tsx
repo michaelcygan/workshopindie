@@ -21,6 +21,9 @@ import {
   AtSign,
   Pencil,
   Trash2,
+  ImagePlus,
+  Upload,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -42,10 +45,15 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { BlogEmbed } from "@/components/blog-embed";
+import { BlogFigure } from "@/components/blog-figure";
+import { uploadToBucket } from "@/lib/storage";
+import { resizeImageToJpeg } from "@/lib/image-resize";
+import { useAuth } from "@/hooks/use-auth";
 import {
   parseSegments,
   serializeSegments,
   trimBlankLines,
+  type BlogImageMeta,
   type BodySegment,
 } from "@/lib/blog-body-segments";
 
@@ -92,6 +100,12 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
   const [embedUrl, setEmbedUrl] = useState("");
   /** Index of the embed segment being edited, or null when inserting a new one. */
   const [embedEditIndex, setEmbedEditIndex] = useState<number | null>(null);
+  const [imageOpen, setImageOpen] = useState(false);
+  const [imageEditIndex, setImageEditIndex] = useState<number | null>(null);
+  const [imageDraft, setImageDraft] = useState<BlogImageMeta>({ url: "" });
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
 
   const segments = useMemo(() => parseSegments(value), [value]);
 
@@ -255,7 +269,7 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
     pendingFocus.current = { idx: sel.idx + 2, start: 0, end: 0 };
   }
 
-  /** Removes an embed and merges the text segments that surrounded it. */
+  /** Removes a block (embed or image) and merges the text segments around it. */
   function removeEmbed(idx: number) {
     const prev = segments[idx - 1];
     const nextSeg = segments[idx + 1];
@@ -276,6 +290,105 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
     commitSegments(out);
     const caret = prev && prev.type === "text" ? trimBlankLines(prev.text).length : 0;
     pendingFocus.current = { idx: Math.max(0, idx - 1), start: caret, end: caret };
+  }
+
+  function openImage() {
+    const { idx, start, end } = currentTarget();
+    savedSelection.current = { idx, start, end };
+    setImageEditIndex(null);
+    setImageDraft({ url: "" });
+    setImageOpen(true);
+  }
+
+  function openImageEdit(idx: number) {
+    const seg = segments[idx];
+    if (!seg || seg.type !== "image") return;
+    savedSelection.current = null;
+    setImageEditIndex(idx);
+    setImageDraft({ ...seg.image });
+    setImageOpen(true);
+  }
+
+  async function handleImageFile(file: File | undefined) {
+    if (!file) return;
+    if (!user) {
+      toast.error("Sign in again to upload images.");
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      toast.error("Choose an image file (JPG, PNG, WebP, or GIF).");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image too large. Max 10MB.");
+      return;
+    }
+    setUploading(true);
+    try {
+      // GIFs keep their animation; everything else is downscaled for hosting.
+      let upload: File = file;
+      if (file.type !== "image/gif") {
+        const { blob } = await resizeImageToJpeg(file, 2048, 0.85);
+        upload = new File([blob], `${file.name.replace(/\.[^.]+$/, "")}.jpg`, { type: "image/jpeg" });
+      }
+      const url = await uploadToBucket("covers", user.id, upload);
+      setImageDraft((d) => ({ ...d, url }));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Upload failed.");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  function submitImage() {
+    const url = normalizeUrl(imageDraft.url);
+    if (!url) {
+      toast.error("Upload a photo or paste an image URL first.");
+      return;
+    }
+    const link = imageDraft.link?.trim()
+      ? imageDraft.link.trim().startsWith("/")
+        ? imageDraft.link.trim()
+        : normalizeUrl(imageDraft.link)
+      : undefined;
+    if (imageDraft.link?.trim() && !link) {
+      toast.error("Enter a valid link URL (or leave it blank).");
+      return;
+    }
+    const image: BlogImageMeta = {
+      url,
+      alt: imageDraft.alt?.trim() || undefined,
+      caption: imageDraft.caption?.trim() || undefined,
+      credit: imageDraft.credit?.trim() || undefined,
+      link: link || undefined,
+    };
+
+    if (imageEditIndex != null) {
+      const next = segments.map((s, i) => (i === imageEditIndex && s.type === "image" ? { type: "image" as const, image } : s));
+      setImageOpen(false);
+      setImageEditIndex(null);
+      setLocal(null);
+      commitSegments(next);
+      return;
+    }
+
+    const sel = savedSelection.current ?? { idx: activeTextIndex(), start: 0, end: 0 };
+    const seg = segments[sel.idx];
+    const source = refs.current.get(sel.idx)?.value ?? (seg && seg.type === "text" ? trimBlankLines(seg.text) : "");
+    const before = source.slice(0, sel.start);
+    const after = source.slice(Math.max(sel.end, sel.start));
+    const next: BodySegment[] = [
+      ...segments.slice(0, sel.idx),
+      { type: "text", text: before },
+      { type: "image", image },
+      { type: "text", text: after },
+      ...segments.slice(sel.idx + 1),
+    ];
+    setImageOpen(false);
+    setLocal(null);
+    commitSegments(next);
+    pendingFocus.current = { idx: sel.idx + 2, start: 0, end: 0 };
   }
 
   /**
@@ -323,7 +436,7 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
       e.key === "Backspace" &&
       el.selectionStart === 0 &&
       el.selectionEnd === 0 &&
-      segments[idx - 1]?.type === "embed"
+      (segments[idx - 1]?.type === "embed" || segments[idx - 1]?.type === "image")
     ) {
       e.preventDefault();
       removeEmbed(idx - 1);
@@ -345,8 +458,8 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
   }
 
   useEffect(() => {
-    if (!linkOpen && !embedOpen) savedSelection.current = null;
-  }, [linkOpen, embedOpen]);
+    if (!linkOpen && !embedOpen && !imageOpen) savedSelection.current = null;
+  }, [linkOpen, embedOpen, imageOpen]);
 
   const onlyText = segments.length === 1;
 
@@ -371,6 +484,9 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
           </ToolBtn>
           <ToolBtn onClick={openEmbed} title="Embed video or link card" disabled={readOnly}>
             <Film className="h-4 w-4" />
+          </ToolBtn>
+          <ToolBtn onClick={openImage} title="Insert image" disabled={readOnly}>
+            <ImagePlus className="h-4 w-4" />
           </ToolBtn>
           {onRequestEntityInsert && (
             <button
@@ -432,6 +548,15 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
               onEdit={() => openEmbedEdit(i)}
               onRemove={() => removeEmbed(i)}
             />
+          ) : seg.type === "image" ? (
+            <ComposerBlock
+              key={`i-${i}`}
+              readOnly={readOnly}
+              onEdit={() => openImageEdit(i)}
+              onRemove={() => removeEmbed(i)}
+            >
+              <BlogFigure image={seg.image} inert className="my-0" />
+            </ComposerBlock>
           ) : (
             <AutoTextarea
               key={`t-${i}`}
@@ -549,6 +674,151 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <Dialog
+        open={imageOpen}
+        onOpenChange={(o) => {
+          setImageOpen(o);
+          if (!o) setImageEditIndex(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{imageEditIndex != null ? "Edit image" : "Insert image"}</DialogTitle>
+            <DialogDescription>
+              Upload a photo or paste an image URL. It renders centered in the post.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            {imageDraft.url ? (
+              <div className="overflow-hidden rounded-xl border border-border bg-muted/30">
+                <img src={imageDraft.url} alt="" className="mx-auto block max-h-56 w-full object-contain" />
+              </div>
+            ) : null}
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+              >
+                {uploading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Upload className="mr-2 h-4 w-4" />
+                )}
+                {uploading ? "Uploading…" : imageDraft.url ? "Replace photo" : "Upload photo"}
+              </Button>
+              <span className="text-[11px] text-ink-muted">JPG, PNG, WebP or GIF · up to 10MB</span>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => void handleImageFile(e.target.files?.[0])}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="blog-image-url">Image URL</Label>
+              <Input
+                id="blog-image-url"
+                value={imageDraft.url}
+                onChange={(e) => setImageDraft((d) => ({ ...d, url: e.target.value }))}
+                placeholder="https://example.com/photo.jpg"
+              />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="blog-image-alt">Alt text</Label>
+                <Input
+                  id="blog-image-alt"
+                  value={imageDraft.alt ?? ""}
+                  onChange={(e) => setImageDraft((d) => ({ ...d, alt: e.target.value }))}
+                  placeholder="Describe the photo"
+                />
+              </div>
+              <div>
+                <Label htmlFor="blog-image-credit">Credit</Label>
+                <Input
+                  id="blog-image-credit"
+                  value={imageDraft.credit ?? ""}
+                  onChange={(e) => setImageDraft((d) => ({ ...d, credit: e.target.value }))}
+                  placeholder="Photo by…"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="blog-image-caption">Caption</Label>
+              <Input
+                id="blog-image-caption"
+                value={imageDraft.caption ?? ""}
+                onChange={(e) => setImageDraft((d) => ({ ...d, caption: e.target.value }))}
+                placeholder="Shown under the image"
+              />
+            </div>
+            <div>
+              <Label htmlFor="blog-image-link">Click-through link (optional)</Label>
+              <Input
+                id="blog-image-link"
+                value={imageDraft.link ?? ""}
+                onChange={(e) => setImageDraft((d) => ({ ...d, link: e.target.value }))}
+                placeholder="https://example.com or /u/username"
+              />
+              <p className="mt-1 text-[11px] text-ink-muted">
+                With a link, clicking the image opens it. Without one, it opens in the lightbox.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => setImageOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={submitImage} disabled={uploading}>
+              {imageEditIndex != null ? "Save image" : "Insert image"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+/** Shared shell for non-text blocks in the composer: preview + author controls. */
+function ComposerBlock({
+  children,
+  readOnly,
+  onEdit,
+  onRemove,
+}: {
+  children: React.ReactNode;
+  readOnly?: boolean;
+  onEdit: () => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="my-2 rounded-2xl border border-dashed border-border/70 p-2">
+      <div className="pointer-events-none select-none [&_.my-6]:my-0">{children}</div>
+      {!readOnly && (
+        <div className="mt-2 flex items-center justify-end gap-1">
+          <button
+            type="button"
+            onClick={onEdit}
+            className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs text-ink-soft hover:bg-muted"
+          >
+            <Pencil className="h-3.5 w-3.5" /> Edit
+          </button>
+          <button
+            type="button"
+            onClick={onRemove}
+            className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs text-ink-soft hover:bg-muted"
+          >
+            <Trash2 className="h-3.5 w-3.5" /> Remove
+          </button>
+        </div>
+      )}
     </div>
   );
 }
