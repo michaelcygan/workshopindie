@@ -628,6 +628,10 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
           <ToolBtn onClick={openImage} title="Insert image" disabled={readOnly}>
             <ImagePlus className="h-4 w-4" />
           </ToolBtn>
+          <ToolBtn onClick={openGallery} title="Insert gallery" disabled={readOnly}>
+            <Images className="h-4 w-4" />
+          </ToolBtn>
+
           {onRequestEntityInsert && (
             <button
               type="button"
