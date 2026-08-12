@@ -25,7 +25,7 @@ import {
   listMyUpcomingRsvps,
   listMyPastRsvps,
   listPublicEvents,
-  listEventMapCities,
+  listEventMapPoints,
 } from "@/lib/group-events.functions";
 import { cn } from "@/lib/utils";
 import { workshopEntityUrl } from "@/lib/entities/kinds";
@@ -355,18 +355,21 @@ function EventsIndexPage() {
         {when === "upcoming" && !mineActive && (
           <section className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:items-start">
             <FeaturedEventsCompact />
-            {mapPoints.length > 0 && (
+            {mapCount > 0 && (
               <div className="hidden lg:block">
                 <div className="mb-2 flex items-baseline justify-between px-1">
                   <span className="text-[10.5px] font-semibold uppercase tracking-[0.18em] text-ink-soft">
                     On the map
                   </span>
                   <span className="text-[11px] text-ink-muted">
-                    {mapPoints.length} {mapPoints.length === 1 ? "city" : "cities"}
+                    {mapVenues.length > 0
+                      ? `${mapVenues.length} ${mapVenues.length === 1 ? "venue" : "venues"}`
+                      : `${mapCities.length} ${mapCities.length === 1 ? "city" : "cities"}`}
                   </span>
                 </div>
                 <EventsMiniMap
-                  points={mapPoints}
+                  venues={mapVenues}
+                  cities={mapCities}
                   height={252}
                   onSelectCity={(c) => setCity({ id: c.id, name: c.name })}
                 />
