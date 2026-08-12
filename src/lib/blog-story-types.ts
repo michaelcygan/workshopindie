@@ -12,7 +12,7 @@ export const BLOG_STORY_TYPES = [
   { id: "tutorial", label: "Tutorial" },
   { id: "interview", label: "Interview" },
   { id: "news", label: "News" },
-  { id: "research_note", label: "Research note" },
+  { id: "research_note", label: "Process note" },
   { id: "review", label: "Review" },
   { id: "journal", label: "Journal" },
 
