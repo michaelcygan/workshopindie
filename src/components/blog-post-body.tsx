@@ -6,6 +6,8 @@ import { BlogLightbox, type LightboxImage } from "./blog-lightbox";
 import { BlogEmbed } from "./blog-embed";
 import { parseSegments, type BodySegment } from "@/lib/blog-body-segments";
 import { BlogFigure } from "@/components/blog-figure";
+import { BlogGallery } from "@/components/blog-gallery";
+
 import { parseWorkshopHref } from "@/lib/entities/href";
 import { EntityLinkPreview } from "@/components/entity/entity-link-preview";
 
