@@ -352,7 +352,7 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-3 md:p-4">
-      <div className="sticky top-0 z-10 -mx-3 -mt-3 mb-2 flex flex-wrap items-center gap-2 border-b border-border bg-surface px-3 pb-2 pt-3 md:-mx-4 md:-mt-4 md:px-4 md:pb-2 md:pt-4">
+      <div className="sticky top-11 z-10 -mx-3 -mt-3 mb-2 flex flex-wrap items-center gap-2 border-b border-border bg-surface px-3 pb-2 pt-3 md:top-14 md:-mx-4 md:-mt-4 md:px-4 md:pb-2 md:pt-4">
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium uppercase tracking-wider text-ink-muted">Body</span>
           <span className="rounded-full border border-border bg-background px-2 py-0.5 text-[10px] uppercase tracking-wider text-ink-muted">
