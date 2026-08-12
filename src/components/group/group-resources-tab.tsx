@@ -83,13 +83,9 @@ export function GroupResourcesTab({ group }: { group: { id: string } }) {
                   )}
                   {(r.location_text || r.address) && (
                     <a
-                      href={
-                        r.address
-                          ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.address)}`
-                          : r.location_text
-                            ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.location_text)}`
-                            : undefined
-                      }
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                        [r.name, r.address || r.location_text].filter(Boolean).join(" "),
+                      )}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 text-xs text-ink-muted underline-offset-2 hover:text-primary hover:underline"
