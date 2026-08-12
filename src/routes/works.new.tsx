@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useFormDraftStash } from "@/hooks/use-form-draft-stash";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -97,6 +98,19 @@ function NewWork() {
   const [myProfile, setMyProfile] = useState<{ display_name: string | null; username: string | null } | null>(null);
 
   const [book, setBook] = useState<BookDetails>(emptyBookDetails);
+
+  // Keep typed work if the member navigates away (e.g. mobile composer "+").
+  const draftStash = useFormDraftStash(
+    "works-new",
+    { title, excerpt, description, primaryUrl },
+    (v) => {
+      if (v.title) setTitle(v.title);
+      if (v.excerpt) setExcerpt(v.excerpt);
+      if (v.description) setDescription(v.description);
+      if (v.primaryUrl) setPrimaryUrl(v.primaryUrl);
+    },
+  );
+
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/login" });
@@ -282,6 +296,7 @@ function NewWork() {
     }
 
     setSubmitting(false);
+    draftStash.clear();
     qc.invalidateQueries({ queryKey: ["member-home"] });
     toast.success("Work published");
 

@@ -4,6 +4,10 @@ import { isProfilePath } from "@/lib/usernames";
 
 export type MobileIslandVisibility = {
   islandVisible: boolean;
+  /**
+   * Kept for API compatibility: the composer is never hidden on its own —
+   * the island either renders in full or not at all (no empty notch).
+   */
   composerVisible: boolean;
 };
 
@@ -32,16 +36,6 @@ function pathHidesIsland(pathname: string): boolean {
 }
 
 
-function pathHidesComposer(pathname: string): boolean {
-  if (pathname === "/works/new") return true;
-  if (/^\/works\/[^/]+\/edit$/.test(pathname)) return true;
-  if (pathname === "/collab/new") return true;
-  if (/^\/collab\/[^/]+\/edit$/.test(pathname)) return true;
-  // Blog editor: /me/blog/:id but not /me/blog itself (dashboard).
-  if (/^\/me\/blog\/[^/]+/.test(pathname)) return true;
-  if (pathname.endsWith("/edit")) return true;
-  return false;
-}
 
 export function useMobileIslandVisibility(): MobileIslandVisibility {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -61,6 +55,5 @@ export function useMobileIslandVisibility(): MobileIslandVisibility {
   }
 
   const islandVisible = !pathHidesIsland(pathname);
-  const composerVisible = islandVisible && !pathHidesComposer(pathname);
-  return { islandVisible, composerVisible };
+  return { islandVisible, composerVisible: islandVisible };
 }
