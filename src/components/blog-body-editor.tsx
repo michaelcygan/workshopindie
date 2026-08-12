@@ -129,6 +129,13 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
   const galleryFileRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
 
+  const composerBusy =
+    linkOpen || embedOpen || imageOpen || galleryOpen || uploading || galleryUploading;
+  useEffect(() => {
+    onBusyChange?.(composerBusy);
+  }, [composerBusy, onBusyChange]);
+
+
 
   const segments = useMemo(() => parseSegments(value), [value]);
 
