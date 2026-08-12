@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -25,6 +25,8 @@ import {
 import { PlusGate } from "@/components/plus-gate";
 import { BlogPublishSuccessDialog, type PublishedPostSummary } from "@/components/blog-publish-success";
 import { BlogComposerWalkthrough } from "@/components/nudges/blog-composer-walkthrough";
+import { FloatingSaveDock } from "@/components/blog/floating-save-dock";
+
 
 import { Switch } from "@/components/ui/switch";
 import { generateExcerpt } from "@/lib/blog-excerpt";
@@ -126,8 +128,22 @@ function MemberBlogEditorPage() {
   const [pendingInsertRef, setPendingInsertRef] = useState<((md: string) => void) | null>(null);
   const [blogGateOpen, setBlogGateOpen] = useState(false);
   const [published, setPublished] = useState<PublishedPostSummary | null>(null);
+  /** True while the body composer has a dialog open or an upload in flight. */
+  const [composerBusy, setComposerBusy] = useState(false);
+  const [autosaveState, setAutosaveState] = useState<"idle" | "saving" | "saved" | "error" | "paused">("idle");
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  /** Optimistic-concurrency token, kept fresh across repeated silent saves. */
+  const expectedUpdatedAt = useRef<string | undefined>(undefined);
+  const topActionsRef = useRef<HTMLDivElement | null>(null);
+  const bottomActionsRef = useRef<HTMLDivElement | null>(null);
+  const detailsActionsRef = useRef<HTMLDivElement | null>(null);
+  const saveAnchors = useMemo(
+    () => [topActionsRef, bottomActionsRef, detailsActionsRef],
+    [],
+  );
 
   const post = (q.data as EditorPostPayload | undefined);
+
 
   useEffect(() => {
     if (!post || loadedForId === post.post.id) return;
@@ -145,8 +161,17 @@ function MemberBlogEditorPage() {
     setStoryTypes(toBlogStoryTypes((p as { story_types?: string[] | null }).story_types ?? p.story_type));
     setEntityTags(post.entity_tags ?? []);
     setDirty(false);
+    expectedUpdatedAt.current = p.updated_at;
     setLoadedForId(p.id);
   }, [post, loadedForId]);
+
+  // Keep the concurrency token fresh when the query refetches on its own.
+  useEffect(() => {
+    if (post && loadedForId === post.post.id && !saveMut.isPending && !dirty) {
+      expectedUpdatedAt.current = post.post.updated_at;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [post?.post.updated_at]);
 
   function refreshEntityCaches() {
     invalidateEntityTagCaches(qc, entityTags, post?.entity_tags ?? []);
@@ -156,8 +181,8 @@ function MemberBlogEditorPage() {
 
 
   const saveMut = useMutation({
-    mutationFn: async (opts?: { silent?: boolean }) => {
-      await updateFn({
+    mutationFn: async (opts?: { silent?: boolean; auto?: boolean }) => {
+      const result = await updateFn({
         data: {
           id,
           title,
@@ -173,21 +198,40 @@ function MemberBlogEditorPage() {
           story_type: storyTypes[0] ?? null,
           story_types: storyTypes,
           tags: entityTags.map((t) => ({ kind: t.kind, id: t.id })),
-          expected_updated_at: post?.post.updated_at,
+          expected_updated_at: expectedUpdatedAt.current,
         },
       });
-      return { silent: opts?.silent ?? false };
+      return {
+        silent: opts?.silent ?? false,
+        auto: opts?.auto ?? false,
+        updated_at: (result as { updated_at?: string } | null)?.updated_at,
+      };
     },
     onSuccess: (r) => {
       // During a publish the success dialog is the single confirmation.
-      if (!r.silent) toast.success("Saved");
+      if (!r.silent && !r.auto) toast.success("Saved");
+      // Adopt the server's new timestamp so the next save doesn't self-conflict.
+      if (r.updated_at) expectedUpdatedAt.current = r.updated_at;
       setDirty(false);
+      setLastSavedAt(new Date());
+      setAutosaveState("saved");
       qc.invalidateQueries({ queryKey: ["my-blog-post", id] });
       qc.invalidateQueries({ queryKey: ["my-blog-posts", user?.id] });
       refreshEntityCaches();
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error, vars) => {
+      const conflict = /another window/i.test(e.message);
+      if (vars?.auto) {
+        // A conflict means a second tab owns the post — stop autosaving entirely.
+        setAutosaveState(conflict ? "paused" : "error");
+        if (conflict) toast.error(e.message);
+      } else {
+        setAutosaveState("error");
+        toast.error(e.message);
+      }
+    },
   });
+
 
   const publishMut = useMutation({
     mutationFn: async () => {
@@ -230,7 +274,65 @@ function MemberBlogEditorPage() {
   });
 
 
+  // Autosave: drafts only. A live post never changes under readers without an
+  // explicit Save. Paused states (conflict) stay paused until reload.
+  const autosaveEnabled =
+    !!post &&
+    post.post.status !== "published" &&
+    post.access.canEditExisting &&
+    autosaveState !== "paused";
+  const saveRef = useRef(saveMut);
+  saveRef.current = saveMut;
+  const autosaveReady = autosaveEnabled && dirty && !composerBusy && !saveMut.isPending;
+
+  useEffect(() => {
+    if (!autosaveReady) return;
+    const t = setTimeout(() => {
+      setAutosaveState("saving");
+      saveRef.current.mutate({ silent: true, auto: true });
+    }, 2500);
+    return () => clearTimeout(t);
+  }, [autosaveReady, title, excerpt, body, cover, coverAlt, seoTitle, seoDesc, listInBlog, fields, storyTypes, entityTags]);
+
+  // Flush pending edits when the tab is hidden or the window loses focus.
+  useEffect(() => {
+    if (!autosaveEnabled) return;
+    const flush = () => {
+      if (!dirty || composerBusy || saveRef.current.isPending) return;
+      setAutosaveState("saving");
+      saveRef.current.mutate({ silent: true, auto: true });
+    };
+    const onVisibility = () => { if (document.visibilityState === "hidden") flush(); };
+    window.addEventListener("blur", flush);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("blur", flush);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [autosaveEnabled, dirty, composerBusy]);
+
+  // Warn before leaving with unsaved edits that autosave will not pick up.
+  useEffect(() => {
+    if (!dirty) return;
+    if (autosaveEnabled && autosaveState !== "error") return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [dirty, autosaveEnabled, autosaveState]);
+
+  const saveStatus = (() => {
+    if (saveMut.isPending || autosaveState === "saving") return "Saving…";
+    if (autosaveState === "paused") return "Paused — reload to continue";
+    if (autosaveState === "error") return "Couldn't autosave — press Save";
+    if (dirty) return "Unsaved changes";
+    if (lastSavedAt) {
+      return `Saved ${lastSavedAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+    }
+    return null;
+  })();
+
   if (authLoading || !user) return null;
+
   if (q.isLoading) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-10 md:px-6">
@@ -269,14 +371,21 @@ function MemberBlogEditorPage() {
             View live
           </Link>
         )}
+        {saveStatus && (
+          <span className="hidden shrink-0 text-xs text-ink-muted sm:inline" aria-live="polite">
+            {saveStatus}
+          </span>
+        )}
         <Button
           variant="outline"
           className="h-11 shrink-0 rounded-md px-4"
           disabled={!dirty || saveMut.isPending || readOnly}
           onClick={() => saveMut.mutate(undefined)}
+          title={isPublished ? "Live post — changes save when you press Save." : undefined}
         >
           {saveMut.isPending ? "Saving…" : "Save"}
         </Button>
+
         {!isPublished && (
           <Button
             className="h-11 shrink-0 px-5 bg-primary text-primary-foreground"
@@ -333,9 +442,10 @@ function MemberBlogEditorPage() {
         >
           <ArrowLeft className="h-4 w-4" /> Your posts
         </Link>
-        <div className="flex min-w-0 items-center gap-2">
+        <div ref={topActionsRef} className="flex min-w-0 items-center gap-2">
           <PostActions post={post} />
         </div>
+
 
       </div>
 
@@ -420,16 +530,19 @@ function MemberBlogEditorPage() {
               value={body}
               readOnly={readOnly}
               onChange={(v) => { setBody(v); setDirty(true); }}
+              onBusyChange={setComposerBusy}
               onRequestEntityInsert={(insert) => {
                 setPendingInsertRef(() => insert);
                 setEntityPickerOpen(true);
               }}
             />
+
           </div>
 
-          <div className="flex items-center justify-end border-t border-border pt-4">
+          <div ref={bottomActionsRef} className="flex items-center justify-end border-t border-border pt-4">
             <PostActions post={post} />
           </div>
+
         </TabsContent>
 
         <TabsContent value="preview" className="mt-4">
@@ -529,11 +642,20 @@ function MemberBlogEditorPage() {
             />
           </div>
 
-          <div className="flex items-center justify-end border-t border-border pt-4">
+          <div ref={detailsActionsRef} className="flex items-center justify-end border-t border-border pt-4">
             <PostActions post={post} />
           </div>
         </TabsContent>
       </Tabs>
+
+      <FloatingSaveDock
+        anchors={saveAnchors}
+        onSave={() => saveMut.mutate(undefined)}
+        disabled={!dirty || saveMut.isPending || readOnly}
+        saving={saveMut.isPending}
+        status={saveStatus}
+      />
+
 
       <BlogEntityTagPicker
         open={entityPickerOpen}

@@ -79,7 +79,13 @@ export type BlogBodyEditorProps = {
    * the link in the body at the original cursor.
    */
   onRequestEntityInsert?: (insertMarkdown: (md: string) => void) => void;
+  /**
+   * Fires whenever a composer dialog is open or an upload is in flight, so a
+   * consumer's autosave can hold off on persisting a half-built block.
+   */
+  onBusyChange?: (busy: boolean) => void;
 };
+
 
 function normalizeUrl(input: string): string | null {
   const t = (input || "").trim();
@@ -101,7 +107,7 @@ function normalizeUrl(input: string): string | null {
  * (one per text segment) separated by embed cards; every toolbar action
  * targets the segment that currently holds the caret.
  */
-export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEntityInsert }: BlogBodyEditorProps) {
+export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEntityInsert, onBusyChange }: BlogBodyEditorProps) {
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkText, setLinkText] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
@@ -122,6 +128,13 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
   const [galleryUrlInput, setGalleryUrlInput] = useState("");
   const galleryFileRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
+
+  const composerBusy =
+    linkOpen || embedOpen || imageOpen || galleryOpen || uploading || galleryUploading;
+  useEffect(() => {
+    onBusyChange?.(composerBusy);
+  }, [composerBusy, onBusyChange]);
+
 
 
   const segments = useMemo(() => parseSegments(value), [value]);
