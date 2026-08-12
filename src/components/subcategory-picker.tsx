@@ -9,6 +9,7 @@ import {
 } from "@/lib/taxonomy";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 /**
@@ -126,6 +127,9 @@ export function SubcategoryPicker({
 /**
  * Multi-select specialties for Profiles, grouped by the Fields the person
  * already claims. Caps and parent validation live in `normalizeSpecialties`.
+ *
+ * Each field group collapses to a single row of chips so the section stays
+ * short on mobile; selected chips are always visible.
  */
 export function SpecialtiesPicker({
   fields,
@@ -140,6 +144,9 @@ export function SpecialtiesPicker({
   max?: number;
   label?: string;
 }) {
+  const isMobile = useIsMobile();
+  const [openFields, setOpenFields] = useState<Record<string, boolean>>({});
+
   const groups = fields
     .map((f) => normalizeField(f))
     .filter((f, i, arr) => f !== GENERAL_FIELD_ID && arr.indexOf(f) === i)
@@ -157,6 +164,8 @@ export function SpecialtiesPicker({
     onChange([...value, id]);
   }
 
+  const collapsedCount = isMobile ? 4 : 6;
+
   return (
     <section className="space-y-3">
       <div className="flex items-baseline justify-between">
@@ -165,33 +174,77 @@ export function SpecialtiesPicker({
           {value.length}/{max} · optional
         </span>
       </div>
-      {groups.map((g) => (
-        <div key={g.field} className="space-y-1.5">
-          <p className="text-xs uppercase tracking-wide text-ink-muted">
-            {fieldLabel(g.field)}
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {g.options.map((o) => {
-              const on = value.includes(o.id);
-              return (
-                <button
-                  key={o.id}
-                  type="button"
-                  onClick={() => toggle(o.id)}
+      {groups.map((g) => {
+        // Selected first so a collapsed group never hides a pick.
+        const ordered = [
+          ...g.options.filter((o) => value.includes(o.id)),
+          ...g.options.filter((o) => !value.includes(o.id)),
+        ];
+        const selectedCount = g.options.filter((o) => value.includes(o.id)).length;
+        const expanded = openFields[g.field] ?? !isMobile;
+        const collapsible = ordered.length > collapsedCount;
+        const visible = expanded || !collapsible ? ordered : ordered.slice(0, collapsedCount);
+        const hidden = ordered.length - visible.length;
+
+        return (
+          <div key={g.field} className="space-y-1.5">
+            <button
+              type="button"
+              onClick={() =>
+                collapsible && setOpenFields((p) => ({ ...p, [g.field]: !expanded }))
+              }
+              className={cn(
+                "flex w-full items-center gap-1.5 text-left",
+                !collapsible && "cursor-default",
+              )}
+              aria-expanded={collapsible ? expanded : undefined}
+            >
+              <span className="text-xs uppercase tracking-wide text-ink-muted">
+                {fieldLabel(g.field)}
+                {selectedCount > 0 && ` · ${selectedCount}`}
+              </span>
+              {collapsible && (
+                <ChevronDown
                   className={cn(
-                    "rounded-full border px-2.5 py-1 text-xs transition",
-                    on
-                      ? "border-transparent bg-ink text-background"
-                      : "border-border bg-surface text-ink-soft hover:bg-muted",
+                    "h-3.5 w-3.5 text-ink-muted transition-transform",
+                    expanded && "rotate-180",
                   )}
+                />
+              )}
+            </button>
+            <div className="flex flex-wrap gap-1.5">
+              {visible.map((o) => {
+                const on = value.includes(o.id);
+                return (
+                  <button
+                    key={o.id}
+                    type="button"
+                    onClick={() => toggle(o.id)}
+                    className={cn(
+                      "rounded-full border px-2.5 py-1 text-xs transition",
+                      on
+                        ? "border-transparent bg-ink text-background"
+                        : "border-border bg-surface text-ink-soft hover:bg-muted",
+                    )}
+                  >
+                    {o.label}
+                  </button>
+                );
+              })}
+              {collapsible && !expanded && hidden > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setOpenFields((p) => ({ ...p, [g.field]: true }))}
+                  className="rounded-full border border-dashed border-border px-2.5 py-1 text-xs text-ink-muted transition hover:bg-muted hover:text-ink"
                 >
-                  {o.label}
+                  +{hidden} more
                 </button>
-              );
-            })}
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </section>
   );
 }
+
