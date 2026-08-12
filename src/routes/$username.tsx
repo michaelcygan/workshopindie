@@ -41,6 +41,8 @@ import { EditorialCard, EditorialChip } from "@/components/editorial-card";
 import { InfluencesGrid } from "@/components/influences/influence-card";
 import { useInfluences } from "@/hooks/use-influences";
 import { validateUsername } from "@/lib/usernames";
+import { canonicalLanguageLabels } from "@/lib/languages";
+
 
 
 const TAB_VALUES = ["works", "blog", "collabs", "influences", "activity", "about"] as const;
