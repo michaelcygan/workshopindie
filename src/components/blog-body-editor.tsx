@@ -953,6 +953,163 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog
+        open={galleryOpen}
+        onOpenChange={(o) => {
+          setGalleryOpen(o);
+          if (!o) setGalleryEditIndex(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{galleryEditIndex != null ? "Edit gallery" : "Insert gallery"}</DialogTitle>
+            <DialogDescription>
+              Two to {MAX_GALLERY_ITEMS} photos, shown as a photo wall or a swipeable slideshow.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => galleryFileRef.current?.click()}
+                disabled={galleryUploading || galleryDraft.items.length >= MAX_GALLERY_ITEMS}
+              >
+                {galleryUploading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Upload className="mr-2 h-4 w-4" />
+                )}
+                {galleryUploading ? "Uploading…" : "Upload photos"}
+              </Button>
+              <span className="text-[11px] text-ink-muted">
+                {galleryDraft.items.length}/{MAX_GALLERY_ITEMS} · JPG, PNG, WebP or GIF · up to 10MB each
+              </span>
+              <input
+                ref={galleryFileRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => void handleGalleryFiles(e.target.files)}
+              />
+            </div>
+
+            <div className="flex items-end gap-2">
+              <div className="flex-1">
+                <Label htmlFor="blog-gallery-url">Or add an image URL</Label>
+                <Input
+                  id="blog-gallery-url"
+                  value={galleryUrlInput}
+                  onChange={(e) => setGalleryUrlInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addGalleryUrl();
+                    }
+                  }}
+                  placeholder="https://example.com/photo.jpg"
+                />
+              </div>
+              <Button type="button" variant="outline" onClick={addGalleryUrl}>
+                Add
+              </Button>
+            </div>
+
+            {galleryDraft.items.length > 0 && (
+              <div className="space-y-2">
+                {galleryDraft.items.map((item, i) => (
+                  <div key={`${item.url}-${i}`} className="flex items-center gap-2 rounded-xl border border-border p-2">
+                    <img
+                      src={item.url}
+                      alt=""
+                      className="h-12 w-12 shrink-0 rounded-lg border border-border object-cover"
+                    />
+                    <Input
+                      value={item.alt ?? ""}
+                      onChange={(e) =>
+                        setGalleryDraft((g) => ({
+                          ...g,
+                          items: g.items.map((it, j) => (j === i ? { ...it, alt: e.target.value } : it)),
+                        }))
+                      }
+                      placeholder="Alt text (optional)"
+                      className="h-9"
+                    />
+                    <div className="flex shrink-0 items-center gap-1">
+                      <ToolBtn onClick={() => moveGalleryItem(i, -1)} title="Move earlier" disabled={i === 0}>
+                        <ArrowLeft className="h-4 w-4" />
+                      </ToolBtn>
+                      <ToolBtn
+                        onClick={() => moveGalleryItem(i, 1)}
+                        title="Move later"
+                        disabled={i === galleryDraft.items.length - 1}
+                      >
+                        <ArrowRight className="h-4 w-4" />
+                      </ToolBtn>
+                      <ToolBtn
+                        onClick={() =>
+                          setGalleryDraft((g) => ({ ...g, items: g.items.filter((_, j) => j !== i) }))
+                        }
+                        title="Remove photo"
+                      >
+                        <X className="h-4 w-4" />
+                      </ToolBtn>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs uppercase tracking-wider text-ink-muted">Layout</span>
+              {(["wall", "slideshow"] as const).map((l) => (
+                <button
+                  key={l}
+                  type="button"
+                  onClick={() => setGalleryDraft((g) => ({ ...g, layout: l }))}
+                  className={cn(
+                    "rounded-full border px-3 py-1 text-xs capitalize transition",
+                    galleryDraft.layout === l
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-ink-soft hover:bg-muted",
+                  )}
+                >
+                  {l === "wall" ? "Photo wall" : "Slideshow"}
+                </button>
+              ))}
+            </div>
+
+            <div>
+              <Label htmlFor="blog-gallery-caption">Caption</Label>
+              <Input
+                id="blog-gallery-caption"
+                value={galleryDraft.caption ?? ""}
+                onChange={(e) => setGalleryDraft((g) => ({ ...g, caption: e.target.value }))}
+                placeholder="Shown under the gallery"
+              />
+            </div>
+
+            {galleryDraft.items.length >= 2 && (
+              <div className="rounded-xl border border-border bg-background p-2">
+                <BlogGallery gallery={galleryDraft} inert className="my-0" />
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => setGalleryOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={submitGallery} disabled={galleryUploading}>
+              {galleryEditIndex != null ? "Save gallery" : "Insert gallery"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
