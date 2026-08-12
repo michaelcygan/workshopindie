@@ -22,8 +22,12 @@ import {
   Pencil,
   Trash2,
   ImagePlus,
+  Images,
   Upload,
   Loader2,
+  X,
+  ArrowLeft,
+  ArrowRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -46,6 +50,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { BlogEmbed } from "@/components/blog-embed";
 import { BlogFigure } from "@/components/blog-figure";
+import { BlogGallery } from "@/components/blog-gallery";
 import { uploadToBucket } from "@/lib/storage";
 import { resizeImageToJpeg } from "@/lib/image-resize";
 import { useAuth } from "@/hooks/use-auth";
@@ -53,9 +58,13 @@ import {
   parseSegments,
   serializeSegments,
   trimBlankLines,
+  MAX_GALLERY_ITEMS,
+  type BlogGallery as BlogGalleryData,
+  type BlogGalleryItem,
   type BlogImageMeta,
   type BodySegment,
 } from "@/lib/blog-body-segments";
+
 
 export type BlogBodyEditorProps = {
   value: string;
@@ -104,8 +113,16 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
   const [imageEditIndex, setImageEditIndex] = useState<number | null>(null);
   const [imageDraft, setImageDraft] = useState<BlogImageMeta>({ url: "" });
   const [uploading, setUploading] = useState(false);
+  const [imagePreviewBroken, setImagePreviewBroken] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryEditIndex, setGalleryEditIndex] = useState<number | null>(null);
+  const [galleryDraft, setGalleryDraft] = useState<BlogGalleryData>({ items: [], layout: "wall" });
+  const [galleryUploading, setGalleryUploading] = useState(false);
+  const [galleryUrlInput, setGalleryUrlInput] = useState("");
+  const galleryFileRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
+
 
   const segments = useMemo(() => parseSegments(value), [value]);
 
@@ -311,28 +328,13 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
 
   async function handleImageFile(file: File | undefined) {
     if (!file) return;
-    if (!user) {
-      toast.error("Sign in again to upload images.");
-      return;
-    }
-    if (!file.type.startsWith("image/")) {
-      toast.error("Choose an image file (JPG, PNG, WebP, or GIF).");
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("Image too large. Max 10MB.");
-      return;
-    }
     setUploading(true);
     try {
-      // GIFs keep their animation; everything else is downscaled for hosting.
-      let upload: File = file;
-      if (file.type !== "image/gif") {
-        const { blob } = await resizeImageToJpeg(file, 2048, 0.85);
-        upload = new File([blob], `${file.name.replace(/\.[^.]+$/, "")}.jpg`, { type: "image/jpeg" });
+      const url = await uploadImageFile(file);
+      if (url) {
+        setImagePreviewBroken(false);
+        setImageDraft((d) => ({ ...d, url }));
       }
-      const url = await uploadToBucket("covers", user.id, upload);
-      setImageDraft((d) => ({ ...d, url }));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Upload failed.");
     } finally {
@@ -340,6 +342,7 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
       if (fileRef.current) fileRef.current.value = "";
     }
   }
+
 
   function submitImage() {
     const url = normalizeUrl(imageDraft.url);
@@ -390,6 +393,142 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
     commitSegments(next);
     pendingFocus.current = { idx: sel.idx + 2, start: 0, end: 0 };
   }
+
+  /** Shared upload pipeline: validate, downscale (except GIFs), store. */
+  async function uploadImageFile(file: File): Promise<string | null> {
+    if (!user) {
+      toast.error("Sign in again to upload images.");
+      return null;
+    }
+    if (!file.type.startsWith("image/")) {
+      toast.error("Choose an image file (JPG, PNG, WebP, or GIF).");
+      return null;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error(`"${file.name}" is too large. Max 10MB.`);
+      return null;
+    }
+    let upload: File = file;
+    if (file.type !== "image/gif") {
+      const { blob } = await resizeImageToJpeg(file, 2048, 0.85);
+      upload = new File([blob], `${file.name.replace(/\.[^.]+$/, "")}.jpg`, { type: "image/jpeg" });
+    }
+    return uploadToBucket("covers", user.id, upload);
+  }
+
+  function openGallery() {
+    const { idx, start, end } = currentTarget();
+    savedSelection.current = { idx, start, end };
+    setGalleryEditIndex(null);
+    setGalleryDraft({ items: [], layout: "wall" });
+    setGalleryUrlInput("");
+    setGalleryOpen(true);
+  }
+
+  function openGalleryEdit(idx: number) {
+    const seg = segments[idx];
+    if (!seg || seg.type !== "gallery") return;
+    savedSelection.current = null;
+    setGalleryEditIndex(idx);
+    setGalleryDraft({ ...seg.gallery, items: seg.gallery.items.map((i) => ({ ...i })) });
+    setGalleryUrlInput("");
+    setGalleryOpen(true);
+  }
+
+  async function handleGalleryFiles(files: FileList | File[] | null | undefined) {
+    const list = Array.from(files ?? []);
+    if (list.length === 0) return;
+    const room = MAX_GALLERY_ITEMS - galleryDraft.items.length;
+    if (room <= 0) {
+      toast.error(`A gallery holds up to ${MAX_GALLERY_ITEMS} photos.`);
+      return;
+    }
+    if (list.length > room) toast.message(`Only the first ${room} photos were added.`);
+    setGalleryUploading(true);
+    try {
+      const added: BlogGalleryItem[] = [];
+      for (const file of list.slice(0, room)) {
+        try {
+          const url = await uploadImageFile(file);
+          if (url) added.push({ url });
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : `Couldn't upload "${file.name}".`);
+        }
+      }
+      if (added.length) setGalleryDraft((g) => ({ ...g, items: [...g.items, ...added] }));
+    } finally {
+      setGalleryUploading(false);
+      if (galleryFileRef.current) galleryFileRef.current.value = "";
+    }
+  }
+
+  function addGalleryUrl() {
+    const url = normalizeUrl(galleryUrlInput);
+    if (!url) {
+      toast.error("Enter a valid image URL (must start with https://).");
+      return;
+    }
+    if (galleryDraft.items.length >= MAX_GALLERY_ITEMS) {
+      toast.error(`A gallery holds up to ${MAX_GALLERY_ITEMS} photos.`);
+      return;
+    }
+    setGalleryDraft((g) => ({ ...g, items: [...g.items, { url }] }));
+    setGalleryUrlInput("");
+  }
+
+  function moveGalleryItem(i: number, dir: -1 | 1) {
+    setGalleryDraft((g) => {
+      const items = [...g.items];
+      const j = i + dir;
+      if (j < 0 || j >= items.length) return g;
+      [items[i], items[j]] = [items[j], items[i]];
+      return { ...g, items };
+    });
+  }
+
+  function submitGallery() {
+    const items = galleryDraft.items.filter((i) => i.url.trim().length > 0);
+    if (items.length < 2) {
+      toast.error("Add at least two photos to a gallery.");
+      return;
+    }
+    const caption = (galleryDraft.caption ?? "").trim();
+    const gallery: BlogGalleryData = {
+      items: items.slice(0, MAX_GALLERY_ITEMS),
+      layout: galleryDraft.layout,
+      ...(caption ? { caption } : {}),
+    };
+
+    if (galleryEditIndex != null) {
+      const next = segments.map((s, i) =>
+        i === galleryEditIndex && s.type === "gallery" ? { type: "gallery" as const, gallery } : s,
+      );
+      setGalleryOpen(false);
+      setGalleryEditIndex(null);
+      setLocal(null);
+      commitSegments(next);
+      return;
+    }
+
+    const sel = savedSelection.current ?? { idx: activeTextIndex(), start: 0, end: 0 };
+    const seg = segments[sel.idx];
+    const source = refs.current.get(sel.idx)?.value ?? (seg && seg.type === "text" ? trimBlankLines(seg.text) : "");
+    const before = source.slice(0, sel.start);
+    const after = source.slice(Math.max(sel.end, sel.start));
+    const next: BodySegment[] = [
+      ...segments.slice(0, sel.idx),
+      { type: "text", text: before },
+      { type: "gallery", gallery },
+      { type: "text", text: after },
+      ...segments.slice(sel.idx + 1),
+    ];
+    setGalleryOpen(false);
+    setLocal(null);
+    commitSegments(next);
+    pendingFocus.current = { idx: sel.idx + 2, start: 0, end: 0 };
+  }
+
+
 
   /**
    * Opens the consumer's entity picker with an insert callback pinned to the
@@ -458,8 +597,9 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
   }
 
   useEffect(() => {
-    if (!linkOpen && !embedOpen && !imageOpen) savedSelection.current = null;
-  }, [linkOpen, embedOpen, imageOpen]);
+    if (!linkOpen && !embedOpen && !imageOpen && !galleryOpen) savedSelection.current = null;
+  }, [linkOpen, embedOpen, imageOpen, galleryOpen]);
+
 
   const onlyText = segments.length === 1;
 
@@ -488,6 +628,10 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
           <ToolBtn onClick={openImage} title="Insert image" disabled={readOnly}>
             <ImagePlus className="h-4 w-4" />
           </ToolBtn>
+          <ToolBtn onClick={openGallery} title="Insert gallery" disabled={readOnly}>
+            <Images className="h-4 w-4" />
+          </ToolBtn>
+
           {onRequestEntityInsert && (
             <button
               type="button"
@@ -557,7 +701,17 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
             >
               <BlogFigure image={seg.image} inert className="my-0" />
             </ComposerBlock>
+          ) : seg.type === "gallery" ? (
+            <ComposerBlock
+              key={`g-${i}`}
+              readOnly={readOnly}
+              onEdit={() => openGalleryEdit(i)}
+              onRemove={() => removeEmbed(i)}
+            >
+              <BlogGallery gallery={seg.gallery} inert className="my-0" />
+            </ComposerBlock>
           ) : (
+
             <AutoTextarea
               key={`t-${i}`}
               registerRef={(el) => {
@@ -691,10 +845,23 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
 
           <div className="space-y-3">
             {imageDraft.url ? (
-              <div className="overflow-hidden rounded-xl border border-border bg-muted/30">
-                <img src={imageDraft.url} alt="" className="mx-auto block max-h-56 w-full object-contain" />
-              </div>
+              imagePreviewBroken ? (
+                <p className="rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2 text-[12px] text-destructive">
+                  That image URL didn't load. Check the address, or upload the photo instead.
+                </p>
+              ) : (
+                <div className="overflow-hidden rounded-xl border border-border bg-muted/30">
+                  <img
+                    src={imageDraft.url}
+                    alt=""
+                    className="mx-auto block max-h-56 w-full object-contain"
+                    onError={() => setImagePreviewBroken(true)}
+                    onLoad={() => setImagePreviewBroken(false)}
+                  />
+                </div>
+              )
             ) : null}
+
 
             <div className="flex flex-wrap items-center gap-2">
               <Button
@@ -725,9 +892,13 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
               <Input
                 id="blog-image-url"
                 value={imageDraft.url}
-                onChange={(e) => setImageDraft((d) => ({ ...d, url: e.target.value }))}
+                onChange={(e) => {
+                  setImagePreviewBroken(false);
+                  setImageDraft((d) => ({ ...d, url: e.target.value }));
+                }}
                 placeholder="https://example.com/photo.jpg"
               />
+
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
@@ -782,6 +953,163 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog
+        open={galleryOpen}
+        onOpenChange={(o) => {
+          setGalleryOpen(o);
+          if (!o) setGalleryEditIndex(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{galleryEditIndex != null ? "Edit gallery" : "Insert gallery"}</DialogTitle>
+            <DialogDescription>
+              Two to {MAX_GALLERY_ITEMS} photos, shown as a photo wall or a swipeable slideshow.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => galleryFileRef.current?.click()}
+                disabled={galleryUploading || galleryDraft.items.length >= MAX_GALLERY_ITEMS}
+              >
+                {galleryUploading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Upload className="mr-2 h-4 w-4" />
+                )}
+                {galleryUploading ? "Uploading…" : "Upload photos"}
+              </Button>
+              <span className="text-[11px] text-ink-muted">
+                {galleryDraft.items.length}/{MAX_GALLERY_ITEMS} · JPG, PNG, WebP or GIF · up to 10MB each
+              </span>
+              <input
+                ref={galleryFileRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => void handleGalleryFiles(e.target.files)}
+              />
+            </div>
+
+            <div className="flex items-end gap-2">
+              <div className="flex-1">
+                <Label htmlFor="blog-gallery-url">Or add an image URL</Label>
+                <Input
+                  id="blog-gallery-url"
+                  value={galleryUrlInput}
+                  onChange={(e) => setGalleryUrlInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addGalleryUrl();
+                    }
+                  }}
+                  placeholder="https://example.com/photo.jpg"
+                />
+              </div>
+              <Button type="button" variant="outline" onClick={addGalleryUrl}>
+                Add
+              </Button>
+            </div>
+
+            {galleryDraft.items.length > 0 && (
+              <div className="space-y-2">
+                {galleryDraft.items.map((item, i) => (
+                  <div key={`${item.url}-${i}`} className="flex items-center gap-2 rounded-xl border border-border p-2">
+                    <img
+                      src={item.url}
+                      alt=""
+                      className="h-12 w-12 shrink-0 rounded-lg border border-border object-cover"
+                    />
+                    <Input
+                      value={item.alt ?? ""}
+                      onChange={(e) =>
+                        setGalleryDraft((g) => ({
+                          ...g,
+                          items: g.items.map((it, j) => (j === i ? { ...it, alt: e.target.value } : it)),
+                        }))
+                      }
+                      placeholder="Alt text (optional)"
+                      className="h-9"
+                    />
+                    <div className="flex shrink-0 items-center gap-1">
+                      <ToolBtn onClick={() => moveGalleryItem(i, -1)} title="Move earlier" disabled={i === 0}>
+                        <ArrowLeft className="h-4 w-4" />
+                      </ToolBtn>
+                      <ToolBtn
+                        onClick={() => moveGalleryItem(i, 1)}
+                        title="Move later"
+                        disabled={i === galleryDraft.items.length - 1}
+                      >
+                        <ArrowRight className="h-4 w-4" />
+                      </ToolBtn>
+                      <ToolBtn
+                        onClick={() =>
+                          setGalleryDraft((g) => ({ ...g, items: g.items.filter((_, j) => j !== i) }))
+                        }
+                        title="Remove photo"
+                      >
+                        <X className="h-4 w-4" />
+                      </ToolBtn>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs uppercase tracking-wider text-ink-muted">Layout</span>
+              {(["wall", "slideshow"] as const).map((l) => (
+                <button
+                  key={l}
+                  type="button"
+                  onClick={() => setGalleryDraft((g) => ({ ...g, layout: l }))}
+                  className={cn(
+                    "rounded-full border px-3 py-1 text-xs capitalize transition",
+                    galleryDraft.layout === l
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-ink-soft hover:bg-muted",
+                  )}
+                >
+                  {l === "wall" ? "Photo wall" : "Slideshow"}
+                </button>
+              ))}
+            </div>
+
+            <div>
+              <Label htmlFor="blog-gallery-caption">Caption</Label>
+              <Input
+                id="blog-gallery-caption"
+                value={galleryDraft.caption ?? ""}
+                onChange={(e) => setGalleryDraft((g) => ({ ...g, caption: e.target.value }))}
+                placeholder="Shown under the gallery"
+              />
+            </div>
+
+            {galleryDraft.items.length >= 2 && (
+              <div className="rounded-xl border border-border bg-background p-2">
+                <BlogGallery gallery={galleryDraft} inert className="my-0" />
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => setGalleryOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={submitGallery} disabled={galleryUploading}>
+              {galleryEditIndex != null ? "Save gallery" : "Insert gallery"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
