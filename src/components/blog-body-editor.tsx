@@ -884,32 +884,60 @@ function AutoTextarea({
   registerRef: (el: HTMLTextAreaElement | null) => void;
 }) {
   const ref = useRef<HTMLTextAreaElement | null>(null);
+  const mirrorRef = useRef<HTMLDivElement | null>(null);
 
+  // Measuring against a hidden mirror (instead of collapsing the field to
+  // `auto`) keeps document height stable, so the page never jumps while typing
+  // or backspacing. The scroll guard covers genuine one-line shrinks.
   useLayoutEffect(() => {
     const el = ref.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${Math.max(minHeight, el.scrollHeight)}px`;
+    const mirror = mirrorRef.current;
+    if (!el || !mirror) return;
+    const next = `${Math.max(minHeight, Math.ceil(mirror.getBoundingClientRect().height))}px`;
+    if (el.style.height === next) return;
+    const scroller = document.scrollingElement ?? document.documentElement;
+    const prev = scroller.scrollTop;
+    el.style.height = next;
+    if (scroller.scrollTop !== prev) scroller.scrollTop = prev;
   }, [value, minHeight]);
 
+  const typography = "w-full border-0 bg-transparent p-0 py-1 text-[16px] leading-[1.7]";
+
   return (
-    <textarea
-      ref={(el) => {
-        ref.current = el;
-        registerRef(el);
-      }}
-      value={value}
-      readOnly={readOnly}
-      placeholder={placeholder}
-      onChange={(e) => onChange(e.target.value)}
-      onKeyDown={onKeyDown}
-      onFocus={onFocus}
-      onBlur={onBlur}
-      rows={1}
-      className="block w-full resize-none border-0 bg-transparent p-0 py-1 text-[16px] leading-[1.7] text-ink outline-none focus:outline-none focus:ring-0"
-      style={{ minHeight }}
-    />
+    <div className="relative">
+      <div
+        ref={mirrorRef}
+        aria-hidden
+        className={cn(
+          typography,
+          "pointer-events-none invisible absolute inset-x-0 top-0 whitespace-pre-wrap break-words",
+        )}
+        style={{ minHeight }}
+      >
+        {value ? `${value}\u200b` : "\u200b"}
+      </div>
+      <textarea
+        ref={(el) => {
+          ref.current = el;
+          registerRef(el);
+        }}
+        value={value}
+        readOnly={readOnly}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={onKeyDown}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        rows={1}
+        className={cn(
+          typography,
+          "block resize-none overflow-hidden text-ink outline-none focus:outline-none focus:ring-0",
+        )}
+        style={{ minHeight }}
+      />
+    </div>
   );
+
 }
 
 function ToolBtn({
