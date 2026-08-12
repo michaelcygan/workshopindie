@@ -61,8 +61,8 @@ export function BlogAboutEditor({
   fields,
   subcategory,
   onChangeSubcategory,
-  storyType,
-  onChangeStoryType,
+  storyTypes,
+  onChangeStoryTypes,
   tags,
   readOnly,
   onChangeFields,
@@ -75,9 +75,12 @@ export function BlogAboutEditor({
   /** Optional specialization beneath the primary Field. */
   subcategory?: string | null;
   onChangeSubcategory?: (next: string | null) => void;
-  /** Editorial kind of piece. Optional and independent of Fields. */
-  storyType: BlogStoryType | null;
-  onChangeStoryType: (next: BlogStoryType | null) => void;
+  /**
+   * Editorial kinds of piece. Optional, independent of Fields, up to
+   * `BLOG_STORY_TYPE_MAX`. The first entry is the post's primary type.
+   */
+  storyTypes: BlogStoryType[];
+  onChangeStoryTypes: (next: BlogStoryType[]) => void;
   tags: BlogEntityTag[];
   readOnly?: boolean;
   onChangeFields: (next: FieldId[]) => void;
