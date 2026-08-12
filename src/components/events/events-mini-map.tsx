@@ -1,13 +1,11 @@
 import { useEffect, useMemo, useRef } from "react";
 
-export type MapEventPoint = {
+export type MapCityPoint = {
   id: string;
-  title: string;
-  starts_at: string;
+  name: string;
   lat: number;
   lng: number;
-  going_count?: number | null;
-  href: string;
+  count: number;
 };
 
 function cssVar(name: string, fallback: string) {
@@ -17,28 +15,28 @@ function cssVar(name: string, fallback: string) {
 }
 
 /**
- * Lite, brand-styled Leaflet map of the events currently in view.
+ * Lite, brand-styled Leaflet map of where events are happening.
  * Leaflet is dynamically imported inside useEffect so SSR never touches it.
  */
 export function EventsMiniMap({
   points,
   className,
   height = 280,
+  onSelectCity,
 }: {
-  points: MapEventPoint[];
+  points: MapCityPoint[];
   className?: string;
   height?: number;
+  onSelectCity?: (city: MapCityPoint) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<{ remove: () => void } | null>(null);
 
-  // Stable key so we only rebuild markers when the set actually changes.
-  const sig = useMemo(
-    () => points.map((p) => `${p.id}:${p.lat.toFixed(4)},${p.lng.toFixed(4)}`).join("|"),
-    [points],
-  );
+  const sig = useMemo(() => points.map((p) => `${p.id}:${p.count}`).join("|"), [points]);
   const pointsRef = useRef(points);
   pointsRef.current = points;
+  const selectRef = useRef(onSelectCity);
+  selectRef.current = onSelectCity;
 
   useEffect(() => {
     let cancelled = false;
@@ -76,37 +74,31 @@ export function EventsMiniMap({
       }).addTo(map);
 
       const signal = cssVar("--signal", "#3157E0");
-      const maxGoing = Math.max(1, ...pts.map((p) => p.going_count ?? 0));
+      const maxCount = Math.max(1, ...pts.map((p) => p.count));
 
       for (const p of pts) {
-        const weight = (p.going_count ?? 0) / maxGoing;
-        const r = 5 + weight * 6;
+        const weight = p.count / maxCount;
         const marker = L.circleMarker([p.lat, p.lng], {
-          radius: r,
+          radius: 5 + weight * 9,
           color: signal,
           weight: 1.5,
           fillColor: signal,
-          fillOpacity: 0.35 + weight * 0.35,
+          fillOpacity: 0.3 + weight * 0.35,
         }).addTo(map);
-        const when = new Date(p.starts_at).toLocaleDateString(undefined, {
-          month: "short",
-          day: "numeric",
+        marker.bindTooltip(`${p.name} · ${p.count} event${p.count === 1 ? "" : "s"}`, {
+          direction: "top",
+          opacity: 0.95,
         });
-        const esc = (s: string) =>
-          s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
-        marker.bindTooltip(`${esc(p.title)} · ${when}`, { direction: "top", opacity: 0.95 });
-        marker.bindPopup(
-          `<a href="${esc(p.href)}" style="font-weight:600;text-decoration:none">${esc(p.title)}</a><br/><span style="opacity:.7">${when}</span>`,
-        );
+        marker.on("click", () => selectRef.current?.(p));
       }
 
       if (pts.length === 1) {
-        map.setView([pts[0]!.lat, pts[0]!.lng], 12);
+        map.setView([pts[0]!.lat, pts[0]!.lng], 9);
       } else if (pts.length > 1) {
-        map.fitBounds(
-          L.latLngBounds(pts.map((p) => [p.lat, p.lng] as [number, number])),
-          { padding: [28, 28], maxZoom: 12 },
-        );
+        map.fitBounds(L.latLngBounds(pts.map((p) => [p.lat, p.lng] as [number, number])), {
+          padding: [30, 30],
+          maxZoom: 9,
+        });
       } else {
         map.setView([39.5, -98.35], 3);
       }
@@ -126,8 +118,8 @@ export function EventsMiniMap({
       <div
         ref={ref}
         style={{ height }}
-        className="w-full overflow-hidden rounded-2xl border border-border bg-muted [&_.leaflet-container]:bg-muted"
-        aria-label="Map of events"
+        className="w-full overflow-hidden rounded-2xl border border-border bg-muted [&_.leaflet-container]:bg-muted [&_.leaflet-container]:font-sans"
+        aria-label="Map of cities with events"
       />
     </div>
   );
