@@ -41,6 +41,8 @@ import { EditorialCard, EditorialChip } from "@/components/editorial-card";
 import { InfluencesGrid } from "@/components/influences/influence-card";
 import { useInfluences } from "@/hooks/use-influences";
 import { validateUsername } from "@/lib/usernames";
+import { canonicalLanguageLabels } from "@/lib/languages";
+
 
 
 const TAB_VALUES = ["works", "blog", "collabs", "influences", "activity", "about"] as const;
@@ -1661,13 +1663,13 @@ function AboutTab({ profile }: { profile: Profile }) {
           )}
         </section>
       )}
-      {((profile.languages ?? []).filter((l) => l && l.trim().length > 0).length > 0) && (
+      {canonicalLanguageLabels(profile.languages).length > 0 && (
         <section>
           <h2 className="text-xs uppercase tracking-wider text-ink-muted">Languages</h2>
           <div className="mt-2 flex flex-wrap gap-1.5">
-            {(profile.languages ?? []).filter((l) => l && l.trim().length > 0).map((language, index) => (
+            {canonicalLanguageLabels(profile.languages).map((language) => (
               <span
-                key={`${language}-${index}`}
+                key={language}
                 className="inline-flex items-center rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs text-ink"
               >
                 {language}
@@ -1676,6 +1678,7 @@ function AboutTab({ profile }: { profile: Profile }) {
           </div>
         </section>
       )}
+
       {(profileFields(profile).length > 0 || (profile.mediums?.length ?? 0) > 0) && (
         <section>
           <h2 className="text-xs uppercase tracking-wider text-ink-muted">Fields</h2>

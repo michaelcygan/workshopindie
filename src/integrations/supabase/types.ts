@@ -9552,6 +9552,8 @@ export type Database = {
             }
             Returns: string
           }
+      language_group_id: { Args: { _key: string }; Returns: string }
+      language_key: { Args: { _raw: string }; Returns: string }
       leave_lounge_audio_queue: {
         Args: { _room_id: string }
         Returns: undefined
@@ -9796,6 +9798,10 @@ export type Database = {
       }
       sync_event_medium_groups: {
         Args: { _event_id: string }
+        Returns: undefined
+      }
+      sync_profile_language_groups: {
+        Args: { _user_id: string }
         Returns: undefined
       }
       sync_profile_medium_groups: {
