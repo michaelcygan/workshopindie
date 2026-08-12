@@ -152,22 +152,16 @@ function EventsIndexPage() {
     }).length;
   }, [list]);
 
-  const mapPoints = useMemo<MapEventPoint[]>(
-    () =>
-      list
-        .filter((e) => typeof e.venue_lat === "number" && typeof e.venue_lng === "number")
-        .slice(0, 120)
-        .map((e) => ({
-          id: e.id,
-          title: e.title,
-          starts_at: e.starts_at,
-          lat: e.venue_lat as number,
-          lng: e.venue_lng as number,
-          going_count: e.going_count,
-          href: workshopEntityUrl({ kind: "event", groupSlug: e.group.slug, slug: e.slug }),
-        })),
-    [list],
-  );
+  const mapCitiesFn = useServerFn(listEventMapCities);
+  const { data: mapCities } = useQuery({
+    queryKey: ["events", "map-cities", when],
+    queryFn: () => mapCitiesFn({ data: { when } }),
+    staleTime: 5 * 60_000,
+    enabled: !mineActive && format !== "online",
+  });
+  const mapPoints = (mapCities ?? []) as unknown as MapCityPoint[];
+
+
 
 
   const buckets = useMemo(() => {
