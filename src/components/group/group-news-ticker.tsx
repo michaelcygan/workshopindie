@@ -32,7 +32,22 @@ type Props =
 export function GroupNewsTicker({ slug, slugs, label = "In the news" }: Props) {
   const multi = !slug;
   const keySlugs = multi ? [...(slugs ?? [])].sort() : [slug];
+  const cacheKey = `gnt:${multi ? "multi" : "single"}:${keySlugs.join(",")}`;
+  // Instant paint from the last payload this browser saw, so the rail doesn't
+  // pop in after a network round trip on repeat visits.
+  const seeded = (() => {
+    if (typeof window === "undefined") return undefined;
+    try {
+      const raw = window.sessionStorage.getItem(cacheKey);
+      if (!raw) return undefined;
+      const parsed = JSON.parse(raw) as { items: NewsItem[] };
+      return Array.isArray(parsed?.items) && parsed.items.length > 0 ? parsed : undefined;
+    } catch {
+      return undefined;
+    }
+  })();
   const { data } = useQuery({
+    placeholderData: seeded,
     queryKey: ["group-news", multi ? "multi" : "single", keySlugs.join(",")],
     enabled: keySlugs.length > 0,
     queryFn: async (): Promise<{ items: NewsItem[] }> => {
@@ -45,7 +60,15 @@ export function GroupNewsTicker({ slug, slugs, label = "In the news" }: Props) {
         // silently rendering as "this group has no news".
         throw new Error(`Group news request failed: ${res.status}`);
       }
-      return (await res.json()) as { items: NewsItem[] };
+      const payload = (await res.json()) as { items: NewsItem[] };
+      try {
+        if (payload.items?.length) {
+          window.sessionStorage.setItem(cacheKey, JSON.stringify({ items: payload.items }));
+        }
+      } catch {
+        /* storage unavailable */
+      }
+      return payload;
     },
     retry: 1,
     staleTime: 30 * 60 * 1000,
