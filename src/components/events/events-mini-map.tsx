@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useRef } from "react";
 
+export type MapVenuePoint = {
+  id: string;
+  label: string;
+  lat: number;
+  lng: number;
+  count: number;
+  going: number;
+  events: { id: string; title: string; starts_at: string; href: string }[];
+};
+
 export type MapCityPoint = {
   id: string;
   name: string;
@@ -14,17 +24,35 @@ function cssVar(name: string, fallback: string) {
   return v || fallback;
 }
 
+const esc = (s: string) =>
+  s.replace(
+    /[&<>"]/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] ?? c,
+  );
+
+function shortDate(iso: string) {
+  return new Date(iso).toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 /**
- * Lite, brand-styled Leaflet map of where events are happening.
- * Leaflet is dynamically imported inside useEffect so SSR never touches it.
+ * Lite, brand-styled Leaflet map of where events actually happen.
+ * Venue pins come from geocoded addresses; cities are a fallback for events
+ * that don't have coordinates yet. Leaflet is dynamically imported inside
+ * useEffect so SSR never touches it.
  */
 export function EventsMiniMap({
-  points,
+  venues,
+  cities,
   className,
   height = 280,
   onSelectCity,
 }: {
-  points: MapCityPoint[];
+  venues: MapVenuePoint[];
+  cities: MapCityPoint[];
   className?: string;
   height?: number;
   onSelectCity?: (city: MapCityPoint) => void;
@@ -32,9 +60,16 @@ export function EventsMiniMap({
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<{ remove: () => void } | null>(null);
 
-  const sig = useMemo(() => points.map((p) => `${p.id}:${p.count}`).join("|"), [points]);
-  const pointsRef = useRef(points);
-  pointsRef.current = points;
+  const sig = useMemo(
+    () =>
+      [
+        venues.map((v) => `${v.id}:${v.count}`).join("|"),
+        cities.map((c) => `${c.id}:${c.count}`).join("|"),
+      ].join("#"),
+    [venues, cities],
+  );
+  const dataRef = useRef({ venues, cities });
+  dataRef.current = { venues, cities };
   const selectRef = useRef(onSelectCity);
   selectRef.current = onSelectCity;
 
@@ -60,7 +95,7 @@ export function EventsMiniMap({
         mapRef.current = null;
       }
 
-      const pts = pointsRef.current;
+      const { venues: vs, cities: cs } = dataRef.current;
       const map = L.map(ref.current, {
         zoomControl: true,
         scrollWheelZoom: false,
@@ -74,31 +109,66 @@ export function EventsMiniMap({
       }).addTo(map);
 
       const signal = cssVar("--signal", "#3157E0");
-      const maxCount = Math.max(1, ...pts.map((p) => p.count));
+      const maxCount = Math.max(1, ...vs.map((v) => v.count));
 
-      for (const p of pts) {
-        const weight = p.count / maxCount;
-        const marker = L.circleMarker([p.lat, p.lng], {
-          radius: 5 + weight * 9,
+      // Venue pins — where the events actually are.
+      for (const v of vs) {
+        const weight = v.count / maxCount;
+        const marker = L.circleMarker([v.lat, v.lng], {
+          radius: 5 + weight * 7,
           color: signal,
           weight: 1.5,
           fillColor: signal,
-          fillOpacity: 0.3 + weight * 0.35,
+          fillOpacity: 0.35 + weight * 0.35,
         }).addTo(map);
-        marker.bindTooltip(`${p.name} · ${p.count} event${p.count === 1 ? "" : "s"}`, {
+
+        const first = v.events[0];
+        marker.bindTooltip(
+          v.count === 1 && first
+            ? `${esc(first.title)} · ${shortDate(first.starts_at)}`
+            : `${esc(v.label)} · ${v.count} events`,
+          { direction: "top", opacity: 0.95 },
+        );
+        const list = v.events
+          .map(
+            (e) =>
+              `<div style="margin-top:4px"><a href="${esc(e.href)}" style="font-weight:600;text-decoration:none">${esc(e.title)}</a><br/><span style="opacity:.65">${shortDate(e.starts_at)}</span></div>`,
+          )
+          .join("");
+        marker.bindPopup(
+          `<div style="min-width:170px"><div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.6">${esc(v.label)}</div>${list}${
+            v.count > v.events.length
+              ? `<div style="margin-top:6px;opacity:.6">+${v.count - v.events.length} more</div>`
+              : ""
+          }</div>`,
+        );
+      }
+
+      // City bubbles — only for events without a geocoded venue.
+      for (const c of cs) {
+        const marker = L.circleMarker([c.lat, c.lng], {
+          radius: 6,
+          color: signal,
+          weight: 1,
+          dashArray: "2 3",
+          fillColor: signal,
+          fillOpacity: 0.12,
+        }).addTo(map);
+        marker.bindTooltip(`${esc(c.name)} · ${c.count} without a venue pin`, {
           direction: "top",
           opacity: 0.95,
         });
-        marker.on("click", () => selectRef.current?.(p));
+        marker.on("click", () => selectRef.current?.(c));
       }
 
-      if (pts.length === 1) {
-        map.setView([pts[0]!.lat, pts[0]!.lng], 9);
-      } else if (pts.length > 1) {
-        map.fitBounds(L.latLngBounds(pts.map((p) => [p.lat, p.lng] as [number, number])), {
-          padding: [30, 30],
-          maxZoom: 9,
-        });
+      const all: [number, number][] = [
+        ...vs.map((v) => [v.lat, v.lng] as [number, number]),
+        ...cs.map((c) => [c.lat, c.lng] as [number, number]),
+      ];
+      if (all.length === 1) {
+        map.setView(all[0]!, 13);
+      } else if (all.length > 1) {
+        map.fitBounds(L.latLngBounds(all), { padding: [28, 28], maxZoom: 13 });
       } else {
         map.setView([39.5, -98.35], 3);
       }
@@ -119,7 +189,7 @@ export function EventsMiniMap({
         ref={ref}
         style={{ height }}
         className="w-full overflow-hidden rounded-2xl border border-border bg-muted [&_.leaflet-container]:bg-muted [&_.leaflet-container]:font-sans"
-        aria-label="Map of cities with events"
+        aria-label="Map of where events are happening"
       />
     </div>
   );
