@@ -26,7 +26,7 @@ import {
 } from "@/lib/blog-entity-tags";
 import { blogCategorySlugForField, blogPostFields, type BlogCategorySlug } from "@/lib/blog-categories";
 import { fieldLabel, isSubcategoryOf, type FieldId } from "@/lib/taxonomy";
-import { toBlogStoryType, type BlogStoryType } from "@/lib/blog-story-types";
+import { toBlogStoryTypes, type BlogStoryType } from "@/lib/blog-story-types";
 import { CategoryPlaceholder } from "@/components/home/category-placeholder";
 
 import { BlogPostContext } from "@/components/blog-post-context";
@@ -50,6 +50,7 @@ export type BlogEditorInitial = {
   fields?: string[] | null;
   subcategories?: string[] | null;
   story_type?: string | null;
+  story_types?: string[] | null;
   author_profile?: { username: string | null } | null;
   status?: "draft" | "published";
   published_at?: string | null;
@@ -82,7 +83,9 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
   const [subcategory, setSubcategory] = useState<string | null>(
     (initial?.subcategories ?? [])[0] ?? null,
   );
-  const [storyType, setStoryType] = useState<BlogStoryType | null>(toBlogStoryType(initial?.story_type));
+  const [storyTypes, setStoryTypes] = useState<BlogStoryType[]>(
+    toBlogStoryTypes(initial?.story_types ?? initial?.story_type),
+  );
   const categorySlug: BlogCategorySlug = blogCategorySlugForField(fields[0]);
   const [authorProfileUsername, setAuthorProfileUsername] = useState(initial?.author_profile?.username ?? "");
   const [saving, setSaving] = useState(false);
@@ -228,7 +231,8 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
       category_slug: categorySlug,
       fields,
       subcategories: subcategory ? [subcategory] : [],
-      story_type: storyType,
+      story_type: storyTypes[0] ?? null,
+      story_types: storyTypes,
     };
   }
 
@@ -510,8 +514,8 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
             fields={fields}
             subcategory={subcategory}
             onChangeSubcategory={(next) => { setSubcategory(next); setDirty(true); }}
-            storyType={storyType}
-            onChangeStoryType={(next) => { setStoryType(next); setDirty(true); }}
+            storyTypes={storyTypes}
+            onChangeStoryTypes={(next: BlogStoryType[]) => { setStoryTypes(next); setDirty(true); }}
             tags={entityTags}
             onChangeFields={(next) => {
               const nextFields = next.length ? next : (["other"] as FieldId[]);

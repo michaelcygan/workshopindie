@@ -15,7 +15,7 @@ import {
 } from "@/lib/blog-categories";
 import { normalizeField, normalizeSpecialties, type FieldId } from "@/lib/taxonomy";
 import { rowFields } from "@/lib/work-fields";
-import { toBlogStoryType } from "@/lib/blog-story-types";
+import { toBlogStoryType, toBlogStoryTypes } from "@/lib/blog-story-types";
 
 type AuthContext = {
   supabase: SupabaseClient<Database>;
@@ -301,6 +301,7 @@ type MemberUpdateInput = {
   /** Optional specialization beneath the primary Field. At most one. */
   subcategories?: string[];
   story_type?: string | null;
+  story_types?: string[];
   expected_updated_at?: string;
   tags?: Array<{ kind: "work" | "collab" | "group" | "event" | "profile" | "post"; id: string }>;
 };
@@ -368,7 +369,14 @@ export async function updateMyBlogPostServer(
   }
   // Canonical Fields are the source of truth; `category_slug` above is the
   // derived legacy value that keeps /blog/c/<slug> URLs and RSS working.
-  if (input.story_type !== undefined) patch.story_type = toBlogStoryType(input.story_type);
+  if (input.story_types !== undefined) {
+    const types = toBlogStoryTypes(input.story_types);
+    patch.story_types = types;
+    // `story_type` stays the primary (first) type so existing reads keep working.
+    patch.story_type = types[0] ?? null;
+  } else if (input.story_type !== undefined) {
+    patch.story_type = toBlogStoryType(input.story_type);
+  }
   if (input.fields !== undefined) {
     const normalized: FieldId[] = [];
     for (const f of input.fields.slice(0, 3)) {

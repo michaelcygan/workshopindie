@@ -12,7 +12,7 @@ export const BLOG_STORY_TYPES = [
   { id: "tutorial", label: "Tutorial" },
   { id: "interview", label: "Interview" },
   { id: "news", label: "News" },
-  { id: "research_note", label: "Research note" },
+  { id: "research_note", label: "Process note" },
   { id: "review", label: "Review" },
   { id: "journal", label: "Journal" },
 
@@ -36,4 +36,22 @@ export function toBlogStoryType(value: unknown): BlogStoryType | null {
 
 export function blogStoryTypeLabel(value: unknown): string | null {
   return BLOG_STORY_TYPES.find((t) => t.id === value)?.label ?? null;
+}
+
+/** A post may carry up to this many story types; the first is the primary. */
+export const BLOG_STORY_TYPE_MAX = 3;
+
+/** Normalize an arbitrary value into a deduped, capped list of story types. */
+export function toBlogStoryTypes(value: unknown): BlogStoryType[] {
+  if (!Array.isArray(value)) {
+    const single = toBlogStoryType(value);
+    return single ? [single] : [];
+  }
+  const out: BlogStoryType[] = [];
+  for (const v of value) {
+    const t = toBlogStoryType(v);
+    if (t && !out.includes(t)) out.push(t);
+    if (out.length >= BLOG_STORY_TYPE_MAX) break;
+  }
+  return out;
 }

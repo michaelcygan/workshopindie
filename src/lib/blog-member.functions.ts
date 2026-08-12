@@ -78,6 +78,7 @@ export const updateMyBlogPost = createServerFn({ method: "POST" })
         fields: z.array(z.enum(FIELD_IDS)).max(3).optional(),
         subcategories: z.array(z.string().max(80)).max(1).optional(),
         story_type: z.enum(BLOG_STORY_TYPE_IDS).nullable().optional(),
+        story_types: z.array(z.enum(BLOG_STORY_TYPE_IDS)).max(3).optional(),
         tags: z
           .array(
             z.object({

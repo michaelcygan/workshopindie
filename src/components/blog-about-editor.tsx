@@ -23,7 +23,7 @@ import { blogCategorySlugForField } from "@/lib/blog-categories";
 import { SubcategoryPicker } from "@/components/subcategory-picker";
 import { FieldPicker } from "@/components/field-picker";
 import { fieldClass, fieldLabel, subcategoryLabel, type FieldId } from "@/lib/taxonomy";
-import { BLOG_STORY_TYPES, type BlogStoryType } from "@/lib/blog-story-types";
+import { BLOG_STORY_TYPES, BLOG_STORY_TYPE_MAX, type BlogStoryType } from "@/lib/blog-story-types";
 
 const KIND_ICONS: Record<BlogEntityKind, typeof Briefcase> = {
   work: Briefcase,
@@ -61,8 +61,8 @@ export function BlogAboutEditor({
   fields,
   subcategory,
   onChangeSubcategory,
-  storyType,
-  onChangeStoryType,
+  storyTypes,
+  onChangeStoryTypes,
   tags,
   readOnly,
   onChangeFields,
@@ -75,9 +75,12 @@ export function BlogAboutEditor({
   /** Optional specialization beneath the primary Field. */
   subcategory?: string | null;
   onChangeSubcategory?: (next: string | null) => void;
-  /** Editorial kind of piece. Optional and independent of Fields. */
-  storyType: BlogStoryType | null;
-  onChangeStoryType: (next: BlogStoryType | null) => void;
+  /**
+   * Editorial kinds of piece. Optional, independent of Fields, up to
+   * `BLOG_STORY_TYPE_MAX`. The first entry is the post's primary type.
+   */
+  storyTypes: BlogStoryType[];
+  onChangeStoryTypes: (next: BlogStoryType[]) => void;
   tags: BlogEntityTag[];
   readOnly?: boolean;
   onChangeFields: (next: FieldId[]) => void;
@@ -239,17 +242,24 @@ export function BlogAboutEditor({
 
       <div className="mt-2 divide-y divide-border border-t border-border">
         <Row label="Type">
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {BLOG_STORY_TYPES.map((t) => {
-              const active = t.id === storyType;
+              const active = storyTypes.includes(t.id);
+              const atTypeCap = storyTypes.length >= BLOG_STORY_TYPE_MAX;
               return (
                 <button
                   key={t.id}
                   type="button"
-                  disabled={readOnly}
+                  disabled={readOnly || (!active && atTypeCap)}
                   aria-pressed={active}
-                  onClick={() => onChangeStoryType(active ? null : t.id)}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
+                  onClick={() =>
+                    onChangeStoryTypes(
+                      active
+                        ? storyTypes.filter((s) => s !== t.id)
+                        : [...storyTypes, t.id].slice(0, BLOG_STORY_TYPE_MAX),
+                    )
+                  }
+                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-40 ${
                     active
                       ? "border-ink bg-ink text-surface"
                       : "border-border bg-background text-ink-soft hover:border-ink/40"
@@ -259,9 +269,13 @@ export function BlogAboutEditor({
                 </button>
               );
             })}
+            <span className="text-[11px] text-ink-muted">
+              {storyTypes.length}/{BLOG_STORY_TYPE_MAX}
+            </span>
           </div>
           <p className="mt-1.5 text-[11px] text-ink-muted">
-            What kind of piece this is. Optional — separate from the field it is about.
+            What kind of piece this is — pick up to {BLOG_STORY_TYPE_MAX}. Optional, and separate
+            from the field it is about.
           </p>
         </Row>
 
