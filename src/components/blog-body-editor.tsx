@@ -408,6 +408,142 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
     pendingFocus.current = { idx: sel.idx + 2, start: 0, end: 0 };
   }
 
+  /** Shared upload pipeline: validate, downscale (except GIFs), store. */
+  async function uploadImageFile(file: File): Promise<string | null> {
+    if (!user) {
+      toast.error("Sign in again to upload images.");
+      return null;
+    }
+    if (!file.type.startsWith("image/")) {
+      toast.error("Choose an image file (JPG, PNG, WebP, or GIF).");
+      return null;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error(`"${file.name}" is too large. Max 10MB.`);
+      return null;
+    }
+    let upload: File = file;
+    if (file.type !== "image/gif") {
+      const { blob } = await resizeImageToJpeg(file, 2048, 0.85);
+      upload = new File([blob], `${file.name.replace(/\.[^.]+$/, "")}.jpg`, { type: "image/jpeg" });
+    }
+    return uploadToBucket("covers", user.id, upload);
+  }
+
+  function openGallery() {
+    const { idx, start, end } = currentTarget();
+    savedSelection.current = { idx, start, end };
+    setGalleryEditIndex(null);
+    setGalleryDraft({ items: [], layout: "wall" });
+    setGalleryUrlInput("");
+    setGalleryOpen(true);
+  }
+
+  function openGalleryEdit(idx: number) {
+    const seg = segments[idx];
+    if (!seg || seg.type !== "gallery") return;
+    savedSelection.current = null;
+    setGalleryEditIndex(idx);
+    setGalleryDraft({ ...seg.gallery, items: seg.gallery.items.map((i) => ({ ...i })) });
+    setGalleryUrlInput("");
+    setGalleryOpen(true);
+  }
+
+  async function handleGalleryFiles(files: FileList | File[] | null | undefined) {
+    const list = Array.from(files ?? []);
+    if (list.length === 0) return;
+    const room = MAX_GALLERY_ITEMS - galleryDraft.items.length;
+    if (room <= 0) {
+      toast.error(`A gallery holds up to ${MAX_GALLERY_ITEMS} photos.`);
+      return;
+    }
+    if (list.length > room) toast.message(`Only the first ${room} photos were added.`);
+    setGalleryUploading(true);
+    try {
+      const added: BlogGalleryItem[] = [];
+      for (const file of list.slice(0, room)) {
+        try {
+          const url = await uploadImageFile(file);
+          if (url) added.push({ url });
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : `Couldn't upload "${file.name}".`);
+        }
+      }
+      if (added.length) setGalleryDraft((g) => ({ ...g, items: [...g.items, ...added] }));
+    } finally {
+      setGalleryUploading(false);
+      if (galleryFileRef.current) galleryFileRef.current.value = "";
+    }
+  }
+
+  function addGalleryUrl() {
+    const url = normalizeUrl(galleryUrlInput);
+    if (!url) {
+      toast.error("Enter a valid image URL (must start with https://).");
+      return;
+    }
+    if (galleryDraft.items.length >= MAX_GALLERY_ITEMS) {
+      toast.error(`A gallery holds up to ${MAX_GALLERY_ITEMS} photos.`);
+      return;
+    }
+    setGalleryDraft((g) => ({ ...g, items: [...g.items, { url }] }));
+    setGalleryUrlInput("");
+  }
+
+  function moveGalleryItem(i: number, dir: -1 | 1) {
+    setGalleryDraft((g) => {
+      const items = [...g.items];
+      const j = i + dir;
+      if (j < 0 || j >= items.length) return g;
+      [items[i], items[j]] = [items[j], items[i]];
+      return { ...g, items };
+    });
+  }
+
+  function submitGallery() {
+    const items = galleryDraft.items.filter((i) => i.url.trim().length > 0);
+    if (items.length < 2) {
+      toast.error("Add at least two photos to a gallery.");
+      return;
+    }
+    const caption = (galleryDraft.caption ?? "").trim();
+    const gallery: BlogGalleryData = {
+      items: items.slice(0, MAX_GALLERY_ITEMS),
+      layout: galleryDraft.layout,
+      ...(caption ? { caption } : {}),
+    };
+
+    if (galleryEditIndex != null) {
+      const next = segments.map((s, i) =>
+        i === galleryEditIndex && s.type === "gallery" ? { type: "gallery" as const, gallery } : s,
+      );
+      setGalleryOpen(false);
+      setGalleryEditIndex(null);
+      setLocal(null);
+      commitSegments(next);
+      return;
+    }
+
+    const sel = savedSelection.current ?? { idx: activeTextIndex(), start: 0, end: 0 };
+    const seg = segments[sel.idx];
+    const source = refs.current.get(sel.idx)?.value ?? (seg && seg.type === "text" ? trimBlankLines(seg.text) : "");
+    const before = source.slice(0, sel.start);
+    const after = source.slice(Math.max(sel.end, sel.start));
+    const next: BodySegment[] = [
+      ...segments.slice(0, sel.idx),
+      { type: "text", text: before },
+      { type: "gallery", gallery },
+      { type: "text", text: after },
+      ...segments.slice(sel.idx + 1),
+    ];
+    setGalleryOpen(false);
+    setLocal(null);
+    commitSegments(next);
+    pendingFocus.current = { idx: sel.idx + 2, start: 0, end: 0 };
+  }
+
+
+
   /**
    * Opens the consumer's entity picker with an insert callback pinned to the
    * caret in the active text segment.
