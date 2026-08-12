@@ -640,11 +640,20 @@ function MemberBlogEditorPage() {
             />
           </div>
 
-          <div className="flex items-center justify-end border-t border-border pt-4">
+          <div ref={detailsActionsRef} className="flex items-center justify-end border-t border-border pt-4">
             <PostActions post={post} />
           </div>
         </TabsContent>
       </Tabs>
+
+      <FloatingSaveDock
+        anchors={saveAnchors}
+        onSave={() => saveMut.mutate(undefined)}
+        disabled={!dirty || saveMut.isPending || readOnly}
+        saving={saveMut.isPending}
+        status={saveStatus}
+      />
+
 
       <BlogEntityTagPicker
         open={entityPickerOpen}
