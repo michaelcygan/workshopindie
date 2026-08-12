@@ -50,30 +50,26 @@ export function BlogPostBody({ markdown, className }: Props) {
 
   const segments = useMemo(() => splitEmbeds(markdown || ""), [markdown]);
 
-  // Figure images join the same lightbox set as inline Markdown images.
-  const figures = useMemo(() => {
+  // Figure + gallery photos join the same lightbox set as inline Markdown images.
+  const { allImages, blockIndex } = useMemo(() => {
+    const list: LightboxImage[] = [...images];
     const map = new Map<string, number>();
-    let next = images.length;
+    images.forEach((img, i) => map.set(img.src, i));
+    const add = (src: string, alt: string) => {
+      if (map.has(src)) return;
+      map.set(src, list.length);
+      list.push({ src, alt });
+    };
     for (const seg of segments) {
-      if (seg.type !== "image" || seg.image.link) continue;
-      if (indexBySrc.has(seg.image.url) || map.has(seg.image.url)) continue;
-      map.set(seg.image.url, next++);
+      if (seg.type === "image") {
+        if (!seg.image.link) add(seg.image.url, seg.image.alt ?? "");
+      } else if (seg.type === "gallery") {
+        for (const it of seg.gallery.items) add(it.url, it.alt ?? "");
+      }
     }
-    return map;
-  }, [segments, images, indexBySrc]);
+    return { allImages: list, blockIndex: map };
+  }, [segments, images]);
 
-  const allImages = useMemo<LightboxImage[]>(() => {
-    const extra: LightboxImage[] = [];
-    for (const seg of segments) {
-      if (seg.type !== "image") continue;
-      if (!figures.has(seg.image.url)) continue;
-      extra[figures.get(seg.image.url)! - images.length] = {
-        src: seg.image.url,
-        alt: seg.image.alt ?? "",
-      };
-    }
-    return [...images, ...extra.filter(Boolean)];
-  }, [segments, images, figures]);
 
   const [open, setOpen] = useState(false);
   const [index, setIndex] = useState(0);
