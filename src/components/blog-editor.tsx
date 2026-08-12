@@ -50,6 +50,7 @@ export type BlogEditorInitial = {
   fields?: string[] | null;
   subcategories?: string[] | null;
   story_type?: string | null;
+  story_types?: string[] | null;
   author_profile?: { username: string | null } | null;
   status?: "draft" | "published";
   published_at?: string | null;
@@ -82,7 +83,9 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
   const [subcategory, setSubcategory] = useState<string | null>(
     (initial?.subcategories ?? [])[0] ?? null,
   );
-  const [storyType, setStoryType] = useState<BlogStoryType | null>(toBlogStoryType(initial?.story_type));
+  const [storyTypes, setStoryTypes] = useState<BlogStoryType[]>(
+    toBlogStoryTypes(initial?.story_types ?? initial?.story_type),
+  );
   const categorySlug: BlogCategorySlug = blogCategorySlugForField(fields[0]);
   const [authorProfileUsername, setAuthorProfileUsername] = useState(initial?.author_profile?.username ?? "");
   const [saving, setSaving] = useState(false);
