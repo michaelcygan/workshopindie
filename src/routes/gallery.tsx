@@ -19,6 +19,7 @@ import { useBlockedIds } from "@/hooks/use-blocked-ids";
 import { GeoDefaultBanner } from "@/components/geo-default-banner";
 import { FreshWorksStrip } from "@/components/fresh-works-strip";
 // BoostedWorksStrip retired in v1 distillation pass.
+import { GallerySpotlight } from "@/components/gallery/gallery-spotlight";
 import { GalleryLoggedOutHero } from "@/components/gallery-logged-out-hero";
 import { YourGroupsStrip } from "@/components/your-groups-strip";
 import { useMyGroupIdSet } from "@/hooks/use-my-groups";
@@ -368,6 +369,8 @@ function GalleryPage() {
     ...FIELD_FILTER_OPTIONS.map((c) => ({ id: c.id as string, label: c.label })),
   ];
 
+  const showFeatured = tab === "for-you" && category === "all" && !q.trim();
+
   const filtersActive =
     category !== "all" || citySlug !== "all" || sort !== "recent" || q.trim().length > 0;
 
@@ -384,60 +387,37 @@ function GalleryPage() {
       {/* Logged-out hero with live counters */}
       {!user && <GalleryLoggedOutHero />}
 
-      {/* Slim editorial masthead */}
+      {/* Slim editorial masthead — title, CTA, and your groups in one band */}
       <section className="border-b border-border">
-        <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-4 md:px-6 md:py-5">
-          <div className="min-w-0">
-            <h1 className="font-display text-3xl leading-none tracking-tight text-ink md:text-4xl">
-              Gallery
-            </h1>
-            <p className="mt-1 truncate text-sm text-ink-muted">
-              Everything people made across Workshop — music, film & video, writing, visual art, games & tech.
-            </p>
+        <div className="mx-auto max-w-7xl px-4 py-4 md:px-6 md:py-5">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+            <div className="min-w-0">
+              <h1 className="font-display text-3xl leading-none tracking-tight text-ink md:text-4xl">
+                Gallery
+              </h1>
+              <p className="mt-1 truncate text-sm text-ink-muted">
+                Everything people made across Workshop — music, film & video, writing, visual art, games & tech.
+              </p>
+            </div>
+            <Link to="/works/new" className="shrink-0">
+              <Button size="sm" className="rounded-md">
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Post to Gallery</span>
+                <span className="sm:hidden">Post</span>
+              </Button>
+            </Link>
           </div>
-          <Link to="/works/new" className="shrink-0">
-            <Button size="sm" className="rounded-md">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Post to Gallery</span>
-              <span className="sm:hidden">Post</span>
-            </Button>
-          </Link>
+
+          {/* Personal groups rail (self-hides when empty) */}
+          <YourGroupsStrip variant="inline" className="mt-3" />
         </div>
       </section>
 
-      {/* Personal groups rail (self-hides when empty) */}
-      <YourGroupsStrip />
-
       {/* Sticky one-row toolbar */}
       <div className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur md:top-14">
-        <div className="mx-auto max-w-7xl px-4 py-2.5 md:px-6">
-          <div className="flex items-center gap-2">
-            {/* Category chips take the primary line */}
-            <div className="min-w-0 flex-1">
-              <CategoryScroller
-                tabs={categoryTabs}
-                value={category}
-                onChange={(v) => setSearch({ cat: v })}
-              />
-            </div>
-
-            {/* Sort */}
-            <div className="hidden shrink-0 gap-1 rounded-full border border-border bg-surface p-1 shadow-soft sm:flex">
-              {(["recent", "trending"] as const).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setSearch({ sort: s })}
-                  className={cn(
-                    "rounded-full px-3 py-1 text-xs capitalize transition",
-                    sort === s ? "bg-ink text-background" : "text-ink-soft hover:bg-muted",
-                  )}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-
-            {/* Tabs (desktop) */}
+        <div className="relative mx-auto max-w-7xl px-4 py-2.5 md:px-6">
+          <div className="relative flex items-center gap-2">
+            {/* Tabs (desktop) — the primary lens sits first */}
             <div className="hidden shrink-0 gap-1 rounded-full border border-border bg-surface p-1 shadow-soft lg:flex">
               {(["for-you", "following", "favorites"] as const).map((t) => (
                 <button
@@ -458,6 +438,33 @@ function GalleryPage() {
                 </button>
               ))}
             </div>
+
+            {/* Category chips — single scrolling line + overflow menu */}
+            <div className="min-w-0 flex-1">
+              <CategoryScroller
+                tabs={categoryTabs}
+                value={category}
+                onChange={(v) => setSearch({ cat: v })}
+              />
+            </div>
+
+
+            {/* Sort */}
+            <div className="hidden shrink-0 gap-1 rounded-full border border-border bg-surface p-1 shadow-soft sm:flex">
+              {(["recent", "trending"] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setSearch({ sort: s })}
+                  className={cn(
+                    "rounded-full px-3 py-1 text-xs capitalize transition",
+                    sort === s ? "bg-ink text-background" : "text-ink-soft hover:bg-muted",
+                  )}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+
 
             {/* City filter */}
             <div className="hidden shrink-0 md:block">
@@ -490,9 +497,9 @@ function GalleryPage() {
             )}
           </div>
 
-          {/* Expandable search */}
+          {/* Expandable search — overlays the row on desktop so it adds no height */}
           {searchOpen && (
-            <div className="relative mt-2">
+            <div className="relative mt-2 md:absolute md:inset-x-4 md:top-2.5 md:z-10 md:mt-0 md:px-0">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
               <input
                 value={qInput}
@@ -501,17 +508,19 @@ function GalleryPage() {
                 placeholder="Search works by title or description…"
                 className="w-full rounded-full border border-border bg-surface py-2 pl-9 pr-9 text-sm text-ink placeholder:text-ink-muted shadow-soft focus:outline-none focus:ring-2 focus:ring-ring"
               />
-              {qInput && (
-                <button
-                  onClick={() => setQInput("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink"
-                  aria-label="Clear search"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
+              <button
+                onClick={() => {
+                  setQInput("");
+                  setSearchOpen(false);
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink"
+                aria-label="Close search"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
           )}
+
 
           {/* Mobile-only quick controls: tabs + city */}
           <div className="mt-2 flex items-center gap-2 lg:hidden">
@@ -577,11 +586,17 @@ function GalleryPage() {
         </div>
       </div>
 
-
-
+      {/* Editorial lead-in — only on the default, unfiltered view */}
+      {showFeatured && (
+        <>
+          <GallerySpotlight />
+          <FreshWorksStrip className="mt-5 border-y" />
+        </>
+      )}
 
       {/* Grid */}
       <section className="mx-auto max-w-7xl px-4 py-5 md:px-6 md:py-6">
+
         {(tab === "following" || tab === "favorites") && !user ? (
           <EmptyState
             title={tab === "favorites" ? "Sign in to see your Favorites" : "Sign in to see your Following feed"}
@@ -656,9 +671,6 @@ function GalleryPage() {
           </>
         )}
       </section>
-
-      {/* Just posted rail — below the main grid */}
-      <FreshWorksStrip />
 
       {/* Sticky mobile CTA */}
       <Link
