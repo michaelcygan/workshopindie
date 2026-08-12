@@ -159,7 +159,16 @@ export function parseSegments(markdown: string): BodySegment[] {
       buf = [];
       continue;
     }
+    const gal = line.match(GALLERY_LINE);
+    const gallery = gal ? parseGalleryMarker(gal[1]) : null;
+    if (gallery) {
+      out.push({ type: "text", text: buf.join("\n") });
+      out.push({ type: "gallery", gallery });
+      buf = [];
+      continue;
+    }
     buf.push(line);
+
   }
   out.push({ type: "text", text: buf.join("\n") });
   return out;
