@@ -118,7 +118,7 @@ function MemberBlogEditorPage() {
   const [seoDesc, setSeoDesc] = useState("");
   const [listInBlog, setListInBlog] = useState(true);
   const [fields, setFields] = useState<FieldId[]>(["other"]);
-  const [storyType, setStoryType] = useState<BlogStoryType | null>(null);
+  const [storyTypes, setStoryTypes] = useState<BlogStoryType[]>([]);
   const [dirty, setDirty] = useState(false);
   const [loadedForId, setLoadedForId] = useState<string | null>(null);
   const [entityTags, setEntityTags] = useState<BlogEntityTag[]>([]);

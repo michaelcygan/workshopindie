@@ -231,7 +231,8 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
       category_slug: categorySlug,
       fields,
       subcategories: subcategory ? [subcategory] : [],
-      story_type: storyType,
+      story_type: storyTypes[0] ?? null,
+      story_types: storyTypes,
     };
   }
 
@@ -513,8 +514,8 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
             fields={fields}
             subcategory={subcategory}
             onChangeSubcategory={(next) => { setSubcategory(next); setDirty(true); }}
-            storyType={storyType}
-            onChangeStoryType={(next) => { setStoryType(next); setDirty(true); }}
+            storyTypes={storyTypes}
+            onChangeStoryTypes={(next: BlogStoryType[]) => { setStoryTypes(next); setDirty(true); }}
             tags={entityTags}
             onChangeFields={(next) => {
               const nextFields = next.length ? next : (["other"] as FieldId[]);
