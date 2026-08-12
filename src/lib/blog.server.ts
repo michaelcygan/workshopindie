@@ -27,6 +27,7 @@ type BlogWrite = {
   /** Optional specialization beneath the primary Field. At most one. */
   subcategories?: string[];
   story_type?: string | null;
+  story_types?: string[] | null;
 };
 
 function publicClient() {
@@ -453,6 +454,9 @@ export async function adminCreateDraftServer(context: AuthContext, data: BlogWri
         ? { subcategories: normalizeSpecialties(data.subcategories, data.fields ?? []).slice(0, 1) }
         : {}),
       ...(data.story_type !== undefined ? { story_type: data.story_type } : {}),
+      ...(data.story_types !== undefined
+        ? { story_types: toBlogStoryTypes(data.story_types) }
+        : {}),
       status: "draft",
       created_by: context.userId,
       updated_by: context.userId,
@@ -503,6 +507,9 @@ export async function adminUpdatePostServer(
         ? { subcategories: normalizeSpecialties(data.subcategories, data.fields ?? []).slice(0, 1) }
         : {}),
       ...(data.story_type !== undefined ? { story_type: data.story_type } : {}),
+      ...(data.story_types !== undefined
+        ? { story_types: toBlogStoryTypes(data.story_types) }
+        : {}),
       updated_by: context.userId,
     })
     .eq("id", data.id);
