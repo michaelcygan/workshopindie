@@ -12,6 +12,7 @@ import { KickerChip } from "@/components/kicker-chip";
 import { EmptySpark } from "@/components/empty-spark";
 import { YourGroupsStrip } from "@/components/your-groups-strip";
 import { FeaturedEventsCompact } from "@/components/featured-events-compact";
+import { EventsMiniMap, type MapCityPoint } from "@/components/events/events-mini-map";
 import { CityCombobox, type CityValue } from "@/components/city-combobox";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -20,6 +21,7 @@ import {
   listMyUpcomingRsvps,
   listMyPastRsvps,
   listPublicEvents,
+  listEventMapCities,
 } from "@/lib/group-events.functions";
 import { cn } from "@/lib/utils";
 import { workshopEntityUrl } from "@/lib/entities/kinds";
@@ -150,6 +152,18 @@ function EventsIndexPage() {
       return t <= now && t >= now - 1000 * 60 * 60 * 4;
     }).length;
   }, [list]);
+
+  const mapCitiesFn = useServerFn(listEventMapCities);
+  const { data: mapCities } = useQuery({
+    queryKey: ["events", "map-cities", when],
+    queryFn: () => mapCitiesFn({ data: { when } }),
+    staleTime: 5 * 60_000,
+    enabled: !mineActive && format !== "online",
+  });
+  const mapPoints = (mapCities ?? []) as unknown as MapCityPoint[];
+
+
+
 
   const buckets = useMemo(() => {
     const map = new Map<string, EventCardData[]>();
@@ -333,8 +347,25 @@ function EventsIndexPage() {
         </div>
 
         {when === "upcoming" && !mineActive && (
-          <section className="mt-6">
+          <section className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:items-start">
             <FeaturedEventsCompact />
+            {mapPoints.length > 0 && (
+              <div className="hidden lg:block">
+                <div className="mb-2 flex items-baseline justify-between px-1">
+                  <span className="text-[10.5px] font-semibold uppercase tracking-[0.18em] text-ink-soft">
+                    On the map
+                  </span>
+                  <span className="text-[11px] text-ink-muted">
+                    {mapPoints.length} {mapPoints.length === 1 ? "city" : "cities"}
+                  </span>
+                </div>
+                <EventsMiniMap
+                  points={mapPoints}
+                  height={252}
+                  onSelectCity={(c) => setCity({ id: c.id, name: c.name })}
+                />
+              </div>
+            )}
           </section>
         )}
 
