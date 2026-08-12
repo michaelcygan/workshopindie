@@ -530,11 +530,13 @@ function MemberBlogEditorPage() {
               value={body}
               readOnly={readOnly}
               onChange={(v) => { setBody(v); setDirty(true); }}
+              onBusyChange={setComposerBusy}
               onRequestEntityInsert={(insert) => {
                 setPendingInsertRef(() => insert);
                 setEntityPickerOpen(true);
               }}
             />
+
           </div>
 
           <div ref={bottomActionsRef} className="flex items-center justify-end border-t border-border pt-4">
