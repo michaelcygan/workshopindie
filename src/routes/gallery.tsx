@@ -19,6 +19,7 @@ import { useBlockedIds } from "@/hooks/use-blocked-ids";
 import { GeoDefaultBanner } from "@/components/geo-default-banner";
 import { FreshWorksStrip } from "@/components/fresh-works-strip";
 // BoostedWorksStrip retired in v1 distillation pass.
+import { GallerySpotlight } from "@/components/gallery/gallery-spotlight";
 import { GalleryLoggedOutHero } from "@/components/gallery-logged-out-hero";
 import { YourGroupsStrip } from "@/components/your-groups-strip";
 import { useMyGroupIdSet } from "@/hooks/use-my-groups";
@@ -368,6 +369,8 @@ function GalleryPage() {
     ...FIELD_FILTER_OPTIONS.map((c) => ({ id: c.id as string, label: c.label })),
   ];
 
+  const showFeatured = tab === "for-you" && category === "all" && !q.trim();
+
   const filtersActive =
     category !== "all" || citySlug !== "all" || sort !== "recent" || q.trim().length > 0;
 
@@ -668,9 +671,6 @@ function GalleryPage() {
           </>
         )}
       </section>
-
-      {/* Just posted rail — below the main grid */}
-      <FreshWorksStrip />
 
       {/* Sticky mobile CTA */}
       <Link

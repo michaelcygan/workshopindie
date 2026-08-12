@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 import { CategoryChip } from "./category-chip";
 import type { Category } from "@/lib/categories";
 
@@ -28,7 +29,7 @@ async function fetchFreshWorks(): Promise<FreshWork[]> {
   return (data ?? []) as FreshWork[];
 }
 
-export function FreshWorksStrip() {
+export function FreshWorksStrip({ className }: { className?: string } = {}) {
   const { data } = useQuery({
     queryKey: ["fresh-works"],
     queryFn: fetchFreshWorks,
@@ -38,7 +39,7 @@ export function FreshWorksStrip() {
   const works = data ?? [];
   if (works.length === 0) return null;
   return (
-    <section className="border-b border-border bg-surface/40">
+    <section className={cn("border-b border-border bg-surface/40", className)}>
       <div className="mx-auto max-w-7xl px-4 py-4 md:px-6">
         <div className="mb-2 flex items-center gap-2">
           <span className="relative flex h-2 w-2">
