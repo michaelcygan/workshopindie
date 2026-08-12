@@ -107,7 +107,7 @@ function normalizeUrl(input: string): string | null {
  * (one per text segment) separated by embed cards; every toolbar action
  * targets the segment that currently holds the caret.
  */
-export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEntityInsert }: BlogBodyEditorProps) {
+export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEntityInsert, onBusyChange }: BlogBodyEditorProps) {
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkText, setLinkText] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
