@@ -16,6 +16,8 @@ export type EventCardData = {
   starts_at: string;
   venue_name: string | null;
   venue_address: string | null;
+  venue_lat?: number | null;
+  venue_lng?: number | null;
   going_count: number;
   capacity: number | null;
   featured_at: string | null;
