@@ -172,10 +172,20 @@ export function BlogPostBody({ markdown, className }: Props) {
                 seg.image.link
                   ? undefined
                   : () => {
-                      setIndex(indexBySrc.get(seg.image.url) ?? figures.get(seg.image.url) ?? 0);
+                      setIndex(blockIndex.get(seg.image.url) ?? 0);
                       setOpen(true);
                     }
               }
+            />
+          ) : seg.type === "gallery" ? (
+            <BlogGallery
+              key={`g-${i}`}
+              gallery={seg.gallery}
+              onOpen={(n) => {
+                const src = seg.gallery.items[n]?.url;
+                setIndex((src ? blockIndex.get(src) : 0) ?? 0);
+                setOpen(true);
+              }}
             />
           ) : (
             <Fragment key={`m-${i}`}>
@@ -184,6 +194,7 @@ export function BlogPostBody({ markdown, className }: Props) {
               </ReactMarkdown>
             </Fragment>
           ),
+
         )}
       </div>
       <BlogLightbox
