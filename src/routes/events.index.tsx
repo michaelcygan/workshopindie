@@ -12,7 +12,7 @@ import { KickerChip } from "@/components/kicker-chip";
 import { EmptySpark } from "@/components/empty-spark";
 import { YourGroupsStrip } from "@/components/your-groups-strip";
 import { FeaturedEventsCompact } from "@/components/featured-events-compact";
-import { EventsMiniMap, type MapEventPoint } from "@/components/events/events-mini-map";
+import { EventsMiniMap, type MapCityPoint } from "@/components/events/events-mini-map";
 import { CityCombobox, type CityValue } from "@/components/city-combobox";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -21,6 +21,7 @@ import {
   listMyUpcomingRsvps,
   listMyPastRsvps,
   listPublicEvents,
+  listEventMapCities,
 } from "@/lib/group-events.functions";
 import { cn } from "@/lib/utils";
 import { workshopEntityUrl } from "@/lib/entities/kinds";
