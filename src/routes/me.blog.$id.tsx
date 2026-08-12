@@ -25,6 +25,8 @@ import {
 import { PlusGate } from "@/components/plus-gate";
 import { BlogPublishSuccessDialog, type PublishedPostSummary } from "@/components/blog-publish-success";
 import { BlogComposerWalkthrough } from "@/components/nudges/blog-composer-walkthrough";
+import { FloatingSaveDock } from "@/components/blog/floating-save-dock";
+
 
 import { Switch } from "@/components/ui/switch";
 import { generateExcerpt } from "@/lib/blog-excerpt";
