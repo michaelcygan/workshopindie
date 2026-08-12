@@ -191,10 +191,13 @@ export function serializeSegments(segments: BodySegment[]): string {
       parts.push(`[[embed:${seg.url}]]`);
     } else if (seg.type === "image") {
       parts.push(serializeImageMarker(seg.image));
+    } else if (seg.type === "gallery") {
+      parts.push(serializeGalleryMarker(seg.gallery));
     } else {
       const t = trimBlankLines(seg.text);
       if (t.length) parts.push(t);
     }
+
   }
   return parts.join("\n\n");
 }
