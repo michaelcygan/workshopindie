@@ -1,3 +1,4 @@
+import { toBlogStoryTypes } from "@/lib/blog-story-types";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Database } from "@/integrations/supabase/types";

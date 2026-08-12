@@ -15,7 +15,7 @@ import {
 } from "@/lib/blog-categories";
 import { normalizeField, normalizeSpecialties, type FieldId } from "@/lib/taxonomy";
 import { rowFields } from "@/lib/work-fields";
-import { toBlogStoryType } from "@/lib/blog-story-types";
+import { toBlogStoryType, toBlogStoryTypes } from "@/lib/blog-story-types";
 
 type AuthContext = {
   supabase: SupabaseClient<Database>;
