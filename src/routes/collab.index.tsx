@@ -228,11 +228,12 @@ function CollabPage() {
 
       {/* Unified filter cluster — medium + location on one line */}
       <div className="mx-auto mt-5 max-w-5xl space-y-2.5">
+        <div className="min-w-0">
+          <CategoryScroller tabs={tabs} value={filters.cat} onChange={setCat} className="w-full" />
+        </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="shrink-0">
-            <CategoryScroller tabs={tabs} value={filters.cat} onChange={setCat} />
-          </div>
           <div className="flex min-w-[16rem] flex-1 items-center gap-2">
+
             <CityCombobox
               value={
                 filters.city
