@@ -152,6 +152,24 @@ function EventsIndexPage() {
     }).length;
   }, [list]);
 
+  const mapPoints = useMemo<MapEventPoint[]>(
+    () =>
+      list
+        .filter((e) => typeof e.venue_lat === "number" && typeof e.venue_lng === "number")
+        .slice(0, 120)
+        .map((e) => ({
+          id: e.id,
+          title: e.title,
+          starts_at: e.starts_at,
+          lat: e.venue_lat as number,
+          lng: e.venue_lng as number,
+          going_count: e.going_count,
+          href: workshopEntityUrl({ kind: "event", groupSlug: e.group.slug, slug: e.slug }),
+        })),
+    [list],
+  );
+
+
   const buckets = useMemo(() => {
     const map = new Map<string, EventCardData[]>();
     for (const e of list) {
