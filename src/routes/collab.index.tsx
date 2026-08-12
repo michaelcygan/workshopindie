@@ -9,6 +9,8 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { CollabCard, type CollabCardData } from "@/components/collab-card";
+import { COLLAB_CARD_SELECT } from "@/lib/collab/card-select";
+
 import { CategoryScroller } from "@/components/category-scroller";
 import { CityCombobox } from "@/components/city-combobox";
 
