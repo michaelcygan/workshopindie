@@ -12,7 +12,11 @@ import { KickerChip } from "@/components/kicker-chip";
 import { EmptySpark } from "@/components/empty-spark";
 import { YourGroupsStrip } from "@/components/your-groups-strip";
 import { FeaturedEventsCompact } from "@/components/featured-events-compact";
-import { EventsMiniMap, type MapCityPoint } from "@/components/events/events-mini-map";
+import {
+  EventsMiniMap,
+  type MapCityPoint,
+  type MapVenuePoint,
+} from "@/components/events/events-mini-map";
 import { CityCombobox, type CityValue } from "@/components/city-combobox";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -21,7 +25,7 @@ import {
   listMyUpcomingRsvps,
   listMyPastRsvps,
   listPublicEvents,
-  listEventMapCities,
+  listEventMapPoints,
 } from "@/lib/group-events.functions";
 import { cn } from "@/lib/utils";
 import { workshopEntityUrl } from "@/lib/entities/kinds";
@@ -153,14 +157,16 @@ function EventsIndexPage() {
     }).length;
   }, [list]);
 
-  const mapCitiesFn = useServerFn(listEventMapCities);
-  const { data: mapCities } = useQuery({
-    queryKey: ["events", "map-cities", when],
-    queryFn: () => mapCitiesFn({ data: { when } }),
+  const mapPointsFn = useServerFn(listEventMapPoints);
+  const { data: mapData } = useQuery({
+    queryKey: ["events", "map-points", when, cityId ?? null],
+    queryFn: () => mapPointsFn({ data: { when, cityId: cityId ?? null } }),
     staleTime: 5 * 60_000,
     enabled: !mineActive && format !== "online",
   });
-  const mapPoints = (mapCities ?? []) as unknown as MapCityPoint[];
+  const mapVenues = (mapData?.venues ?? []) as unknown as MapVenuePoint[];
+  const mapCities = (mapData?.cities ?? []) as unknown as MapCityPoint[];
+  const mapCount = mapVenues.length + mapCities.length;
 
 
 
@@ -349,18 +355,21 @@ function EventsIndexPage() {
         {when === "upcoming" && !mineActive && (
           <section className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:items-start">
             <FeaturedEventsCompact />
-            {mapPoints.length > 0 && (
+            {mapCount > 0 && (
               <div className="hidden lg:block">
                 <div className="mb-2 flex items-baseline justify-between px-1">
                   <span className="text-[10.5px] font-semibold uppercase tracking-[0.18em] text-ink-soft">
                     On the map
                   </span>
                   <span className="text-[11px] text-ink-muted">
-                    {mapPoints.length} {mapPoints.length === 1 ? "city" : "cities"}
+                    {mapVenues.length > 0
+                      ? `${mapVenues.length} ${mapVenues.length === 1 ? "venue" : "venues"}`
+                      : `${mapCities.length} ${mapCities.length === 1 ? "city" : "cities"}`}
                   </span>
                 </div>
                 <EventsMiniMap
-                  points={mapPoints}
+                  venues={mapVenues}
+                  cities={mapCities}
                   height={252}
                   onSelectCity={(c) => setCity({ id: c.id, name: c.name })}
                 />

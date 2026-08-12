@@ -104,14 +104,17 @@ export const listCityEventCounts = createServerFn({ method: "GET" }).handler(asy
 });
 
 /**
- * Public: map bubbles for the /events feed — one point per city with upcoming
- * in-person public events. Events themselves rarely carry lat/lng, so the city
- * record supplies the coordinates.
+ * Public: map data for the /events feed. Events with geocoded venues become
+ * venue pins (grouped when several share an address); anything still missing
+ * coordinates falls back to a city bubble so no scene disappears.
  */
-export const listEventMapCities = createServerFn({ method: "GET" })
+export const listEventMapPoints = createServerFn({ method: "GET" })
   .inputValidator((i) =>
     z
-      .object({ when: z.enum(["upcoming", "past"]).default("upcoming") })
+      .object({
+        when: z.enum(["upcoming", "past"]).default("upcoming"),
+        cityId: z.string().uuid().nullish(),
+      })
       .parse(i ?? {}),
   )
   .handler(async ({ data }) => {
@@ -120,46 +123,97 @@ export const listEventMapCities = createServerFn({ method: "GET" })
     let q = supabase
       .from("group_events")
       .select(
-        "venue_city_id,city:cities!group_events_venue_city_id_fkey(id,name,slug,country_code,latitude,longitude)",
+        "id,slug,title,starts_at,venue_name,venue_lat,venue_lng,going_count,group:groups!group_events_group_id_fkey!inner(slug),city:cities!group_events_venue_city_id_fkey(id,name,latitude,longitude)",
       )
       .is("deleted_at", null)
       .eq("visibility", "public")
-      .not("venue_city_id", "is", null)
-      .limit(2000);
+      .neq("status", "canceled")
+      .limit(1000);
+    if (data.cityId) q = q.eq("venue_city_id", data.cityId);
     q = data.when === "past" ? q.lt("starts_at", nowIso) : q.gt("starts_at", nowIso);
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
+
     type Row = {
-      city: {
-        id: string;
-        name: string;
-        slug: string;
-        country_code: string | null;
-        latitude: number | null;
-        longitude: number | null;
-      } | null;
+      id: string;
+      slug: string;
+      title: string;
+      starts_at: string;
+      venue_name: string | null;
+      venue_lat: number | null;
+      venue_lng: number | null;
+      going_count: number | null;
+      group: { slug: string } | null;
+      city: { id: string; name: string; latitude: number | null; longitude: number | null } | null;
     };
-    const byCity = new Map<
+
+    const venues = new Map<
       string,
-      { id: string; name: string; slug: string; lat: number; lng: number; count: number }
+      {
+        id: string;
+        label: string;
+        lat: number;
+        lng: number;
+        going: number;
+        events: { id: string; title: string; starts_at: string; href: string }[];
+      }
     >();
+    const cities = new Map<
+      string,
+      { id: string; name: string; lat: number; lng: number; count: number }
+    >();
+
     for (const r of (rows ?? []) as unknown as Row[]) {
+      if (r.venue_lat != null && r.venue_lng != null && r.group) {
+        const lat = Number(r.venue_lat);
+        const lng = Number(r.venue_lng);
+        const key = `${lat.toFixed(4)},${lng.toFixed(4)}`;
+        const entry = venues.get(key) ?? {
+          id: key,
+          label: r.venue_name ?? r.city?.name ?? "Venue",
+          lat,
+          lng,
+          going: 0,
+          events: [],
+        };
+        entry.going += r.going_count ?? 0;
+        entry.events.push({
+          id: r.id,
+          title: r.title,
+          starts_at: r.starts_at,
+          href: `/g/${r.group.slug}/e/${r.slug}`,
+        });
+        venues.set(key, entry);
+        continue;
+      }
       const c = r.city;
       if (!c || c.latitude == null || c.longitude == null) continue;
-      const hit = byCity.get(c.id);
+      const hit = cities.get(c.id);
       if (hit) hit.count += 1;
       else
-        byCity.set(c.id, {
+        cities.set(c.id, {
           id: c.id,
           name: c.name,
-          slug: c.slug,
           lat: Number(c.latitude),
           lng: Number(c.longitude),
           count: 1,
         });
     }
-    return Array.from(byCity.values()).sort((a, b) => b.count - a.count);
+
+    return {
+      venues: Array.from(venues.values())
+        .map((v) => ({
+          ...v,
+          events: v.events
+            .sort((a, b) => a.starts_at.localeCompare(b.starts_at))
+            .slice(0, 6),
+          count: v.events.length,
+        }))
+        .sort((a, b) => b.count - a.count),
+      cities: Array.from(cities.values()).sort((a, b) => b.count - a.count),
+    };
   });
+
 
 
 export const listFeaturedEvents = createServerFn({ method: "GET" }).handler(async () => {
