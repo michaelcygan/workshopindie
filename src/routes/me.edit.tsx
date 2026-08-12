@@ -1147,21 +1147,9 @@ function ToolsField({ tools, onChange }: { tools: string[]; onChange: (next: str
   );
 }
 
-const MAX_LANGUAGES = 8;
-const MAX_LANGUAGE_LEN = 40;
-
+/** Canonicalize to supported languages; unsupported entries are dropped. */
 function cleanLanguages(values: string[]): string[] {
-  const seen = new Set<string>();
-  return values
-    .map((v) => v.trim().slice(0, MAX_LANGUAGE_LEN))
-    .filter((v) => {
-      if (!v) return false;
-      const key = v.toLocaleLowerCase();
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
-    .slice(0, MAX_LANGUAGES);
+  return canonicalLanguageLabels(values);
 }
 
 function LanguagesField({
@@ -1171,74 +1159,49 @@ function LanguagesField({
   languages: string[];
   onChange: (next: string[]) => void;
 }) {
-  const [draft, setDraft] = useState("");
+  const selected = new Set(
+    languages.map((l) => normalizeLanguage(l)).filter((k): k is NonNullable<typeof k> => !!k),
+  );
 
-  const commit = (raw: string) => {
-    const next = [...languages];
-    const seen = new Set(next.map((l) => l.toLocaleLowerCase()));
-    for (const piece of raw.split(",")) {
-      const v = piece.trim().slice(0, MAX_LANGUAGE_LEN);
-      if (!v) continue;
-      const key = v.toLocaleLowerCase();
-      if (seen.has(key)) continue;
-      if (next.length >= MAX_LANGUAGES) break;
-      next.push(v);
-      seen.add(key);
-    }
+  const toggle = (key: string) => {
+    const next = LANGUAGES.filter((l) =>
+      l.key === key ? !selected.has(l.key) : selected.has(l.key),
+    ).map((l) => l.label);
     onChange(next);
-    setDraft("");
   };
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="languages">
+      <Label>
         Languages <span className="text-ink-muted">(optional)</span>
       </Label>
       <div className="flex flex-wrap gap-1.5">
-        {languages.map((l, i) => (
-          <span
-            key={`${l}-${i}`}
-            className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-xs text-ink"
-          >
-            {l}
+        {LANGUAGES.map((l) => {
+          const on = selected.has(l.key);
+          return (
             <button
+              key={l.key}
               type="button"
-              aria-label={`Remove ${l}`}
-              onClick={() => onChange(languages.filter((_, j) => j !== i))}
-              className="text-ink-muted hover:text-ink"
+              aria-pressed={on}
+              onClick={() => toggle(l.key)}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs transition",
+                on
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-surface text-ink-soft hover:bg-muted",
+              )}
             >
-              <X className="h-3 w-3" />
+              {on && <Check className="h-3 w-3" />}
+              {l.label}
             </button>
-          </span>
-        ))}
+          );
+        })}
       </div>
-      <Input
-        id="languages"
-        value={draft}
-        maxLength={MAX_LANGUAGE_LEN}
-        placeholder={languages.length >= MAX_LANGUAGES ? "Max reached" : "English, Spanish, ASL…"}
-        disabled={languages.length >= MAX_LANGUAGES}
-        onChange={(e) => {
-          const v = e.target.value;
-          if (v.includes(",")) commit(v);
-          else setDraft(v);
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            if (draft.trim()) commit(draft);
-          } else if (e.key === "Backspace" && !draft && languages.length > 0) {
-            onChange(languages.slice(0, -1));
-          }
-        }}
-        onBlur={() => {
-          if (draft.trim()) commit(draft);
-        }}
-      />
       <p className="text-xs text-ink-muted">
         Languages you are comfortable creating or connecting in. Shown in the About section of your
-        profile. Press Enter or comma to add. {languages.length}/{MAX_LANGUAGES}
+        profile. Choosing Español also joins the Creadores en Español group.
       </p>
     </div>
   );
 }
+
