@@ -180,6 +180,11 @@ export function SiteFooter() {
                   </Link>
                 </li>
                 <li>
+                  <Link to="/applypodcast" className="text-ink-soft hover:text-ink">
+                    Podcast
+                  </Link>
+                </li>
+                <li>
                   <Link to="/refer" className="text-ink-soft hover:text-ink">
                     Refer & Earn
                   </Link>
