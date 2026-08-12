@@ -74,12 +74,8 @@ type Filters = {
 async function fetchPosts({ cat, city, online, blockedIds }: Filters & { blockedIds: string[] }) {
   let q = supabase
     .from("collab_posts")
-    .select(
-      "id,user_id,title,slug,category,categories,description,timeline_text,timeline_mode,starts_on,ends_on,location_mode,compensation_type,status,created_at,live_workshop_id,resulting_work_id,accepts_suggestions," +
-        "user:profiles!collab_posts_user_id_fkey(display_name,username,avatar_url)," +
-        "city:cities!collab_posts_city_id_fkey(name)," +
-        "roles:collab_roles(id,role_name,sort_order)",
-    )
+    .select(COLLAB_CARD_SELECT)
+
     .is("archived_at", null).not("status", "in", NON_PUBLIC_STATUSES).is("resulting_work_id", null).eq("applications_open", true).or(RECRUITING_DEADLINE_OR())
     .or(`ends_on.is.null,ends_on.gte.${new Date().toISOString().slice(0, 10)}`)
     .order("created_at", { ascending: false })
