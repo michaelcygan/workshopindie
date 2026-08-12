@@ -4,6 +4,10 @@ import { isProfilePath } from "@/lib/usernames";
 
 export type MobileIslandVisibility = {
   islandVisible: boolean;
+  /**
+   * Kept for API compatibility: the composer is never hidden on its own —
+   * the island either renders in full or not at all (no empty notch).
+   */
   composerVisible: boolean;
 };
 
