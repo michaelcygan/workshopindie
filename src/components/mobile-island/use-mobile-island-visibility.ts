@@ -55,6 +55,5 @@ export function useMobileIslandVisibility(): MobileIslandVisibility {
   }
 
   const islandVisible = !pathHidesIsland(pathname);
-  const composerVisible = islandVisible && !pathHidesComposer(pathname);
-  return { islandVisible, composerVisible };
+  return { islandVisible, composerVisible: islandVisible };
 }
