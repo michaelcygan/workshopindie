@@ -441,6 +441,7 @@ export type Database = {
           slug: string
           status: string
           story_type: string | null
+          story_types: string[]
           subcategories: string[]
           title: string
           updated_at: string
@@ -467,6 +468,7 @@ export type Database = {
           slug: string
           status?: string
           story_type?: string | null
+          story_types?: string[]
           subcategories?: string[]
           title: string
           updated_at?: string
@@ -493,6 +495,7 @@ export type Database = {
           slug?: string
           status?: string
           story_type?: string | null
+          story_types?: string[]
           subcategories?: string[]
           title?: string
           updated_at?: string
