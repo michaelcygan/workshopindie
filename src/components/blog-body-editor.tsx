@@ -21,6 +21,9 @@ import {
   AtSign,
   Pencil,
   Trash2,
+  ImagePlus,
+  Upload,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -42,10 +45,15 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { BlogEmbed } from "@/components/blog-embed";
+import { BlogFigure } from "@/components/blog-figure";
+import { uploadToBucket } from "@/lib/storage";
+import { resizeImageToJpeg } from "@/lib/image-resize";
+import { useAuth } from "@/hooks/use-auth";
 import {
   parseSegments,
   serializeSegments,
   trimBlankLines,
+  type BlogImageMeta,
   type BodySegment,
 } from "@/lib/blog-body-segments";
 
@@ -92,6 +100,12 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
   const [embedUrl, setEmbedUrl] = useState("");
   /** Index of the embed segment being edited, or null when inserting a new one. */
   const [embedEditIndex, setEmbedEditIndex] = useState<number | null>(null);
+  const [imageOpen, setImageOpen] = useState(false);
+  const [imageEditIndex, setImageEditIndex] = useState<number | null>(null);
+  const [imageDraft, setImageDraft] = useState<BlogImageMeta>({ url: "" });
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
 
   const segments = useMemo(() => parseSegments(value), [value]);
 
@@ -255,7 +269,7 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
     pendingFocus.current = { idx: sel.idx + 2, start: 0, end: 0 };
   }
 
-  /** Removes an embed and merges the text segments that surrounded it. */
+  /** Removes a block (embed or image) and merges the text segments around it. */
   function removeEmbed(idx: number) {
     const prev = segments[idx - 1];
     const nextSeg = segments[idx + 1];
@@ -276,6 +290,105 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
     commitSegments(out);
     const caret = prev && prev.type === "text" ? trimBlankLines(prev.text).length : 0;
     pendingFocus.current = { idx: Math.max(0, idx - 1), start: caret, end: caret };
+  }
+
+  function openImage() {
+    const { idx, start, end } = currentTarget();
+    savedSelection.current = { idx, start, end };
+    setImageEditIndex(null);
+    setImageDraft({ url: "" });
+    setImageOpen(true);
+  }
+
+  function openImageEdit(idx: number) {
+    const seg = segments[idx];
+    if (!seg || seg.type !== "image") return;
+    savedSelection.current = null;
+    setImageEditIndex(idx);
+    setImageDraft({ ...seg.image });
+    setImageOpen(true);
+  }
+
+  async function handleImageFile(file: File | undefined) {
+    if (!file) return;
+    if (!user) {
+      toast.error("Sign in again to upload images.");
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      toast.error("Choose an image file (JPG, PNG, WebP, or GIF).");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image too large. Max 10MB.");
+      return;
+    }
+    setUploading(true);
+    try {
+      // GIFs keep their animation; everything else is downscaled for hosting.
+      let upload: File = file;
+      if (file.type !== "image/gif") {
+        const { blob } = await resizeImageToJpeg(file, 2048, 0.85);
+        upload = new File([blob], `${file.name.replace(/\.[^.]+$/, "")}.jpg`, { type: "image/jpeg" });
+      }
+      const url = await uploadToBucket("covers", user.id, upload);
+      setImageDraft((d) => ({ ...d, url }));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Upload failed.");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  function submitImage() {
+    const url = normalizeUrl(imageDraft.url);
+    if (!url) {
+      toast.error("Upload a photo or paste an image URL first.");
+      return;
+    }
+    const link = imageDraft.link?.trim()
+      ? imageDraft.link.trim().startsWith("/")
+        ? imageDraft.link.trim()
+        : normalizeUrl(imageDraft.link)
+      : undefined;
+    if (imageDraft.link?.trim() && !link) {
+      toast.error("Enter a valid link URL (or leave it blank).");
+      return;
+    }
+    const image: BlogImageMeta = {
+      url,
+      alt: imageDraft.alt?.trim() || undefined,
+      caption: imageDraft.caption?.trim() || undefined,
+      credit: imageDraft.credit?.trim() || undefined,
+      link: link || undefined,
+    };
+
+    if (imageEditIndex != null) {
+      const next = segments.map((s, i) => (i === imageEditIndex && s.type === "image" ? { type: "image" as const, image } : s));
+      setImageOpen(false);
+      setImageEditIndex(null);
+      setLocal(null);
+      commitSegments(next);
+      return;
+    }
+
+    const sel = savedSelection.current ?? { idx: activeTextIndex(), start: 0, end: 0 };
+    const seg = segments[sel.idx];
+    const source = refs.current.get(sel.idx)?.value ?? (seg && seg.type === "text" ? trimBlankLines(seg.text) : "");
+    const before = source.slice(0, sel.start);
+    const after = source.slice(Math.max(sel.end, sel.start));
+    const next: BodySegment[] = [
+      ...segments.slice(0, sel.idx),
+      { type: "text", text: before },
+      { type: "image", image },
+      { type: "text", text: after },
+      ...segments.slice(sel.idx + 1),
+    ];
+    setImageOpen(false);
+    setLocal(null);
+    commitSegments(next);
+    pendingFocus.current = { idx: sel.idx + 2, start: 0, end: 0 };
   }
 
   /**
@@ -323,7 +436,7 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
       e.key === "Backspace" &&
       el.selectionStart === 0 &&
       el.selectionEnd === 0 &&
-      segments[idx - 1]?.type === "embed"
+      (segments[idx - 1]?.type === "embed" || segments[idx - 1]?.type === "image")
     ) {
       e.preventDefault();
       removeEmbed(idx - 1);
@@ -345,8 +458,8 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
   }
 
   useEffect(() => {
-    if (!linkOpen && !embedOpen) savedSelection.current = null;
-  }, [linkOpen, embedOpen]);
+    if (!linkOpen && !embedOpen && !imageOpen) savedSelection.current = null;
+  }, [linkOpen, embedOpen, imageOpen]);
 
   const onlyText = segments.length === 1;
 
@@ -371,6 +484,9 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
           </ToolBtn>
           <ToolBtn onClick={openEmbed} title="Embed video or link card" disabled={readOnly}>
             <Film className="h-4 w-4" />
+          </ToolBtn>
+          <ToolBtn onClick={openImage} title="Insert image" disabled={readOnly}>
+            <ImagePlus className="h-4 w-4" />
           </ToolBtn>
           {onRequestEntityInsert && (
             <button
@@ -432,6 +548,15 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
               onEdit={() => openEmbedEdit(i)}
               onRemove={() => removeEmbed(i)}
             />
+          ) : seg.type === "image" ? (
+            <ComposerBlock
+              key={`i-${i}`}
+              readOnly={readOnly}
+              onEdit={() => openImageEdit(i)}
+              onRemove={() => removeEmbed(i)}
+            >
+              <BlogFigure image={seg.image} inert className="my-0" />
+            </ComposerBlock>
           ) : (
             <AutoTextarea
               key={`t-${i}`}
