@@ -296,6 +296,7 @@ function NewWork() {
     }
 
     setSubmitting(false);
+    draftStash.clear();
     qc.invalidateQueries({ queryKey: ["member-home"] });
     toast.success("Work published");
 
