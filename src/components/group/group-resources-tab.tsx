@@ -82,10 +82,21 @@ export function GroupResourcesTab({ group }: { group: { id: string } }) {
                     <p className="text-sm text-ink-muted">{r.short_description}</p>
                   )}
                   {(r.location_text || r.address) && (
-                    <p className="flex items-center gap-1.5 text-xs text-ink-muted">
+                    <a
+                      href={
+                        r.address
+                          ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.address)}`
+                          : r.location_text
+                            ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.location_text)}`
+                            : undefined
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs text-ink-muted underline-offset-2 hover:text-primary hover:underline"
+                    >
                       <MapPin className="h-3.5 w-3.5" />
                       {[r.location_text, r.address].filter(Boolean).join(" · ")}
-                    </p>
+                    </a>
                   )}
                 </div>
 
