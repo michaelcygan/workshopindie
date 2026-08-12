@@ -701,7 +701,17 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
             >
               <BlogFigure image={seg.image} inert className="my-0" />
             </ComposerBlock>
+          ) : seg.type === "gallery" ? (
+            <ComposerBlock
+              key={`g-${i}`}
+              readOnly={readOnly}
+              onEdit={() => openGalleryEdit(i)}
+              onRemove={() => removeEmbed(i)}
+            >
+              <BlogGallery gallery={seg.gallery} inert className="my-0" />
+            </ComposerBlock>
           ) : (
+
             <AutoTextarea
               key={`t-${i}`}
               registerRef={(el) => {
