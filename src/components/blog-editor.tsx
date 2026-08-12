@@ -26,7 +26,7 @@ import {
 } from "@/lib/blog-entity-tags";
 import { blogCategorySlugForField, blogPostFields, type BlogCategorySlug } from "@/lib/blog-categories";
 import { fieldLabel, isSubcategoryOf, type FieldId } from "@/lib/taxonomy";
-import { toBlogStoryType, type BlogStoryType } from "@/lib/blog-story-types";
+import { toBlogStoryTypes, type BlogStoryType } from "@/lib/blog-story-types";
 import { CategoryPlaceholder } from "@/components/home/category-placeholder";
 
 import { BlogPostContext } from "@/components/blog-post-context";

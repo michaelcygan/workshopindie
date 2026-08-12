@@ -23,7 +23,7 @@ import { blogCategorySlugForField } from "@/lib/blog-categories";
 import { SubcategoryPicker } from "@/components/subcategory-picker";
 import { FieldPicker } from "@/components/field-picker";
 import { fieldClass, fieldLabel, subcategoryLabel, type FieldId } from "@/lib/taxonomy";
-import { BLOG_STORY_TYPES, type BlogStoryType } from "@/lib/blog-story-types";
+import { BLOG_STORY_TYPES, BLOG_STORY_TYPE_MAX, type BlogStoryType } from "@/lib/blog-story-types";
 
 const KIND_ICONS: Record<BlogEntityKind, typeof Briefcase> = {
   work: Briefcase,
