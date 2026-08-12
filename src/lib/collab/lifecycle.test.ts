@@ -1,3 +1,4 @@
+import { COLLAB_CARD_SELECT, COLLAB_LIFECYCLE_FIELDS } from "./card-select";
 import { describe, it, expect } from "vitest";
 import {
   collabLifecycleState,
