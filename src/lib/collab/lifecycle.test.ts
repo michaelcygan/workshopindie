@@ -151,3 +151,23 @@ describe("free-tier quota counting", () => {
     expect(countsTowardCollabQuota({ ...base, archived_at: "2026-01-01" })).toBe(false);
   });
 });
+
+describe("collab card select", () => {
+  it("includes every lifecycle field the badge depends on", () => {
+    for (const f of COLLAB_LIFECYCLE_FIELDS) {
+      expect(COLLAB_CARD_SELECT).toContain(f);
+    }
+  });
+
+  it("reports accepting for an in-progress collab with applications open", () => {
+    expect(
+      recruitmentState({
+        status: "open",
+        archived_at: null,
+        resulting_work_id: null,
+        applications_open: true,
+        ends_on: null,
+      }),
+    ).toBe("accepting");
+  });
+});
