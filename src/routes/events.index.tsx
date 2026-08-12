@@ -351,10 +351,19 @@ function EventsIndexPage() {
             <FeaturedEventsCompact />
             {mapPoints.length > 0 && (
               <div className="hidden lg:block">
-                <div className="mb-2 px-1 text-[10.5px] font-semibold uppercase tracking-[0.18em] text-ink-soft">
-                  On the map
+                <div className="mb-2 flex items-baseline justify-between px-1">
+                  <span className="text-[10.5px] font-semibold uppercase tracking-[0.18em] text-ink-soft">
+                    On the map
+                  </span>
+                  <span className="text-[11px] text-ink-muted">
+                    {mapPoints.length} {mapPoints.length === 1 ? "city" : "cities"}
+                  </span>
                 </div>
-                <EventsMiniMap points={mapPoints} height={252} />
+                <EventsMiniMap
+                  points={mapPoints}
+                  height={252}
+                  onSelectCity={(c) => setCity({ id: c.id, name: c.name })}
+                />
               </div>
             )}
           </section>
