@@ -25,13 +25,28 @@ export type BlogImageMeta = {
   link?: string;
 };
 
+export type BlogGalleryItem = { url: string; alt?: string };
+
+export type BlogGalleryLayout = "wall" | "slideshow";
+
+export type BlogGallery = {
+  items: BlogGalleryItem[];
+  layout: BlogGalleryLayout;
+  caption?: string;
+};
+
 export type BodySegment =
   | { type: "text"; text: string }
   | { type: "embed"; url: string }
-  | { type: "image"; image: BlogImageMeta };
+  | { type: "image"; image: BlogImageMeta }
+  | { type: "gallery"; gallery: BlogGallery };
 
 export const EMBED_LINE = /^[ \t]*\[\[embed:(\S+?)\]\][ \t]*$/;
 export const IMAGE_LINE = /^[ \t]*\[\[image:([^\]]+)\]\][ \t]*$/;
+export const GALLERY_LINE = /^[ \t]*\[\[gallery:([^\]]+)\]\][ \t]*$/;
+
+export const MAX_GALLERY_ITEMS = 12;
+
 
 const META_KEYS = ["alt", "caption", "credit", "link"] as const;
 type MetaKey = (typeof META_KEYS)[number];
