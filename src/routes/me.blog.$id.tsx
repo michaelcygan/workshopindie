@@ -142,7 +142,7 @@ function MemberBlogEditorPage() {
     setListInBlog(p.show_in_blog_index !== false);
     const hydrated = blogPostFields(p.fields, p.category_slug);
     setFields(hydrated.length > 0 ? hydrated : ["other"]);
-    setStoryType(toBlogStoryType(p.story_type));
+    setStoryTypes(toBlogStoryTypes((p as { story_types?: string[] | null }).story_types ?? p.story_type));
     setEntityTags(post.entity_tags ?? []);
     setDirty(false);
     setLoadedForId(p.id);
@@ -170,7 +170,8 @@ function MemberBlogEditorPage() {
           show_in_blog_index: listInBlog,
           category_slug: blogCategorySlugForField(fields[0]),
           fields,
-          story_type: storyType,
+          story_type: storyTypes[0] ?? null,
+          story_types: storyTypes,
           tags: entityTags.map((t) => ({ kind: t.kind, id: t.id })),
           expected_updated_at: post?.post.updated_at,
         },
@@ -405,8 +406,8 @@ function MemberBlogEditorPage() {
           <BlogAboutEditor
             postId={post.post.id}
             fields={fields}
-            storyType={storyType}
-            onChangeStoryType={(next) => { setStoryType(next); setDirty(true); }}
+            storyTypes={storyTypes}
+            onChangeStoryTypes={(next: BlogStoryType[]) => { setStoryTypes(next); setDirty(true); }}
             tags={entityTags}
             readOnly={readOnly}
             onChangeFields={(next) => { setFields(next.length ? next : ["other"]); setDirty(true); }}
