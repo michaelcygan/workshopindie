@@ -87,6 +87,54 @@ export function serializeImageMarker(image: BlogImageMeta): string {
 }
 
 /**
+ * Parses the inner payload of a `[[gallery:…]]` marker. Each photo is an
+ * `img=<url>~<alt>` part; `layout` and `caption` are plain key/value parts.
+ */
+export function parseGalleryMarker(payload: string): BlogGallery | null {
+  const items: BlogGalleryItem[] = [];
+  let layout: BlogGalleryLayout = "wall";
+  let caption: string | undefined;
+  for (const raw of payload.split("|")) {
+    const part = raw.trim();
+    if (!part) continue;
+    const eq = part.indexOf("=");
+    if (eq < 0) continue;
+    const key = part.slice(0, eq).trim();
+    const value = part.slice(eq + 1).trim();
+    if (key === "img") {
+      const [u, a] = value.split("~");
+      const url = decode(u ?? "");
+      if (!url) continue;
+      const alt = a ? decode(a) : "";
+      items.push(alt ? { url, alt } : { url });
+    } else if (key === "layout") {
+      layout = value === "slideshow" ? "slideshow" : "wall";
+    } else if (key === "caption") {
+      const c = decode(value);
+      if (c) caption = c;
+    }
+  }
+  if (items.length === 0) return null;
+  return caption
+    ? { items: items.slice(0, MAX_GALLERY_ITEMS), layout, caption }
+    : { items: items.slice(0, MAX_GALLERY_ITEMS), layout };
+}
+
+/** Serializes a gallery back into a single-line `[[gallery:…]]` marker. */
+export function serializeGalleryMarker(gallery: BlogGallery): string {
+  const parts: string[] = [`layout=${gallery.layout === "slideshow" ? "slideshow" : "wall"}`];
+  const caption = (gallery.caption ?? "").trim();
+  if (caption) parts.push(`caption=${encodeURIComponent(caption)}`);
+  for (const item of gallery.items.slice(0, MAX_GALLERY_ITEMS)) {
+    const alt = (item.alt ?? "").trim();
+    parts.push(`img=${encodeURIComponent(item.url)}${alt ? `~${encodeURIComponent(alt)}` : ""}`);
+  }
+  return `[[gallery:${parts.join("|")}]]`;
+}
+
+
+
+/**
  * Splits body Markdown into an alternating text / block sequence. The result
  * always starts and ends with a text segment (possibly empty) so callers can
  * rely on there being a text slot before and after every block.
