@@ -117,8 +117,8 @@ function extractLinks(md: string) {
 
 function validateMemberContent(body: string) {
   const { links, images } = extractLinks(body);
-  if (links.length > 20) throw new Error("Too many outbound links (max 20).");
-  if (images.length > 12) throw new Error("Too many inline images (max 12).");
+  if (links.length > 150) throw new Error("Too many outbound links (max 150).");
+  if (images.length > 60) throw new Error("Too many inline images (max 60).");
   for (const url of [...links, ...images]) {
     const lower = url.toLowerCase();
     if (
