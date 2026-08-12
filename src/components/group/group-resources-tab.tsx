@@ -57,7 +57,20 @@ export function GroupResourcesTab({ group }: { group: { id: string } }) {
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0 space-y-1.5">
                   <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                    <h3 className="text-base font-medium text-ink">{r.name}</h3>
+                    <h3 className="text-base font-medium text-ink">
+                      {r.website_url ? (
+                        <a
+                          href={r.website_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block min-h-[32px] underline-offset-4 hover:underline focus-visible:underline"
+                        >
+                          {r.name}
+                        </a>
+                      ) : (
+                        r.name
+                      )}
+                    </h3>
                     {category && (
                       <span className="text-[11px] uppercase tracking-wider text-ink-muted">
                         {category}
