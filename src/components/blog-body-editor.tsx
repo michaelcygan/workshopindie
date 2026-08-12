@@ -674,6 +674,151 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <Dialog
+        open={imageOpen}
+        onOpenChange={(o) => {
+          setImageOpen(o);
+          if (!o) setImageEditIndex(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{imageEditIndex != null ? "Edit image" : "Insert image"}</DialogTitle>
+            <DialogDescription>
+              Upload a photo or paste an image URL. It renders centered in the post.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            {imageDraft.url ? (
+              <div className="overflow-hidden rounded-xl border border-border bg-muted/30">
+                <img src={imageDraft.url} alt="" className="mx-auto block max-h-56 w-full object-contain" />
+              </div>
+            ) : null}
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+              >
+                {uploading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Upload className="mr-2 h-4 w-4" />
+                )}
+                {uploading ? "Uploading…" : imageDraft.url ? "Replace photo" : "Upload photo"}
+              </Button>
+              <span className="text-[11px] text-ink-muted">JPG, PNG, WebP or GIF · up to 10MB</span>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => void handleImageFile(e.target.files?.[0])}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="blog-image-url">Image URL</Label>
+              <Input
+                id="blog-image-url"
+                value={imageDraft.url}
+                onChange={(e) => setImageDraft((d) => ({ ...d, url: e.target.value }))}
+                placeholder="https://example.com/photo.jpg"
+              />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="blog-image-alt">Alt text</Label>
+                <Input
+                  id="blog-image-alt"
+                  value={imageDraft.alt ?? ""}
+                  onChange={(e) => setImageDraft((d) => ({ ...d, alt: e.target.value }))}
+                  placeholder="Describe the photo"
+                />
+              </div>
+              <div>
+                <Label htmlFor="blog-image-credit">Credit</Label>
+                <Input
+                  id="blog-image-credit"
+                  value={imageDraft.credit ?? ""}
+                  onChange={(e) => setImageDraft((d) => ({ ...d, credit: e.target.value }))}
+                  placeholder="Photo by…"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="blog-image-caption">Caption</Label>
+              <Input
+                id="blog-image-caption"
+                value={imageDraft.caption ?? ""}
+                onChange={(e) => setImageDraft((d) => ({ ...d, caption: e.target.value }))}
+                placeholder="Shown under the image"
+              />
+            </div>
+            <div>
+              <Label htmlFor="blog-image-link">Click-through link (optional)</Label>
+              <Input
+                id="blog-image-link"
+                value={imageDraft.link ?? ""}
+                onChange={(e) => setImageDraft((d) => ({ ...d, link: e.target.value }))}
+                placeholder="https://example.com or /u/username"
+              />
+              <p className="mt-1 text-[11px] text-ink-muted">
+                With a link, clicking the image opens it. Without one, it opens in the lightbox.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => setImageOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={submitImage} disabled={uploading}>
+              {imageEditIndex != null ? "Save image" : "Insert image"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+/** Shared shell for non-text blocks in the composer: preview + author controls. */
+function ComposerBlock({
+  children,
+  readOnly,
+  onEdit,
+  onRemove,
+}: {
+  children: React.ReactNode;
+  readOnly?: boolean;
+  onEdit: () => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="my-2 rounded-2xl border border-dashed border-border/70 p-2">
+      <div className="pointer-events-none select-none [&_.my-6]:my-0">{children}</div>
+      {!readOnly && (
+        <div className="mt-2 flex items-center justify-end gap-1">
+          <button
+            type="button"
+            onClick={onEdit}
+            className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs text-ink-soft hover:bg-muted"
+          >
+            <Pencil className="h-3.5 w-3.5" /> Edit
+          </button>
+          <button
+            type="button"
+            onClick={onRemove}
+            className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs text-ink-soft hover:bg-muted"
+          >
+            <Trash2 className="h-3.5 w-3.5" /> Remove
+          </button>
+        </div>
+      )}
     </div>
   );
 }
