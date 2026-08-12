@@ -103,6 +103,65 @@ export const listCityEventCounts = createServerFn({ method: "GET" }).handler(asy
   return counts;
 });
 
+/**
+ * Public: map bubbles for the /events feed — one point per city with upcoming
+ * in-person public events. Events themselves rarely carry lat/lng, so the city
+ * record supplies the coordinates.
+ */
+export const listEventMapCities = createServerFn({ method: "GET" })
+  .inputValidator((i) =>
+    z
+      .object({ when: z.enum(["upcoming", "past"]).default("upcoming") })
+      .parse(i ?? {}),
+  )
+  .handler(async ({ data }) => {
+    const supabase = publicClient();
+    const nowIso = new Date().toISOString();
+    let q = supabase
+      .from("group_events")
+      .select(
+        "venue_city_id,city:cities!group_events_venue_city_id_fkey(id,name,slug,country_code,latitude,longitude)",
+      )
+      .is("deleted_at", null)
+      .eq("visibility", "public")
+      .not("venue_city_id", "is", null)
+      .limit(2000);
+    q = data.when === "past" ? q.lt("starts_at", nowIso) : q.gt("starts_at", nowIso);
+    const { data: rows, error } = await q;
+    if (error) throw new Error(error.message);
+    type Row = {
+      city: {
+        id: string;
+        name: string;
+        slug: string;
+        country_code: string | null;
+        latitude: number | null;
+        longitude: number | null;
+      } | null;
+    };
+    const byCity = new Map<
+      string,
+      { id: string; name: string; slug: string; lat: number; lng: number; count: number }
+    >();
+    for (const r of (rows ?? []) as unknown as Row[]) {
+      const c = r.city;
+      if (!c || c.latitude == null || c.longitude == null) continue;
+      const hit = byCity.get(c.id);
+      if (hit) hit.count += 1;
+      else
+        byCity.set(c.id, {
+          id: c.id,
+          name: c.name,
+          slug: c.slug,
+          lat: Number(c.latitude),
+          lng: Number(c.longitude),
+          count: 1,
+        });
+    }
+    return Array.from(byCity.values()).sort((a, b) => b.count - a.count);
+  });
+
+
 export const listFeaturedEvents = createServerFn({ method: "GET" }).handler(async () => {
   const { listDiscoveryEvents } = await import("@/lib/events/discovery.server");
   const fields = EVENT_FIELDS;
