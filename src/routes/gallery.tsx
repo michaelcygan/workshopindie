@@ -384,35 +384,59 @@ function GalleryPage() {
       {/* Logged-out hero with live counters */}
       {!user && <GalleryLoggedOutHero />}
 
-      {/* Slim editorial masthead */}
+      {/* Slim editorial masthead — title, CTA, and your groups in one band */}
       <section className="border-b border-border">
-        <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-4 md:px-6 md:py-5">
-          <div className="min-w-0">
-            <h1 className="font-display text-3xl leading-none tracking-tight text-ink md:text-4xl">
-              Gallery
-            </h1>
-            <p className="mt-1 truncate text-sm text-ink-muted">
-              Everything people made across Workshop — music, film & video, writing, visual art, games & tech.
-            </p>
+        <div className="mx-auto max-w-7xl px-4 py-4 md:px-6 md:py-5">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+            <div className="min-w-0">
+              <h1 className="font-display text-3xl leading-none tracking-tight text-ink md:text-4xl">
+                Gallery
+              </h1>
+              <p className="mt-1 truncate text-sm text-ink-muted">
+                Everything people made across Workshop — music, film & video, writing, visual art, games & tech.
+              </p>
+            </div>
+            <Link to="/works/new" className="shrink-0">
+              <Button size="sm" className="rounded-md">
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Post to Gallery</span>
+                <span className="sm:hidden">Post</span>
+              </Button>
+            </Link>
           </div>
-          <Link to="/works/new" className="shrink-0">
-            <Button size="sm" className="rounded-md">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Post to Gallery</span>
-              <span className="sm:hidden">Post</span>
-            </Button>
-          </Link>
+
+          {/* Personal groups rail (self-hides when empty) */}
+          <YourGroupsStrip variant="inline" className="mt-3" />
         </div>
       </section>
-
-      {/* Personal groups rail (self-hides when empty) */}
-      <YourGroupsStrip />
 
       {/* Sticky one-row toolbar */}
       <div className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur md:top-14">
         <div className="mx-auto max-w-7xl px-4 py-2.5 md:px-6">
-          <div className="flex items-center gap-2">
-            {/* Category chips take the primary line */}
+          <div className="relative flex items-center gap-2">
+            {/* Tabs (desktop) — the primary lens sits first */}
+            <div className="hidden shrink-0 gap-1 rounded-full border border-border bg-surface p-1 shadow-soft lg:flex">
+              {(["for-you", "following", "favorites"] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => {
+                    if (t !== "for-you" && !user) {
+                      navigate({ to: "/login" });
+                      return;
+                    }
+                    setSearch({ tab: t });
+                  }}
+                  className={cn(
+                    "rounded-full px-3 py-1 text-xs transition",
+                    tab === t ? "bg-ink text-background" : "text-ink-soft hover:bg-muted",
+                  )}
+                >
+                  {t === "for-you" ? "For you" : t === "following" ? "Following" : "Favorites"}
+                </button>
+              ))}
+            </div>
+
+            {/* Category chips — single scrolling line + overflow menu */}
             <div className="min-w-0 flex-1">
               <CategoryScroller
                 tabs={categoryTabs}
@@ -420,6 +444,7 @@ function GalleryPage() {
                 onChange={(v) => setSearch({ cat: v })}
               />
             </div>
+
 
             {/* Sort */}
             <div className="hidden shrink-0 gap-1 rounded-full border border-border bg-surface p-1 shadow-soft sm:flex">
