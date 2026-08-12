@@ -113,8 +113,16 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
   const [imageEditIndex, setImageEditIndex] = useState<number | null>(null);
   const [imageDraft, setImageDraft] = useState<BlogImageMeta>({ url: "" });
   const [uploading, setUploading] = useState(false);
+  const [imagePreviewBroken, setImagePreviewBroken] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryEditIndex, setGalleryEditIndex] = useState<number | null>(null);
+  const [galleryDraft, setGalleryDraft] = useState<BlogGalleryData>({ items: [], layout: "wall" });
+  const [galleryUploading, setGalleryUploading] = useState(false);
+  const [galleryUrlInput, setGalleryUrlInput] = useState("");
+  const galleryFileRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
+
 
   const segments = useMemo(() => parseSegments(value), [value]);
 
