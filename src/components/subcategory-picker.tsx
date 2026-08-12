@@ -9,6 +9,7 @@ import {
 } from "@/lib/taxonomy";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 /**
