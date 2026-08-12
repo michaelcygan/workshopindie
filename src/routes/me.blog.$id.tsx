@@ -161,8 +161,17 @@ function MemberBlogEditorPage() {
     setStoryTypes(toBlogStoryTypes((p as { story_types?: string[] | null }).story_types ?? p.story_type));
     setEntityTags(post.entity_tags ?? []);
     setDirty(false);
+    expectedUpdatedAt.current = p.updated_at;
     setLoadedForId(p.id);
   }, [post, loadedForId]);
+
+  // Keep the concurrency token fresh when the query refetches on its own.
+  useEffect(() => {
+    if (post && loadedForId === post.post.id && !saveMut.isPending && !dirty) {
+      expectedUpdatedAt.current = post.post.updated_at;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [post?.post.updated_at]);
 
   function refreshEntityCaches() {
     invalidateEntityTagCaches(qc, entityTags, post?.entity_tags ?? []);
@@ -172,8 +181,8 @@ function MemberBlogEditorPage() {
 
 
   const saveMut = useMutation({
-    mutationFn: async (opts?: { silent?: boolean }) => {
-      await updateFn({
+    mutationFn: async (opts?: { silent?: boolean; auto?: boolean }) => {
+      const result = await updateFn({
         data: {
           id,
           title,
@@ -189,21 +198,40 @@ function MemberBlogEditorPage() {
           story_type: storyTypes[0] ?? null,
           story_types: storyTypes,
           tags: entityTags.map((t) => ({ kind: t.kind, id: t.id })),
-          expected_updated_at: post?.post.updated_at,
+          expected_updated_at: expectedUpdatedAt.current,
         },
       });
-      return { silent: opts?.silent ?? false };
+      return {
+        silent: opts?.silent ?? false,
+        auto: opts?.auto ?? false,
+        updated_at: (result as { updated_at?: string } | null)?.updated_at,
+      };
     },
     onSuccess: (r) => {
       // During a publish the success dialog is the single confirmation.
-      if (!r.silent) toast.success("Saved");
+      if (!r.silent && !r.auto) toast.success("Saved");
+      // Adopt the server's new timestamp so the next save doesn't self-conflict.
+      if (r.updated_at) expectedUpdatedAt.current = r.updated_at;
       setDirty(false);
+      setLastSavedAt(new Date());
+      setAutosaveState("saved");
       qc.invalidateQueries({ queryKey: ["my-blog-post", id] });
       qc.invalidateQueries({ queryKey: ["my-blog-posts", user?.id] });
       refreshEntityCaches();
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error, vars) => {
+      const conflict = /another window/i.test(e.message);
+      if (vars?.auto) {
+        // A conflict means a second tab owns the post — stop autosaving entirely.
+        setAutosaveState(conflict ? "paused" : "error");
+        if (conflict) toast.error(e.message);
+      } else {
+        setAutosaveState("error");
+        toast.error(e.message);
+      }
+    },
   });
+
 
   const publishMut = useMutation({
     mutationFn: async () => {
