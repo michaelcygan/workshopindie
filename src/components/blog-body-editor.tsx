@@ -328,28 +328,13 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
 
   async function handleImageFile(file: File | undefined) {
     if (!file) return;
-    if (!user) {
-      toast.error("Sign in again to upload images.");
-      return;
-    }
-    if (!file.type.startsWith("image/")) {
-      toast.error("Choose an image file (JPG, PNG, WebP, or GIF).");
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("Image too large. Max 10MB.");
-      return;
-    }
     setUploading(true);
     try {
-      // GIFs keep their animation; everything else is downscaled for hosting.
-      let upload: File = file;
-      if (file.type !== "image/gif") {
-        const { blob } = await resizeImageToJpeg(file, 2048, 0.85);
-        upload = new File([blob], `${file.name.replace(/\.[^.]+$/, "")}.jpg`, { type: "image/jpeg" });
+      const url = await uploadImageFile(file);
+      if (url) {
+        setImagePreviewBroken(false);
+        setImageDraft((d) => ({ ...d, url }));
       }
-      const url = await uploadToBucket("covers", user.id, upload);
-      setImageDraft((d) => ({ ...d, url }));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Upload failed.");
     } finally {
@@ -357,6 +342,7 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
       if (fileRef.current) fileRef.current.value = "";
     }
   }
+
 
   function submitImage() {
     const url = normalizeUrl(imageDraft.url);
