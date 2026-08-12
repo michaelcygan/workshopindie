@@ -93,7 +93,7 @@ export function GallerySpotlight() {
       </div>
 
       {/* Desktop: hero + stacked runners-up */}
-      <div className="hidden gap-3 lg:grid lg:grid-cols-[1.6fr_1fr]">
+      <div className="hidden gap-3 lg:grid lg:h-[380px] lg:grid-cols-[1.7fr_1fr]">
         <SpotlightTile work={hero} size="hero" />
         <div className="grid grid-rows-2 gap-3">
           {rest.map((w) => (
@@ -113,7 +113,7 @@ function SpotlightTile({ work, size }: { work: SpotlightWork; size: "hero" | "sm
       params={{ slug: work.slug }}
       className="group relative block h-full overflow-hidden rounded-2xl border border-border bg-surface shadow-soft transition hover:border-ink/20 hover:shadow-lift"
     >
-      <div className={size === "hero" ? "aspect-[16/10]" : "h-full min-h-[7rem]"}>
+      <div className={size === "hero" ? "aspect-[16/10] lg:aspect-auto lg:h-full" : "h-full min-h-[7rem]"}>
         {work.cover_url ? (
           <img
             src={work.cover_url}
