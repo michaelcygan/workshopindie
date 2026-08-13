@@ -77,7 +77,7 @@ export function PublicFeaturedStories({ posts }: { posts: PublicBlogCard[] }) {
           {canRotate && !paused && visible ? (
             <div
               key={`${lead.id}-${paused}-${visible}`}
-              className="h-px bg-primary/50 animate-[featured-progress_7s_linear_forwards]"
+              className="h-px bg-primary/50 animate-[featured-progress_5s_linear_forwards]"
             />
           ) : null}
         </div>
