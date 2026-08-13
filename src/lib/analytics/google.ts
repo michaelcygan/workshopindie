@@ -32,14 +32,19 @@ declare global {
   }
 }
 
-let injected = false;
-
-/** Initialize gtag.js once per app session. Safe to call multiple times. */
+/**
+ * The gtag.js snippet is now server-rendered into <head> from
+ * src/routes/__root.tsx, exactly as Google publishes it, so Google's
+ * "tag detected" check and Tag Assistant can see it in the page source.
+ *
+ * This function stays as a no-op safety net for older call sites and for the
+ * rare case where the head script was stripped (extension/ad blocker).
+ */
 export function initGoogleAnalytics(): void {
   if (typeof document === "undefined") return;
   if (!GA_MEASUREMENT_ID) return;
-  if (injected) return;
-  injected = true;
+  if (window.gtag) return;
+  if (document.querySelector('script[src*="googletagmanager.com/gtag/js"]')) return;
 
   const script = document.createElement("script");
   script.async = true;
@@ -51,12 +56,9 @@ export function initGoogleAnalytics(): void {
     window.dataLayer!.push(args);
   };
   window.gtag("js", new Date());
-  window.gtag("config", GA_MEASUREMENT_ID, {
-    // GA already anonymizes IP, but we explicitly avoid sending any user id.
-    send_page_view: false,
-    cookie_flags: "SameSite=None;Secure",
-  });
+  window.gtag("config", GA_MEASUREMENT_ID);
 }
+
 
 /** Send a GA4 event. No-ops if GA is not configured or not yet initialized. */
 export function gtagEvent(name: GtagEventName, params: GtagEventParams = {}): void {
