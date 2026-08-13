@@ -848,7 +848,7 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
           if (!o) setImageEditIndex(null);
         }}
       >
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="flex max-h-[85dvh] flex-col overflow-hidden sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{imageEditIndex != null ? "Edit image" : "Insert image"}</DialogTitle>
             <DialogDescription>
@@ -856,7 +856,7 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3">
+          <div className="-mx-1 min-h-0 flex-1 space-y-3 overflow-y-auto px-1">
             {imageDraft.url ? (
               imagePreviewBroken ? (
                 <p className="rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2 text-[12px] text-destructive">
@@ -956,7 +956,7 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="shrink-0 border-t border-border pt-3">
             <Button type="button" variant="ghost" onClick={() => setImageOpen(false)}>
               Cancel
             </Button>
@@ -974,7 +974,7 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
           if (!o) setGalleryEditIndex(null);
         }}
       >
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="flex max-h-[85dvh] flex-col overflow-hidden sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>{galleryEditIndex != null ? "Edit gallery" : "Insert gallery"}</DialogTitle>
             <DialogDescription>
@@ -982,7 +982,7 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="-mx-1 min-h-0 flex-1 space-y-4 overflow-y-auto px-1">
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 type="button"
@@ -1112,7 +1112,7 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
             )}
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="shrink-0 border-t border-border pt-3">
             <Button type="button" variant="ghost" onClick={() => setGalleryOpen(false)}>
               Cancel
             </Button>
