@@ -22,6 +22,8 @@ import { normalizeUrlOrKeep } from "@/lib/url-normalize";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { submitPodcastApplication } from "@/lib/podcast.functions";
+import { gtagEvent } from "@/lib/analytics/google";
+
 
 const CANONICAL = "https://workshopindie.com/applypodcast";
 const PROCESS_MIN = 40;
@@ -210,7 +212,10 @@ function ApplyPodcastPage() {
         },
       });
 
+      gtagEvent("submit_application", { form_name: "apply_podcast" });
+
       if (!user && wantsAccount && typeof window !== "undefined") {
+
         const { first, last } = splitName(name);
         const params = new URLSearchParams({ from: "podcast_apply" });
         if (email.trim()) params.set("email", email.trim());

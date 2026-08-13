@@ -13,7 +13,10 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { logShare } from "@/lib/share.functions";
+import { gtagEvent } from "@/lib/analytics/google";
 import { toast } from "sonner";
+
+
 
 type Entity = {
   type: "work" | "workshop" | "profile" | "collab";
@@ -52,7 +55,9 @@ export function ShareSheet({ entity, trigger }: Props) {
 
   function track(channel: "copy" | "native" | "twitter" | "facebook" | "whatsapp" | "email") {
     log({ data: { entityType: entity.type, entityId: entity.id, channel } }).catch(() => {});
+    gtagEvent("share", { method: channel, content_type: entity.type });
   }
+
 
   async function copyLink() {
     try {

@@ -4,6 +4,8 @@ import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { RequireAuth } from "@/components/require-auth";
+import { gtagEvent } from "@/lib/analytics/google";
+
 
 type Destination = "blog";
 
@@ -28,6 +30,7 @@ function CheckoutReturn() {
 
   useEffect(() => {
     if (!session_id) return;
+    gtagEvent("purchase", { currency: "USD", transaction_id: session_id });
     const i = setInterval(() => {
       queryClient.invalidateQueries({ queryKey: ["subscription"] });
       queryClient.invalidateQueries({ queryKey: ["blog-access"] });
@@ -36,6 +39,7 @@ function CheckoutReturn() {
     const stop = setTimeout(() => clearInterval(i), 12_000);
     return () => { clearInterval(i); clearTimeout(stop); };
   }, [session_id, queryClient]);
+
 
   return (
     <main className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center px-4 text-center">
