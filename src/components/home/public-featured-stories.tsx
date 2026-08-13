@@ -49,14 +49,15 @@ export function PublicFeaturedStories({ posts }: { posts: PublicBlogCard[] }) {
     };
   }, []);
 
+  // Each hold is a fresh random duration, so the cadence never feels metered.
+  const [holdMs, setHoldMs] = useState(ROTATE_MIN_MS);
   useEffect(() => {
     if (!canRotate || paused || !visible) return;
-    const id = window.setInterval(
-      () => setLeadIndex((i) => (i + 1) % count),
-      ROTATE_MS,
-    );
-    return () => window.clearInterval(id);
-  }, [canRotate, paused, visible, count]);
+    const ms = randomHold();
+    setHoldMs(ms);
+    const id = window.setTimeout(() => setLeadIndex((i) => (i + 1) % count), ms);
+    return () => window.clearTimeout(id);
+  }, [canRotate, paused, visible, count, leadIndex]);
 
   if (count === 0) return null;
 
