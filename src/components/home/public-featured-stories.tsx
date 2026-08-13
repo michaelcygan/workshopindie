@@ -1,23 +1,85 @@
+import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import type { PublicBlogCard } from "@/lib/home-types";
 import { formatLongDate as formatDate } from "@/lib/format-date";
 
+const ROTATE_MS = 7000;
+
 /**
  * The lead editorial block: one large feature plus two compact secondary
- * stories, all visible and clickable at once.
+ * stories. The three take turns being the lead with a calm crossfade,
+ * pausing on hover/focus, off-screen, hidden tab, or reduced motion.
  */
 export function PublicFeaturedStories({ posts }: { posts: PublicBlogCard[] }) {
-  if (posts.length === 0) return null;
-  const [lead, ...secondary] = posts;
-  if (!lead) return null;
-  const rest = secondary.slice(0, 2);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [leadIndex, setLeadIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [visible, setVisible] = useState(true);
+  const [reduced, setReduced] = useState(false);
+
+  const count = posts.length;
+  const canRotate = count >= 2 && !reduced;
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const apply = () => setReduced(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => setVisible(!!entries[0]?.isIntersecting),
+      { threshold: 0.2 },
+    );
+    io.observe(el);
+    const onVis = () => setVisible(!document.hidden);
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      io.disconnect();
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!canRotate || paused || !visible) return;
+    const id = window.setInterval(
+      () => setLeadIndex((i) => (i + 1) % count),
+      ROTATE_MS,
+    );
+    return () => window.clearInterval(id);
+  }, [canRotate, paused, visible, count]);
+
+  if (count === 0) return null;
+
+  const ordered = posts.map((_, i) => posts[(leadIndex + i) % count]!);
+  const lead = ordered[0]!;
+  const rest = ordered.slice(1, 3);
 
   return (
     <section aria-label="Featured stories" className="border-b border-border">
-      <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
-        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
+      <div
+        ref={containerRef}
+        className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8"
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+        onFocusCapture={() => setPaused(true)}
+        onBlurCapture={() => setPaused(false)}
+      >
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
           Featured story
         </p>
+        <div className="mb-3 h-px w-full overflow-hidden bg-border">
+          {canRotate && !paused && visible ? (
+            <div
+              key={`${lead.id}-${paused}-${visible}`}
+              className="h-px bg-primary/50 animate-[featured-progress_7s_linear_forwards]"
+            />
+          ) : null}
+        </div>
 
         <div className="grid gap-6 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] md:items-start md:gap-10">
           <Link
@@ -27,24 +89,42 @@ export function PublicFeaturedStories({ posts }: { posts: PublicBlogCard[] }) {
             aria-label={lead.title}
           >
             <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-muted">
-              {lead.coverUrl ? (
-                <img
-                  src={lead.coverUrl}
-                  alt={lead.coverAlt ?? lead.title}
-                  loading="eager"
-                  decoding="async"
-                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center border border-border bg-surface p-6">
-                  <span className="font-display text-2xl italic text-ink-soft">Workshop</span>
+              {ordered.map((post, i) => (
+                <div
+                  key={post.id}
+                  aria-hidden={i !== 0}
+                  className="absolute inset-0 transition-[opacity,transform] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                  style={{
+                    opacity: i === 0 ? 1 : 0,
+                    transform: i === 0 ? "translateY(0)" : "translateY(8px)",
+                    pointerEvents: i === 0 ? "auto" : "none",
+                  }}
+                >
+                  {post.coverUrl ? (
+                    <img
+                      src={post.coverUrl}
+                      alt={i === 0 ? (post.coverAlt ?? post.title) : ""}
+                      loading="eager"
+                      decoding="async"
+                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center border border-border bg-surface p-6">
+                      <span className="font-display text-2xl italic text-ink-soft">Workshop</span>
+                    </div>
+                  )}
                 </div>
-              )}
+              ))}
             </div>
           </Link>
 
           <div className="min-w-0">
-            <Link to="/blog/$slug" params={{ slug: lead.slug }} className="group block">
+            <Link
+              key={lead.id}
+              to="/blog/$slug"
+              params={{ slug: lead.slug }}
+              className="group block animate-[featured-rise_600ms_cubic-bezier(0.22,1,0.36,1)] motion-reduce:animate-none"
+            >
               <h2 className="font-display text-[26px] leading-[1.12] text-ink transition-colors group-hover:text-primary md:text-[38px]">
                 {lead.title}
               </h2>
@@ -66,7 +146,7 @@ export function PublicFeaturedStories({ posts }: { posts: PublicBlogCard[] }) {
                     key={post.id}
                     to="/blog/$slug"
                     params={{ slug: post.slug }}
-                    className="group grid grid-cols-[72px_minmax(0,1fr)] items-center gap-3 border-b border-border py-3 transition hover:bg-muted/40"
+                    className="group grid grid-cols-[72px_minmax(0,1fr)] items-center gap-3 border-b border-border py-3 transition hover:bg-muted/40 animate-[featured-rise_600ms_cubic-bezier(0.22,1,0.36,1)] motion-reduce:animate-none"
                   >
                     <div className="aspect-square w-[72px] overflow-hidden rounded-md bg-muted">
                       {post.coverUrl ? (
