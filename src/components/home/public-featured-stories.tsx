@@ -129,7 +129,8 @@ export function PublicFeaturedStories({ posts }: { posts: PublicBlogCard[] }) {
                     </div>
                   )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           </Link>
 
