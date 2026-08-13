@@ -1485,11 +1485,11 @@ export async function featuredBlogServer(): Promise<{
   const featured = (data ?? []) as unknown as BlogCardRow[];
 
   const rows = [...featured];
-  if (rows.length < FEATURED_POST_CAP) {
-    const { data: latest } = await base().limit(FEATURED_POST_CAP * 2);
+  if (rows.length < FEATURED_MIN_SLOTS) {
+    const { data: latest } = await base().limit(FEATURED_MIN_SLOTS * 2);
     const seen = new Set(rows.map((r) => r.id));
     for (const r of (latest ?? []) as unknown as BlogCardRow[]) {
-      if (rows.length >= FEATURED_POST_CAP) break;
+      if (rows.length >= FEATURED_MIN_SLOTS) break;
       if (seen.has(r.id)) continue;
       seen.add(r.id);
       rows.push(r);
