@@ -53,8 +53,16 @@ export function MobileIslandTab({ tab, active, avatar, layoutIdGroup }: Props) {
         ) : (
           <Avatar className={cn("h-[19px] w-[19px]", active && "ring-1 ring-primary/40")}>
             {avatar?.url ? <AvatarImage src={avatar.url} /> : null}
-            <AvatarFallback className="text-[9px]">
-              {avatar?.initial ?? "·"}
+            <AvatarFallback className="bg-transparent text-[9px]">
+              {avatar ? (
+                avatar.initial
+              ) : (
+                <img
+                  src="/brand/workshop-logo-mark.svg"
+                  alt="Workshop"
+                  className="h-[19px] w-[19px]"
+                />
+              )}
             </AvatarFallback>
           </Avatar>
         )}
