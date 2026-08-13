@@ -10,7 +10,7 @@ type Props = {
   value: string | null;
   onChange: (url: string | null) => void;
   bucket: "avatars" | "covers" | "work-covers";
-  aspect?: "square" | "video" | "portrait" | "wide";
+  aspect?: "square" | "video" | "portrait" | "wide" | "landscape";
   label?: string;
   className?: string;
 };
@@ -20,6 +20,7 @@ const aspectClass = {
   video: "aspect-video",
   portrait: "aspect-[4/5]",
   wide: "aspect-[16/6]",
+  landscape: "aspect-[16/10]",
 } as const;
 
 // v1 storage guardrails — keep portfolios cheap to host.
