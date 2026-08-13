@@ -101,22 +101,25 @@ export function PublicFeaturedStories({ posts }: { posts: PublicBlogCard[] }) {
             aria-label={lead.title}
           >
             <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-muted">
-              {slides.map((post, i) => (
+              {slides.map((post) => {
+                const isLead = post.id === lead.id;
+                return (
                 <div
                   key={post.id}
-                  aria-hidden={i !== 0}
+                  aria-hidden={!isLead}
                   className="absolute inset-0 transition-[opacity,transform] duration-[1100ms] ease-[cubic-bezier(0.33,0,0.2,1)] motion-reduce:transition-none"
                   style={{
-                    opacity: i === 0 ? 1 : 0,
-                    transform: i === 0 ? "translateY(0)" : "translateY(4px)",
-                    pointerEvents: i === 0 ? "auto" : "none",
+                    opacity: isLead ? 1 : 0,
+                    transform: isLead ? "translateY(0)" : "translateY(4px)",
+                    pointerEvents: isLead ? "auto" : "none",
+                    zIndex: isLead ? 1 : 0,
                   }}
                 >
                   {post.coverUrl ? (
                     <img
                       src={post.coverUrl}
-                      alt={i === 0 ? (post.coverAlt ?? post.title) : ""}
-                      loading={i === 0 ? "eager" : "lazy"}
+                      alt={isLead ? (post.coverAlt ?? post.title) : ""}
+                      loading={isLead ? "eager" : "lazy"}
                       decoding="async"
                       className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
                     />
