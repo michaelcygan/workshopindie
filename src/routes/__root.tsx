@@ -20,6 +20,8 @@ import { TrackingClickAttribution } from "@/components/tracking-click-attributio
 import { PresenceHeartbeat } from "@/components/presence-heartbeat";
 import { TrafficTracker } from "@/components/traffic-tracker";
 import { GoogleAnalyticsTracker } from "@/components/google-analytics-tracker";
+import { GA_MEASUREMENT_ID } from "@/lib/analytics/google";
+
 
 import { AccountLifecycleProvider } from "@/components/account-lifecycle/provider";
 import { AccountLifecycleGate } from "@/components/account-lifecycle/gate";
@@ -139,8 +141,23 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
     ],
     scripts: [
+      // Google tag (gtag.js) — rendered into the HTML source exactly as
+      // Google publishes it, so Tag Assistant and GA's "tag detected" check
+      // can find it. GA_MEASUREMENT_ID comes from the connected property.
+      ...(GA_MEASUREMENT_ID
+        ? [
+            {
+              async: true,
+              src: `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`,
+            },
+            {
+              children: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}window.gtag=gtag;gtag('js',new Date());gtag('config','${GA_MEASUREMENT_ID}');`,
+            },
+          ]
+        : []),
       {
         type: "application/ld+json",
+
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@graph": [

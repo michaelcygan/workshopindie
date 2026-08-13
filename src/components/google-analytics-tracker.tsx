@@ -16,19 +16,27 @@ import { gtagEvent, gtagPageView, initGoogleAnalytics } from "@/lib/analytics/go
 export function GoogleAnalyticsTracker() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const lastPath = useRef<string | null>(null);
+  const firstRun = useRef(true);
 
-  // Initialize gtag once the app hydrates.
+  // Safety net only: the real tag is server-rendered in <head>.
   useEffect(() => {
     initGoogleAnalytics();
   }, []);
 
-  // Track client-side route changes.
+  // Track client-side route changes. The initial load is already counted by
+  // gtag('config', ...) in the head snippet, so skip the first path.
   useEffect(() => {
     if (!pathname) return;
+    if (firstRun.current) {
+      firstRun.current = false;
+      lastPath.current = pathname;
+      return;
+    }
     if (lastPath.current === pathname) return;
     lastPath.current = pathname;
     gtagPageView(pathname, document.title);
   }, [pathname]);
+
 
   // Track auth lifecycle events (sign_up vs returning login). No PII.
   useEffect(() => {
