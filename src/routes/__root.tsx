@@ -20,6 +20,8 @@ import { TrackingClickAttribution } from "@/components/tracking-click-attributio
 import { PresenceHeartbeat } from "@/components/presence-heartbeat";
 import { TrafficTracker } from "@/components/traffic-tracker";
 import { GoogleAnalyticsTracker } from "@/components/google-analytics-tracker";
+import { GA_MEASUREMENT_ID } from "@/lib/analytics/google";
+
 
 import { AccountLifecycleProvider } from "@/components/account-lifecycle/provider";
 import { AccountLifecycleGate } from "@/components/account-lifecycle/gate";
