@@ -785,58 +785,33 @@ function EditProfile() {
             subtitle="Drives your Gallery tabs, gallery filters, and which Groups show up for you."
             refMap={sectionRefs}
           >
-            <div className="space-y-2">
-              <Label>Fields</Label>
-              <div className="flex flex-wrap gap-2">
-                {FIELD_OPTIONS.map((c) => {
-                  const on = form.cats.includes(c.id);
-                  return (
-                    <button
-                      type="button"
-                      key={c.id}
-                      onClick={() =>
-                        set("cats", on ? form.cats.filter((x) => x !== c.id) : [...form.cats, c.id])
-                      }
-                      className={cn(
-                        "rounded-full border px-3 py-1.5 text-sm transition",
-                        on
-                          ? cn("border-transparent", fieldClass(c.id))
-                          : "border-border bg-surface text-ink-soft hover:bg-muted",
-                      )}
-                    >
-                      {c.label}
-                    </button>
-                  );
-                })}
-                {EXTRA_MEDIUMS.map((m) => {
-                  const on = form.mediums.includes(m.id);
-                  return (
-                    <button
-                      type="button"
-                      key={m.id}
-                      onClick={() =>
-                        set(
-                          "mediums",
-                          on ? form.mediums.filter((x) => x !== m.id) : [...form.mediums, m.id],
-                        )
-                      }
-                      className={cn(
-                        "rounded-full border px-3 py-1.5 text-sm transition",
-                        on
-                          ? "border-transparent bg-ink text-background"
-                          : "border-border bg-surface text-ink-soft hover:bg-muted",
-                      )}
-                    >
-                      {m.label}
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="text-xs text-ink-muted">
-                Pick all that apply. Fields are your broad disciplines; the darker chips below
-                describe the specific practices you work in.
-              </p>
+            <div className="space-y-3">
+              <CollapsibleChipGroup
+                label="Fields"
+                options={FIELD_OPTIONS}
+                selected={form.cats}
+                onToggle={(id) =>
+                  set("cats", form.cats.includes(id) ? form.cats.filter((x) => x !== id) : [...form.cats, id])
+                }
+                chipClassName={(id) => fieldClass(id)}
+              />
+              <CollapsibleChipGroup
+                label="Practices"
+                labelSize="eyebrow"
+                options={EXTRA_MEDIUMS}
+                selected={form.mediums}
+                onToggle={(id) =>
+                  set(
+                    "mediums",
+                    form.mediums.includes(id)
+                      ? form.mediums.filter((x) => x !== id)
+                      : [...form.mediums, id],
+                  )
+                }
+                hint="Pick all that apply. Fields are your broad disciplines; Practices describe the specific ways you work."
+              />
             </div>
+
 
             <SpecialtiesPicker
               fields={form.cats}
