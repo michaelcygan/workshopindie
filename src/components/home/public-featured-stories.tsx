@@ -64,9 +64,11 @@ export function PublicFeaturedStories({ posts }: { posts: PublicBlogCard[] }) {
   const ordered = posts.map((_, i) => posts[(leadIndex + i) % count]!);
   const lead = ordered[0]!;
   const rest = ordered.slice(1, 3);
-  // Keep only the current lead plus the next slide mounted; an unlimited
-  // featured set shouldn't stack dozens of hero images on top of each other.
-  const slides = ordered.slice(0, Math.min(count, 2));
+  // Mount only the outgoing, current and incoming slides: an unlimited
+  // featured set shouldn't stack dozens of hero images on top of each other,
+  // but the previous lead has to stay around long enough to fade out.
+  const slideWindow = [posts[(leadIndex - 1 + count) % count]!, lead, ordered[1 % count]!];
+  const slides = slideWindow.filter((p, i) => slideWindow.findIndex((q) => q.id === p.id) === i);
 
   return (
     <section aria-label="Featured stories" className="border-b border-border">
@@ -81,11 +83,12 @@ export function PublicFeaturedStories({ posts }: { posts: PublicBlogCard[] }) {
         <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
           Featured story
         </p>
-        <div className="mb-3 h-px w-full overflow-hidden bg-border">
+        <div className="mb-3 h-px w-full overflow-hidden bg-border/60">
           {canRotate && !paused && visible ? (
             <div
               key={`${lead.id}-${paused}-${visible}`}
-              className="h-px bg-primary/50 animate-[featured-progress_5s_linear_forwards]"
+              className="h-px bg-primary/20 animate-[featured-progress_linear_forwards]"
+              style={{ animationDuration: `${holdMs}ms` }}
             />
           ) : null}
         </div>
@@ -98,22 +101,25 @@ export function PublicFeaturedStories({ posts }: { posts: PublicBlogCard[] }) {
             aria-label={lead.title}
           >
             <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl bg-muted">
-              {ordered.map((post, i) => (
+              {slides.map((post) => {
+                const isLead = post.id === lead.id;
+                return (
                 <div
                   key={post.id}
-                  aria-hidden={i !== 0}
-                  className="absolute inset-0 transition-[opacity,transform] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                  aria-hidden={!isLead}
+                  className="absolute inset-0 transition-[opacity,transform] duration-[1100ms] ease-[cubic-bezier(0.33,0,0.2,1)] motion-reduce:transition-none"
                   style={{
-                    opacity: i === 0 ? 1 : 0,
-                    transform: i === 0 ? "translateY(0)" : "translateY(8px)",
-                    pointerEvents: i === 0 ? "auto" : "none",
+                    opacity: isLead ? 1 : 0,
+                    transform: isLead ? "translateY(0)" : "translateY(4px)",
+                    pointerEvents: isLead ? "auto" : "none",
+                    zIndex: isLead ? 1 : 0,
                   }}
                 >
                   {post.coverUrl ? (
                     <img
                       src={post.coverUrl}
-                      alt={i === 0 ? (post.coverAlt ?? post.title) : ""}
-                      loading="eager"
+                      alt={isLead ? (post.coverAlt ?? post.title) : ""}
+                      loading={isLead ? "eager" : "lazy"}
                       decoding="async"
                       className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
                     />
@@ -123,7 +129,8 @@ export function PublicFeaturedStories({ posts }: { posts: PublicBlogCard[] }) {
                     </div>
                   )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           </Link>
 
@@ -132,7 +139,7 @@ export function PublicFeaturedStories({ posts }: { posts: PublicBlogCard[] }) {
               key={lead.id}
               to="/blog/$slug"
               params={{ slug: lead.slug }}
-              className="group block animate-[featured-rise_600ms_cubic-bezier(0.22,1,0.36,1)] motion-reduce:animate-none"
+              className="group block animate-[featured-rise_900ms_cubic-bezier(0.33,0,0.2,1)] motion-reduce:animate-none"
             >
               <h2 className="font-display text-[26px] leading-[1.12] text-ink transition-colors group-hover:text-primary md:text-[38px]">
                 {lead.title}
@@ -155,7 +162,7 @@ export function PublicFeaturedStories({ posts }: { posts: PublicBlogCard[] }) {
                     key={post.id}
                     to="/blog/$slug"
                     params={{ slug: post.slug }}
-                    className="group grid grid-cols-[72px_minmax(0,1fr)] items-center gap-3 border-b border-border py-3 transition hover:bg-muted/40 animate-[featured-rise_600ms_cubic-bezier(0.22,1,0.36,1)] motion-reduce:animate-none"
+                    className="group grid grid-cols-[72px_minmax(0,1fr)] items-center gap-3 border-b border-border py-3 transition hover:bg-muted/40 animate-[featured-rise_900ms_cubic-bezier(0.33,0,0.2,1)] motion-reduce:animate-none"
                   >
                     <div className="aspect-square w-[72px] overflow-hidden rounded-md bg-muted">
                       {post.coverUrl ? (

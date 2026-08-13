@@ -25,13 +25,16 @@ export function PublicHome() {
     staleTime: 3 * 60_000,
   });
 
-  // Three stories lead the page: featured first, topped up from the newest
-  // posts when fewer than three are admin-featured.
+  // The full featured set leads the page and rotates through the lead slot,
+  // topped up from the newest posts when fewer than three are featured.
   const headerPosts = data
-    ? [
-        ...data.featuredPosts,
-        ...data.latestPosts.filter((p) => !data.featuredPosts.some((f) => f.id === p.id)),
-      ].slice(0, 3)
+    ? (() => {
+        const merged = [
+          ...data.featuredPosts,
+          ...data.latestPosts.filter((p) => !data.featuredPosts.some((f) => f.id === p.id)),
+        ];
+        return merged.slice(0, Math.max(data.featuredPosts.length, Math.min(3, merged.length)));
+      })()
     : [];
   const headerIds = new Set(headerPosts.map((p) => p.id));
   const latestPosts = data ? data.latestPosts.filter((p) => !headerIds.has(p.id)) : [];

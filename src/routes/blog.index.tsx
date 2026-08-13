@@ -91,10 +91,14 @@ function BlogIndexPage() {
   const ordered = [...featured, ...posts.filter((p) => !featuredIds.has(p.id))];
 
   const cards = ordered.map(toBlogCard);
-  const headerPosts = cards.slice(0, 3);
-  const latestPosts = cards.slice(3, 9);
-  const morePosts = cards.slice(9, 15);
-  const archivePosts = cards.slice(15);
+  // The whole featured set rotates through the lead slot; when nothing is
+  // featured, the three newest posts stand in.
+  const headerCount = Math.max(featured.length, Math.min(3, cards.length));
+  const headerPosts = cards.slice(0, headerCount);
+  const restCards = cards.slice(headerCount);
+  const latestPosts = restCards.slice(0, 6);
+  const morePosts = restCards.slice(6, 12);
+  const archivePosts = restCards.slice(12);
 
   return (
     <div className="pb-28 md:pb-16">
