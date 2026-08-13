@@ -1,6 +1,8 @@
 import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe-js";
+import { gtagEvent } from "@/lib/analytics/google";
 import { getStripe, getStripeEnvironment } from "@/lib/stripe";
 import { createCheckoutSession } from "@/lib/payments.functions";
+
 
 interface Props {
   priceId: string;
@@ -17,8 +19,10 @@ export function StripeEmbeddedCheckout({ priceId, returnUrl }: Props) {
       },
     });
     if (!secret) throw new Error("No client secret returned");
+    gtagEvent("begin_checkout", { currency: "USD", value: 0 });
     return secret;
   };
+
 
   return (
     <div id="checkout">

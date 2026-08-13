@@ -19,6 +19,8 @@ import { RefCapture } from "@/components/ref-capture";
 import { TrackingClickAttribution } from "@/components/tracking-click-attribution";
 import { PresenceHeartbeat } from "@/components/presence-heartbeat";
 import { TrafficTracker } from "@/components/traffic-tracker";
+import { GoogleAnalyticsTracker } from "@/components/google-analytics-tracker";
+
 import { AccountLifecycleProvider } from "@/components/account-lifecycle/provider";
 import { AccountLifecycleGate } from "@/components/account-lifecycle/gate";
 import {
@@ -207,7 +209,9 @@ function RootComponent() {
               <TrackingClickAttribution />
               <PresenceHeartbeat />
               <TrafficTracker />
+              <GoogleAnalyticsTracker />
               <SignOutCacheReset />
+
               <TitleBadge />
               <AccountLifecycleGate />
               <PostAuthRunner />
