@@ -3,12 +3,16 @@ import { Link } from "@tanstack/react-router";
 import type { PublicBlogCard } from "@/lib/home-types";
 import { formatLongDate as formatDate } from "@/lib/format-date";
 
-const ROTATE_MS = 5000;
+const ROTATE_MIN_MS = 6500;
+const ROTATE_MAX_MS = 10000;
+const randomHold = () =>
+  Math.round(ROTATE_MIN_MS + Math.random() * (ROTATE_MAX_MS - ROTATE_MIN_MS));
 
 /**
  * The lead editorial block: one large feature plus two compact secondary
- * stories. The three take turns being the lead with a calm crossfade,
- * pausing on hover/focus, off-screen, hidden tab, or reduced motion.
+ * stories. The whole featured set takes turns being the lead with a gentle
+ * crossfade on an ambient, slightly irregular cadence — pausing on
+ * hover/focus, off-screen, hidden tab, or reduced motion.
  */
 
 export function PublicFeaturedStories({ posts }: { posts: PublicBlogCard[] }) {
@@ -45,20 +49,24 @@ export function PublicFeaturedStories({ posts }: { posts: PublicBlogCard[] }) {
     };
   }, []);
 
+  // Each hold is a fresh random duration, so the cadence never feels metered.
+  const [holdMs, setHoldMs] = useState(ROTATE_MIN_MS);
   useEffect(() => {
     if (!canRotate || paused || !visible) return;
-    const id = window.setInterval(
-      () => setLeadIndex((i) => (i + 1) % count),
-      ROTATE_MS,
-    );
-    return () => window.clearInterval(id);
-  }, [canRotate, paused, visible, count]);
+    const ms = randomHold();
+    setHoldMs(ms);
+    const id = window.setTimeout(() => setLeadIndex((i) => (i + 1) % count), ms);
+    return () => window.clearTimeout(id);
+  }, [canRotate, paused, visible, count, leadIndex]);
 
   if (count === 0) return null;
 
   const ordered = posts.map((_, i) => posts[(leadIndex + i) % count]!);
   const lead = ordered[0]!;
   const rest = ordered.slice(1, 3);
+  // Keep only the current lead plus the next slide mounted; an unlimited
+  // featured set shouldn't stack dozens of hero images on top of each other.
+  const slides = ordered.slice(0, Math.min(count, 2));
 
   return (
     <section aria-label="Featured stories" className="border-b border-border">

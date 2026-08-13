@@ -46,8 +46,10 @@ const supabaseAdmin = traceClient(rawSupabaseAdmin);
 const POST_SCAN_LIMIT = 40;
 const MAX_WORK_STORIES = 8;
 const MAX_STORIES_PER_WORK = 3;
-/** Admins may feature at most this many Blog posts at once. */
-export const FEATURED_POST_CAP = 5;
+/** Featuring is unlimited; this only bounds the payload we ship to the client. */
+export const FEATURED_POST_CAP = 24;
+/** Minimum lead + secondary slots the featured block needs. */
+const FEATURED_MIN_SLOTS = 3;
 const MAX_MINE_ITEMS = 6;
 
 type PostRow = {
@@ -1483,11 +1485,11 @@ export async function featuredBlogServer(): Promise<{
   const featured = (data ?? []) as unknown as BlogCardRow[];
 
   const rows = [...featured];
-  if (rows.length < FEATURED_POST_CAP) {
-    const { data: latest } = await base().limit(FEATURED_POST_CAP * 2);
+  if (rows.length < FEATURED_MIN_SLOTS) {
+    const { data: latest } = await base().limit(FEATURED_MIN_SLOTS * 2);
     const seen = new Set(rows.map((r) => r.id));
     for (const r of (latest ?? []) as unknown as BlogCardRow[]) {
-      if (rows.length >= FEATURED_POST_CAP) break;
+      if (rows.length >= FEATURED_MIN_SLOTS) break;
       if (seen.has(r.id)) continue;
       seen.add(r.id);
       rows.push(r);

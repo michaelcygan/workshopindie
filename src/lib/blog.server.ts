@@ -519,29 +519,14 @@ export async function adminUpdatePostServer(
   return { id: data.id, slug };
 }
 
-/** At most this many posts may be featured; the set powers /blog and member Home. */
-export const FEATURED_POST_CAP = 5;
-
 export async function adminSetPostFeaturedServer(
   context: AuthContext,
   id: string,
   featured: boolean,
 ) {
   await requireAdmin(context);
-  // Multiple posts can be featured — 2+ render as an auto-advancing carousel
-  // on /blog and in the member-home featured header. Never silently unfeature
-  // someone else's pick: refuse past the cap and let the admin choose.
-  if (featured) {
-    const { data: current, error: countErr } = await supabaseAdmin
-      .from("blog_posts")
-      .select("id")
-      .eq("featured", true);
-    if (countErr) throw new Error(countErr.message);
-    const others = (current ?? []).filter((r) => r.id !== id);
-    if (others.length >= FEATURED_POST_CAP) {
-      throw new Error(`${FEATURED_POST_CAP} posts are already featured — unfeature one first.`);
-    }
-  }
+  // Featuring is unlimited — the whole featured set rotates through the lead
+  // slot on /blog and the homepage.
 
   const { error } = await supabaseAdmin
     .from("blog_posts")
