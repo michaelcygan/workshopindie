@@ -162,7 +162,7 @@ export function PublicFeaturedStories({ posts }: { posts: PublicBlogCard[] }) {
                     key={post.id}
                     to="/blog/$slug"
                     params={{ slug: post.slug }}
-                    className="group grid grid-cols-[72px_minmax(0,1fr)] items-center gap-3 border-b border-border py-3 transition hover:bg-muted/40 animate-[featured-rise_600ms_cubic-bezier(0.22,1,0.36,1)] motion-reduce:animate-none"
+                    className="group grid grid-cols-[72px_minmax(0,1fr)] items-center gap-3 border-b border-border py-3 transition hover:bg-muted/40 animate-[featured-rise_900ms_cubic-bezier(0.33,0,0.2,1)] motion-reduce:animate-none"
                   >
                     <div className="aspect-square w-[72px] overflow-hidden rounded-md bg-muted">
                       {post.coverUrl ? (
