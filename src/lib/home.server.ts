@@ -46,8 +46,10 @@ const supabaseAdmin = traceClient(rawSupabaseAdmin);
 const POST_SCAN_LIMIT = 40;
 const MAX_WORK_STORIES = 8;
 const MAX_STORIES_PER_WORK = 3;
-/** Admins may feature at most this many Blog posts at once. */
-export const FEATURED_POST_CAP = 5;
+/** Featuring is unlimited; this only bounds the payload we ship to the client. */
+export const FEATURED_POST_CAP = 24;
+/** Minimum lead + secondary slots the featured block needs. */
+const FEATURED_MIN_SLOTS = 3;
 const MAX_MINE_ITEMS = 6;
 
 type PostRow = {
