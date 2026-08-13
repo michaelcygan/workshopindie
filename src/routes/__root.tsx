@@ -153,8 +153,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
             },
           ]
         : []),
-
+      {
         type: "application/ld+json",
+
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@graph": [
