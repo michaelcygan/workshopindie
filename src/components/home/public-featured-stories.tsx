@@ -81,11 +81,12 @@ export function PublicFeaturedStories({ posts }: { posts: PublicBlogCard[] }) {
         <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
           Featured story
         </p>
-        <div className="mb-3 h-px w-full overflow-hidden bg-border">
+        <div className="mb-3 h-px w-full overflow-hidden bg-border/60">
           {canRotate && !paused && visible ? (
             <div
               key={`${lead.id}-${paused}-${visible}`}
-              className="h-px bg-primary/50 animate-[featured-progress_5s_linear_forwards]"
+              className="h-px bg-primary/20 animate-[featured-progress_linear_forwards]"
+              style={{ animationDuration: `${holdMs}ms` }}
             />
           ) : null}
         </div>
