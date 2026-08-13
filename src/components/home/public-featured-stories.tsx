@@ -64,6 +64,9 @@ export function PublicFeaturedStories({ posts }: { posts: PublicBlogCard[] }) {
   const ordered = posts.map((_, i) => posts[(leadIndex + i) % count]!);
   const lead = ordered[0]!;
   const rest = ordered.slice(1, 3);
+  // Keep only the current lead plus the next slide mounted; an unlimited
+  // featured set shouldn't stack dozens of hero images on top of each other.
+  const slides = ordered.slice(0, Math.min(count, 2));
 
   return (
     <section aria-label="Featured stories" className="border-b border-border">
