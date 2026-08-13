@@ -3,12 +3,16 @@ import { Link } from "@tanstack/react-router";
 import type { PublicBlogCard } from "@/lib/home-types";
 import { formatLongDate as formatDate } from "@/lib/format-date";
 
-const ROTATE_MS = 5000;
+const ROTATE_MIN_MS = 6500;
+const ROTATE_MAX_MS = 10000;
+const randomHold = () =>
+  Math.round(ROTATE_MIN_MS + Math.random() * (ROTATE_MAX_MS - ROTATE_MIN_MS));
 
 /**
  * The lead editorial block: one large feature plus two compact secondary
- * stories. The three take turns being the lead with a calm crossfade,
- * pausing on hover/focus, off-screen, hidden tab, or reduced motion.
+ * stories. The whole featured set takes turns being the lead with a gentle
+ * crossfade on an ambient, slightly irregular cadence — pausing on
+ * hover/focus, off-screen, hidden tab, or reduced motion.
  */
 
 export function PublicFeaturedStories({ posts }: { posts: PublicBlogCard[] }) {
