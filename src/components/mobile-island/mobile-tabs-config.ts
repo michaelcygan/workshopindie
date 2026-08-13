@@ -25,8 +25,8 @@ export type MobileTab = {
  * away from anywhere on mobile.
  */
 export const mobileTabs: readonly MobileTab[] = [
-  { id: "groups", label: "Groups", to: "/groups", icon: Sparkles, side: "left" },
-  { id: "collabs", label: "Collabs", to: "/collab", icon: Users, side: "left" },
+  { id: "groups", label: "Groups", to: "/groups", icon: Users, side: "left" },
+  { id: "collabs", label: "Collabs", to: "/collab", icon: Sparkles, side: "left" },
   { id: "gallery", label: "Gallery", to: "/gallery", icon: LayoutGrid, side: "left" },
   { id: "events", label: "Events", to: "/events", icon: Calendar, side: "right" },
   { id: "blog", label: "Blog", to: "/blog", icon: BookOpen, side: "right" },
