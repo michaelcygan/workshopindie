@@ -3,13 +3,14 @@ import { Link } from "@tanstack/react-router";
 import type { PublicBlogCard } from "@/lib/home-types";
 import { formatLongDate as formatDate } from "@/lib/format-date";
 
-const ROTATE_MS = 7000;
+const ROTATE_MS = 5000;
 
 /**
  * The lead editorial block: one large feature plus two compact secondary
  * stories. The three take turns being the lead with a calm crossfade,
  * pausing on hover/focus, off-screen, hidden tab, or reduced motion.
  */
+
 export function PublicFeaturedStories({ posts }: { posts: PublicBlogCard[] }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [leadIndex, setLeadIndex] = useState(0);
@@ -76,7 +77,7 @@ export function PublicFeaturedStories({ posts }: { posts: PublicBlogCard[] }) {
           {canRotate && !paused && visible ? (
             <div
               key={`${lead.id}-${paused}-${visible}`}
-              className="h-px bg-primary/50 animate-[featured-progress_7s_linear_forwards]"
+              className="h-px bg-primary/50 animate-[featured-progress_5s_linear_forwards]"
             />
           ) : null}
         </div>
