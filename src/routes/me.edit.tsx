@@ -17,6 +17,8 @@ import { CoverImagePicker } from "@/components/cover-image-picker";
 import { FIELD_OPTIONS, fieldClass, type FieldId } from "@/lib/taxonomy";
 import { profileFieldWritePayload, profileFields } from "@/lib/work-fields";
 import { SpecialtiesPicker } from "@/components/subcategory-picker";
+import { CollapsibleChipGroup } from "@/components/collapsible-chip-group";
+
 import {
   EXTRA_MEDIUMS,
   isExtraMedium,
