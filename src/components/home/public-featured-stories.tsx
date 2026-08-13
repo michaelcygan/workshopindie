@@ -139,7 +139,7 @@ export function PublicFeaturedStories({ posts }: { posts: PublicBlogCard[] }) {
               key={lead.id}
               to="/blog/$slug"
               params={{ slug: lead.slug }}
-              className="group block animate-[featured-rise_600ms_cubic-bezier(0.22,1,0.36,1)] motion-reduce:animate-none"
+              className="group block animate-[featured-rise_900ms_cubic-bezier(0.33,0,0.2,1)] motion-reduce:animate-none"
             >
               <h2 className="font-display text-[26px] leading-[1.12] text-ink transition-colors group-hover:text-primary md:text-[38px]">
                 {lead.title}
