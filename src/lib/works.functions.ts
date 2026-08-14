@@ -14,7 +14,7 @@ const SplitSchema = z.object({
 
 const CreateSchema = z.object({
   title: z.string().min(1).max(200),
-  description: z.string().max(4000).nullable(),
+  description: z.string().max(25000).nullable(),
   category: z.string().min(1).max(40),
   visibility: z.enum(["private", "public", "invite_only"]),
   license: z.enum(["cc_by", "rights_managed_externally", "portfolio_credit_only", "private"]),

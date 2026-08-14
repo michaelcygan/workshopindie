@@ -11,7 +11,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ImageUpload } from "@/components/image-upload";
 import { EmbedPlayer, providerLabel } from "@/components/embed-player";
@@ -33,6 +32,14 @@ import { SubcategoryPicker } from "@/components/subcategory-picker";
 import { FormatInput } from "@/components/format-input";
 import { normalizeUrl, normalizeUrlOrKeep } from "@/lib/url-normalize";
 import { WorkComposerWalkthrough } from "@/components/nudges/work-composer-walkthrough";
+import { RichBodyEditor } from "@/components/rich-body-editor";
+import {
+  WorkMediaComposer,
+  publishStagedAssets,
+  releaseStagedAssets,
+  type StagedAsset,
+} from "@/components/work/work-media-composer";
+import { WORK_BODY_MAX } from "@/lib/work-body";
 
 
 const newWorkSearch = z.object({
@@ -98,6 +105,7 @@ function NewWork() {
   const [myProfile, setMyProfile] = useState<{ display_name: string | null; username: string | null } | null>(null);
 
   const [book, setBook] = useState<BookDetails>(emptyBookDetails);
+  const [media, setMedia] = useState<StagedAsset[]>([]);
 
   // Keep typed work if the member navigates away (e.g. mobile composer "+").
   const draftStash = useFormDraftStash(
@@ -233,7 +241,7 @@ function NewWork() {
         source_type: "manual",
         license_type: "portfolio_credit_only",
         ownership_certified_at: new Date().toISOString(),
-        status: "published",
+        status: "draft",
         visibility: "public",
         created_by: user.id,
         ...bookFields,
@@ -249,6 +257,17 @@ function NewWork() {
         return;
       }
       return toast.error(error?.message ?? "Failed to publish");
+    }
+
+    // Media before publish: a half-assembled Work never becomes visible.
+    if (media.length > 0) {
+      try {
+        await publishStagedAssets({ userId: user.id, workId: work.id, items: media });
+      } catch {
+        setSubmitting(false);
+        toast.error("Couldn't upload your media. Your Work is saved as a draft — try posting again.");
+        return;
+      }
     }
 
     // Creator credit (self)
@@ -277,6 +296,16 @@ function NewWork() {
       });
     });
     await supabase.from("work_credits").insert(credits);
+
+    const { error: publishError } = await supabase
+      .from("works")
+      .update({ status: "published" })
+      .eq("id", work.id);
+    if (publishError) {
+      setSubmitting(false);
+      toast.error("Saved as a draft — publishing failed. Try posting again.");
+      return;
+    }
 
 
 
@@ -310,6 +339,8 @@ function NewWork() {
       setExtraFields([]);
 
       setBook(emptyBookDetails);
+      releaseStagedAssets(media);
+      setMedia([]);
       setUrlInput("");
       setStep("drop");
       navigate({ to: "/works/new", search: {} });
@@ -429,6 +460,8 @@ function NewWork() {
 
 
 
+          <WorkMediaComposer items={media} onChange={setMedia} license="portfolio_credit_only" />
+
           {/* Ownership self-cert */}
           <section className="rounded-2xl border border-border bg-surface p-4">
             <label className="flex items-start gap-3 cursor-pointer">
@@ -482,14 +515,18 @@ function NewWork() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <Label htmlFor="desc">Description</Label>
-                      <Textarea
-                        id="desc"
-                        rows={5}
-                        maxLength={3000}
+                      <Label>About this Work</Label>
+                      <RichBodyEditor
                         value={description}
-                        onChange={(e) => setDescription(e.target.value)}
+                        onChange={(v) => setDescription(v.slice(0, WORK_BODY_MAX))}
+                        label="About"
+                        badge={null}
                         placeholder="What is it? Who is it for? How was it made?"
+                        uploadBucket="work-covers"
+                        showWordCount={false}
+                        soloMinHeight={false}
+                        stickyOffsetClass="top-0"
+                        helperText="Add context, process notes, photos or links. Markdown is supported."
                       />
                     </div>
 
