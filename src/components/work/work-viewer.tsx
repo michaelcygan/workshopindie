@@ -54,13 +54,17 @@ export function WorkViewer({
   }
 
   const hero = primaryAsset(assets);
-  const images = assets.filter((a) => a.asset_type === "image");
   const heroIsImage = hero?.asset_type === "image";
+  const images = assets.filter((a) => a.asset_type === "image");
 
   // Everything that isn't the hero and isn't part of the image gallery.
-  const rest = assets.filter((a) => a.id !== hero?.id && !(heroIsImage && a.asset_type === "image"));
+  const rest = assets.filter((a) => a.id !== hero?.id && a.asset_type !== "image");
   const inlineRest = rest.filter((a) => a.asset_type === "video" || a.asset_type === "audio");
   const cards = rest.filter((a) => a.asset_type !== "video" && a.asset_type !== "audio");
+
+  // Supporting photographs stay a gallery even when a film, a PDF or a repo
+  // leads the page — stills shouldn't degrade into a list of file cards.
+  const supportingImages = heroIsImage ? [] : images;
 
   return (
     <div className={cn("space-y-4", className)}>
@@ -74,6 +78,8 @@ export function WorkViewer({
         <AssetSurface key={asset.id} asset={asset} title={asset.label || title} />
       ))}
 
+      {supportingImages.length > 0 && <ImageViewer images={supportingImages} title={title} />}
+
       {cards.length > 0 && (
         <div className="grid gap-2 sm:grid-cols-2">
           {cards.map((asset) => (
@@ -84,6 +90,7 @@ export function WorkViewer({
     </div>
   );
 }
+
 
 /** Renders one asset in its native presentation. */
 function AssetSurface({ asset, title }: { asset: Asset; title: string }) {
