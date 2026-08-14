@@ -157,7 +157,7 @@ function EditWork() {
         description: description.trim() || null,
         cover_url: coverUrl,
         primary_url: primaryUrl.trim() || null,
-        embed_url: isBook ? null : (embedUrl.trim() || null),
+        embed_url: embedUrl.trim() || null,
         license_type: licenseType as "cc_by" | "portfolio_credit_only" | "private" | "rights_managed_externally",
         ...bookFields,
       })
@@ -263,26 +263,22 @@ function EditWork() {
           </div>
         )}
 
-        {(
-          <>
-            <div className="space-y-2">
-              <Label>Primary link</Label>
-              <Input
-                value={primaryUrl}
-                onChange={(e) => setPrimaryUrl(e.target.value)}
-                placeholder="https://…"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Embed URL</Label>
-              <Input
-                value={embedUrl}
-                onChange={(e) => setEmbedUrl(e.target.value)}
-                placeholder="YouTube / Vimeo / SoundCloud URL"
-              />
-            </div>
-          </>
-        )}
+        <div className="space-y-2">
+          <Label>Primary link</Label>
+          <Input
+            value={primaryUrl}
+            onChange={(e) => setPrimaryUrl(e.target.value)}
+            placeholder="https://…"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Embed URL</Label>
+          <Input
+            value={embedUrl}
+            onChange={(e) => setEmbedUrl(e.target.value)}
+            placeholder="YouTube / Vimeo / SoundCloud URL"
+          />
+        </div>
 
         <div className="space-y-2">
           <Label>License</Label>
