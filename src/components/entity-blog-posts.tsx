@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { PenLine } from "lucide-react";
+import { ChevronLeft, ChevronRight, PenLine } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -38,6 +38,7 @@ export function EntityBlogPosts({
   emptyLabel,
   openSlug,
   onOpenSlugChange,
+  layout = "grid",
 }: {
   kind: BlogEntityKind;
   entityId: string;
@@ -51,6 +52,8 @@ export function EntityBlogPosts({
   /** When provided, the peek is driven by the caller (e.g. a URL search param). */
   openSlug?: string | null;
   onOpenSlugChange?: (slug: string | null) => void;
+  /** "carousel" swaps the 3-up grid for a swipeable, snap-scrolling rail. */
+  layout?: "grid" | "carousel";
 }) {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -116,12 +119,17 @@ export function EntityBlogPosts({
         </p>
 
       ) : (
-        <div className="grid gap-3 md:grid-cols-3">
+        <Rail enabled={layout === "carousel"}>
           {posts.map((p) => {
             const authors = ((p as { authors?: Author[] }).authors ?? []).slice(0, 3);
             return (
               <EditorialCard
                 key={p.id}
+                className={
+                  layout === "carousel"
+                    ? "w-[78vw] shrink-0 snap-start sm:w-[320px]"
+                    : undefined
+                }
                 cover={p.cover_image_url}
                 aspect="16/10"
                 onClick={() => setPeekSlug(p.slug)}
@@ -159,7 +167,7 @@ export function EntityBlogPosts({
               />
             );
           })}
-        </div>
+        </Rail>
       )}
 
       <BlogPostPeek
@@ -169,5 +177,76 @@ export function EntityBlogPosts({
         onSelectPost={(slug) => setPeekSlug(slug)}
       />
     </section>
+  );
+}
+
+/**
+ * A swipeable rail on touch, an arrow-driven scroller on desktop. When
+ * disabled it falls back to the original 3-up grid so other entity pages keep
+ * their current layout.
+ */
+function Rail({ enabled, children }: { enabled: boolean; children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [edges, setEdges] = useState({ start: false, end: false });
+
+  useEffect(() => {
+    if (!enabled) return;
+    const el = ref.current;
+    if (!el) return;
+    const sync = () => {
+      const max = el.scrollWidth - el.clientWidth;
+      setEdges({ start: el.scrollLeft > 8, end: el.scrollLeft < max - 8 });
+    };
+    sync();
+    el.addEventListener("scroll", sync, { passive: true });
+    const ro = new ResizeObserver(sync);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", sync);
+      ro.disconnect();
+    };
+  }, [enabled, children]);
+
+  if (!enabled) return <div className="grid gap-3 md:grid-cols-3">{children}</div>;
+
+  const nudge = (dir: -1 | 1) => {
+    const el = ref.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * Math.max(el.clientWidth * 0.8, 240), behavior: "smooth" });
+  };
+
+  return (
+    <div className="relative">
+      <div
+        ref={ref}
+        tabIndex={0}
+        role="group"
+        aria-label="Stories"
+        className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] focus:outline-none [&::-webkit-scrollbar]:hidden sm:mx-0 sm:px-0"
+      >
+        {children}
+      </div>
+
+      {edges.start && (
+        <button
+          type="button"
+          aria-label="Previous stories"
+          onClick={() => nudge(-1)}
+          className="absolute left-1 top-1/2 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-surface/95 text-ink shadow-soft transition hover:bg-surface md:flex"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+      )}
+      {edges.end && (
+        <button
+          type="button"
+          aria-label="More stories"
+          onClick={() => nudge(1)}
+          className="absolute right-1 top-1/2 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-surface/95 text-ink shadow-soft transition hover:bg-surface md:flex"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      )}
+    </div>
   );
 }

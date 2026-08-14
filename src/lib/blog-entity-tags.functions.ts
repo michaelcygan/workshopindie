@@ -68,7 +68,7 @@ export const listBlogPostsForEntity = createServerFn({ method: "GET" })
       .object({
         kind: railKindSchema,
         entityId: z.string().uuid(),
-        limit: z.number().int().min(1).max(6).optional(),
+        limit: z.number().int().min(1).max(12).optional(),
         trustedOnly: z.boolean().optional(),
       })
       .parse(d),
