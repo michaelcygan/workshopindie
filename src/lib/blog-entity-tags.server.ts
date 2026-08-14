@@ -689,10 +689,26 @@ export async function listBlogPostsForEntityServer(
     .select("blog_post_id")
     .eq(column[kind], entityId);
   if (tagErr) throw new Error(tagErr.message);
-  const postIds = Array.from(
-    new Set((tagRows ?? []).map((r) => (r as { blog_post_id: string }).blog_post_id)),
-  );
+  const idSet = new Set((tagRows ?? []).map((r) => (r as { blog_post_id: string }).blog_post_id));
+
+  // A person's own page also carries the stories they wrote — tagging yourself
+  // in your own post is not something anyone remembers to do.
+  if (kind === "profile") {
+    const [{ data: ownRows }, { data: bylineRows }] = await Promise.all([
+      supabaseAdmin
+        .from("blog_posts")
+        .select("id")
+        .or(`created_by.eq.${entityId},author_profile_id.eq.${entityId}`),
+      supabaseAdmin.from("blog_post_authors").select("blog_post_id").eq("profile_id", entityId),
+    ]);
+    for (const r of (ownRows ?? []) as Array<{ id: string }>) idSet.add(r.id);
+    for (const r of (bylineRows ?? []) as Array<{ blog_post_id: string }>)
+      idSet.add(r.blog_post_id);
+  }
+
+  const postIds = Array.from(idSet);
   if (!postIds.length) return [];
+
 
   const { data, error } = await supabaseAdmin
     .from("blog_posts")
