@@ -246,3 +246,60 @@ export function WorkMediaComposer({ items, onChange, license, className }: WorkM
 export function releaseStagedAssets(items: StagedAsset[]) {
   for (const item of items) if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
 }
+
+/**
+ * Uploads staged files and writes the asset rows for a freshly created Work.
+ *
+ * Ordering is the creator's ordering; the first row leads the page. A file that
+ * uploads but fails to record is removed from storage so nothing is orphaned.
+ */
+export async function publishStagedAssets(opts: {
+  userId: string;
+  workId: string;
+  items: StagedAsset[];
+}) {
+  const { insertWorkAssets, uploadWorkAssetFile, removeWorkAssetFile } = await import("@/lib/work-assets");
+  const rows: Array<Parameters<typeof insertWorkAssets>[0][number]> = [];
+  const uploaded: string[] = [];
+
+  try {
+    for (let i = 0; i < opts.items.length; i += 1) {
+      const item = opts.items[i];
+      let url = item.url;
+      let storage_path: string | null = null;
+
+      if (item.file) {
+        const res = await uploadWorkAssetFile({
+          userId: opts.userId,
+          workId: opts.workId,
+          file: item.file,
+          mime: item.mime ?? item.file.type,
+        });
+        url = res.url;
+        storage_path = res.storage_path;
+        uploaded.push(res.storage_path);
+      }
+
+      rows.push({
+        work_id: opts.workId,
+        created_by: opts.userId,
+        asset_type: item.assetType,
+        url,
+        storage_path,
+        label: item.alt.trim() || item.file?.name || null,
+        caption: item.caption.trim() || null,
+        mime_type: item.mime ?? null,
+        byte_size: item.byteSize ?? null,
+        sort_order: i,
+        is_primary: i === 0,
+        download_enabled: item.hosted ? item.downloadEnabled : false,
+        metadata: item.sourceUrl ? { source_url: item.sourceUrl } : {},
+      });
+    }
+
+    if (rows.length > 0) await insertWorkAssets(rows);
+  } catch (err) {
+    await Promise.allSettled(uploaded.map((p) => removeWorkAssetFile(p)));
+    throw err;
+  }
+}
