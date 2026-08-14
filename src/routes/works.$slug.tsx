@@ -29,6 +29,9 @@ import { WorkPublishedNudge } from "@/components/nudges/work-published-nudge";
 import { getCoCreditedWorks } from "@/lib/network.functions";
 import { getMyPinForWork, togglePinCredit } from "@/lib/works.functions";
 import { useDocumentMeta, useJsonLd } from "@/lib/seo";
+import { RichBody } from "@/components/rich-body";
+import { markdownToPlainText } from "@/lib/blog-excerpt";
+import { isBookWork } from "@/lib/taxonomy";
 import { SOURCE_LABELS, type Category } from "@/lib/categories";
 
 const LICENSE_LABELS: Record<string, string> = {
@@ -77,7 +80,8 @@ export const Route = createFileRoute("/works/$slug")({
     const w = loaderData?.seo;
     const url = `https://workshopindie.com${workshopEntityUrl({ kind: "work", slug: params.slug })}`;
     const title = w?.title ? `${w.title} — Workshop` : "Work — Workshop";
-    const description = w?.excerpt ?? w?.description?.slice(0, 160) ?? "A creative work on Workshop.";
+    const plain = w?.description ? markdownToPlainText(w.description) : "";
+    const description = w?.excerpt ?? (plain ? plain.slice(0, 160) : null) ?? "A creative work on Workshop.";
     const meta = [
       { title },
       { name: "description", content: description },
@@ -94,7 +98,7 @@ export const Route = createFileRoute("/works/$slug")({
       "@context": "https://schema.org",
       "@type": "CreativeWork",
       name: w?.title ?? "Work",
-      description: w?.excerpt ?? w?.description ?? undefined,
+      description: w?.excerpt ?? (plain || undefined),
       image: w?.cover_url ?? undefined,
       url,
     };
@@ -132,7 +136,7 @@ type WorkRow = {
 async function fetchWork(slug: string) {
   const { data, error } = await supabase
     .from("works")
-    .select("id,title,slug,category,categories,category_canonical,categories_canonical,subcategories,description,excerpt,cover_url,primary_url,embed_url,source_type,license_type,published_at,created_at,like_count,save_count,view_count,comment_count,created_by,source_workshop_id,book_author,book_publisher,book_isbn,book_published_on,book_page_count,book_buy_links,book_excerpt_url, work_credits(id,role_label,sort_order,display_name, profiles(id,display_name,username,avatar_url,headline))")
+    .select("id,title,slug,category,categories,category_canonical,categories_canonical,subcategories,subtype,description,excerpt,cover_url,primary_url,embed_url,source_type,license_type,published_at,created_at,like_count,save_count,view_count,comment_count,created_by,source_workshop_id,book_author,book_publisher,book_isbn,book_published_on,book_page_count,book_buy_links,book_excerpt_url, work_credits(id,role_label,sort_order,display_name, profiles(id,display_name,username,avatar_url,headline))")
     .eq("slug", slug)
     .eq("status", "published")
     .maybeSingle();
@@ -178,13 +182,20 @@ function WorkDetail() {
     [work, storedAssets],
   );
 
+  const isBook = !!work && isBookWork(work.category, work.subtype);
+  // The book hero already shows the cover; assets render as supporting media.
+  const bookAssets = useMemo(
+    () => (isBook ? viewerAssets.filter((a) => !("derived" in a && a.derived)) : []),
+    [isBook, viewerAssets],
+  );
+
   const credits = useMemo(() => (work?.work_credits ?? []).slice().sort((a, b) => a.sort_order - b.sort_order), [work]);
   const isOwnerOrCredited = !!user && !!work && (user.id === work.created_by || credits.some((c) => c.profiles?.id === user.id));
 
 
   useDocumentMeta({
     title: work?.title,
-    description: work?.excerpt ?? work?.description?.slice(0, 160) ?? undefined,
+    description: work?.excerpt ?? (work?.description ? markdownToPlainText(work.description).slice(0, 160) : undefined),
     image: work?.cover_url,
     type: "article",
   });
@@ -192,7 +203,7 @@ function WorkDetail() {
     "@context": "https://schema.org",
     "@type": "CreativeWork",
     name: work.title,
-    description: work.excerpt ?? work.description ?? undefined,
+    description: work.excerpt ?? (work.description ? markdownToPlainText(work.description) : undefined),
     image: work.cover_url ?? undefined,
     url: work.primary_url ?? undefined,
     datePublished: work.published_at ?? work.created_at,
@@ -257,8 +268,16 @@ function WorkDetail() {
 
         {/* Presentation layer — the Work's assets decide how it's shown.
             Books keep their own portrait hero + buy buttons. */}
-        {work.category === "writing_book" ? (
-          <BookHero work={work} />
+        {isBook ? (
+          <>
+            <BookHero work={work} />
+            {/* A book can still carry a sample, a trailer or photographs. */}
+            {bookAssets.length > 0 && (
+              <div className="mt-8">
+                <WorkViewer assets={bookAssets} title={work.title} coverUrl={null} />
+              </div>
+            )}
+          </>
         ) : (
           (viewerAssets.length > 0 || work.cover_url) && (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="mt-8">
@@ -296,11 +315,11 @@ function WorkDetail() {
 
         {/* Body */}
         {work.description && (
-          <div className="prose-workshop mt-8 whitespace-pre-wrap text-base leading-relaxed text-ink-soft">{work.description}</div>
+          <RichBody markdown={work.description} className="mt-8" />
         )}
 
         {/* Non-book "View original" CTA — books use the BookHero buy buttons instead */}
-        {work.category !== "writing_book" && work.primary_url && (
+        {!isBook && work.primary_url && (
           <a href={work.primary_url} target="_blank" rel="noreferrer noopener"
             className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-ink px-4 py-2 text-sm text-background hover:opacity-90">
             View original <ExternalLink className="h-4 w-4" />
