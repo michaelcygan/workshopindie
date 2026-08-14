@@ -9,9 +9,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { ImageUpload } from "@/components/image-upload";
 import { WorkAssetsEditor } from "@/components/work/work-assets-editor";
+import { RichBodyEditor } from "@/components/rich-body-editor";
+import { WORK_BODY_MAX } from "@/lib/work-body";
 import { FieldPicker } from "@/components/field-picker";
 import { SubcategoryPicker } from "@/components/subcategory-picker";
 import { FormatInput } from "@/components/format-input";
@@ -216,12 +217,18 @@ function EditWork() {
         </div>
 
         <div className="space-y-2">
-          <Label>Description</Label>
-          <Textarea
+          <Label>About this Work</Label>
+          <RichBodyEditor
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={5}
+            onChange={(v) => setDescription(v.slice(0, WORK_BODY_MAX))}
+            label="About"
+            badge={null}
             placeholder="Longer notes, context, credits (optional)"
+            uploadBucket="work-covers"
+            showWordCount={false}
+            soloMinHeight={false}
+            stickyOffsetClass="top-0"
+            helperText="Add context, process notes, photos or links. Markdown is supported."
           />
         </div>
 
@@ -250,13 +257,13 @@ function EditWork() {
           />
         </div>
 
-        {!isBookWork(null, format) && work?.id && user?.id && (
+        {work?.id && user?.id && (
           <div className="border-t border-border pt-6">
             <WorkAssetsEditor workId={work.id} userId={user.id} license={licenseType} />
           </div>
         )}
 
-        {!isBookWork(null, format) && (
+        {(
           <>
             <div className="space-y-2">
               <Label>Primary link</Label>
