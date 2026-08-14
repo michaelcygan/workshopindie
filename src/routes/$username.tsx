@@ -1051,7 +1051,10 @@ function ProfilePage() {
           <EntityBlogPosts
             kind="profile"
             entityId={profile.id}
+            layout="carousel"
+            limit={12}
             heading={`Stories about ${profile.display_name || `@${profile.username}`}`}
+
             canWrite={isOwn}
             writeLabel="Write a post"
             emptyLabel="No one has written about them yet."
