@@ -75,10 +75,6 @@ export function PublicFeaturedStories({ posts }: { posts: PublicBlogCard[] }) {
       <div
         ref={containerRef}
         className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8"
-        onMouseEnter={() => setPaused(true)}
-        onMouseLeave={() => setPaused(false)}
-        onFocusCapture={() => setPaused(true)}
-        onBlurCapture={() => setPaused(false)}
       >
         <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
           Featured story
