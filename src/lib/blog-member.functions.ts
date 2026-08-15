@@ -14,7 +14,7 @@ import {
 import { BLOG_SEED_PROMPT_IDS } from "@/lib/blog-seed-prompts";
 import { BLOG_CATEGORY_SLUGS } from "@/lib/blog-categories";
 import { FIELD_IDS } from "@/lib/taxonomy";
-import { BLOG_STORY_TYPE_IDS } from "@/lib/blog-story-types";
+import { BLOG_STORY_TYPE_IDS, MAX_BLOG_SUBJECTS } from "@/lib/blog-story-types";
 
 const cursorSchema = z.object({ updated_at: z.string(), id: z.string().uuid() }).nullable();
 
@@ -79,6 +79,7 @@ export const updateMyBlogPost = createServerFn({ method: "POST" })
         subcategories: z.array(z.string().max(80)).max(1).optional(),
         story_type: z.enum(BLOG_STORY_TYPE_IDS).nullable().optional(),
         story_types: z.array(z.enum(BLOG_STORY_TYPE_IDS)).max(3).optional(),
+        subjects: z.array(z.string().max(80)).max(MAX_BLOG_SUBJECTS).optional(),
         tags: z
           .array(
             z.object({
