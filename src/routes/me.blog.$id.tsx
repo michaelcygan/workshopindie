@@ -40,7 +40,12 @@ import { MAX_BLOG_ENTITY_TAGS } from "@/lib/blog-entity-tags";
 import { ArrowLeft, Loader2, MoreHorizontal } from "lucide-react";
 import { blogCategorySlugForField, blogPostFields } from "@/lib/blog-categories";
 import type { FieldId } from "@/lib/taxonomy";
-import { toBlogStoryTypes, type BlogStoryType } from "@/lib/blog-story-types";
+import { type BlogStoryType } from "@/lib/blog-story-types";
+import {
+  buildBlogTaxonomyPayload,
+  hydrateBlogTaxonomy,
+  type BlogTaxonomyState,
+} from "@/lib/blog-form";
 
 export const Route = createFileRoute("/me/blog/$id")({
   head: () => ({
