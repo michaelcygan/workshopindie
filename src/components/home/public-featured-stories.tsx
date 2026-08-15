@@ -137,6 +137,11 @@ export function PublicFeaturedStories({ posts }: { posts: PublicBlogCard[] }) {
               params={{ slug: lead.slug }}
               className="group block animate-[featured-rise_900ms_cubic-bezier(0.33,0,0.2,1)] motion-reduce:animate-none"
             >
+              {lead.eyebrow ? (
+                <p className="mb-1.5 text-[11px] uppercase tracking-[0.14em] text-ink-muted">
+                  {lead.eyebrow}
+                </p>
+              ) : null}
               <h2 className="font-display text-[26px] leading-[1.12] text-ink transition-colors group-hover:text-primary md:text-[38px]">
                 {lead.title}
               </h2>
@@ -180,6 +185,7 @@ export function PublicFeaturedStories({ posts }: { posts: PublicBlogCard[] }) {
                         {post.title}
                       </h3>
                       <p className="mt-1 text-[11px] uppercase tracking-[0.1em] text-ink-muted">
+                        {post.eyebrow ? <>{post.eyebrow} · </> : null}
                         {formatDate(post.publishedAt)}
                       </p>
                     </div>

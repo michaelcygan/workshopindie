@@ -567,7 +567,13 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
                   <BlogPostBody markdown={body} />
                 </div>
                 <BlogPostContext
-                  context={deriveBlogPostContext({ categorySlug, tags: entityTags })}
+                  context={deriveBlogPostContext({
+                    storyType: postType,
+                    fields,
+                    subjects,
+                    categorySlug,
+                    tags: entityTags,
+                  })}
                   className="mt-10"
                 />
               </div>

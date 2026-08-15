@@ -45,10 +45,10 @@ function WorkEntry({ tag }: { tag: BlogContextWork }) {
   const credits = (w?.credits ?? []).filter((c) => c.display_name || c.username);
   const [open, setOpen] = useState(false);
   const { data: workId } = useEntityIdBySlug("works", tag.slug, open);
-  const meta = [
-    w?.subtype ? titleCase(w.subtype) : null,
-    ...(w?.categories ?? []).slice(0, 2).map(titleCase),
-  ].filter(Boolean);
+  // CATEGORY · PRIMARY FIELD, resolved once by the Gallery classifier server-side.
+  const meta = [(w as { eyebrow?: string | null } | null)?.eyebrow || null].filter(
+    (v): v is string => !!v,
+  );
 
   return (
     <div className="min-w-0">
@@ -256,9 +256,9 @@ function PostEntry({ tag }: { tag: BlogContextPost }) {
 
 /**
  * "About this post" — the public expression of a Blog post's structured
- * creative graph. Renders as a colophon after the article body; groups with no
- * content never render, and the whole section hides when a post has no
- * relationships beyond its editorial category.
+ * creative graph. Renders as a colophon after the article body; rows with no
+ * content never render, and the whole section hides when a post carries
+ * neither taxonomy nor linked entities.
  */
 export function BlogPostContext({
   context,
@@ -268,7 +268,8 @@ export function BlogPostContext({
   className?: string;
 }) {
   if (!context.hasContext) return null;
-  const cat = context.editorialCategory;
+  const { classification: cls, fieldLabels } = context;
+  const realFields = context.classification.fields.every((f) => f === "other") ? [] : fieldLabels;
 
   return (
     <section className={className ?? "mt-14"} aria-labelledby="about-this-post">
@@ -280,21 +281,36 @@ export function BlogPostContext({
       </h2>
 
       <div className="mt-2 divide-y divide-border border-t border-border">
-        <Row label="Category">
-          <Link
-            to="/blog/c/$category"
-            params={{ category: cat.slug }}
-            className="text-sm text-ink underline decoration-border underline-offset-4 hover:decoration-primary"
-          >
-            {cat.label}
-          </Link>
-        </Row>
-
-        {context.mediums.length > 0 && (
-          <Row label={context.mediums.length === 1 ? "Medium" : "Mediums"}>
-            <div className="text-sm text-ink-soft">{context.mediums.join(" · ")}</div>
+        {cls.postTypeLabel && (
+          <Row label="Post type">
+            <div className="text-sm text-ink">{cls.postTypeLabel}</div>
           </Row>
         )}
+
+        {cls.section && (
+          <Row label="Category">
+            <Link
+              to="/blog/category/$category"
+              params={{ category: cls.section.id }}
+              className="text-sm text-ink underline decoration-border underline-offset-4 hover:decoration-primary"
+            >
+              {cls.section.label}
+            </Link>
+          </Row>
+        )}
+
+        {realFields.length > 0 && (
+          <Row label={realFields.length === 1 ? "Field" : "Fields"}>
+            <div className="text-sm text-ink-soft">{realFields.join(" · ")}</div>
+          </Row>
+        )}
+
+        {cls.subjects.length > 0 && (
+          <Row label={cls.subjects.length === 1 ? "Subject" : "Subjects"}>
+            <div className="text-sm text-ink-soft">{cls.subjects.join(" · ")}</div>
+          </Row>
+        )}
+
 
         {context.works.length > 0 && (
           <Row label={context.works.length === 1 ? "Work" : "Works"}>

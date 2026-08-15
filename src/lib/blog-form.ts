@@ -122,6 +122,8 @@ export type BlogClassification = {
   postTypeLabel: string | null;
   section: BlogSection | null;
   fields: FieldId[];
+  /** Human labels for `fields`, primary first. */
+  fieldLabels: string[];
   subjects: string[];
   leadSubject: string | null;
   /** Eyebrow parts, already resolved: POST TYPE · LEAD SUBJECT (or Field). */
@@ -149,6 +151,7 @@ export function resolveBlogClassification(row: BlogTaxonomyRow): BlogClassificat
     postTypeLabel,
     section: blogSectionForStoryType(postType),
     fields,
+    fieldLabels: fields.map((f) => fieldLabel(f)),
     subjects,
     leadSubject,
     eyebrow,

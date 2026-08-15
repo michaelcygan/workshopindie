@@ -581,7 +581,13 @@ function MemberBlogEditorPage() {
               <BlogPostBody markdown={body} />
             </div>
             <BlogPostContext
-              context={deriveBlogPostContext({ categorySlug: blogCategorySlugForField(fields[0]), tags: entityTags })}
+              context={deriveBlogPostContext({
+                storyType: postType,
+                fields,
+                subjects,
+                categorySlug: blogCategorySlugForField(fields[0]),
+                tags: entityTags,
+              })}
               className="mt-10"
             />
           </article>

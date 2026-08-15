@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 
 import type { BlogListItem } from "@/components/blog-featured-carousel";
 import type { PublicBlogCard } from "@/lib/home-types";
+import { blogEyebrowText } from "@/lib/blog-form";
 import { formatShortDate } from "@/lib/format-date";
 
 
@@ -16,6 +17,7 @@ export function toBlogCard(p: BlogListItem): PublicBlogCard {
     coverUrl: p.cover_image_url,
     coverAlt: p.cover_image_alt,
     categorySlug: p.category_slug ?? null,
+    eyebrow: blogEyebrowText(p) || null,
     publishedAt: p.published_at,
     authorName: profile?.display_name || p.author_name || null,
     authorAvatar: profile?.avatar_url ?? null,
@@ -27,12 +29,25 @@ function formatDate(iso: string | null) {
 }
 
 
+/** POST TYPE · LEAD SUBJECT — the shared card eyebrow. */
+export function CardEyebrow({ post }: { post: PublicBlogCard }) {
+  if (!post.eyebrow) return null;
+  return (
+    <p className="mt-3 text-[11px] uppercase tracking-[0.14em] text-ink-muted">{post.eyebrow}</p>
+  );
+}
+
 function Byline({ post }: { post: PublicBlogCard }) {
   return (
-    <p className="mt-2 text-[11px] uppercase tracking-[0.1em] text-ink-muted">
-      {post.authorName ? <>{post.authorName} · </> : null}
-      {formatDate(post.publishedAt)}
-    </p>
+    <>
+      {post.eyebrow ? (
+        <p className="mt-2 text-[11px] uppercase tracking-[0.14em] text-ink">{post.eyebrow}</p>
+      ) : null}
+      <p className="mt-1 text-[11px] uppercase tracking-[0.1em] text-ink-muted">
+        {post.authorName ? <>{post.authorName} · </> : null}
+        {formatDate(post.publishedAt)}
+      </p>
+    </>
   );
 }
 

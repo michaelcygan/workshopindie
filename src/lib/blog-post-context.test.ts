@@ -31,25 +31,33 @@ const person = (id: string, username: string): BlogEntityTag => ({
 });
 
 describe("deriveBlogPostContext", () => {
-  it("derives mediums from Work subtypes and deduplicates them", () => {
+  it("derives Post type, Category and Subjects — and never a Medium", () => {
     const ctx = deriveBlogPostContext({
-      categorySlug: "film-video",
-      tags: [work("1", "Short film"), work("2", "short film"), work("3", "Documentary")],
+      storyType: "interview",
+      fields: ["film_video"],
+      subjects: ["Process", "Money"],
+      tags: [work("1", "Short film"), work("2", "short film")],
     });
-    expect(ctx.mediums).toEqual(["Short film", "Documentary"]);
-    expect(ctx.editorialCategory.label).toBe("Film & Video");
+    expect(ctx.classification.postTypeLabel).toBe("Interview");
+    expect(ctx.classification.section?.id).toBe("interviews");
+    expect(ctx.classification.subjects).toEqual(["Process", "Money"]);
+    expect(ctx).not.toHaveProperty("mediums");
   });
 
-  it("omits mediums when no linked Work has a subtype", () => {
-    const ctx = deriveBlogPostContext({ categorySlug: "general", tags: [work("1", null)] });
-    expect(ctx.mediums).toEqual([]);
-    expect(ctx.works).toHaveLength(1);
+  it("renders taxonomy even with zero linked entities", () => {
+    const ctx = deriveBlogPostContext({ storyType: "essay", tags: [] });
+    expect(ctx.hasEntities).toBe(false);
     expect(ctx.hasContext).toBe(true);
+  });
+
+  it("hydrates the Post type from legacy story_types", () => {
+    const ctx = deriveBlogPostContext({ storyTypes: ["journal", "essay"], tags: [] });
+    expect(ctx.classification.postType).toBe("journal");
+    expect(ctx.classification.section?.id).toBe("field-notes");
   });
 
   it("drops tagged people who are already in the byline", () => {
     const ctx = deriveBlogPostContext({
-      categorySlug: "general",
       tags: [person("p1", "mike"), person("p2", "jane")],
       authorProfileIds: ["p1"],
     });
@@ -58,24 +66,17 @@ describe("deriveBlogPostContext", () => {
 
   it("dedupes byline people by username too", () => {
     const ctx = deriveBlogPostContext({
-      categorySlug: "general",
       tags: [person("p1", "Mike")],
       authorUsernames: ["mike"],
     });
     expect(ctx.people).toEqual([]);
   });
 
-  it("hides the whole section when only the category exists", () => {
-    const ctx = deriveBlogPostContext({ categorySlug: "music", tags: [] });
+  it("hides the whole section for an untyped post with nothing linked", () => {
+    const ctx = deriveBlogPostContext({ categorySlug: "general", tags: [] });
     expect(ctx.hasContext).toBe(false);
-    expect(ctx.editorialCategory.slug).toBe("music");
   });
 
-  it("falls back to General for unknown categories", () => {
-    expect(deriveBlogPostContext({ categorySlug: "nope", tags: [] }).editorialCategory.slug).toBe(
-      "general",
-    );
-  });
 
   it("emits mentions matching what the section renders", () => {
     const ctx = deriveBlogPostContext({

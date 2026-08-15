@@ -6,8 +6,7 @@ import { BlogPostContext } from "@/components/blog-post-context";
 import { BlogComments } from "@/components/blog-comments";
 import { BlogAuthorActions } from "@/components/blog/blog-author-actions";
 import { deriveBlogPostContext, contextMentions } from "@/lib/blog-post-context";
-import { blogStoryTypeLabel } from "@/lib/blog-story-types";
-import { getBlogCategory } from "@/lib/blog-categories";
+import { resolveBlogClassification } from "@/lib/blog-form";
 import type { BlogEntityTag } from "@/lib/blog-entity-tags";
 import { ReportDialog } from "@/components/report-dialog";
 import { Button } from "@/components/ui/button";
@@ -67,6 +66,13 @@ export const Route = createFileRoute("/blog/$slug")({
               url: `${SITE}/${p.author_profile.username}`,
             }
           : { "@type": "Organization", name: p.author_name || "Workshop" };
+    const headCls = resolveBlogClassification({
+      story_type: p.story_type,
+      story_types: p.story_types,
+      fields: p.fields,
+      subjects: p.subjects,
+      category_slug: p.category_slug,
+    });
     return {
       meta,
       links: [
@@ -90,10 +96,19 @@ export const Route = createFileRoute("/blog/$slug")({
               name: "Workshop",
               logo: { "@type": "ImageObject", url: `${SITE}/favicon.png` },
             },
+            articleSection: headCls.section?.label,
+            keywords:
+              [...headCls.subjects, ...headCls.fieldLabels].length > 0
+                ? [...headCls.subjects, ...headCls.fieldLabels].join(", ")
+                : undefined,
             mainEntityOfPage: url,
             url,
             mentions: contextMentions(
               deriveBlogPostContext({
+                storyType: p.story_type,
+                storyTypes: p.story_types,
+                fields: p.fields,
+                subjects: p.subjects,
                 categorySlug: p.category_slug,
                 tags: (p.entity_tags ?? []) as BlogEntityTag[],
                 authorProfileIds: authors.map((a) => (a as { id?: string }).id),
@@ -135,13 +150,16 @@ function BlogPostPage() {
     role_label: string | null;
   }>;
   const context = deriveBlogPostContext({
+    storyType: post.story_type,
+    storyTypes: post.story_types,
+    fields: post.fields,
+    subjects: post.subjects,
     categorySlug: post.category_slug,
     tags: entityTags,
     authorProfileIds: authors.map((a) => a.id),
     authorUsernames: [...authors.map((a) => a.username), post.author_profile?.username ?? null],
   });
-  const category = getBlogCategory(post.category_slug);
-  const storyTypeLabel = blogStoryTypeLabel(post.story_type);
+  const cls = context.classification;
 
   const publishedAt = post.published_at ? new Date(post.published_at) : null;
   const updatedAt = post.updated_at ? new Date(post.updated_at) : null;
@@ -155,21 +173,27 @@ function BlogPostPage() {
       </Link>
 
       <header className="mt-6">
-        <div className="flex flex-wrap items-center gap-x-2 text-[11px] uppercase tracking-[0.18em] text-ink-soft">
-          {storyTypeLabel && (
-            <>
-              <span className="text-ink">{storyTypeLabel}</span>
-              <span aria-hidden>·</span>
-            </>
-          )}
-          <Link
-            to="/blog/c/$category"
-            params={{ category: category.slug }}
-            className="hover:text-ink"
-          >
-            {category.label}
-          </Link>
-        </div>
+        {cls.eyebrow.length > 0 && (
+          <div className="flex flex-wrap items-center gap-x-2 text-[11px] uppercase tracking-[0.18em] text-ink-soft">
+            {cls.section ? (
+              <Link
+                to="/blog/category/$category"
+                params={{ category: cls.section.id }}
+                className="text-ink hover:text-primary"
+              >
+                {cls.eyebrow[0]}
+              </Link>
+            ) : (
+              <span className="text-ink">{cls.eyebrow[0]}</span>
+            )}
+            {cls.eyebrow[1] ? (
+              <>
+                <span aria-hidden>·</span>
+                <span>{cls.eyebrow[1]}</span>
+              </>
+            ) : null}
+          </div>
+        )}
         <h1 className="mt-2 font-display text-4xl leading-tight text-ink md:text-5xl">{post.title}</h1>
         <div className="mt-4 text-sm text-ink-muted">
           By{" "}

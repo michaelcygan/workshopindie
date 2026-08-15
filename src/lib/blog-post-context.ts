@@ -2,16 +2,16 @@
  * Derived view model for the public expression of a Blog post's structured
  * creative graph ("About this post").
  *
- * This is a *derivation*, not storage: every field comes from relationships the
- * Blog already persists (`blog_posts.category_slug` + `blog_post_entity_tags`).
- * Centralizing it here means future Workshop surfaces ("Writing about this
- * Work", "Stories from a Group") can reuse the same shape instead of
- * re-implementing relationship logic per page.
+ * This is a *derivation*, not storage: every field comes from the post's own
+ * taxonomy (`story_type`, `fields`, `subjects`) plus the relationships the Blog
+ * already persists (`blog_post_entity_tags`). Centralizing it here means future
+ * Workshop surfaces ("Writing about this Work", "Stories from a Group") can
+ * reuse the same shape instead of re-implementing relationship logic per page.
  *
  * Client-safe: no server imports.
  */
-import { getBlogCategory, type BlogCategory } from "@/lib/blog-categories";
-import type { BlogEntityTag, BlogWorkSummary } from "@/lib/blog-entity-tags";
+import type { BlogEntityTag } from "@/lib/blog-entity-tags";
+import { resolveBlogClassification, type BlogClassification } from "@/lib/blog-form";
 import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 export type BlogContextWork = Extract<BlogEntityTag, { kind: "work" }>;
@@ -22,9 +22,10 @@ export type BlogContextPerson = Extract<BlogEntityTag, { kind: "profile" }>;
 export type BlogContextPost = Extract<BlogEntityTag, { kind: "post" }>;
 
 export type BlogPostContext = {
-  editorialCategory: BlogCategory;
-  /** Formats derived from linked Work subtypes. Deduplicated, order preserved. */
-  mediums: string[];
+  /** Post type, derived Category, Fields, Subjects — the post's own taxonomy. */
+  classification: BlogClassification;
+  /** Human labels for the post's Fields, primary first. */
+  fieldLabels: string[];
   works: BlogContextWork[];
   people: BlogContextPerson[];
   collabs: BlogContextCollab[];
@@ -32,30 +33,35 @@ export type BlogPostContext = {
   events: BlogContextEvent[];
   /** Author-chosen Blog stories this post cites, continues, or recommends. */
   posts: BlogContextPost[];
-  /** True when at least one relationship group has content worth rendering. */
+  /** True when at least one linked entity exists. */
+  hasEntities: boolean;
+  /** True when there is taxonomy or a linked entity worth rendering. */
   hasContext: boolean;
 };
 
 export type DeriveBlogPostContextInput = {
-  categorySlug: string | null | undefined;
+  storyType?: string | null;
+  storyTypes?: string[] | null;
+  fields?: string[] | null;
+  subjects?: string[] | null;
+  /** Legacy routing mirror — only used to recover Fields on old rows. */
+  categorySlug?: string | null;
   tags: BlogEntityTag[] | null | undefined;
   /** Byline profile ids — tagged people who are already credited above are dropped. */
   authorProfileIds?: Array<string | null | undefined>;
   authorUsernames?: Array<string | null | undefined>;
 };
 
-function normalizeMedium(raw: string): string {
-  const s = raw.trim();
-  if (!s) return "";
-  // Stored subtypes are already human labels ("Short film"); only repair
-  // all-lower or snake_case legacy values.
-  const spaced = s.replace(/_/g, " ");
-  return /[A-Z]/.test(spaced) ? spaced : spaced.charAt(0).toUpperCase() + spaced.slice(1);
-}
-
 export function deriveBlogPostContext(input: DeriveBlogPostContextInput): BlogPostContext {
   const tags = input.tags ?? [];
-  const editorialCategory = getBlogCategory(input.categorySlug);
+
+  const classification = resolveBlogClassification({
+    story_type: input.storyType ?? null,
+    story_types: input.storyTypes ?? null,
+    fields: input.fields ?? null,
+    subjects: input.subjects ?? null,
+    category_slug: input.categorySlug ?? null,
+  });
 
   const works = tags.filter((t): t is BlogContextWork => t.kind === "work");
   const collabs = tags.filter((t): t is BlogContextCollab => t.kind === "collab");
@@ -76,19 +82,7 @@ export function deriveBlogPostContext(input: DeriveBlogPostContextInput): BlogPo
       t.kind === "profile" && !authorIds.has(t.id) && !authorNames.has(t.username.toLowerCase()),
   );
 
-  const seenMedium = new Set<string>();
-  const mediums: string[] = [];
-  for (const w of works) {
-    const summary = (w as { work?: BlogWorkSummary | null }).work;
-    const label = normalizeMedium(summary?.subtype ?? "");
-    if (!label) continue;
-    const key = label.toLowerCase();
-    if (seenMedium.has(key)) continue;
-    seenMedium.add(key);
-    mediums.push(label);
-  }
-
-  const hasContext =
+  const hasEntities =
     works.length > 0 ||
     people.length > 0 ||
     collabs.length > 0 ||
@@ -96,7 +90,23 @@ export function deriveBlogPostContext(input: DeriveBlogPostContextInput): BlogPo
     events.length > 0 ||
     posts.length > 0;
 
-  return { editorialCategory, mediums, works, people, collabs, groups, events, posts, hasContext };
+  const hasTaxonomy =
+    !!classification.postType ||
+    classification.subjects.length > 0 ||
+    classification.fields.some((f) => f !== "other");
+
+  return {
+    classification,
+    fieldLabels: classification.fieldLabels,
+    works,
+    people,
+    collabs,
+    groups,
+    events,
+    posts,
+    hasEntities,
+    hasContext: hasEntities || hasTaxonomy,
+  };
 }
 
 /** Schema.org `mentions` nodes describing exactly what "About this post" shows. */

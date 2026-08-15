@@ -104,7 +104,8 @@ function BlogCategoryPage() {
         </div>
       </section>
 
-      <BlogCategoryNav active={category.slug} />
+      {/* Legacy Field URL: no Category chip is active. */}
+      <BlogCategoryNav active="all" />
 
       {cards.length === 0 ? (
         <div className="mx-auto max-w-7xl px-4 py-10 md:px-6 md:py-14">
