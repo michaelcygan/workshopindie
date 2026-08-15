@@ -248,19 +248,11 @@ function WorkDetail() {
 
       <article className="mx-auto max-w-4xl px-4 py-6 md:px-6 md:py-10">
         <motion.header initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-          <div className="flex items-center gap-2">
-            <CategoryChips primary={work.category} categories={work.categories} />
-            <SubcategoryChip
-              subcategory={(work.subcategories ?? [])[0] ?? null}
-              field={work.category_canonical ?? work.category}
-            />
-            <span className="rounded-full border border-border bg-surface px-2.5 py-0.5 text-[11px] text-ink-soft">
-              {SOURCE_LABELS[work.source_type] ?? work.source_type}
-            </span>
-            <span className="rounded-full border border-border bg-surface px-2.5 py-0.5 text-[11px] text-ink-muted">
-              {LICENSE_LABELS[work.license_type] ?? work.license_type.replaceAll("_", " ")}
-            </span>
-          </div>
+          {/* One eyebrow instead of a chip pile — the rest lives in About this Work. */}
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-ink-muted">
+            {classificationEyebrow(work)}
+          </p>
+
           <h1 className="font-display text-4xl leading-[1.05] text-ink md:text-6xl">{work.title}</h1>
           {work.category === "writing_book" && work.book_author && (
             <p className="text-lg text-ink-soft">by <span className="text-ink">{work.book_author}</span></p>
