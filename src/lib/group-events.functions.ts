@@ -181,7 +181,7 @@ export const listEventMapPoints = createServerFn({ method: "GET" })
           id: r.id,
           title: r.title,
           starts_at: r.starts_at,
-          href: `/g/${r.group.slug}/e/${r.slug}`,
+          href: workshopEntityUrl({ kind: "event", slug: r.slug, groupSlug: r.group.slug }),
         });
         venues.set(key, entry);
         continue;
