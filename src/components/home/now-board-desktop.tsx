@@ -7,6 +7,7 @@ import type { MemberHomePayload } from "@/lib/home-types";
 import type { HomeNowItem } from "@/lib/home-now-types";
 import { HOME_NOW_LANES } from "@/lib/home-now-types";
 import { useNowBoard } from "@/hooks/use-now-board";
+import { HereNowCluster } from "@/components/here-now-cluster";
 import { cn } from "@/lib/utils";
 
 /**
