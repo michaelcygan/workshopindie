@@ -68,7 +68,10 @@ type EditorPost = {
   show_in_blog_index: boolean;
   category_slug: string | null;
   fields: string[] | null;
+  subjects: string[] | null;
+  subcategories: string[] | null;
   story_type: string | null;
+  story_types: string[] | null;
   published_at: string | null;
   updated_at: string;
 };
@@ -120,7 +123,10 @@ function MemberBlogEditorPage() {
   const [seoDesc, setSeoDesc] = useState("");
   const [listInBlog, setListInBlog] = useState(true);
   const [fields, setFields] = useState<FieldId[]>(["other"]);
-  const [storyTypes, setStoryTypes] = useState<BlogStoryType[]>([]);
+  const [postType, setPostType] = useState<BlogStoryType | null>(null);
+  const [subjects, setSubjects] = useState<string[]>([]);
+  /** Hydration snapshot: legacy values and the Post type the row loaded with. */
+  const legacy = useRef<BlogTaxonomyState>(hydrateBlogTaxonomy(null));
   const [dirty, setDirty] = useState(false);
   const [loadedForId, setLoadedForId] = useState<string | null>(null);
   const [entityTags, setEntityTags] = useState<BlogEntityTag[]>([]);
@@ -156,9 +162,11 @@ function MemberBlogEditorPage() {
     setSeoTitle(p.seo_title ?? "");
     setSeoDesc(p.seo_description ?? "");
     setListInBlog(p.show_in_blog_index !== false);
-    const hydrated = blogPostFields(p.fields, p.category_slug);
-    setFields(hydrated.length > 0 ? hydrated : ["other"]);
-    setStoryTypes(toBlogStoryTypes((p as { story_types?: string[] | null }).story_types ?? p.story_type));
+    const hydrated = hydrateBlogTaxonomy(p);
+    legacy.current = hydrated;
+    setFields(hydrated.fields);
+    setPostType(hydrated.postType);
+    setSubjects(hydrated.subjects);
     setEntityTags(post.entity_tags ?? []);
     setDirty(false);
     expectedUpdatedAt.current = p.updated_at;
@@ -193,10 +201,16 @@ function MemberBlogEditorPage() {
           seo_title: seoTitle || null,
           seo_description: seoDesc || null,
           show_in_blog_index: listInBlog,
-          category_slug: blogCategorySlugForField(fields[0]),
-          fields,
-          story_type: storyTypes[0] ?? null,
-          story_types: storyTypes,
+          ...buildBlogTaxonomyPayload(
+            {
+              postType,
+              fields,
+              subjects,
+              legacyStoryTypes: legacy.current.legacyStoryTypes,
+              legacySubcategories: legacy.current.legacySubcategories,
+            },
+            legacy.current.postType,
+          ),
           tags: entityTags.map((t) => ({ kind: t.kind, id: t.id })),
           expected_updated_at: expectedUpdatedAt.current,
         },
@@ -292,7 +306,7 @@ function MemberBlogEditorPage() {
       saveRef.current.mutate({ silent: true, auto: true });
     }, 2500);
     return () => clearTimeout(t);
-  }, [autosaveReady, title, excerpt, body, cover, coverAlt, seoTitle, seoDesc, listInBlog, fields, storyTypes, entityTags]);
+  }, [autosaveReady, title, excerpt, body, cover, coverAlt, seoTitle, seoDesc, listInBlog, fields, postType, subjects, entityTags]);
 
   // Flush pending edits when the tab is hidden or the window loses focus.
   useEffect(() => {
@@ -516,8 +530,10 @@ function MemberBlogEditorPage() {
           <BlogAboutEditor
             postId={post.post.id}
             fields={fields}
-            storyTypes={storyTypes}
-            onChangeStoryTypes={(next: BlogStoryType[]) => { setStoryTypes(next); setDirty(true); }}
+            postType={postType}
+            onChangePostType={(next) => { setPostType(next); setDirty(true); }}
+            subjects={subjects}
+            onChangeSubjects={(next) => { setSubjects(next); setDirty(true); }}
             tags={entityTags}
             readOnly={readOnly}
             onChangeFields={(next) => { setFields(next.length ? next : ["other"]); setDirty(true); }}
