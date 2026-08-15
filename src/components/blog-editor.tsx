@@ -26,7 +26,8 @@ import {
 } from "@/lib/blog-entity-tags";
 import { blogCategorySlugForField, blogPostFields, type BlogCategorySlug } from "@/lib/blog-categories";
 import { fieldLabel, isSubcategoryOf, type FieldId } from "@/lib/taxonomy";
-import { toBlogStoryTypes, type BlogStoryType } from "@/lib/blog-story-types";
+import { type BlogStoryType } from "@/lib/blog-story-types";
+import { buildBlogTaxonomyPayload, hydrateBlogTaxonomy } from "@/lib/blog-form";
 import { CategoryPlaceholder } from "@/components/home/category-placeholder";
 
 import { BlogPostContext } from "@/components/blog-post-context";
@@ -226,7 +227,6 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
       seo_description: seoDesc.trim() || null,
       author_name: authorName.trim() || "Workshop",
       author_profile_username: authorProfileUsername.trim().replace(/^@/, "") || null,
-      category_slug: categorySlug,
       ...buildBlogTaxonomyPayload(
         { postType, fields, subjects, legacyStoryTypes: hydrated.legacyStoryTypes, legacySubcategories: hydrated.legacySubcategories },
         hydrated.postType,
