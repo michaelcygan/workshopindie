@@ -1,5 +1,9 @@
 import { normalizeBlogSubjects, storyTypesForSection, toBlogStoryTypes } from "@/lib/blog-story-types";
-import { BLOG_CARD_COLUMNS, BLOG_RAIL_COLUMNS, BLOG_TAXONOMY_COLUMNS } from "@/lib/blog-select";
+import {
+  BLOG_CARD_COLUMNS_WITH_AUTHOR,
+  BLOG_RAIL_COLUMNS,
+  BLOG_TAXONOMY_COLUMNS,
+} from "@/lib/blog-select";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Database } from "@/integrations/supabase/types";
@@ -137,7 +141,7 @@ export async function listPublishedPostsServer() {
   const { data, error } = await publicClient()
     .from("blog_posts")
     .select(
-      `${BLOG_CARD_COLUMNS},author_profile:profiles!blog_posts_author_profile_id_fkey(username,display_name,avatar_url)`,
+      BLOG_CARD_COLUMNS_WITH_AUTHOR,
     )
     .eq("status", "published")
     .eq("show_in_blog_index", true)
@@ -159,7 +163,7 @@ export async function listPostsBySectionServer(sectionId: string) {
   const { data, error } = await publicClient()
     .from("blog_posts")
     .select(
-      `${BLOG_CARD_COLUMNS},author_profile:profiles!blog_posts_author_profile_id_fkey(username,display_name,avatar_url)`,
+      BLOG_CARD_COLUMNS_WITH_AUTHOR,
     )
     .eq("status", "published")
     .eq("show_in_blog_index", true)
@@ -327,7 +331,7 @@ export async function adminListPostsServer(context: AuthContext) {
   const { data, error } = await supabaseAdmin
     .from("blog_posts")
     .select(
-      `id,title,slug,status,author_name,published_at,updated_at,created_at,cover_image_url,publication_type,show_in_blog_index,featured,author_profile_id,${BLOG_TAXONOMY_COLUMNS}`,
+      `id,title,slug,status,author_name,published_at,updated_at,created_at,cover_image_url,publication_type,show_in_blog_index,featured,author_profile_id,${BLOG_TAXONOMY_COLUMNS}` as const,
     )
     .order("updated_at", { ascending: false })
     .limit(500);
