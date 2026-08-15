@@ -9,8 +9,6 @@ import { Eye, ArrowLeft, ExternalLink, Calendar, Pin, PinOff, Pencil } from "luc
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { CategoryChips } from "@/components/category-chips";
-import { SubcategoryChip } from "@/components/subcategory-chip";
 import { WorkActions } from "@/components/work-actions";
 import { CommentThread } from "@/components/comment-thread";
 import { ReportDialog } from "@/components/report-dialog";
@@ -21,7 +19,10 @@ import { WorkCreditLayer } from "@/components/work-credit-layer";
 import { ProfilePeek } from "@/components/profile-peek";
 import { WorkCard } from "@/components/work-card";
 import { EntityBlogPosts } from "@/components/entity-blog-posts";
-import { EntityConnections } from "@/components/entity/entity-connections";
+import { WorkAboutSection } from "@/components/work/work-about-section";
+import { classificationEyebrow } from "@/lib/work-categories";
+import { POSTED_TO_WORKSHOP_LABEL, structuredDatePublished } from "@/lib/work-dates";
+
 import { WorkViewer } from "@/components/work/work-viewer";
 import { listWorkAssets, resolveWorkAssets } from "@/lib/work-assets";
 // WorkSocialProof (vouches + boosts) retired in v1 distillation pass.
@@ -32,14 +33,9 @@ import { useDocumentMeta, useJsonLd } from "@/lib/seo";
 import { RichBody } from "@/components/rich-body";
 import { markdownToPlainText } from "@/lib/blog-excerpt";
 import { isBookWork } from "@/lib/taxonomy";
-import { SOURCE_LABELS, type Category } from "@/lib/categories";
+import { type Category } from "@/lib/categories";
 
-const LICENSE_LABELS: Record<string, string> = {
-  cc_by: "CC BY",
-  rights_managed_externally: "Rights managed",
-  portfolio_credit_only: "Credit only",
-  private: "Private",
-};
+
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { workshopEntityUrl } from "@/lib/entities/kinds";
@@ -114,7 +110,13 @@ export const Route = createFileRoute("/works/$slug")({
 type WorkRow = {
   id: string; title: string; slug: string; category: Category; categories: Category[] | null;
   category_canonical: string | null; categories_canonical: string[] | null; subcategories: string[] | null;
-  subtype: string | null;
+  subtype: string | null; category_id: string | null;
+  subjects: string[] | null; materials: string[] | null; details: unknown;
+  /** Official public date of the Work. Distinct from `published_at`. */
+  publication_date: string | null;
+  city: { name: string; country: string | null } | null;
+
+
 
   description: string | null; excerpt: string | null;
   cover_url: string | null; primary_url: string | null; embed_url: string | null;
@@ -138,7 +140,7 @@ type WorkRow = {
 async function fetchWork(slug: string) {
   const { data, error } = await supabase
     .from("works")
-    .select("id,title,slug,category,categories,category_canonical,categories_canonical,subcategories,subtype,description,excerpt,cover_url,primary_url,embed_url,source_type,license_type,published_at,created_at,like_count,save_count,view_count,comment_count,created_by,source_workshop_id,book_author,book_publisher,book_isbn,book_published_on,book_page_count,book_buy_links,book_excerpt_url, work_credits(id,role_label,sort_order,display_name, profiles(id,display_name,username,avatar_url,headline))")
+    .select("id,title,slug,category,categories,category_canonical,categories_canonical,subcategories,subtype,category_id,subjects,materials,details,publication_date,description,excerpt,cover_url,primary_url,embed_url,source_type,license_type,published_at,created_at,like_count,save_count,view_count,comment_count,created_by,source_workshop_id,book_author,book_publisher,book_isbn,book_published_on,book_page_count,book_buy_links,book_excerpt_url, city:cities(name,country), work_credits(id,role_label,sort_order,display_name, profiles(id,display_name,username,avatar_url,headline))")
     .eq("slug", slug)
     .eq("status", "published")
     .maybeSingle();
@@ -208,7 +210,7 @@ function WorkDetail() {
     description: work.excerpt ?? (work.description ? markdownToPlainText(work.description) : undefined),
     image: work.cover_url ?? undefined,
     url: work.primary_url ?? undefined,
-    datePublished: work.published_at ?? work.created_at,
+    datePublished: structuredDatePublished(work) ?? work.published_at ?? work.created_at,
     license: work.license_type,
     interactionStatistic: [
       { "@type": "InteractionCounter", interactionType: "https://schema.org/LikeAction", userInteractionCount: work.like_count },
@@ -239,19 +241,11 @@ function WorkDetail() {
 
       <article className="mx-auto max-w-4xl px-4 py-6 md:px-6 md:py-10">
         <motion.header initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-          <div className="flex items-center gap-2">
-            <CategoryChips primary={work.category} categories={work.categories} />
-            <SubcategoryChip
-              subcategory={(work.subcategories ?? [])[0] ?? null}
-              field={work.category_canonical ?? work.category}
-            />
-            <span className="rounded-full border border-border bg-surface px-2.5 py-0.5 text-[11px] text-ink-soft">
-              {SOURCE_LABELS[work.source_type] ?? work.source_type}
-            </span>
-            <span className="rounded-full border border-border bg-surface px-2.5 py-0.5 text-[11px] text-ink-muted">
-              {LICENSE_LABELS[work.license_type] ?? work.license_type.replaceAll("_", " ")}
-            </span>
-          </div>
+          {/* One eyebrow instead of a chip pile — the rest lives in About this Work. */}
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-ink-muted">
+            {classificationEyebrow(work)}
+          </p>
+
           <h1 className="font-display text-4xl leading-[1.05] text-ink md:text-6xl">{work.title}</h1>
           {work.category === "writing_book" && work.book_author && (
             <p className="text-lg text-ink-soft">by <span className="text-ink">{work.book_author}</span></p>
@@ -357,8 +351,9 @@ function WorkDetail() {
           }
         />
 
-        {/* Everything else on Workshop that points at this Work */}
-        <EntityConnections kind="work" entityId={work.id} className="mt-10" />
+        {/* Metadata + named relationship rows */}
+        <WorkAboutSection work={work} className="mt-14" />
+
 
 
 
@@ -473,7 +468,7 @@ function DateLine({ publishedAt, sourceWorkshopId, isOwner, slug }: { publishedA
   return (
     <p className="flex flex-wrap items-center gap-1.5 text-sm text-ink-muted">
       <Calendar className="h-4 w-4" />
-      {publishedAt && <span>Published {format(new Date(publishedAt), "MMM d, yyyy")}</span>}
+      {publishedAt && <span>{POSTED_TO_WORKSHOP_LABEL} {format(new Date(publishedAt), "MMM d, yyyy")}</span>}
       {workshop && (
         <>
           <span aria-hidden>·</span>

@@ -1,13 +1,13 @@
 import { motion } from "framer-motion";
 import { Heart, Bookmark, Eye, Play, Sparkles } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { CategoryChipsCompact } from "./category-chips";
 import { ProfilePeek } from "./profile-peek";
 import { providerFromUrl, providerLabel } from "./embed-player";
 import { InlineGroupChips } from "./inline-group-chips";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { GroupTag } from "@/hooks/use-group-tags";
-import { SOURCE_LABELS, type Category } from "@/lib/categories";
+import { type Category } from "@/lib/categories";
+import { classificationEyebrow } from "@/lib/work-categories";
 import { aspectClassFor, focalStyle } from "@/components/cover-framer";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +17,13 @@ export type WorkCardData = {
   slug: string;
   category: Category;
   categories?: Category[] | null;
+  /** Medium (canonical Field) + Category registry id — drive the card eyebrow. */
+  category_canonical?: string | null;
+  category_id?: string | null;
+  subtype?: string | null;
+  subcategories?: string[] | null;
+  subjects?: string[] | null;
+  excerpt?: string | null;
   cover_url: string | null;
   cover_aspect?: string | null;
   cover_focal_x?: number | null;
@@ -30,6 +37,8 @@ export type WorkCardData = {
   embed_url?: string | null;
   credits?: { id?: string | null; display_name: string | null; username: string | null; avatar_url?: string | null }[];
 };
+
+
 
 
 type Density = "compact" | "default" | "hero";
@@ -64,6 +73,9 @@ export function WorkCard({
   const extra = credits.length - shown.length;
   const provider = work.embed_url ? providerFromUrl(work.embed_url) : null;
   const pLabel = providerLabel(provider);
+  // At most one Subject cue — the card stays a card.
+  const subjectCue = density !== "compact" ? (work.subjects ?? [])[0] ?? null : null;
+
   const isFresh =
     !!work.published_at &&
     Date.now() - new Date(work.published_at).getTime() < 24 * 60 * 60 * 1000;
@@ -110,26 +122,21 @@ export function WorkCard({
           <div className="h-full w-full gradient-soft" />
         )}
 
-        {showCategory && (
-          <div className="absolute left-3 right-14 top-3 flex flex-wrap items-center gap-1.5">
-            <CategoryChipsCompact primary={work.category} categories={work.categories} />
-            {isFresh && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary/95 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground shadow-soft">
-                <Sparkles className="h-2.5 w-2.5" /> Fresh
-              </span>
-            )}
+        {isFresh && (
+          <div className="absolute left-3 top-3 flex flex-wrap items-center gap-1.5">
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary/95 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground shadow-soft">
+              <Sparkles className="h-2.5 w-2.5" /> Fresh
+            </span>
           </div>
         )}
-        <div className="absolute right-3 top-3 flex flex-col items-end gap-1">
-          <div className="rounded-full bg-surface/90 backdrop-blur px-2.5 py-0.5 text-[11px] font-medium text-ink-soft">
-            {SOURCE_LABELS[work.source_type] ?? work.source_type}
-          </div>
-          {creditBadge && (
+        {creditBadge && (
+          <div className="absolute right-3 top-3 flex flex-col items-end gap-1">
             <div className="rounded-full bg-ink/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-background shadow-soft">
               as {creditBadge}
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
         {showAvatars && shown.length > 0 && (
           <div className="absolute bottom-3 left-3 z-20 flex -space-x-2">
             {shown.map((c, i) => {
@@ -164,8 +171,14 @@ export function WorkCard({
         )}
       </div>
       <div className={cn("flex flex-1 flex-col gap-2", padClass)}>
+        {showCategory && (
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-muted line-clamp-1">
+            {classificationEyebrow(work)}
+          </p>
+        )}
         <h3 className={cn(titleClass, "text-ink line-clamp-2 break-words")}>{work.title}</h3>
         <InlineGroupChips groups={groups} myGroupIds={myGroupIds} />
+
         {shown.length > 0 && (
           <p className="relative z-20 text-xs text-ink-muted line-clamp-1">
             by{" "}
@@ -195,6 +208,15 @@ export function WorkCard({
             })}
           </p>
         )}
+        {density !== "compact" && work.excerpt && (
+          <p className="text-xs text-ink-soft line-clamp-2">{work.excerpt}</p>
+        )}
+        {subjectCue && (
+          <span className="w-fit rounded-full border border-border px-2 py-0.5 text-[10px] text-ink-muted">
+            {subjectCue}
+          </span>
+        )}
+
         {showCounters && (
           <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-2 text-xs text-ink-muted">
             <span className="inline-flex items-center gap-1"><Heart className="h-3.5 w-3.5" /> {work.like_count}</span>
