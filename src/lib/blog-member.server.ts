@@ -17,9 +17,11 @@ import { normalizeField, normalizeSpecialties, type FieldId } from "@/lib/taxono
 import { rowFields } from "@/lib/work-fields";
 import {
   normalizeBlogSubjects,
+  resolvePostType,
   toBlogStoryType,
   toBlogStoryTypes,
 } from "@/lib/blog-story-types";
+import { validateBlogForPublish } from "@/lib/blog-form";
 
 type AuthContext = {
   supabase: SupabaseClient<Database>;
@@ -478,6 +480,12 @@ export async function publishMyBlogPostServer(context: AuthContext, id: string) 
     throw new Error("Write a little more before publishing.");
   }
   validateMemberContent(p.body_markdown);
+  // A newly published post must declare exactly one Post type. Posts that were
+  // published before Post type existed keep publishing/unpublishing freely.
+  if (!(current as { published_at: string | null }).published_at) {
+    const invalid = validateBlogForPublish({ postType: resolvePostType(full) });
+    if (invalid) throw new Error(invalid);
+  }
 
   // Excerpt is optional for the author: when blank, derive it from the opening
   // of the body so listings and SEO always have readable preview text.
