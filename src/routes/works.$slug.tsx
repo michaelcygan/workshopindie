@@ -473,7 +473,7 @@ function DateLine({ publishedAt, sourceWorkshopId, isOwner, slug }: { publishedA
   return (
     <p className="flex flex-wrap items-center gap-1.5 text-sm text-ink-muted">
       <Calendar className="h-4 w-4" />
-      {publishedAt && <span>Published {format(new Date(publishedAt), "MMM d, yyyy")}</span>}
+      {publishedAt && <span>{POSTED_TO_WORKSHOP_LABEL} {format(new Date(publishedAt), "MMM d, yyyy")}</span>}
       {workshop && (
         <>
           <span aria-hidden>·</span>
