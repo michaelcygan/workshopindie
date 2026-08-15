@@ -5,6 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { domainError, rpcOutcomeError } from "@/lib/errors";
 import { withOpLog } from "@/lib/obs/log";
 import type { Database } from "@/integrations/supabase/types";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 function publicClient() {
   return createClient<Database>(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
