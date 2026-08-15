@@ -6928,6 +6928,7 @@ export type Database = {
           categories_canonical: string[]
           category: Database["public"]["Enums"]["category"]
           category_canonical: string | null
+          category_id: string | null
           city_id: string | null
           comment_count: number
           commercial_use: string
@@ -6939,6 +6940,7 @@ export type Database = {
           created_by: string
           credit_template: string | null
           description: string | null
+          details: Json
           embed_url: string | null
           excerpt: string | null
           featured: boolean
@@ -6946,9 +6948,11 @@ export type Database = {
           is_collaborative: boolean
           license_type: Database["public"]["Enums"]["work_license"]
           like_count: number
+          materials: string[]
           ownership_certified_at: string | null
           popularity_score: number
           primary_url: string | null
+          publication_date: string | null
           published_at: string | null
           save_count: number
           slug: string
@@ -6958,6 +6962,7 @@ export type Database = {
           source_workshop_id: string | null
           status: Database["public"]["Enums"]["work_status"]
           subcategories: string[]
+          subjects: string[]
           subtype: string | null
           title: string
           updated_at: string
@@ -6978,6 +6983,7 @@ export type Database = {
           categories_canonical?: string[]
           category: Database["public"]["Enums"]["category"]
           category_canonical?: string | null
+          category_id?: string | null
           city_id?: string | null
           comment_count?: number
           commercial_use?: string
@@ -6989,6 +6995,7 @@ export type Database = {
           created_by: string
           credit_template?: string | null
           description?: string | null
+          details?: Json
           embed_url?: string | null
           excerpt?: string | null
           featured?: boolean
@@ -6996,9 +7003,11 @@ export type Database = {
           is_collaborative?: boolean
           license_type?: Database["public"]["Enums"]["work_license"]
           like_count?: number
+          materials?: string[]
           ownership_certified_at?: string | null
           popularity_score?: number
           primary_url?: string | null
+          publication_date?: string | null
           published_at?: string | null
           save_count?: number
           slug: string
@@ -7008,6 +7017,7 @@ export type Database = {
           source_workshop_id?: string | null
           status?: Database["public"]["Enums"]["work_status"]
           subcategories?: string[]
+          subjects?: string[]
           subtype?: string | null
           title: string
           updated_at?: string
@@ -7028,6 +7038,7 @@ export type Database = {
           categories_canonical?: string[]
           category?: Database["public"]["Enums"]["category"]
           category_canonical?: string | null
+          category_id?: string | null
           city_id?: string | null
           comment_count?: number
           commercial_use?: string
@@ -7039,6 +7050,7 @@ export type Database = {
           created_by?: string
           credit_template?: string | null
           description?: string | null
+          details?: Json
           embed_url?: string | null
           excerpt?: string | null
           featured?: boolean
@@ -7046,9 +7058,11 @@ export type Database = {
           is_collaborative?: boolean
           license_type?: Database["public"]["Enums"]["work_license"]
           like_count?: number
+          materials?: string[]
           ownership_certified_at?: string | null
           popularity_score?: number
           primary_url?: string | null
+          publication_date?: string | null
           published_at?: string | null
           save_count?: number
           slug?: string
@@ -7058,6 +7072,7 @@ export type Database = {
           source_workshop_id?: string | null
           status?: Database["public"]["Enums"]["work_status"]
           subcategories?: string[]
+          subjects?: string[]
           subtype?: string | null
           title?: string
           updated_at?: string
