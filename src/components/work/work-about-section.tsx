@@ -139,7 +139,7 @@ export function WorkAboutSection({
     <section className={className ?? "mt-14"}>
       <h2 className="font-display text-2xl text-ink">About this Work</h2>
       <dl className="mt-4 rounded-2xl border border-border bg-surface px-4 py-1">
-        <Row label="Medium">{cls.mediumLabel}</Row>
+        <Row label="Field">{cls.fieldLabels.join(" · ")}</Row>
         {cls.categoryLabel && <Row label="Category">{cls.categoryLabel}</Row>}
         {pubDate && <Row label="Publication date">{pubDate}</Row>}
         {subjects.length > 0 && <Row label="Subject">{subjects.join(", ")}</Row>}

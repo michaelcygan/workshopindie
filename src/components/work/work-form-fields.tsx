@@ -16,12 +16,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { FIELD_FILTER_OPTIONS, fieldLabel, type FieldId } from "@/lib/taxonomy";
+import { fieldLabel, type FieldId } from "@/lib/taxonomy";
+import { FieldPicker } from "@/components/field-picker";
 import {
   DETAIL_FIELD_LABELS,
-  categoriesForMedium,
+  categoriesForField,
   categoryUsesMaterial,
   detailFieldsFor,
+  eyebrowPreview,
   workCategoryById,
 } from "@/lib/work-categories";
 import { PUBLICATION_DATE_HELP } from "@/lib/work-dates";
@@ -32,79 +34,130 @@ import {
   SUBJECT_SUGGESTIONS,
   normalizeTags,
 } from "@/lib/work-tags";
-import { DIMENSION_UNITS, LICENSE_OPTIONS, type WorkDetails, type WorkFormValues } from "@/lib/work-form";
+import {
+  DIMENSION_UNITS,
+  LICENSE_OPTIONS,
+  MAX_WORK_FIELDS,
+  type WorkDetails,
+  type WorkFormValues,
+} from "@/lib/work-form";
 
 /* -------------------------------------------------------------------------- */
-/* Medium + Category                                                          */
+/* Field + Category                                                           */
 /* -------------------------------------------------------------------------- */
 
-export function MediumCategoryPicker({
-  medium,
+/**
+ * Field → Category, the one classification control in Gallery authoring.
+ *
+ * Field is the broad creative / technical / research area (1–3, one starred
+ * primary). Category is the precise kind of Work, suggested from the primary
+ * Field, and always writeable by hand.
+ */
+export function FieldCategoryPicker({
+  fields,
   categoryId,
-  onMediumChange,
+  customCategory,
+  onFieldsChange,
   onCategoryChange,
+  onCustomCategoryChange,
 }: {
-  medium: FieldId | "";
+  fields: FieldId[];
   categoryId: string;
-  onMediumChange: (m: FieldId) => void;
+  customCategory: string;
+  onFieldsChange: (next: FieldId[]) => void;
   onCategoryChange: (c: string) => void;
+  onCustomCategoryChange: (c: string) => void;
 }) {
-  const categories = useMemo(() => (medium ? categoriesForMedium(medium) : []), [medium]);
+  const primary = fields[0] ?? "";
+  const categories = useMemo(() => (primary ? categoriesForField(primary) : []), [primary]);
   const selected = workCategoryById(categoryId);
-  // A Category can live under several Mediums; only reset when it truly can't.
-  const categoryValid = !!selected && !!medium && selected.mediums.includes(medium as FieldId);
+  const [writingOwn, setWritingOwn] = useState(false);
+  const showCustom = writingOwn || (!selected && customCategory.trim().length > 0);
+
+  const label = selected?.label ?? (customCategory.trim() || null);
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label>Medium</Label>
-        <p className="text-xs text-ink-muted">The broad creative lane this Work belongs to.</p>
-        <div className="flex flex-wrap gap-1.5">
-          {FIELD_FILTER_OPTIONS.map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              onClick={() => {
-                onMediumChange(f.id);
-                const stillOk = selected?.mediums.includes(f.id);
-                if (!stillOk) onCategoryChange("");
-              }}
-              className={cn(
-                "rounded-full border px-3 py-1.5 text-xs transition",
-                medium === f.id
-                  ? "border-ink bg-ink text-background"
-                  : "border-border bg-surface text-ink-soft hover:bg-muted",
-              )}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-      </div>
+    <div className="space-y-5">
+      <FieldPicker
+        label="Field"
+        primary={primary as FieldId}
+        extras={fields.slice(1)}
+        onPrimaryChange={() => {}}
+        onExtrasChange={() => {}}
+        onChange={(next) => onFieldsChange(next.filter(Boolean).slice(0, MAX_WORK_FIELDS))}
+        max={MAX_WORK_FIELDS}
+        hint="Choose the broad field this Work belongs to. Add up to three and star one as primary."
+      />
 
       <div className="space-y-2">
-        <Label>Category</Label>
-        <p className="text-xs text-ink-muted">The precise kind of Work — a Trailer, a Painting, a Dataset.</p>
-        <Select
-          value={categoryValid ? categoryId : ""}
-          onValueChange={onCategoryChange}
-          disabled={!medium}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder={medium ? "Choose a Category" : "Pick a Medium first"} />
-          </SelectTrigger>
-          <SelectContent className="max-h-72">
+        <div className="flex items-baseline justify-between">
+          <Label>Category</Label>
+          <button
+            type="button"
+            onClick={() => {
+              const next = !showCustom;
+              setWritingOwn(next);
+              if (next) onCategoryChange("");
+              else onCustomCategoryChange("");
+            }}
+            className="text-xs text-ink-muted underline-offset-2 hover:underline"
+          >
+            {showCustom ? "Use a suggestion" : "Write your own"}
+          </button>
+        </div>
+        <p className="text-xs text-ink-muted">
+          What kind of Work is this? Pick a suggestion or write your own.
+        </p>
+
+        {showCustom ? (
+          <Input
+            value={customCategory}
+            maxLength={60}
+            placeholder="e.g. Field recording"
+            onChange={(e) => {
+              onCategoryChange("");
+              onCustomCategoryChange(e.target.value);
+            }}
+          />
+        ) : (
+          <div className="flex flex-wrap gap-1.5">
             {categories.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => {
+                  onCustomCategoryChange("");
+                  onCategoryChange(categoryId === c.id ? "" : c.id);
+                }}
+                className={cn(
+                  "rounded-full border px-3 py-1.5 text-xs transition",
+                  categoryId === c.id
+                    ? "border-ink bg-ink text-background"
+                    : "border-border bg-surface text-ink-soft hover:bg-muted",
+                )}
+              >
                 {c.label}
-              </SelectItem>
+              </button>
             ))}
-          </SelectContent>
-        </Select>
+            {categories.length === 0 && (
+              <p className="text-xs text-ink-muted">Pick a Field first.</p>
+            )}
+          </div>
+        )}
+
+        {primary && (
+          <p className="pt-1 text-xs text-ink-muted">
+            Appears in Gallery as{" "}
+            <span className="font-medium tracking-wide text-ink">
+              {eyebrowPreview(label, primary)}
+            </span>
+          </p>
+        )}
       </div>
     </div>
   );
 }
+
 
 /** Non-blocking prompt for Work that predates the Category registry. */
 export function ClassificationNudge({ show }: { show: boolean }) {
@@ -456,4 +509,4 @@ export function VisibilityField({
   );
 }
 
-export { fieldLabel as mediumLabel };
+export { fieldLabel };

@@ -21,6 +21,9 @@ import { toDateColumn } from "@/lib/work-dates";
 import { normalizeMaterials, normalizeSubjects } from "@/lib/work-tags";
 import { fieldWritePayload } from "@/lib/work-fields";
 import { normalizeField, type FieldId } from "@/lib/taxonomy";
+
+/** A Work can claim up to three Fields; the first is primary. */
+export const MAX_WORK_FIELDS = 3;
 import { WORK_BODY_MAX } from "@/lib/work-body";
 
 export type WorkDetails = {
@@ -38,8 +41,11 @@ export const DIMENSION_UNITS = ["cm", "in", "mm", "m", "px"] as const;
 
 export type WorkFormValues = {
   title: string;
-  medium: FieldId | "";
+  /** Every Field claimed, primary (starred) first. 1–3 entries. */
+  fields: FieldId[];
   categoryId: string;
+  /** Author-written Category when nothing in the registry fits. */
+  customCategory: string;
   excerpt: string;
   description: string;
   publicationDate: string;
@@ -56,9 +62,10 @@ export type WorkFormValues = {
 
 export const emptyWorkForm: WorkFormValues = {
   title: "",
-  // Never pre-picked: Medium must be chosen or confirmed.
-  medium: "",
+  // Never pre-picked: a Field must be chosen or confirmed.
+  fields: [],
   categoryId: "",
+  customCategory: "",
   excerpt: "",
   description: "",
   publicationDate: "",
@@ -95,8 +102,9 @@ const detailsSchema = z
 
 export const workFormSchema = z.object({
   title: z.string().trim().min(1, "Give it a title.").max(140),
-  medium: z.string().trim().min(1, "Pick a Medium."),
-  categoryId: z.string().trim().min(1, "Pick a Category."),
+  fields: z.array(z.string()).min(1, "Pick a Field.").max(MAX_WORK_FIELDS),
+  categoryId: z.string().trim().default(""),
+  customCategory: z.string().trim().max(60).default(""),
   excerpt: z.string().max(180).default(""),
   description: z.string().max(WORK_BODY_MAX).default(""),
   publicationDate: z.string().default(""),
@@ -138,8 +146,9 @@ export function hydrateWorkForm(row: WorkFormRow): WorkFormValues {
   const details = (row.details && typeof row.details === "object" ? row.details : {}) as WorkDetails;
   return {
     title: row.title ?? "",
-    medium: cls.medium,
+    fields: cls.fields.slice(0, MAX_WORK_FIELDS),
     categoryId: cls.category?.id ?? "",
+    customCategory: cls.category ? "" : (cls.categoryLabel ?? ""),
     excerpt: row.excerpt ?? "",
     description: row.description ?? "",
     // Books carry their official date in a legacy column; surface it here.
@@ -200,10 +209,18 @@ export function validateForPublish(
 ): WorkFormIssue[] {
   const issues: WorkFormIssue[] = [];
   if (!values.title.trim()) issues.push({ field: "title", message: "Give it a title." });
-  if (!values.medium) issues.push({ field: "medium", message: "Pick a Medium." });
-  if (!values.categoryId) issues.push({ field: "categoryId", message: "Pick a Category." });
-  if (values.medium && values.categoryId && !categoryAllowedUnder(values.categoryId, values.medium)) {
-    issues.push({ field: "categoryId", message: "That Category isn't available under this Medium." });
+  const primaryField = values.fields[0] ?? "";
+  if (!primaryField) issues.push({ field: "fields", message: "Pick a Field." });
+  if (!values.categoryId && !values.customCategory.trim()) {
+    issues.push({ field: "categoryId", message: "Pick a Category." });
+  }
+  if (
+    primaryField &&
+    values.categoryId &&
+    workCategoryById(values.categoryId) &&
+    !categoryAllowedUnder(values.categoryId, primaryField)
+  ) {
+    issues.push({ field: "categoryId", message: "That Category isn't available under this Field." });
   }
   if (!values.ownsRights) {
     issues.push({ field: "ownsRights", message: "Confirm this is your work, or you have the rights to share it." });
@@ -237,9 +254,11 @@ export function buildWorkWritePayload(
   values: WorkFormValues,
   opts: { existingSubcategory?: string | null } = {},
 ) {
-  const medium = normalizeField(values.medium || null);
+  const [primary, ...extras] = values.fields;
+  const primaryField = normalizeField(primary || null);
   const category = workCategoryById(values.categoryId);
-  const fieldPayload = fieldWritePayload(medium, [], opts.existingSubcategory ?? null);
+  // Legacy `subcategories` (Specialization) is preserved untouched.
+  const fieldPayload = fieldWritePayload(primaryField, extras, opts.existingSubcategory ?? null);
   const materials = categoryUsesMaterial(values.categoryId)
     ? normalizeMaterials(values.materials)
     : [];
@@ -249,7 +268,7 @@ export function buildWorkWritePayload(
     title: values.title.trim(),
     category_id: category?.id ?? null,
     // Legacy mirror — book detection, old chips and exports still read this.
-    subtype: category?.label ?? null,
+    subtype: category?.label ?? (values.customCategory.trim() || null),
     excerpt: values.excerpt.trim() || null,
     description: values.description.trim() || null,
     publication_date: toDateColumn(values.publicationDate),

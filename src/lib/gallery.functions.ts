@@ -4,11 +4,16 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { WorkCardData } from "@/components/work-card";
 import type { Category } from "@/lib/categories";
 import { canonicalFilterValues } from "@/lib/taxonomy";
+import { WORK_CARD_SELECT, toWorkCard, type WorkCardRow } from "@/lib/work-card-query";
 
 const FilterSchema = z.object({
   limit: z.number().int().min(1).max(60).default(30),
   cursor: z.string().nullable().optional(),
   category: z.string().default("all"),
+  /** Category registry id, "all" for none. */
+  kind: z.string().default("all"),
+  /** Subject tag, "all" for none. */
+  subject: z.string().default("all"),
   city: z.string().default("all"), // city slug or "all"
   sort: z.enum(["recent", "trending"]).default("recent"),
   q: z.string().default(""),
@@ -56,9 +61,7 @@ export const listFollowingWorks = createServerFn({ method: "POST" })
 
     let q = supabase
       .from("works")
-      .select(
-        "id,title,slug,category,categories,cover_url,cover_aspect,cover_focal_x,cover_focal_y,embed_url,source_type,like_count,save_count,view_count,published_at,popularity_score,created_at, work_credits(role_label, sort_order, display_name, profiles(id,display_name,username))",
-      )
+      .select(`${WORK_CARD_SELECT},popularity_score`)
       .eq("status", "published")
       .in("visibility", ["public", "unlisted"])
       .in("id", workIds)
@@ -66,6 +69,8 @@ export const listFollowingWorks = createServerFn({ method: "POST" })
 
     if (data.category !== "all")
       q = q.overlaps("categories_canonical", canonicalFilterValues(data.category));
+    if (data.kind !== "all") q = q.eq("category_id", data.kind);
+    if (data.subject !== "all") q = q.overlaps("subjects", [data.subject]);
     if (cityId) q = q.eq("city_id", cityId);
     if (data.q.trim()) {
       const s = data.q.trim().replace(/[%,]/g, " ");
@@ -85,52 +90,10 @@ export const listFollowingWorks = createServerFn({ method: "POST" })
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
 
-    type Row = {
-      id: string;
-      title: string;
-      slug: string;
-      category: Category;
-      cover_url: string | null;
-      cover_aspect: string | null;
-      cover_focal_x: number | null;
-      cover_focal_y: number | null;
-      embed_url: string | null;
-      source_type: string;
-      like_count: number;
-      save_count: number;
-      view_count: number;
-      published_at: string | null;
-      work_credits?: {
-        sort_order: number;
-        display_name: string | null;
-        profiles: { id: string; display_name: string | null; username: string | null } | null;
-      }[];
-    };
-    const works = (rows as Row[]).map<WorkCardData>((r) => ({
-      id: r.id,
-      title: r.title,
-      slug: r.slug,
-      category: r.category,
-      cover_url: r.cover_url,
-      cover_aspect: r.cover_aspect,
-      cover_focal_x: r.cover_focal_x,
-      cover_focal_y: r.cover_focal_y,
-      embed_url: r.embed_url,
-      source_type: r.source_type,
-      like_count: r.like_count,
-      save_count: r.save_count,
-      view_count: r.view_count,
+    type Row = WorkCardRow;
+    const works = ((rows ?? []) as unknown as Row[]).map<WorkCardData>(toWorkCard);
 
-      credits: (r.work_credits ?? [])
-        .sort((a, b) => a.sort_order - b.sort_order)
-        .map((c) => ({
-          id: c.profiles?.id ?? null,
-          display_name: c.profiles?.display_name ?? c.display_name ?? null,
-          username: c.profiles?.username ?? null,
-        })),
-    }));
-
-    const last = (rows as Row[])[rows.length - 1];
+    const last = ((rows ?? []) as unknown as Row[])[(rows ?? []).length - 1];
     const nextCursor =
       data.sort === "recent" && rows.length === data.limit && last?.published_at
         ? last.published_at

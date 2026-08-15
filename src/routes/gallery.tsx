@@ -9,6 +9,9 @@ import { useAuth } from "@/hooks/use-auth";
 import { WorkCard, type WorkCardData } from "@/components/work-card";
 import type { Category } from "@/lib/categories";
 import { FIELD_FILTER_OPTIONS, canonicalFilterValues, normalizeCategory } from "@/lib/taxonomy";
+import { categoriesForField } from "@/lib/work-categories";
+import { WORK_CARD_SELECT, toWorkCard, type WorkCardRow } from "@/lib/work-card-query";
+import { SUBJECT_SUGGESTIONS } from "@/lib/work-tags";
 import { CategoryScroller } from "@/components/category-scroller";
 import { GalleryCityFilter, type CityOption } from "@/components/gallery-city-filter";
 import { Button } from "@/components/ui/button";
@@ -29,6 +32,8 @@ const searchSchema = z.object({
   q: fallback(z.string(), "").default(""),
   tab: fallback(z.enum(["for-you", "following", "favorites"]), "for-you").default("for-you"),
   cat: fallback(z.string(), "all").default("all"),
+  kind: fallback(z.string(), "all").default("all"),
+  subject: fallback(z.string(), "all").default("all"),
   city: fallback(z.string(), "all").default("all"),
   sort: fallback(z.enum(["recent", "trending"]), "recent").default("recent"),
 });
@@ -38,9 +43,16 @@ export const Route = createFileRoute("/gallery")({
   head: () => ({
     meta: [
       { title: "Work — Workshop" },
-      { name: "description", content: "Browse everything people have published on Workshop. Music, film & video, writing, visual art, games & tech — filter by medium, city, and what your network is making." },
+      {
+        name: "description",
+        content:
+          "Browse everything people have published on Workshop. Music, film & video, writing, visual art, games & tech — filter by field, city, and what your network is making.",
+      },
       { property: "og:title", content: "Work — Workshop" },
-      { property: "og:description", content: "Browse everything people have published on Workshop." },
+      {
+        property: "og:description",
+        content: "Browse everything people have published on Workshop.",
+      },
       { property: "og:url", content: "https://workshopindie.com/gallery" },
       { property: "og:type", content: "website" },
     ],
@@ -103,6 +115,8 @@ async function fetchGalleryCities(): Promise<CityChip[]> {
 
 async function fetchForYouPage(params: {
   category: string;
+  kind: string;
+  subject: string;
   citySlug: string;
   cityIdMap: Map<string, string>;
   sort: "recent" | "trending";
@@ -112,14 +126,15 @@ async function fetchForYouPage(params: {
 }): Promise<{ works: WorkCardData[]; nextCursor: string | null }> {
   let qb = supabase
     .from("works")
-    .select(
-      "id,title,slug,category,categories,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,popularity_score,created_at,created_by, work_credits(role_label, sort_order, display_name, profiles(id,display_name,username))",
-    )
+    .select(`${WORK_CARD_SELECT},popularity_score`)
     .eq("status", "published")
     .in("visibility", ["public", "unlisted"])
     .limit(PAGE_SIZE);
 
-  if (params.category !== "all") qb = qb.overlaps("categories_canonical", canonicalFilterValues(params.category));
+  if (params.category !== "all")
+    qb = qb.overlaps("categories_canonical", canonicalFilterValues(params.category));
+  if (params.kind !== "all") qb = qb.eq("category_id", params.kind);
+  if (params.subject !== "all") qb = qb.overlaps("subjects", [params.subject]);
   if (params.citySlug !== "all") {
     const cid = params.cityIdMap.get(params.citySlug);
     if (!cid) return { works: [], nextCursor: null };
@@ -142,28 +157,14 @@ async function fetchForYouPage(params: {
 
   const { data, error } = await qb;
   if (error) throw error;
-  type Row = {
-    id: string; title: string; slug: string; category: Category;
-    cover_url: string | null; embed_url: string | null; source_type: string;
-    like_count: number; save_count: number; view_count: number;
-    published_at: string | null;
-    created_by: string;
-    work_credits?: { sort_order: number; display_name: string | null; profiles: { id: string; display_name: string | null; username: string | null } | null }[];
-  };
+  type Row = WorkCardRow & { popularity_score?: number | null; created_by: string };
   const blocked = new Set(params.blockedIds);
-  const rows = (data as Row[]).filter((r) => !blocked.has(r.created_by));
-  const works = rows.map<WorkCardData>((r) => ({
-    id: r.id, title: r.title, slug: r.slug, category: r.category,
-    cover_url: r.cover_url, embed_url: r.embed_url, source_type: r.source_type,
-    like_count: r.like_count, save_count: r.save_count, view_count: r.view_count,
-    published_at: r.published_at, created_by: r.created_by,
-    credits: (r.work_credits ?? [])
-      .sort((a, b) => a.sort_order - b.sort_order)
-      .map((c) => ({ id: c.profiles?.id ?? null, display_name: c.profiles?.display_name ?? c.display_name ?? null, username: c.profiles?.username ?? null })),
-  }));
-  const last = (data as Row[])[(data as Row[]).length - 1];
+  const rows = (data as unknown as Row[]).filter((r) => !blocked.has(r.created_by));
+  const works = rows.map(toWorkCard);
+  const all = data as unknown as Row[];
+  const last = all[all.length - 1];
   const nextCursor =
-    params.sort === "recent" && (data as Row[]).length === PAGE_SIZE && last?.published_at
+    params.sort === "recent" && all.length === PAGE_SIZE && last?.published_at
       ? last.published_at
       : null;
   return { works, nextCursor };
@@ -172,6 +173,8 @@ async function fetchForYouPage(params: {
 async function fetchFavoritesPage(params: {
   userId: string;
   category: string;
+  kind: string;
+  subject: string;
   citySlug: string;
   cityIdMap: Map<string, string>;
   q: string;
@@ -192,13 +195,11 @@ async function fetchFavoritesPage(params: {
   if (rxns.length === 0) return { works: [], nextCursor: null };
   const ids = rxns.map((r) => r.work_id);
 
-  let qb = supabase
-    .from("works")
-    .select(
-      "id,title,slug,category,categories,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,created_at,created_by, work_credits(role_label, sort_order, display_name, profiles(id,display_name,username))",
-    )
-    .in("id", ids);
-  if (params.category !== "all") qb = qb.overlaps("categories_canonical", canonicalFilterValues(params.category));
+  let qb = supabase.from("works").select(WORK_CARD_SELECT).in("id", ids);
+  if (params.category !== "all")
+    qb = qb.overlaps("categories_canonical", canonicalFilterValues(params.category));
+  if (params.kind !== "all") qb = qb.eq("category_id", params.kind);
+  if (params.subject !== "all") qb = qb.overlaps("subjects", [params.subject]);
   if (params.citySlug !== "all") {
     const cid = params.cityIdMap.get(params.citySlug);
     if (!cid) return { works: [], nextCursor: null };
@@ -210,17 +211,10 @@ async function fetchFavoritesPage(params: {
   }
   const { data, error } = await qb;
   if (error) throw error;
-  type Row = {
-    id: string; title: string; slug: string; category: Category;
-    cover_url: string | null; embed_url: string | null; source_type: string;
-    like_count: number; save_count: number; view_count: number;
-    published_at: string | null;
-    created_by: string;
-    work_credits?: { sort_order: number; display_name: string | null; profiles: { id: string; display_name: string | null; username: string | null } | null }[];
-  };
+  type Row = WorkCardRow & { created_by: string };
   const blocked = new Set(params.blockedIds);
   const byId = new Map<string, Row>();
-  for (const r of (data as Row[]) ?? []) {
+  for (const r of (data ?? []) as unknown as Row[]) {
     if (blocked.has(r.created_by)) continue;
     byId.set(r.id, r);
   }
@@ -229,15 +223,7 @@ async function fetchFavoritesPage(params: {
   for (const r of rxns) {
     const w = byId.get(r.work_id);
     if (!w) continue;
-    works.push({
-      id: w.id, title: w.title, slug: w.slug, category: w.category,
-      cover_url: w.cover_url, embed_url: w.embed_url, source_type: w.source_type,
-      like_count: w.like_count, save_count: w.save_count, view_count: w.view_count,
-      published_at: w.published_at, created_by: w.created_by,
-      credits: (w.work_credits ?? [])
-        .sort((a, b) => a.sort_order - b.sort_order)
-        .map((c) => ({ id: c.profiles?.id ?? null, display_name: c.profiles?.display_name ?? c.display_name ?? null, username: c.profiles?.username ?? null })),
-    });
+    works.push(toWorkCard(w));
   }
   const last = rxns[rxns.length - 1];
   const nextCursor = rxns.length === PAGE_SIZE && last ? last.created_at : null;
@@ -254,10 +240,12 @@ function GalleryPage() {
   const [searchOpen, setSearchOpen] = useState(search.q.trim().length > 0);
   const qDebounced = useDebounced(qInput, 250);
 
-
   useEffect(() => {
     if (qDebounced !== search.q) {
-      navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, q: qDebounced }), replace: true });
+      navigate({
+        search: (prev: Record<string, unknown>) => ({ ...prev, q: qDebounced }),
+        replace: true,
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qDebounced]);
@@ -265,6 +253,8 @@ function GalleryPage() {
   const tab = search.tab;
   // Accept legacy values (?cat=film / visual / build) from old shared links.
   const category = search.cat === "all" ? "all" : normalizeCategory(search.cat);
+  const kind = search.kind;
+  const subject = search.subject;
   const citySlug = search.city;
   const sort = search.sort;
   const q = search.q;
@@ -281,11 +271,21 @@ function GalleryPage() {
     for (const c of cities) m.set(c.slug, c.id);
     return m;
   }, [cities]);
-  
 
   const queryKey = useMemo(
-    () => ["gallery", tab, category, citySlug, sort, q, user?.id ?? null, blockedKey],
-    [tab, category, citySlug, sort, q, user?.id, blockedKey],
+    () => [
+      "gallery",
+      tab,
+      category,
+      kind,
+      subject,
+      citySlug,
+      sort,
+      q,
+      user?.id ?? null,
+      blockedKey,
+    ],
+    [tab, category, kind, subject, citySlug, sort, q, user?.id, blockedKey],
   );
 
   const queryResult = useInfiniteQuery({
@@ -299,6 +299,8 @@ function GalleryPage() {
             limit: PAGE_SIZE,
             cursor: pageParam,
             category,
+            kind,
+            subject,
             city: citySlug,
             sort,
             q,
@@ -310,6 +312,8 @@ function GalleryPage() {
         return fetchFavoritesPage({
           userId: user.id,
           category,
+          kind,
+          subject,
           citySlug,
           cityIdMap,
           q,
@@ -317,7 +321,17 @@ function GalleryPage() {
           blockedIds: Array.from(blockedIds),
         });
       }
-      return fetchForYouPage({ category, citySlug, cityIdMap, sort, q, cursor: pageParam, blockedIds: Array.from(blockedIds) });
+      return fetchForYouPage({
+        category,
+        kind,
+        subject,
+        citySlug,
+        cityIdMap,
+        sort,
+        q,
+        cursor: pageParam,
+        blockedIds: Array.from(blockedIds),
+      });
     },
     getNextPageParam: (last) => last.nextCursor,
   });
@@ -353,7 +367,6 @@ function GalleryPage() {
   const setSearch = (patch: Partial<typeof search>) =>
     navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, ...patch }), replace: true });
 
-
   // Geo-default: auto-apply user's home city (or IP-inferred nearest) on first visit
   const defaultCityQuery = useDefaultCity();
   const defaultCity = defaultCityQuery.data?.city ?? null;
@@ -369,15 +382,24 @@ function GalleryPage() {
     ...FIELD_FILTER_OPTIONS.map((c) => ({ id: c.id as string, label: c.label })),
   ];
 
-  const showFeatured = tab === "for-you" && category === "all" && !q.trim();
+  // Category is scoped to the selected Field; Subject stays a flat discovery cue.
+  const kindOptions = category === "all" ? [] : categoriesForField(category);
+
+  const showFeatured =
+    tab === "for-you" && category === "all" && kind === "all" && subject === "all" && !q.trim();
 
   const filtersActive =
-    category !== "all" || citySlug !== "all" || sort !== "recent" || q.trim().length > 0;
+    category !== "all" ||
+    kind !== "all" ||
+    subject !== "all" ||
+    citySlug !== "all" ||
+    sort !== "recent" ||
+    q.trim().length > 0;
 
   const clearAll = () => {
     setQInput("");
     navigate({
-      search: { q: "", tab, cat: "all", city: "all", sort: "recent" },
+      search: { q: "", tab, cat: "all", kind: "all", subject: "all", city: "all", sort: "recent" },
       replace: true,
     });
   };
@@ -396,7 +418,8 @@ function GalleryPage() {
                 Gallery
               </h1>
               <p className="mt-1 truncate text-sm text-ink-muted">
-                Everything people made across Workshop — music, film & video, writing, visual art, games & tech.
+                Everything people made across Workshop — music, film & video, writing, visual art,
+                games & tech.
               </p>
             </div>
             <Link to="/works/new" className="shrink-0">
@@ -439,15 +462,14 @@ function GalleryPage() {
               ))}
             </div>
 
-            {/* Category chips — single scrolling line + overflow menu */}
+            {/* Field chips — single scrolling line + overflow menu */}
             <div className="min-w-0 flex-1">
               <CategoryScroller
                 tabs={categoryTabs}
                 value={category}
-                onChange={(v) => setSearch({ cat: v })}
+                onChange={(v) => setSearch({ cat: v, kind: "all" })}
               />
             </div>
-
 
             {/* Sort */}
             <div className="hidden shrink-0 gap-1 rounded-full border border-border bg-surface p-1 shadow-soft sm:flex">
@@ -464,7 +486,6 @@ function GalleryPage() {
                 </button>
               ))}
             </div>
-
 
             {/* City filter */}
             <div className="hidden shrink-0 md:block">
@@ -497,6 +518,59 @@ function GalleryPage() {
             )}
           </div>
 
+          {/* Category (scoped to the Field) + Subject — the secondary lenses */}
+          {(kindOptions.length > 0 || subject !== "all") && (
+            <div className="mt-2 flex items-center gap-2 overflow-x-auto pb-0.5 no-scrollbar">
+              {kindOptions.length > 0 && (
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <span className="text-[11px] uppercase tracking-wide text-ink-muted">
+                    Category
+                  </span>
+                  <button
+                    onClick={() => setSearch({ kind: "all" })}
+                    className={cn(
+                      "rounded-full border px-2.5 py-1 text-xs transition",
+                      kind === "all"
+                        ? "border-ink bg-ink text-background"
+                        : "border-border bg-surface text-ink-soft hover:bg-muted",
+                    )}
+                  >
+                    All
+                  </button>
+                  {kindOptions.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => setSearch({ kind: kind === c.id ? "all" : c.id })}
+                      className={cn(
+                        "shrink-0 rounded-full border px-2.5 py-1 text-xs transition",
+                        kind === c.id
+                          ? "border-ink bg-ink text-background"
+                          : "border-border bg-surface text-ink-soft hover:bg-muted",
+                      )}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="flex shrink-0 items-center gap-1.5">
+                <span className="text-[11px] uppercase tracking-wide text-ink-muted">Subject</span>
+                <select
+                  value={subject}
+                  onChange={(e) => setSearch({ subject: e.target.value })}
+                  className="rounded-full border border-border bg-surface px-2.5 py-1 text-xs text-ink-soft"
+                >
+                  <option value="all">Any</option>
+                  {SUBJECT_SUGGESTIONS.map((sug) => (
+                    <option key={sug} value={sug}>
+                      {sug}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
           {/* Expandable search — overlays the row on desktop so it adds no height */}
           {searchOpen && (
             <div className="relative mt-2 md:absolute md:inset-x-4 md:top-2.5 md:z-10 md:mt-0 md:px-0">
@@ -520,7 +594,6 @@ function GalleryPage() {
               </button>
             </div>
           )}
-
 
           {/* Mobile-only quick controls: tabs + city */}
           <div className="mt-2 flex items-center gap-2 lg:hidden">
@@ -596,16 +669,23 @@ function GalleryPage() {
 
       {/* Grid */}
       <section className="mx-auto max-w-7xl px-4 py-5 md:px-6 md:py-6">
-
         {(tab === "following" || tab === "favorites") && !user ? (
           <EmptyState
-            title={tab === "favorites" ? "Sign in to see your Favorites" : "Sign in to see your Following feed"}
+            title={
+              tab === "favorites"
+                ? "Sign in to see your Favorites"
+                : "Sign in to see your Following feed"
+            }
             body={
               tab === "favorites"
                 ? "Tap the heart on any piece to save it here."
                 : "Follow people, then come back here to see what they're making."
             }
-            cta={<Link to="/login"><Button className="rounded-md">Sign in</Button></Link>}
+            cta={
+              <Link to="/login">
+                <Button className="rounded-md">Sign in</Button>
+              </Link>
+            }
           />
         ) : isLoading ? (
           <Grid>
@@ -644,7 +724,9 @@ function GalleryPage() {
               }
               cta={
                 <div className="flex flex-wrap items-center justify-center gap-2">
-                  <Link to="/works/new"><Button className="rounded-md">Post to Gallery</Button></Link>
+                  <Link to="/works/new">
+                    <Button className="rounded-md">Post to Gallery</Button>
+                  </Link>
                   <Button variant="outline" onClick={clearAll} className="rounded-md">
                     Clear filters
                   </Button>
@@ -655,7 +737,15 @@ function GalleryPage() {
         ) : (
           <>
             <Grid>
-              {works.map((w) => <WorkCard key={w.id} work={w} groups={groupTagMap?.get(w.id)} myGroupIds={myGroupIds} aspect="16/10" />)}
+              {works.map((w) => (
+                <WorkCard
+                  key={w.id}
+                  work={w}
+                  groups={groupTagMap?.get(w.id)}
+                  myGroupIds={myGroupIds}
+                  aspect="16/10"
+                />
+              ))}
             </Grid>
             <div ref={sentinelRef} className="h-12" />
             {isFetchingNext && (
@@ -673,17 +763,13 @@ function GalleryPage() {
       </section>
 
       {/* Sticky mobile CTA */}
-      <Link
-        to="/works/new"
-        className="fixed bottom-4 right-4 z-40 md:hidden"
-      >
+      <Link to="/works/new" className="fixed bottom-4 right-4 z-40 md:hidden">
         <Button className="rounded-md shadow-lift">
           <Plus className="h-4 w-4" />
           Post to Gallery
         </Button>
       </Link>
     </main>
-
   );
 }
 
