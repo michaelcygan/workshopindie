@@ -27,6 +27,7 @@ import {
   workCategoryById,
 } from "@/lib/work-categories";
 import { PUBLICATION_DATE_HELP } from "@/lib/work-dates";
+import { TagField } from "@/components/entity/tag-field";
 import {
   MATERIAL_SUGGESTIONS,
   MAX_MATERIALS,
