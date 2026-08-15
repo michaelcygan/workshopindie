@@ -13,12 +13,28 @@ import { ImageUpload } from "@/components/image-upload";
 import { WorkAssetsEditor } from "@/components/work/work-assets-editor";
 import { RichBodyEditor } from "@/components/rich-body-editor";
 import { WORK_BODY_MAX } from "@/lib/work-body";
-import { FieldPicker } from "@/components/field-picker";
-import { SubcategoryPicker } from "@/components/subcategory-picker";
-import { FormatInput } from "@/components/format-input";
-import { BookDetailsSection, emptyBookDetails, type BookDetails } from "@/components/book-details-section";
+import {
+  CategoryDetailFields,
+  ClassificationNudge,
+  FieldCategoryPicker,
+  MaterialField,
+  PublicationDateField,
+  SubjectField,
+} from "@/components/work/work-form-fields";
+import {
+  BookDetailsSection,
+  emptyBookDetails,
+  type BookDetails,
+} from "@/components/book-details-section";
 import { isBookWork, type FieldId } from "@/lib/taxonomy";
-import { fieldWritePayload, rowFields, rowSubcategory } from "@/lib/work-fields";
+import { resolveWorkClassification, workCategoryById } from "@/lib/work-categories";
+import {
+  buildWorkWritePayload,
+  emptyWorkForm,
+  hydrateWorkForm,
+  type WorkDetails,
+  type WorkFormValues,
+} from "@/lib/work-form";
 import {
   Select,
   SelectContent,
@@ -52,7 +68,7 @@ function EditWork() {
       const { data, error } = await supabase
         .from("works")
         .select(
-          "id,title,slug,category,categories,category_canonical,categories_canonical,subtype,excerpt,description,cover_url,primary_url,embed_url,license_type,created_by,book_author,book_publisher,book_isbn,book_published_on,book_page_count,book_buy_links,book_excerpt_url",
+          "id,title,slug,category,categories,category_canonical,categories_canonical,category_id,subtype,subcategories,subjects,materials,details,publication_date,excerpt,description,cover_url,primary_url,embed_url,license_type,visibility,created_by,book_author,book_publisher,book_isbn,book_published_on,book_page_count,book_buy_links,book_excerpt_url",
         )
         .eq("slug", slug)
         .maybeSingle();
@@ -64,10 +80,14 @@ function EditWork() {
   const [title, setTitle] = useState("");
   const [excerpt, setExcerpt] = useState("");
   const [description, setDescription] = useState("");
-  const [field, setField] = useState<FieldId>("visual_art");
-  const [extraFields, setExtraFields] = useState<FieldId[]>([]);
-  const [format, setFormat] = useState<string | null>(null);
-  const [subcategory, setSubcategory] = useState<string | null>(null);
+  const [fields, setFields] = useState<FieldId[]>([]);
+  const [categoryId, setCategoryId] = useState("");
+  const [customCategory, setCustomCategory] = useState("");
+  const [subjects, setSubjects] = useState<string[]>([]);
+  const [materials, setMaterials] = useState<string[]>([]);
+  const [publicationDate, setPublicationDate] = useState("");
+  const [details, setDetails] = useState<WorkDetails>({});
+  const [needsClassification, setNeedsClassification] = useState(false);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [primaryUrl, setPrimaryUrl] = useState("");
   const [embedUrl, setEmbedUrl] = useState("");
@@ -75,18 +95,24 @@ function EditWork() {
   const [book, setBook] = useState<BookDetails>(emptyBookDetails);
   const [submitting, setSubmitting] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const categoryLabel = workCategoryById(categoryId)?.label ?? (customCategory.trim() || null);
 
   useEffect(() => {
     if (!work || hydrated) return;
     setTitle(work.title ?? "");
     setExcerpt(work.excerpt ?? "");
     setDescription(work.description ?? "");
-    const [primaryField, ...restFields] = rowFields(work);
-    setField(primaryField);
-    setExtraFields(restFields);
-    setSubcategory(rowSubcategory(work as { subcategories?: string[] | null }, primaryField));
-    // "Book" was a category before it was a Format — carry old rows across.
-    setFormat(work.subtype ?? (work.category === "writing_book" ? "Book" : null));
+    const form = hydrateWorkForm(work);
+    setFields(form.fields);
+    setCategoryId(form.categoryId);
+    setCustomCategory(
+      form.customCategory || (!form.categoryId && work.category === "writing_book" ? "Book" : ""),
+    );
+    setSubjects(form.subjects);
+    setMaterials(form.materials);
+    setPublicationDate(form.publicationDate);
+    setDetails(form.details);
+    setNeedsClassification(resolveWorkClassification(work).needsClassification);
     setCoverUrl(work.cover_url ?? null);
     setPrimaryUrl(work.primary_url ?? "");
     setEmbedUrl(work.embed_url ?? "");
@@ -122,18 +148,28 @@ function EditWork() {
   async function save() {
     if (!work || !user) return;
     if (!title.trim()) return toast.error("Give it a title.");
+    if (fields.length === 0) return toast.error("Pick a Field.");
+    if (!categoryId && !customCategory.trim()) return toast.error("Pick a Category.");
 
-    const isBook = isBookWork(null, format);
+    const isBook = isBookWork(null, categoryLabel);
     let bookFields: Record<string, unknown> = {};
     if (isBook) {
       const cleanLinks = book.buyLinks
         .map((l) => ({ label: (l.label || "").trim(), url: (l.url || "").trim() }))
         .filter((l) => l.url.length > 0);
       for (const l of cleanLinks) {
-        try { new URL(l.url); } catch { return toast.error(`"${l.label || "Buy link"}" isn't a valid URL.`); }
+        try {
+          new URL(l.url);
+        } catch {
+          return toast.error(`"${l.label || "Buy link"}" isn't a valid URL.`);
+        }
       }
       if (book.excerptUrl) {
-        try { new URL(book.excerptUrl); } catch { return toast.error("Sample chapter link isn't a valid URL."); }
+        try {
+          new URL(book.excerptUrl);
+        } catch {
+          return toast.error("Sample chapter link isn't a valid URL.");
+        }
       }
       bookFields = {
         book_author: book.author.trim() || null,
@@ -146,19 +182,34 @@ function EditWork() {
       };
     }
 
+    const values: WorkFormValues = {
+      ...emptyWorkForm,
+      title,
+      fields,
+      categoryId,
+      customCategory,
+      excerpt,
+      description,
+      publicationDate,
+      subjects,
+      materials,
+      details,
+      primaryUrl,
+      embedUrl,
+      coverUrl,
+      licenseType,
+      visibility: work.visibility === "unlisted" ? "unlisted" : "public",
+      ownsRights: true,
+    };
+
     setSubmitting(true);
     const { error } = await supabase
       .from("works")
       .update({
-        title: title.trim(),
-        ...fieldWritePayload(field, extraFields, subcategory),
-        subtype: format,
-        excerpt: excerpt.trim() || null,
-        description: description.trim() || null,
-        cover_url: coverUrl,
-        primary_url: primaryUrl.trim() || null,
-        embed_url: embedUrl.trim() || null,
-        license_type: licenseType as "cc_by" | "portfolio_credit_only" | "private" | "rights_managed_externally",
+        ...buildWorkWritePayload(values, {
+          existingSubcategory:
+            (work as { subcategories?: string[] | null }).subcategories?.[0] ?? null,
+        }),
         ...bookFields,
       })
       .eq("id", work.id);
@@ -183,7 +234,9 @@ function EditWork() {
       <main className="mx-auto max-w-3xl px-4 py-20 text-center">
         <h1 className="font-display text-3xl text-ink">Not found</h1>
         <Link to="/gallery" className="mt-6 inline-block">
-          <Button variant="outline" className="rounded-md">Back to Gallery</Button>
+          <Button variant="outline" className="rounded-md">
+            Back to Gallery
+          </Button>
         </Link>
       </main>
     );
@@ -232,29 +285,25 @@ function EditWork() {
           />
         </div>
 
-        <FieldPicker
-          primary={field}
-          extras={extraFields}
-          onPrimaryChange={setField}
-          onExtrasChange={setExtraFields}
-          onPrimaryReset={() => {
-            setFormat(null);
-            setSubcategory(null);
-          }}
+        <ClassificationNudge show={needsClassification} />
+
+        <FieldCategoryPicker
+          fields={fields}
+          categoryId={categoryId}
+          customCategory={customCategory}
+          onFieldsChange={setFields}
+          onCategoryChange={setCategoryId}
+          onCustomCategoryChange={setCustomCategory}
         />
 
-        <SubcategoryPicker field={field} value={subcategory} onChange={setSubcategory} />
-
-        <FormatInput fields={[field, ...extraFields]} value={format} onChange={setFormat} />
+        <SubjectField values={subjects} onChange={setSubjects} />
+        <MaterialField categoryId={categoryId} values={materials} onChange={setMaterials} />
+        <PublicationDateField value={publicationDate} onChange={setPublicationDate} />
+        <CategoryDetailFields categoryId={categoryId} value={details} onChange={setDetails} />
 
         <div className="space-y-2">
           <Label>Cover image</Label>
-          <ImageUpload
-            value={coverUrl}
-            onChange={setCoverUrl}
-            bucket="work-covers"
-            aspect="wide"
-          />
+          <ImageUpload value={coverUrl} onChange={setCoverUrl} bucket="work-covers" aspect="wide" />
         </div>
 
         {work?.id && user?.id && (
@@ -283,29 +332,35 @@ function EditWork() {
         <div className="space-y-2">
           <Label>License</Label>
           <Select value={licenseType} onValueChange={setLicenseType}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               {LICENSE_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
 
-        {isBookWork(null, format) && (
-          <BookDetailsSection value={book} onChange={setBook} />
-        )}
+        {isBookWork(null, categoryLabel) && <BookDetailsSection value={book} onChange={setBook} />}
 
         <div className="flex items-center gap-3 border-t border-border pt-6">
-          <Button
-            onClick={save}
-            disabled={submitting}
-            className="rounded-md"
-          >
-            {submitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…</> : "Save changes"}
+          <Button onClick={save} disabled={submitting} className="rounded-md">
+            {submitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…
+              </>
+            ) : (
+              "Save changes"
+            )}
           </Button>
           <Link to="/works/$slug" params={{ slug }}>
-            <Button variant="ghost" className="rounded-full">Cancel</Button>
+            <Button variant="ghost" className="rounded-full">
+              Cancel
+            </Button>
           </Link>
         </div>
       </div>

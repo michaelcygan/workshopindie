@@ -19,7 +19,8 @@ import { CoCreatorPicker, type CoCreator } from "@/components/cocreator-picker";
 
 import { extractWorkFromUrl, type ExtractedWork } from "@/lib/works-import.functions";
 import { isBookWork, normalizeField, type FieldId } from "@/lib/taxonomy";
-import { fieldWritePayload } from "@/lib/work-fields";
+import { workCategoryById } from "@/lib/work-categories";
+import { buildWorkWritePayload, emptyWorkForm, type WorkDetails, type WorkFormValues } from "@/lib/work-form";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { usePlus, FREE_PUBLISHED_WORK_CAP } from "@/hooks/use-plus";
@@ -27,9 +28,13 @@ import { PlusGate } from "@/components/plus-gate";
 import { GroupPicker, usePreselectGroup, type PickerGroup } from "@/components/group-picker";
 import { tagWorkInGroup } from "@/lib/groups.functions";
 import { BookDetailsSection, emptyBookDetails, type BookDetails } from "@/components/book-details-section";
-import { FieldPicker } from "@/components/field-picker";
-import { SubcategoryPicker } from "@/components/subcategory-picker";
-import { FormatInput } from "@/components/format-input";
+import {
+  CategoryDetailFields,
+  FieldCategoryPicker,
+  MaterialField,
+  PublicationDateField,
+  SubjectField,
+} from "@/components/work/work-form-fields";
 import { normalizeUrl, normalizeUrlOrKeep } from "@/lib/url-normalize";
 import { WorkComposerWalkthrough } from "@/components/nudges/work-composer-walkthrough";
 import { RichBodyEditor } from "@/components/rich-body-editor";
@@ -86,10 +91,13 @@ function NewWork() {
 
   // form state
   const [title, setTitle] = useState("");
-  const [field, setField] = useState<FieldId>("visual_art");
-  const [extraFields, setExtraFields] = useState<FieldId[]>([]);
-  const [format, setFormat] = useState<string | null>(null);
-  const [subcategory, setSubcategory] = useState<string | null>(null);
+  const [fields, setFields] = useState<FieldId[]>([]);
+  const [categoryId, setCategoryId] = useState("");
+  const [customCategory, setCustomCategory] = useState("");
+  const [subjects, setSubjects] = useState<string[]>([]);
+  const [materials, setMaterials] = useState<string[]>([]);
+  const [publicationDate, setPublicationDate] = useState("");
+  const [details, setDetails] = useState<WorkDetails>({});
   const [excerpt, setExcerpt] = useState("");
   const [description, setDescription] = useState("");
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
@@ -106,6 +114,8 @@ function NewWork() {
 
   const [book, setBook] = useState<BookDetails>(emptyBookDetails);
   const [media, setMedia] = useState<StagedAsset[]>([]);
+  const selectedCategoryLabel =
+    workCategoryById(categoryId)?.label ?? (customCategory.trim() || null);
 
   // Keep typed work if the member navigates away (e.g. mobile composer "+").
   const draftStash = useFormDraftStash(
@@ -141,7 +151,7 @@ function NewWork() {
   function applyExtracted(e: ExtractedWork) {
     setExtracted(e);
     setTitle(e.title ?? "");
-    if (e.suggested_category) setField(normalizeField(e.suggested_category));
+    if (e.suggested_category) setFields([normalizeField(e.suggested_category)]);
     setExcerpt(e.description ? e.description.slice(0, 180) : "");
     setDescription(e.description ?? "");
     setCoverUrl(e.cover_url ?? null);
@@ -182,9 +192,12 @@ function NewWork() {
   async function publish(opts: { thenAddAnother?: boolean } = {}) {
     if (!user) return;
     if (!title.trim()) return toast.error("Give it a title.");
+    if (fields.length === 0) return toast.error("Pick a Field.");
+    if (!categoryId && !customCategory.trim()) return toast.error("Pick a Category.");
     if (!ownsRights) return toast.error("Confirm this is your work, or you have the rights to share it.");
 
-    const isBook = isBookWork(null, format);
+    const categoryLabel = workCategoryById(categoryId)?.label ?? (customCategory.trim() || null);
+    const isBook = isBookWork(null, categoryLabel);
     let bookFields: Record<string, unknown> = {};
     if (isBook) {
       const cleanLinks = book.buyLinks
@@ -221,25 +234,38 @@ function NewWork() {
       }
     }
 
+    const formValues: WorkFormValues = {
+      ...emptyWorkForm,
+      title,
+      fields,
+      categoryId,
+      customCategory,
+      excerpt,
+      description,
+      publicationDate,
+      subjects,
+      materials,
+      details,
+      primaryUrl,
+      embedUrl: isBook ? "" : embedUrl ?? "",
+      coverUrl,
+      licenseType: "portfolio_credit_only",
+      visibility: "public",
+      ownsRights,
+    };
+
     setSubmitting(true);
 
     const { data: work, error } = await supabase
       .from("works")
       .insert({
-        title: title.trim(),
+        ...buildWorkWritePayload(formValues),
         slug: "",
-        ...fieldWritePayload(field, extraFields, subcategory),
-        subtype: format,
-        excerpt: excerpt || null,
-        description: description || null,
-        cover_url: coverUrl,
         cover_aspect: coverAspect,
         cover_focal_x: coverFocal.x,
         cover_focal_y: coverFocal.y,
-        primary_url: primaryUrl || null,
         embed_url: isBook ? null : embedUrl,
         source_type: "manual",
-        license_type: "portfolio_credit_only",
         ownership_certified_at: new Date().toISOString(),
         status: "draft",
         visibility: "public",
@@ -333,10 +359,11 @@ function NewWork() {
       setExtracted(null);
       setTitle(""); setExcerpt(""); setDescription("");
       setCoverUrl(null); setPrimaryUrl(""); setEmbedUrl(null);
-      setProvider(null); setFormat(null); setOwnsRights(false);
+      setProvider(null); setOwnsRights(false);
+      setFields([]); setCategoryId(""); setCustomCategory("");
+      setSubjects([]); setMaterials([]); setPublicationDate(""); setDetails({});
       setCoCreators([]); setDetailsOpen(false);
       setCoverAspect("portrait"); setCoverFocal({ x: 50, y: 50 });
-      setExtraFields([]);
 
       setBook(emptyBookDetails);
       releaseStagedAssets(media);
@@ -438,23 +465,23 @@ function NewWork() {
             />
           </section>
 
-          <section className="space-y-4">
-            <FieldPicker
-              primary={field}
-              onPrimaryChange={setField}
-              extras={extraFields}
-              onExtrasChange={setExtraFields}
-              onPrimaryReset={() => {
-                setFormat(null);
-                setSubcategory(null);
-              }}
+          <section className="space-y-5">
+            <FieldCategoryPicker
+              fields={fields}
+              categoryId={categoryId}
+              customCategory={customCategory}
+              onFieldsChange={setFields}
+              onCategoryChange={setCategoryId}
+              onCustomCategoryChange={setCustomCategory}
             />
-            <SubcategoryPicker field={field} value={subcategory} onChange={setSubcategory} />
-            <FormatInput fields={[field, ...extraFields]} value={format} onChange={setFormat} />
+            <SubjectField values={subjects} onChange={setSubjects} />
+            <MaterialField categoryId={categoryId} values={materials} onChange={setMaterials} />
+            <PublicationDateField value={publicationDate} onChange={setPublicationDate} />
+            <CategoryDetailFields categoryId={categoryId} value={details} onChange={setDetails} />
           </section>
 
-          {/* Book details — only when the Format is a book */}
-          {isBookWork(null, format) && (
+          {/* Book details — only when the Category is a book */}
+          {isBookWork(null, selectedCategoryLabel) && (
             <BookDetailsSection value={book} onChange={setBook} />
           )}
 
