@@ -45,10 +45,10 @@ function WorkEntry({ tag }: { tag: BlogContextWork }) {
   const credits = (w?.credits ?? []).filter((c) => c.display_name || c.username);
   const [open, setOpen] = useState(false);
   const { data: workId } = useEntityIdBySlug("works", tag.slug, open);
-  const meta = [
-    w?.subtype ? titleCase(w.subtype) : null,
-    ...(w?.categories ?? []).slice(0, 2).map(titleCase),
-  ].filter(Boolean);
+  // CATEGORY · PRIMARY FIELD, resolved once by the Gallery classifier server-side.
+  const meta = [(w as { eyebrow?: string | null } | null)?.eyebrow || null].filter(
+    (v): v is string => !!v,
+  );
 
   return (
     <div className="min-w-0">
