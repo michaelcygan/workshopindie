@@ -39,10 +39,15 @@ export function CardEyebrow({ post }: { post: PublicBlogCard }) {
 
 function Byline({ post }: { post: PublicBlogCard }) {
   return (
-    <p className="mt-2 text-[11px] uppercase tracking-[0.1em] text-ink-muted">
-      {post.authorName ? <>{post.authorName} · </> : null}
-      {formatDate(post.publishedAt)}
-    </p>
+    <>
+      {post.eyebrow ? (
+        <p className="mt-2 text-[11px] uppercase tracking-[0.14em] text-ink">{post.eyebrow}</p>
+      ) : null}
+      <p className="mt-1 text-[11px] uppercase tracking-[0.1em] text-ink-muted">
+        {post.authorName ? <>{post.authorName} · </> : null}
+        {formatDate(post.publishedAt)}
+      </p>
+    </>
   );
 }
 
