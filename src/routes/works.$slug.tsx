@@ -35,14 +35,9 @@ import { useDocumentMeta, useJsonLd } from "@/lib/seo";
 import { RichBody } from "@/components/rich-body";
 import { markdownToPlainText } from "@/lib/blog-excerpt";
 import { isBookWork } from "@/lib/taxonomy";
-import { SOURCE_LABELS, type Category } from "@/lib/categories";
+import { type Category } from "@/lib/categories";
 
-const LICENSE_LABELS: Record<string, string> = {
-  cc_by: "CC BY",
-  rights_managed_externally: "Rights managed",
-  portfolio_credit_only: "Credit only",
-  private: "Private",
-};
+
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { workshopEntityUrl } from "@/lib/entities/kinds";
