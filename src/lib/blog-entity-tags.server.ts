@@ -1,4 +1,4 @@
-import { workEyebrow } from "@/lib/work-categories";
+import { classificationEyebrow } from "@/lib/work-categories";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { BlogEntityKind, BlogEntityTag, BlogRailSubjectKind } from "@/lib/blog-entity-tags";
 import { MAX_BLOG_ENTITY_TAGS } from "@/lib/blog-entity-tags";
@@ -237,7 +237,7 @@ async function resolveTags(rows: Row[], opts: { publicOnly: boolean }): Promise<
                   : [],
               subtype: w.subtype ?? null,
               // Gallery's finalized classification: CATEGORY · PRIMARY FIELD.
-              eyebrow: workEyebrow(w),
+              eyebrow: classificationEyebrow(w),
               subjects: (w.subjects ?? []).filter(Boolean) as string[],
               cover_url: w.cover_url ?? null,
               cover_aspect: w.cover_aspect ?? null,
