@@ -7,6 +7,7 @@ import type { MemberHomePayload } from "@/lib/home-types";
 import type { HomeNowItem } from "@/lib/home-now-types";
 import { HOME_NOW_LANES } from "@/lib/home-now-types";
 import { useNowBoard } from "@/hooks/use-now-board";
+import { HereNowCluster } from "@/components/here-now-cluster";
 import { cn } from "@/lib/utils";
 
 /**
@@ -96,14 +97,15 @@ export function NowBoardDesktop({ data }: { data: MemberHomePayload }) {
       onFocus={() => setHovered(true)}
       onBlur={() => setHovered(false)}
     >
-      <header className="flex items-center justify-between border-b border-border px-5 py-2.5">
-        <p className="font-display text-[11px] uppercase tracking-[0.12em] text-ink-muted">
+      <header className="flex items-center justify-between gap-4 border-b border-border px-5 py-2.5">
+        <p className="shrink-0 font-display text-[11px] uppercase tracking-[0.12em] text-ink-muted">
           Now
           {data.homeCity ? ` · ${data.homeCity.name}` : ""}
           {updatedAt ? ` · Updated ${updatedAt}` : ""}
           {anyLive ? " · Live" : ""}
         </p>
-        <div className="flex items-center gap-1">
+        <HereNowCluster cityGroupId={data.homeCityGroup?.id ?? null} className="ml-auto" />
+        <div className="flex shrink-0 items-center gap-1">
           <button
             type="button"
             aria-label="Previous suggestions"

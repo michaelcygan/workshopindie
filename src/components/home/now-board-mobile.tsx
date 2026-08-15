@@ -5,6 +5,7 @@ import { Calendar, ChevronRight, Compass, MessageSquare, PenLine, Radio } from "
 import type { MemberHomePayload } from "@/lib/home-types";
 import type { HomeNowItem, HomeNowLane } from "@/lib/home-now-types";
 import { useNowBoard } from "@/hooks/use-now-board";
+import { HereNowCluster } from "@/components/here-now-cluster";
 import { cn } from "@/lib/utils";
 
 const AnyLink = Link as unknown as (props: {
@@ -55,6 +56,11 @@ export function NowBoardMobile({ data }: { data: MemberHomePayload }) {
 
   return (
     <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface">
+      <HereNowCluster
+        cityGroupId={data.homeCityGroup?.id ?? null}
+        max={4}
+        className="justify-end px-3 py-2 empty:hidden"
+      />
       {(["live", "make", "explore"] as HomeNowLane[]).map((lane) => {
         const item = current(lane);
         if (!item) return null;
