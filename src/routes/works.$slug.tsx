@@ -9,8 +9,6 @@ import { Eye, ArrowLeft, ExternalLink, Calendar, Pin, PinOff, Pencil } from "luc
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { CategoryChips } from "@/components/category-chips";
-import { SubcategoryChip } from "@/components/subcategory-chip";
 import { WorkActions } from "@/components/work-actions";
 import { CommentThread } from "@/components/comment-thread";
 import { ReportDialog } from "@/components/report-dialog";
