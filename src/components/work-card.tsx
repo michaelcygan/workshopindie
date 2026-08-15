@@ -168,8 +168,14 @@ export function WorkCard({
         )}
       </div>
       <div className={cn("flex flex-1 flex-col gap-2", padClass)}>
+        {showCategory && (
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-muted line-clamp-1">
+            {classificationEyebrow(work)}
+          </p>
+        )}
         <h3 className={cn(titleClass, "text-ink line-clamp-2 break-words")}>{work.title}</h3>
         <InlineGroupChips groups={groups} myGroupIds={myGroupIds} />
+
         {shown.length > 0 && (
           <p className="relative z-20 text-xs text-ink-muted line-clamp-1">
             by{" "}
