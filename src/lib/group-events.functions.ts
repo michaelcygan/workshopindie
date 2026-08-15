@@ -5,6 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { domainError, rpcOutcomeError } from "@/lib/errors";
 import { withOpLog } from "@/lib/obs/log";
 import type { Database } from "@/integrations/supabase/types";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 function publicClient() {
   return createClient<Database>(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
@@ -181,7 +182,7 @@ export const listEventMapPoints = createServerFn({ method: "GET" })
           id: r.id,
           title: r.title,
           starts_at: r.starts_at,
-          href: `/g/${r.group.slug}/e/${r.slug}`,
+          href: workshopEntityUrl({ kind: "event", slug: r.slug, groupSlug: r.group.slug }),
         });
         venues.set(key, entry);
         continue;

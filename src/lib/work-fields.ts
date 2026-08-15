@@ -1,5 +1,5 @@
 /**
- * Field/Format write + read helpers for the row shapes that still carry the
+ * Field write + read helpers for the row shapes that still carry the
  * legacy `category` enum columns.
  *
  * Workshop's source of truth is the canonical Field (`*_canonical` columns).

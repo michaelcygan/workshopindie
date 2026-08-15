@@ -2,7 +2,7 @@
  * One shared Work-card select string + row→card mapper.
  *
  * Gallery, Following, Favorites, profile rails and every other Work rail read
- * through this so card metadata (Category · Medium, cover, byline, Subject cue)
+ * through this so card metadata (Category · Field, cover, byline, Subject cue)
  * can never drift between surfaces.
  */
 import type { WorkCardData } from "@/components/work-card";
