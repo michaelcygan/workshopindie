@@ -73,6 +73,9 @@ export function WorkCard({
   const extra = credits.length - shown.length;
   const provider = work.embed_url ? providerFromUrl(work.embed_url) : null;
   const pLabel = providerLabel(provider);
+  // At most one Subject cue — the card stays a card.
+  const subjectCue = density !== "compact" ? (work.subjects ?? [])[0] ?? null : null;
+
   const isFresh =
     !!work.published_at &&
     Date.now() - new Date(work.published_at).getTime() < 24 * 60 * 60 * 1000;
