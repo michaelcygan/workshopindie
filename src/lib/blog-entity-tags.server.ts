@@ -1,3 +1,4 @@
+import { workEyebrow } from "@/lib/work-categories";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { BlogEntityKind, BlogEntityTag, BlogRailSubjectKind } from "@/lib/blog-entity-tags";
 import { MAX_BLOG_ENTITY_TAGS } from "@/lib/blog-entity-tags";
@@ -40,7 +41,7 @@ async function resolveTags(rows: Row[], opts: { publicOnly: boolean }): Promise<
       ? supabaseAdmin
           .from("works")
           .select(
-            "id,slug,title,category,categories,subtype,excerpt,cover_url,cover_aspect,cover_focal_x,cover_focal_y,visibility,status",
+            "id,slug,title,category,categories,category_id,category_canonical,categories_canonical,subjects,subcategories,subtype,excerpt,cover_url,cover_aspect,cover_focal_x,cover_focal_y,visibility,status",
           )
           .in("id", workIds)
       : Promise.resolve({
@@ -50,6 +51,11 @@ async function resolveTags(rows: Row[], opts: { publicOnly: boolean }): Promise<
             title: string;
             category: string | null;
             categories: string[] | null;
+            category_id: string | null;
+            category_canonical: string | null;
+            categories_canonical: string[] | null;
+            subjects: string[] | null;
+            subcategories: string[] | null;
             subtype: string | null;
             excerpt: string | null;
             cover_url: string | null;
@@ -230,6 +236,9 @@ async function resolveTags(rows: Row[], opts: { publicOnly: boolean }): Promise<
                   ? [w.category]
                   : [],
               subtype: w.subtype ?? null,
+              // Gallery's finalized classification: CATEGORY · PRIMARY FIELD.
+              eyebrow: workEyebrow(w),
+              subjects: (w.subjects ?? []).filter(Boolean) as string[],
               cover_url: w.cover_url ?? null,
               cover_aspect: w.cover_aspect ?? null,
               cover_focal_x: w.cover_focal_x ?? null,
