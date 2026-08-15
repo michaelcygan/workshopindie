@@ -119,26 +119,21 @@ export function WorkCard({
           <div className="h-full w-full gradient-soft" />
         )}
 
-        {showCategory && (
-          <div className="absolute left-3 right-14 top-3 flex flex-wrap items-center gap-1.5">
-            <CategoryChipsCompact primary={work.category} categories={work.categories} />
-            {isFresh && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary/95 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground shadow-soft">
-                <Sparkles className="h-2.5 w-2.5" /> Fresh
-              </span>
-            )}
+        {isFresh && (
+          <div className="absolute left-3 top-3 flex flex-wrap items-center gap-1.5">
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary/95 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground shadow-soft">
+              <Sparkles className="h-2.5 w-2.5" /> Fresh
+            </span>
           </div>
         )}
-        <div className="absolute right-3 top-3 flex flex-col items-end gap-1">
-          <div className="rounded-full bg-surface/90 backdrop-blur px-2.5 py-0.5 text-[11px] font-medium text-ink-soft">
-            {SOURCE_LABELS[work.source_type] ?? work.source_type}
-          </div>
-          {creditBadge && (
+        {creditBadge && (
+          <div className="absolute right-3 top-3 flex flex-col items-end gap-1">
             <div className="rounded-full bg-ink/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-background shadow-soft">
               as {creditBadge}
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
         {showAvatars && shown.length > 0 && (
           <div className="absolute bottom-3 left-3 z-20 flex -space-x-2">
             {shown.map((c, i) => {
