@@ -217,7 +217,7 @@ function WorkDetail() {
     description: work.excerpt ?? (work.description ? markdownToPlainText(work.description) : undefined),
     image: work.cover_url ?? undefined,
     url: work.primary_url ?? undefined,
-    datePublished: work.published_at ?? work.created_at,
+    datePublished: structuredDatePublished(work) ?? work.published_at ?? work.created_at,
     license: work.license_type,
     interactionStatistic: [
       { "@type": "InteractionCounter", interactionType: "https://schema.org/LikeAction", userInteractionCount: work.like_count },
