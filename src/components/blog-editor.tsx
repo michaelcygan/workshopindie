@@ -26,7 +26,8 @@ import {
 } from "@/lib/blog-entity-tags";
 import { blogCategorySlugForField, blogPostFields, type BlogCategorySlug } from "@/lib/blog-categories";
 import { fieldLabel, isSubcategoryOf, type FieldId } from "@/lib/taxonomy";
-import { toBlogStoryTypes, type BlogStoryType } from "@/lib/blog-story-types";
+import { type BlogStoryType } from "@/lib/blog-story-types";
+import { buildBlogTaxonomyPayload, hydrateBlogTaxonomy } from "@/lib/blog-form";
 import { CategoryPlaceholder } from "@/components/home/category-placeholder";
 
 import { BlogPostContext } from "@/components/blog-post-context";
@@ -48,6 +49,7 @@ export type BlogEditorInitial = {
   author_name?: string;
   category_slug?: string | null;
   fields?: string[] | null;
+  subjects?: string[] | null;
   subcategories?: string[] | null;
   story_type?: string | null;
   story_types?: string[] | null;
@@ -75,17 +77,14 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
   const [seoTitle, setSeoTitle] = useState(initial?.seo_title ?? "");
   const [seoDesc, setSeoDesc] = useState(initial?.seo_description ?? "");
   const [authorName, setAuthorName] = useState(initial?.author_name ?? "Workshop");
-  const [fields, setFields] = useState<FieldId[]>(
-    blogPostFields(initial?.fields, initial?.category_slug).length > 0
-      ? blogPostFields(initial?.fields, initial?.category_slug)
-      : ["other"],
-  );
+  // One hydration path, shared with the member composer.
+  const [hydrated] = useState(() => hydrateBlogTaxonomy(initial ?? null));
+  const [fields, setFields] = useState<FieldId[]>(hydrated.fields);
   const [subcategory, setSubcategory] = useState<string | null>(
-    (initial?.subcategories ?? [])[0] ?? null,
+    hydrated.legacySubcategories[0] ?? null,
   );
-  const [storyTypes, setStoryTypes] = useState<BlogStoryType[]>(
-    toBlogStoryTypes(initial?.story_types ?? initial?.story_type),
-  );
+  const [postType, setPostType] = useState<BlogStoryType | null>(hydrated.postType);
+  const [subjects, setSubjects] = useState<string[]>(hydrated.subjects);
   const categorySlug: BlogCategorySlug = blogCategorySlugForField(fields[0]);
   const [authorProfileUsername, setAuthorProfileUsername] = useState(initial?.author_profile?.username ?? "");
   const [saving, setSaving] = useState(false);
@@ -228,11 +227,11 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
       seo_description: seoDesc.trim() || null,
       author_name: authorName.trim() || "Workshop",
       author_profile_username: authorProfileUsername.trim().replace(/^@/, "") || null,
-      category_slug: categorySlug,
-      fields,
+      ...buildBlogTaxonomyPayload(
+        { postType, fields, subjects, legacyStoryTypes: hydrated.legacyStoryTypes, legacySubcategories: hydrated.legacySubcategories },
+        hydrated.postType,
+      ),
       subcategories: subcategory ? [subcategory] : [],
-      story_type: storyTypes[0] ?? null,
-      story_types: storyTypes,
     };
   }
 
@@ -513,9 +512,10 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
             {...(initial?.id ? { postId: initial.id } : {})}
             fields={fields}
             subcategory={subcategory}
-            onChangeSubcategory={(next) => { setSubcategory(next); setDirty(true); }}
-            storyTypes={storyTypes}
-            onChangeStoryTypes={(next: BlogStoryType[]) => { setStoryTypes(next); setDirty(true); }}
+            postType={postType}
+            onChangePostType={(next) => { setPostType(next); setDirty(true); }}
+            subjects={subjects}
+            onChangeSubjects={(next) => { setSubjects(next); setDirty(true); }}
             tags={entityTags}
             onChangeFields={(next) => {
               const nextFields = next.length ? next : (["other"] as FieldId[]);

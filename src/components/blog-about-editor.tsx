@@ -20,10 +20,16 @@ import type { BlogEntityKind, BlogEntityTag } from "@/lib/blog-entity-tags";
 import { MAX_BLOG_ENTITY_TAGS, tagKey } from "@/lib/blog-entity-tags";
 import { deriveBlogPostContext } from "@/lib/blog-post-context";
 import { blogCategorySlugForField } from "@/lib/blog-categories";
-import { SubcategoryPicker } from "@/components/subcategory-picker";
 import { FieldPicker } from "@/components/field-picker";
 import { fieldClass, fieldLabel, subcategoryLabel, type FieldId } from "@/lib/taxonomy";
-import { BLOG_STORY_TYPES, BLOG_STORY_TYPE_MAX, type BlogStoryType } from "@/lib/blog-story-types";
+import {
+  BLOG_STORY_TYPES,
+  BLOG_SUBJECT_SUGGESTIONS,
+  MAX_BLOG_SUBJECTS,
+  blogSectionForStoryType,
+  type BlogStoryType,
+} from "@/lib/blog-story-types";
+import { TagField } from "@/components/entity/tag-field";
 
 const KIND_ICONS: Record<BlogEntityKind, typeof Briefcase> = {
   work: Briefcase,
@@ -61,8 +67,10 @@ export function BlogAboutEditor({
   fields,
   subcategory,
   onChangeSubcategory,
-  storyTypes,
-  onChangeStoryTypes,
+  postType,
+  onChangePostType,
+  subjects,
+  onChangeSubjects,
   tags,
   readOnly,
   onChangeFields,
@@ -76,11 +84,14 @@ export function BlogAboutEditor({
   subcategory?: string | null;
   onChangeSubcategory?: (next: string | null) => void;
   /**
-   * Editorial kinds of piece. Optional, independent of Fields, up to
-   * `BLOG_STORY_TYPE_MAX`. The first entry is the post's primary type.
+   * What kind of piece this is. Exactly one; the public editorial Category is
+   * derived from it, never authored separately.
    */
-  storyTypes: BlogStoryType[];
-  onChangeStoryTypes: (next: BlogStoryType[]) => void;
+  postType: BlogStoryType | null;
+  onChangePostType: (next: BlogStoryType | null) => void;
+  /** What the post is directly about. Optional, up to `MAX_BLOG_SUBJECTS`. */
+  subjects: string[];
+  onChangeSubjects: (next: string[]) => void;
   tags: BlogEntityTag[];
   readOnly?: boolean;
   onChangeFields: (next: FieldId[]) => void;
@@ -102,6 +113,7 @@ export function BlogAboutEditor({
   const disabledKeys = useMemo(() => tags.map(tagKey), [tags]);
   const atCap = tags.length >= MAX_BLOG_ENTITY_TAGS;
   const context = useMemo(() => deriveBlogPostContext({ categorySlug, tags }), [categorySlug, tags]);
+  const section = blogSectionForStoryType(postType);
 
   function openPicker(kind: BlogEntityKind | "all") {
     setPickerKind(kind);
@@ -206,7 +218,7 @@ export function BlogAboutEditor({
             <button
               type="button"
               title="Remove"
-              aria-label={`Remove connection to ${tag.label}`}
+              aria-label={`Remove link to ${tag.label}`}
               onClick={() => remove(tag)}
               className="inline-flex h-8 w-8 items-center justify-center rounded-full text-ink-soft hover:bg-muted"
             >
@@ -232,7 +244,7 @@ export function BlogAboutEditor({
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="text-[11px] uppercase tracking-[0.18em] text-ink-muted">About this post</h2>
         <span className="text-[11px] text-ink-muted">
-          {tags.length}/{MAX_BLOG_ENTITY_TAGS} connections
+          {tags.length}/{MAX_BLOG_ENTITY_TAGS} linked items
         </span>
       </div>
       <p className="mt-1 text-[11px] leading-relaxed text-ink-muted">
@@ -241,24 +253,17 @@ export function BlogAboutEditor({
       </p>
 
       <div className="mt-2 divide-y divide-border border-t border-border">
-        <Row label="Type">
+        <Row label="Post type">
           <div className="flex flex-wrap items-center gap-2">
             {BLOG_STORY_TYPES.map((t) => {
-              const active = storyTypes.includes(t.id);
-              const atTypeCap = storyTypes.length >= BLOG_STORY_TYPE_MAX;
+              const active = postType === t.id;
               return (
                 <button
                   key={t.id}
                   type="button"
-                  disabled={readOnly || (!active && atTypeCap)}
+                  disabled={readOnly}
                   aria-pressed={active}
-                  onClick={() =>
-                    onChangeStoryTypes(
-                      active
-                        ? storyTypes.filter((s) => s !== t.id)
-                        : [...storyTypes, t.id].slice(0, BLOG_STORY_TYPE_MAX),
-                    )
-                  }
+                  onClick={() => onChangePostType(active ? null : t.id)}
                   className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-40 ${
                     active
                       ? "border-ink bg-ink text-surface"
@@ -269,13 +274,11 @@ export function BlogAboutEditor({
                 </button>
               );
             })}
-            <span className="text-[11px] text-ink-muted">
-              {storyTypes.length}/{BLOG_STORY_TYPE_MAX}
-            </span>
           </div>
           <p className="mt-1.5 text-[11px] text-ink-muted">
-            What kind of piece this is — pick up to {BLOG_STORY_TYPE_MAX}. Optional, and separate
-            from the field it is about.
+            {section
+              ? `Publishes under ${section.label}.`
+              : "Pick one — it decides which section of the Blog this post appears in."}
           </p>
         </Row>
 
@@ -305,31 +308,31 @@ export function BlogAboutEditor({
           )}
         </Row>
 
-        {onChangeSubcategory && !readOnly && (
-          <Row label="Specialization">
-            <SubcategoryPicker
-              field={primaryField}
-              value={subcategory ?? null}
-              onChange={onChangeSubcategory}
+        <Row label={subjects.length === 1 ? "Subject" : "Subjects"}>
+          {readOnly ? (
+            <div className="text-sm text-ink-soft">
+              {subjects.length > 0 ? subjects.join(" · ") : "—"}
+            </div>
+          ) : (
+            <TagField
               label=""
-              hint="Optional. Narrows the field for search and discovery."
+              help={`What this post is directly about. Optional, up to ${MAX_BLOG_SUBJECTS}. The first one leads.`}
+              values={subjects}
+              onChange={onChangeSubjects}
+              suggestions={BLOG_SUBJECT_SUGGESTIONS}
+              max={MAX_BLOG_SUBJECTS}
+              placeholder="e.g. Mental health"
             />
-          </Row>
-        )}
-        {readOnly && subcategory && (
+          )}
+        </Row>
+
+        {/* Specialization is legacy: preserved on posts that carry one, never
+            offered in new authoring. */}
+        {subcategory && (
           <Row label="Specialization">
             <div className="text-sm text-ink-soft">{subcategoryLabel(subcategory)}</div>
           </Row>
         )}
-
-        <Row label={context.mediums.length === 1 ? "Format" : "Formats"}>
-          {context.mediums.length > 0 ? (
-            <div className="text-sm text-ink-soft">{context.mediums.join(" · ")}</div>
-          ) : (
-            <div className="text-xs text-ink-muted">Formats come from the Works you connect.</div>
-          )}
-        </Row>
-
 
         {ROWS.map((row) => {
           const items = byKind[row.kind];
@@ -362,7 +365,7 @@ export function BlogAboutEditor({
 
       {atCap && (
         <div className="mt-2 text-[11px] text-ink-muted">
-          Maximum of {MAX_BLOG_ENTITY_TAGS} connections reached.
+          Maximum of {MAX_BLOG_ENTITY_TAGS} linked items reached.
         </div>
       )}
 
@@ -375,7 +378,7 @@ export function BlogAboutEditor({
             ? "Connect a Work"
             : pickerKind === "post"
               ? "Connect a Blog post"
-              : "Add a connection"
+              : "Add a linked item"
         }
         description={
           pickerKind === "post"

@@ -40,6 +40,10 @@ export type BlogWorkSummary = {
   categories: string[];
   /** Free-form Work format ("Short film", "Remix", …). Absent on older Works. */
   subtype?: string | null;
+  /** Resolved Gallery eyebrow: "TRAILER · FILM & VIDEO". */
+  eyebrow?: string | null;
+  /** The Work's own Subjects. Never copied onto the Blog post. */
+  subjects?: string[];
   cover_url: string | null;
   cover_aspect: string | null;
   cover_focal_x: number | null;

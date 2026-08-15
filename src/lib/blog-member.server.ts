@@ -15,7 +15,13 @@ import {
 } from "@/lib/blog-categories";
 import { normalizeField, normalizeSpecialties, type FieldId } from "@/lib/taxonomy";
 import { rowFields } from "@/lib/work-fields";
-import { toBlogStoryType, toBlogStoryTypes } from "@/lib/blog-story-types";
+import {
+  normalizeBlogSubjects,
+  resolvePostType,
+  toBlogStoryType,
+  toBlogStoryTypes,
+} from "@/lib/blog-story-types";
+import { validateBlogForPublish } from "@/lib/blog-form";
 
 type AuthContext = {
   supabase: SupabaseClient<Database>;
@@ -23,10 +29,10 @@ type AuthContext = {
 };
 
 const DASHBOARD_FIELDS =
-  "id,title,slug,excerpt,status,publication_type,show_in_blog_index,cover_image_url,published_at,updated_at,created_at,category_slug,fields,subcategories";
+  "id,title,slug,excerpt,status,publication_type,show_in_blog_index,cover_image_url,published_at,updated_at,created_at,category_slug,fields,subjects,subcategories,story_type,story_types";
 
 const EDITOR_FIELDS =
-  "id,title,slug,excerpt,body_markdown,cover_image_url,cover_image_alt,seo_title,seo_description,status,publication_type,show_in_blog_index,published_at,updated_at,created_at,created_by,author_name,category_slug,fields,subcategories,story_type";
+  "id,title,slug,excerpt,body_markdown,cover_image_url,cover_image_alt,seo_title,seo_description,status,publication_type,show_in_blog_index,published_at,updated_at,created_at,created_by,author_name,category_slug,fields,subjects,subcategories,story_type,story_types";
 
 // ---------- helpers ----------
 
@@ -302,6 +308,7 @@ type MemberUpdateInput = {
   subcategories?: string[];
   story_type?: string | null;
   story_types?: string[];
+  subjects?: string[];
   expected_updated_at?: string;
   tags?: Array<{ kind: "work" | "collab" | "group" | "event" | "profile" | "post"; id: string }>;
 };
@@ -369,13 +376,20 @@ export async function updateMyBlogPostServer(
   }
   // Canonical Fields are the source of truth; `category_slug` above is the
   // derived legacy value that keeps /blog/c/<slug> URLs and RSS working.
-  if (input.story_types !== undefined) {
+  // Post type is single-select: an explicit change normalizes both columns to
+  // the one chosen type. Legacy multi-value writes stay supported for
+  // compatibility, with `story_type` as the primary.
+  if (input.story_type !== undefined) {
+    const t = toBlogStoryType(input.story_type);
+    patch.story_type = t;
+    patch.story_types = t ? [t] : [];
+  } else if (input.story_types !== undefined) {
     const types = toBlogStoryTypes(input.story_types);
     patch.story_types = types;
-    // `story_type` stays the primary (first) type so existing reads keep working.
     patch.story_type = types[0] ?? null;
-  } else if (input.story_type !== undefined) {
-    patch.story_type = toBlogStoryType(input.story_type);
+  }
+  if (input.subjects !== undefined) {
+    patch.subjects = normalizeBlogSubjects(input.subjects);
   }
   if (input.fields !== undefined) {
     const normalized: FieldId[] = [];
@@ -466,6 +480,12 @@ export async function publishMyBlogPostServer(context: AuthContext, id: string) 
     throw new Error("Write a little more before publishing.");
   }
   validateMemberContent(p.body_markdown);
+  // A newly published post must declare exactly one Post type. Posts that were
+  // published before Post type existed keep publishing/unpublishing freely.
+  if (!(current as { published_at: string | null }).published_at) {
+    const invalid = validateBlogForPublish({ postType: resolvePostType(full) });
+    if (invalid) throw new Error(invalid);
+  }
 
   // Excerpt is optional for the author: when blank, derive it from the opening
   // of the body so listings and SEO always have readable preview text.

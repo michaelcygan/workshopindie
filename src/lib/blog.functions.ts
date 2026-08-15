@@ -4,7 +4,22 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { BLOG_CATEGORY_SLUGS } from "@/lib/blog-categories";
 import { FIELD_IDS } from "@/lib/taxonomy";
-import { BLOG_STORY_TYPE_IDS } from "@/lib/blog-story-types";
+import {
+  BLOG_SECTIONS,
+  BLOG_STORY_TYPE_IDS,
+  MAX_BLOG_SUBJECTS,
+} from "@/lib/blog-story-types";
+
+const SECTION_IDS = BLOG_SECTIONS.map((s) => s.id) as unknown as [string, ...string[]];
+
+/** Public Category listing — filtered server-side by derived Post types. */
+export const listPostsBySection = createServerFn({ method: "GET" })
+  .inputValidator((d: unknown) => z.object({ section: z.enum(SECTION_IDS) }).parse(d))
+  .handler(async ({ data }) => {
+    const { blogPublicCacheHeader, listPostsBySectionServer } = await import("./blog.server");
+    setResponseHeader("cache-control", blogPublicCacheHeader());
+    return listPostsBySectionServer(data.section);
+  });
 
 export const listPublishedPosts = createServerFn({ method: "GET" }).handler(async () => {
   const { blogPublicCacheHeader, listPublishedPostsServer } = await import("./blog.server");
@@ -149,6 +164,7 @@ export const adminCreateDraft = createServerFn({ method: "POST" })
         subcategories: z.array(z.string().max(80)).max(1).optional(),
         story_type: z.enum(BLOG_STORY_TYPE_IDS).nullable().optional(),
         story_types: z.array(z.enum(BLOG_STORY_TYPE_IDS)).max(3).optional(),
+        subjects: z.array(z.string().max(80)).max(MAX_BLOG_SUBJECTS).optional(),
       })
       .parse(d),
   )
@@ -184,6 +200,7 @@ export const adminUpdatePost = createServerFn({ method: "POST" })
         subcategories: z.array(z.string().max(80)).max(1).optional(),
         story_type: z.enum(BLOG_STORY_TYPE_IDS).nullable().optional(),
         story_types: z.array(z.enum(BLOG_STORY_TYPE_IDS)).max(3).optional(),
+        subjects: z.array(z.string().max(80)).max(MAX_BLOG_SUBJECTS).optional(),
       })
       .parse(d),
   )
