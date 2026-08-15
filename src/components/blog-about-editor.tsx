@@ -20,7 +20,6 @@ import type { BlogEntityKind, BlogEntityTag } from "@/lib/blog-entity-tags";
 import { MAX_BLOG_ENTITY_TAGS, tagKey } from "@/lib/blog-entity-tags";
 import { deriveBlogPostContext } from "@/lib/blog-post-context";
 import { blogCategorySlugForField } from "@/lib/blog-categories";
-import { SubcategoryPicker } from "@/components/subcategory-picker";
 import { FieldPicker } from "@/components/field-picker";
 import { fieldClass, fieldLabel, subcategoryLabel, type FieldId } from "@/lib/taxonomy";
 import {
