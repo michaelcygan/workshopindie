@@ -1,13 +1,13 @@
 import { motion } from "framer-motion";
 import { Heart, Bookmark, Eye, Play, Sparkles } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { CategoryChipsCompact } from "./category-chips";
 import { ProfilePeek } from "./profile-peek";
 import { providerFromUrl, providerLabel } from "./embed-player";
 import { InlineGroupChips } from "./inline-group-chips";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { GroupTag } from "@/hooks/use-group-tags";
-import { SOURCE_LABELS, type Category } from "@/lib/categories";
+import { type Category } from "@/lib/categories";
+import { classificationEyebrow } from "@/lib/work-categories";
 import { aspectClassFor, focalStyle } from "@/components/cover-framer";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +17,13 @@ export type WorkCardData = {
   slug: string;
   category: Category;
   categories?: Category[] | null;
+  /** Medium (canonical Field) + Category registry id — drive the card eyebrow. */
+  category_canonical?: string | null;
+  category_id?: string | null;
+  subtype?: string | null;
+  subcategories?: string[] | null;
+  subjects?: string[] | null;
+  excerpt?: string | null;
   cover_url: string | null;
   cover_aspect?: string | null;
   cover_focal_x?: number | null;
@@ -30,6 +37,8 @@ export type WorkCardData = {
   embed_url?: string | null;
   credits?: { id?: string | null; display_name: string | null; username: string | null; avatar_url?: string | null }[];
 };
+
+
 
 
 type Density = "compact" | "default" | "hero";
