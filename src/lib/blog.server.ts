@@ -1,4 +1,4 @@
-import { normalizeBlogSubjects, toBlogStoryTypes } from "@/lib/blog-story-types";
+import { normalizeBlogSubjects, storyTypesForSection, toBlogStoryTypes } from "@/lib/blog-story-types";
 import { BLOG_CARD_COLUMNS, BLOG_RAIL_COLUMNS, BLOG_TAXONOMY_COLUMNS } from "@/lib/blog-select";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
@@ -154,7 +154,6 @@ export async function listPublishedPostsServer() {
  * loading the whole Blog and filtering in the browser.
  */
 export async function listPostsBySectionServer(sectionId: string) {
-  const { storyTypesForSection } = await import("@/lib/blog-story-types");
   const types = storyTypesForSection(sectionId);
   if (types.length === 0) return [];
   const { data, error } = await publicClient()
