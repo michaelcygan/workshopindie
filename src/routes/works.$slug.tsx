@@ -21,7 +21,10 @@ import { WorkCreditLayer } from "@/components/work-credit-layer";
 import { ProfilePeek } from "@/components/profile-peek";
 import { WorkCard } from "@/components/work-card";
 import { EntityBlogPosts } from "@/components/entity-blog-posts";
-import { EntityConnections } from "@/components/entity/entity-connections";
+import { WorkAboutSection } from "@/components/work/work-about-section";
+import { classificationEyebrow } from "@/lib/work-categories";
+import { POSTED_TO_WORKSHOP_LABEL, structuredDatePublished } from "@/lib/work-dates";
+
 import { WorkViewer } from "@/components/work/work-viewer";
 import { listWorkAssets, resolveWorkAssets } from "@/lib/work-assets";
 // WorkSocialProof (vouches + boosts) retired in v1 distillation pass.
