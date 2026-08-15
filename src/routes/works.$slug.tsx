@@ -117,7 +117,13 @@ export const Route = createFileRoute("/works/$slug")({
 type WorkRow = {
   id: string; title: string; slug: string; category: Category; categories: Category[] | null;
   category_canonical: string | null; categories_canonical: string[] | null; subcategories: string[] | null;
-  subtype: string | null;
+  subtype: string | null; category_id: string | null;
+  subjects: string[] | null; materials: string[] | null; details: unknown;
+  /** Official public date of the Work. Distinct from `published_at`. */
+  publication_date: string | null;
+  city: { name: string; country: string | null } | null;
+
+
 
   description: string | null; excerpt: string | null;
   cover_url: string | null; primary_url: string | null; embed_url: string | null;
