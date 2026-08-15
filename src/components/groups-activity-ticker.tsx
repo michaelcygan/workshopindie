@@ -188,7 +188,7 @@ export function GroupsActivityTicker() {
         <span className="text-[11px] text-ink-muted/70">last 14 days</span>
       </div>
       <div
-        className="group relative overflow-hidden rounded-2xl border border-border bg-surface shadow-soft"
+        className="ticker-container relative overflow-hidden rounded-2xl border border-border bg-surface shadow-soft"
         style={{
           WebkitMaskImage:
             "linear-gradient(to right, transparent 0, black 4%, black 96%, transparent 100%)",
@@ -197,8 +197,8 @@ export function GroupsActivityTicker() {
         }}
       >
         <div
-          className="flex w-max items-center gap-3 whitespace-nowrap py-2.5 pl-4 group-hover:[animation-play-state:paused] motion-reduce:animation-none"
-          style={{ animation: "groups-activity-ticker 120s linear infinite" }}
+          className="ticker-track flex w-max items-center gap-3 whitespace-nowrap py-2.5 pl-4 motion-reduce:animation-none"
+          style={{ animation: "groups-activity-ticker 240s linear infinite" }}
         >
           {loop.map((item, i) => (
             <Link
@@ -226,6 +226,9 @@ export function GroupsActivityTicker() {
           @keyframes groups-activity-ticker {
             from { transform: translate3d(0, 0, 0); }
             to   { transform: translate3d(-50%, 0, 0); }
+          }
+          .ticker-container:hover .ticker-track {
+            animation-play-state: paused;
           }
         `}</style>
       </div>
