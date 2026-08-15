@@ -205,6 +205,15 @@ export function WorkCard({
             })}
           </p>
         )}
+        {density !== "compact" && work.excerpt && (
+          <p className="text-xs text-ink-soft line-clamp-2">{work.excerpt}</p>
+        )}
+        {subjectCue && (
+          <span className="w-fit rounded-full border border-border px-2 py-0.5 text-[10px] text-ink-muted">
+            {subjectCue}
+          </span>
+        )}
+
         {showCounters && (
           <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-2 text-xs text-ink-muted">
             <span className="inline-flex items-center gap-1"><Heart className="h-3.5 w-3.5" /> {work.like_count}</span>
