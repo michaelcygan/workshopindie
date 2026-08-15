@@ -1,12 +1,12 @@
 import { Link } from "@tanstack/react-router";
 
-import { BLOG_CATEGORIES, type BlogCategorySlug } from "@/lib/blog-categories";
+import { BLOG_SECTIONS, type BlogSectionId } from "@/lib/blog-story-types";
 
 /**
- * Blog taxonomy navigation. "All" is a navigation state only — it is never
- * stored on a post.
+ * Blog Category navigation. "All" is a navigation state only — it is never
+ * stored on a post, and every Category is derived from Post type.
  */
-export function BlogCategoryNav({ active }: { active?: BlogCategorySlug | "all" }) {
+export function BlogCategoryNav({ active }: { active?: BlogSectionId | "all" }) {
   const current = active ?? "all";
   const base =
     "shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors";
@@ -24,16 +24,16 @@ export function BlogCategoryNav({ active }: { active?: BlogCategorySlug | "all" 
         >
           All
         </Link>
-        {BLOG_CATEGORIES.map((c) => (
+        {BLOG_SECTIONS.map((s) => (
           <Link
-            key={c.slug}
-            to="/blog/c/$category"
-            params={{ category: c.slug }}
+            key={s.id}
+            to="/blog/category/$category"
+            params={{ category: s.id }}
             search={{}}
-            className={`${base} ${current === c.slug ? on : off}`}
-            aria-current={current === c.slug ? "page" : undefined}
+            className={`${base} ${current === s.id ? on : off}`}
+            aria-current={current === s.id ? "page" : undefined}
           >
-            {c.label}
+            {s.label}
           </Link>
         ))}
       </div>

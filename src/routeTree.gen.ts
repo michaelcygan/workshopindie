@@ -98,6 +98,7 @@ import { Route as ApiPublicGroupNewsMultiRouteImport } from './routes/api/public
 import { Route as ApiPublicOgRouteImport } from './routes/api/public/og'
 import { Route as ApiPublicTrafficRouteImport } from './routes/api/public/traffic'
 import { Route as BlogCCategoryRouteImport } from './routes/blog.c.$category'
+import { Route as BlogCategoryCategoryRouteImport } from './routes/blog.category.$category'
 import { Route as CollabSlugEditRouteImport } from './routes/collab.$slug.edit'
 import { Route as CollabClaimTokenRouteImport } from './routes/collab.claim.$token'
 import { Route as GSlugIndexRouteImport } from './routes/g.$slug.index'
@@ -569,6 +570,11 @@ const BlogCCategoryRoute = BlogCCategoryRouteImport.update({
   path: '/blog/c/$category',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BlogCategoryCategoryRoute = BlogCategoryCategoryRouteImport.update({
+  id: '/blog/category/$category',
+  path: '/blog/category/$category',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CollabSlugEditRoute = CollabSlugEditRouteImport.update({
   id: '/edit',
   path: '/edit',
@@ -772,6 +778,7 @@ export interface FileRoutesByFullPath {
   '/api/public/og': typeof ApiPublicOgRoute
   '/api/public/traffic': typeof ApiPublicTrafficRouteWithChildren
   '/blog/c/$category': typeof BlogCCategoryRoute
+  '/blog/category/$category': typeof BlogCategoryCategoryRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
   '/g/$slug/events': typeof GSlugEventsRoute
@@ -879,6 +886,7 @@ export interface FileRoutesByTo {
   '/api/public/og': typeof ApiPublicOgRoute
   '/api/public/traffic': typeof ApiPublicTrafficRouteWithChildren
   '/blog/c/$category': typeof BlogCCategoryRoute
+  '/blog/category/$category': typeof BlogCategoryCategoryRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
   '/g/$slug/events': typeof GSlugEventsRoute
@@ -993,6 +1001,7 @@ export interface FileRoutesById {
   '/api/public/og': typeof ApiPublicOgRoute
   '/api/public/traffic': typeof ApiPublicTrafficRouteWithChildren
   '/blog/c/$category': typeof BlogCCategoryRoute
+  '/blog/category/$category': typeof BlogCategoryCategoryRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
   '/g/$slug/events': typeof GSlugEventsRoute
@@ -1108,6 +1117,7 @@ export interface FileRouteTypes {
     | '/api/public/og'
     | '/api/public/traffic'
     | '/blog/c/$category'
+    | '/blog/category/$category'
     | '/collab/$slug/edit'
     | '/collab/claim/$token'
     | '/g/$slug/events'
@@ -1215,6 +1225,7 @@ export interface FileRouteTypes {
     | '/api/public/og'
     | '/api/public/traffic'
     | '/blog/c/$category'
+    | '/blog/category/$category'
     | '/collab/$slug/edit'
     | '/collab/claim/$token'
     | '/g/$slug/events'
@@ -1328,6 +1339,7 @@ export interface FileRouteTypes {
     | '/api/public/og'
     | '/api/public/traffic'
     | '/blog/c/$category'
+    | '/blog/category/$category'
     | '/collab/$slug/edit'
     | '/collab/claim/$token'
     | '/g/$slug/events'
@@ -1407,6 +1419,7 @@ export interface RootRouteChildren {
   ApiPublicOgRoute: typeof ApiPublicOgRoute
   ApiPublicTrafficRoute: typeof ApiPublicTrafficRouteWithChildren
   BlogCCategoryRoute: typeof BlogCCategoryRoute
+  BlogCategoryCategoryRoute: typeof BlogCategoryCategoryRoute
   MeBlogIdRoute: typeof MeBlogIdRoute
   WorksCollabNewRoute: typeof WorksCollabNewRoute
   WorksInviteTokenRoute: typeof WorksInviteTokenRoute
@@ -2046,6 +2059,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogCCategoryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/blog/category/$category': {
+      id: '/blog/category/$category'
+      path: '/blog/category/$category'
+      fullPath: '/blog/category/$category'
+      preLoaderRoute: typeof BlogCategoryCategoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/collab/$slug/edit': {
       id: '/collab/$slug/edit'
       path: '/edit'
@@ -2470,6 +2490,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicOgRoute: ApiPublicOgRoute,
   ApiPublicTrafficRoute: ApiPublicTrafficRouteWithChildren,
   BlogCCategoryRoute: BlogCCategoryRoute,
+  BlogCategoryCategoryRoute: BlogCategoryCategoryRoute,
   MeBlogIdRoute: MeBlogIdRoute,
   WorksCollabNewRoute: WorksCollabNewRoute,
   WorksInviteTokenRoute: WorksInviteTokenRoute,

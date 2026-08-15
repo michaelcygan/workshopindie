@@ -245,6 +245,8 @@ export type PublicBlogCard = {
   coverUrl: string | null;
   coverAlt: string | null;
   categorySlug: string | null;
+  /** POST TYPE · LEAD SUBJECT, resolved once by the shared Blog classifier. */
+  eyebrow?: string | null;
   publishedAt: string | null;
   authorName: string | null;
   authorAvatar: string | null;
