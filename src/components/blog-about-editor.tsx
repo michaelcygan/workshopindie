@@ -112,7 +112,11 @@ export function BlogAboutEditor({
 
   const disabledKeys = useMemo(() => tags.map(tagKey), [tags]);
   const atCap = tags.length >= MAX_BLOG_ENTITY_TAGS;
-  const context = useMemo(() => deriveBlogPostContext({ categorySlug, tags }), [categorySlug, tags]);
+  const context = useMemo(
+    () =>
+      deriveBlogPostContext({ storyType: postType, fields, subjects, categorySlug, tags }),
+    [postType, fields, subjects, categorySlug, tags],
+  );
   const section = blogSectionForStoryType(postType);
 
   function openPicker(kind: BlogEntityKind | "all") {
