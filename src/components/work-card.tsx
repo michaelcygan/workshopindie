@@ -17,7 +17,7 @@ export type WorkCardData = {
   slug: string;
   category: Category;
   categories?: Category[] | null;
-  /** Medium (canonical Field) + Category registry id — drive the card eyebrow. */
+  /** Canonical Field + Category registry id — drive the card eyebrow. */
   category_canonical?: string | null;
   category_id?: string | null;
   subtype?: string | null;
