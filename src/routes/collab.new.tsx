@@ -89,6 +89,8 @@ export type CollabComposerProps = {
   submitLabel?: string;
   /** Helper copy rendered next to the primary button. */
   helperNote?: string;
+  /** Hides the composer's own h1/intro (host page supplies the heading). */
+  hideHeading?: boolean;
   onCancel?: () => void;
   onPosted?: (slug: string, id: string) => void;
   onDraftSaved?: () => void;
@@ -152,6 +154,7 @@ export function CollabComposer({
   autoSubmit = false,
   submitLabel,
   helperNote,
+  hideHeading = false,
   onCancel,
   onPosted,
   onDraftSaved,
