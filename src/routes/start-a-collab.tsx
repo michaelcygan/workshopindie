@@ -15,6 +15,7 @@ import { CollabComposer } from "@/routes/collab.new";
 import { setPostAuthIntent } from "@/lib/post-auth-intent";
 import { gtagEvent } from "@/lib/analytics/google";
 import { shareImageMeta } from "@/lib/og-image";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 import {
   clearCollabDraft,
   loadCollabDraft,
@@ -171,7 +172,7 @@ function StartACollabPage() {
         item_id: "collab_published",
         ...utmRef.current,
       });
-      const url = `${window.location.origin}/collab/${slug}`;
+      const url = `${window.location.origin}${workshopEntityUrl({ kind: "collab", slug })}`;
       toast.success("Your Collab is live — share the link.", {
         action: {
           label: "Copy link",
