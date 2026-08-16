@@ -146,6 +146,12 @@ export function CollabComposer({
   groupPreselectId = null,
   fromLounge = null,
   promptId = null,
+  initialDraft = null,
+  onDraftChange,
+  onRequireAuth,
+  autoSubmit = false,
+  submitLabel,
+  helperNote,
   onCancel,
   onPosted,
   onDraftSaved,
@@ -157,12 +163,14 @@ export function CollabComposer({
   const navigate = useNavigate();
   const qc = useQueryClient();
 
+  /** Acquisition-page mode: the visitor may be logged out and the host page owns the draft. */
+  const externalDraft = !!onDraftChange || !!onRequireAuth || !!initialDraft;
 
   const tagGroup = useServerFn(tagCollabInGroup);
   const pinToRoom = useServerFn(pinCollab);
   const preselect = usePreselectGroup(groupPreselectId ?? undefined);
 
-  const [selectedGroups, setSelectedGroups] = useState<PickerGroup[]>([]);
+  const [selectedGroups, setSelectedGroups] = useState<PickerGroup[]>(initialDraft?.groups ?? []);
   useEffect(() => {
     if (preselect.data && preselect.data.length > 0 && selectedGroups.length === 0) {
       setSelectedGroups(preselect.data);
@@ -170,35 +178,70 @@ export function CollabComposer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preselect.data]);
 
-  const [title, setTitle] = useState("");
-  const [category, setCategory] = useState<FieldId>("other");
-  const [extraCategories, setExtraCategories] = useState<FieldId[]>([]);
-  const [subcategory, setSubcategory] = useState<string | null>(null);
-  const [description, setDescription] = useState("");
-  const [timeline, setTimeline] = useState<TimelineValue>({ mode: "flexible", starts_on: null, ends_on: null });
-  const [timelineNote, setTimelineNote] = useState("");
-  const [locationMode, setLocationMode] = useState<LocationMode>("online");
-  const [city, setCity] = useState<CityValue | null>(null);
-  const [showAlsoCities, setShowAlsoCities] = useState(false);
-  const [alsoCities, setAlsoCities] = useState<CityValue[]>([]);
+  const [title, setTitle] = useState(initialDraft?.title ?? "");
+  const [category, setCategory] = useState<FieldId>(initialDraft?.category ?? "other");
+  const [extraCategories, setExtraCategories] = useState<FieldId[]>(initialDraft?.extraCategories ?? []);
+  const [subcategory, setSubcategory] = useState<string | null>(initialDraft?.subcategory ?? null);
+  const [description, setDescription] = useState(initialDraft?.description ?? "");
+  const [timeline, setTimeline] = useState<TimelineValue>(
+    initialDraft?.timeline ?? { mode: "flexible", starts_on: null, ends_on: null },
+  );
+  const [timelineNote, setTimelineNote] = useState(initialDraft?.timelineNote ?? "");
+  const [locationMode, setLocationMode] = useState<LocationMode>(initialDraft?.locationMode ?? "online");
+  const [city, setCity] = useState<CityValue | null>(initialDraft?.city ?? null);
+  const [showAlsoCities, setShowAlsoCities] = useState((initialDraft?.alsoCities?.length ?? 0) > 0);
+  const [alsoCities, setAlsoCities] = useState<CityValue[]>(initialDraft?.alsoCities ?? []);
   const [pendingAlso, setPendingAlso] = useState<CityValue | null>(null);
-  const [comp, setComp] = useState<CompType>("unspecified");
-  const [contactMode, setContactMode] = useState<ContactMode>("email_relay");
-  const [externalUrl, setExternalUrl] = useState("");
-  const [roles, setRoles] = useState<RoleDraft[]>([
-    { role_name: "", quantity: 1, description: "" },
-  ]);
-  const [rights, setRights] = useState<RightsArrangement>("decide_later");
+  const [comp, setComp] = useState<CompType>(initialDraft?.comp ?? "unspecified");
+  const [contactMode, setContactMode] = useState<ContactMode>(initialDraft?.contactMode ?? "email_relay");
+  const [externalUrl, setExternalUrl] = useState(initialDraft?.externalUrl ?? "");
+  const [roles, setRoles] = useState<RoleDraft[]>(
+    initialDraft?.roles?.length ? initialDraft.roles : [{ role_name: "", quantity: 1, description: "" }],
+  );
+  const [rights, setRights] = useState<RightsArrangement>(initialDraft?.rights ?? "decide_later");
   const [acceptsSuggestions, setAcceptsSuggestions] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [postedDialog, setPostedDialog] = useState<{ id: string; slug: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
+  const currentDraft: CollabDraft = useMemo(
+    () => ({
+      title,
+      category,
+      extraCategories,
+      subcategory,
+      description,
+      timeline,
+      timelineNote,
+      locationMode,
+      city,
+      alsoCities,
+      comp,
+      contactMode,
+      externalUrl,
+      roles,
+      rights,
+      groups: selectedGroups,
+    }),
+    [
+      title, category, extraCategories, subcategory, description, timeline, timelineNote,
+      locationMode, city, alsoCities, comp, contactMode, externalUrl, roles, rights, selectedGroups,
+    ],
+  );
+
+  // Mirror the complete draft out to the host page (acquisition flow).
+  useEffect(() => {
+    onDraftChange?.(currentDraft);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentDraft]);
+
   // Keep typed work if the member navigates away (e.g. mobile composer "+").
+  // Disabled when the host page owns a full draft snapshot.
   const draftStash = useFormDraftStash(
     "collab-new",
     { title, description, externalUrl },
     (v) => {
+      if (externalDraft) return;
       if (v.title) setTitle(v.title);
       if (v.description) setDescription(v.description);
       if (v.externalUrl) setExternalUrl(v.externalUrl);
@@ -218,7 +261,11 @@ export function CollabComposer({
     setCategory((c) => (c === "other" ? normalizeField(seed.category) : c));
   }, [promptId]);
 
-  useEffect(() => { if (!loading && !user) navigate({ to: "/login" }); }, [user, loading, navigate]);
+  useEffect(() => {
+    if (onRequireAuth) return; // logged-out drafting is allowed on the acquisition page
+    if (!loading && !user) navigate({ to: "/login" });
+  }, [user, loading, navigate, onRequireAuth]);
+
 
   useEffect(() => {
     if (!pendingAlso) return;
