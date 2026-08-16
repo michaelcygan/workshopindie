@@ -716,14 +716,20 @@ export function CollabComposer({
 
         {/* Inline action bar — always visible on mobile, and on all sizes when embedded (dialog has no room for a fixed footer). */}
         <div className={cn(
-          "flex flex-wrap justify-end gap-2",
+          "flex flex-wrap items-center justify-end gap-2",
           embed ? "" : "md:hidden",
         )}>
-          <Button type="button" variant="ghost" className="rounded-md" onClick={() => onCancel?.()}>Cancel</Button>
+          {helperNote && (
+            <p className="mr-auto max-w-sm text-[11px] leading-snug text-ink-muted">{helperNote}</p>
+          )}
+          {onCancel && (
+            <Button type="button" variant="ghost" className="rounded-md" onClick={() => onCancel?.()}>Cancel</Button>
+          )}
           <Button type="submit" disabled={submitting || !title.trim()} className="rounded-md">
-            {submitting ? "Starting…" : "Start Collab"}
+            {submitting ? "Starting…" : (submitLabel ?? "Start Collab")}
           </Button>
         </div>
+
       </form>
 
       {/* Desktop sticky action bar — hidden when embedded. */}
