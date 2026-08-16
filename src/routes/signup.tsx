@@ -61,6 +61,7 @@ function Signup() {
 
   const [loading, setLoading] = useState(false);
   const fromGuest = search.from === "guest_apply";
+  const fromCollabLanding = search.from === "collab_landing";
 
   // Capture ?ref=<username> into sessionStorage so OAuth round-trips preserve it.
   // The PostAuthRunner migrates this into referral attribution once the lifecycle is ready.
@@ -170,10 +171,16 @@ function Signup() {
       </div>
 
       <h1 className="font-display text-3xl leading-[1.05] text-ink md:text-4xl">
-        {fromGuest ? "Boost your application." : "Find people. Make the thing."}
+        {fromCollabLanding
+          ? "Create your account to publish this Collab."
+          : fromGuest
+            ? "Boost your application."
+            : "Find people. Make the thing."}
       </h1>
       <p className="mt-2 text-sm text-ink-muted">
-        {fromGuest
+        {fromCollabLanding
+          ? "Your draft is saved. Finish signing up and we'll publish it for you — nothing to re-enter."
+          : fromGuest
           ? "Your application is sent. Members get replied to faster — finish your profile so the host can see your face and past work."
           : "Show your Work. Join a Group, or post a Collab and pull a team together."}
       </p>

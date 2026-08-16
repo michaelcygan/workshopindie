@@ -41,6 +41,7 @@ export const ROUTE_RESERVED = [
   "reset-password",
   "settings",
   "signup",
+  "start-a-collab",
   "sitemap",
   "sitemap.xml",
   "u",
