@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -14,6 +15,7 @@ import { TopNav } from "@/components/top-nav";
 import { MobileBrandHeader } from "@/components/mobile-brand-header";
 import { MobileNav } from "@/components/mobile-nav";
 import { PaymentTestModeBanner } from "@/components/payment-test-mode-banner";
+import { isChromeFreePath } from "@/lib/chrome-free-routes";
 
 import { RefCapture } from "@/components/ref-capture";
 import { TrackingClickAttribution } from "@/components/tracking-click-attribution";
@@ -205,6 +207,9 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  // Standalone acquisition surfaces render their own minimal header/footer.
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const chromeFree = isChromeFreePath(pathname);
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -212,13 +217,21 @@ function RootComponent() {
           {/* One realtime channel per session, shared by the bell, the DM
               badge and the tab-title badge. See use-realtime-notifications. */}
           <RealtimeNotificationsProvider>
-            <div className="min-h-screen bg-background pb-28 md:pb-0">
+            <div className={chromeFree ? "min-h-screen bg-background" : "min-h-screen bg-background pb-28 md:pb-0"}>
               <PaymentTestModeBanner />
-              <MobileBrandHeader />
-              <TopNav />
+              {!chromeFree && (
+                <>
+                  <MobileBrandHeader />
+                  <TopNav />
+                </>
+              )}
               <Outlet />
-              <SiteFooter />
-              <MobileNav />
+              {!chromeFree && (
+                <>
+                  <SiteFooter />
+                  <MobileNav />
+                </>
+              )}
 
               <OAuthErrorToast />
 
