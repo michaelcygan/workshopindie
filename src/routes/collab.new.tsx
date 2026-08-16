@@ -72,11 +72,27 @@ export type CollabComposerProps = {
   promptId?: CollabPromptId | null;
   /** Lounge id to auto-pin the resulting Collab to. */
   fromLounge?: string | null;
+  /** Hydrate every field from a saved draft (acquisition page resume). */
+  initialDraft?: CollabDraft | null;
+  /** Mirrors the complete draft out on every change. */
+  onDraftChange?: (draft: CollabDraft) => void;
+  /**
+   * Logged-out mode: instead of bouncing to /login on mount, the composer lets
+   * the visitor fill everything in and hands the validated draft back here.
+   */
+  onRequireAuth?: (draft: CollabDraft) => void;
+  /** Submit the (restored) draft once, automatically, as soon as we're signed in. */
+  autoSubmit?: boolean;
+  /** Overrides the primary button label. */
+  submitLabel?: string;
+  /** Helper copy rendered next to the primary button. */
+  helperNote?: string;
   onCancel?: () => void;
   onPosted?: (slug: string, id: string) => void;
   onDraftSaved?: () => void;
   onBackToLounge?: (loungeId: string) => void;
 };
+
 
 
 type LocationMode = "online" | "in_person" | "hybrid";
