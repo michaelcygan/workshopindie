@@ -1,21 +1,17 @@
 /**
- * Compact Blog filter bar: Post type · Field · Subject.
+ * Compact Blog filter bar: Field · Subject.
  *
- * Purely presentational — the owning route holds the filter state in its URL
- * search params so every filtered view is shareable.
+ * Category selection lives in the nav rail above; this bar only narrows the
+ * current view. Purely presentational — the owning route holds the filter
+ * state in its URL search params so every filtered view is shareable.
  */
 import { X } from "lucide-react";
 
-export type BlogFilterValue = {
-  type?: string;
-  field?: string;
-  subject?: string;
-};
+import type { BlogFilterOption, BlogFilterValue } from "@/lib/blog-filters";
 
-export type BlogFilterOption = { value: string; label: string };
+export type { BlogFilterOption, BlogFilterValue };
 
-const chip =
-  "shrink-0 rounded-full border px-3 py-1 text-xs transition-colors";
+const chip = "shrink-0 rounded-full border px-3 py-1 text-xs transition-colors";
 const on = "border-ink bg-ink text-surface";
 const off = "border-border bg-surface text-ink-soft hover:border-ink/40";
 
@@ -57,30 +53,22 @@ function Group({
 }
 
 export function BlogFilterBar({
-  types,
   fields,
   subjects,
   value,
   onChange,
 }: {
-  types: BlogFilterOption[];
   fields: BlogFilterOption[];
   subjects: BlogFilterOption[];
   value: BlogFilterValue;
   onChange: (next: BlogFilterValue) => void;
 }) {
-  const hasAny = !!(value.type || value.field || value.subject);
-  if (types.length < 2 && fields.length < 2 && subjects.length < 2 && !hasAny) return null;
+  const hasAny = !!(value.field || value.subject);
+  if (fields.length < 2 && subjects.length < 2 && !hasAny) return null;
 
   return (
     <div className="border-b border-border">
       <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-3 md:flex-row md:flex-wrap md:items-center md:gap-5 md:px-6">
-        <Group
-          label="Type"
-          options={types}
-          active={value.type}
-          onPick={(v) => onChange({ ...value, type: v })}
-        />
         <Group
           label="Field"
           options={fields}

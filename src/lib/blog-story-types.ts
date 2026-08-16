@@ -93,7 +93,7 @@ export const BLOG_SECTIONS = [
   },
   {
     id: "field-notes",
-    label: "Field Notes",
+    label: "Process Notes",
     description: "Process notes and working journals from inside the making.",
     types: ["research_note", "journal"],
   },
