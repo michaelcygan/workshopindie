@@ -298,10 +298,16 @@ export function CollabComposer({
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!user) return;
     if (!title.trim()) return toast.error("Give your Collab a title or one-line idea");
     if (contactMode === "external_link" && !externalUrl.trim()) return toast.error("Add a link people can use to contact you");
     if (locationMode !== "online" && !city) return toast.error("Pick a city or set location to Remote");
+    if (!user) {
+      // Acquisition page: the draft is valid — hand it to the host page, which
+      // saves it and opens account creation. Nothing is published yet.
+      if (onRequireAuth) return onRequireAuth(currentDraft);
+      return;
+    }
+
 
     // Roles are always optional — freeform pitches are part of the basic model.
     const cleanRoles = roles.filter((r) => r.role_name.trim() && r.quantity > 0);
