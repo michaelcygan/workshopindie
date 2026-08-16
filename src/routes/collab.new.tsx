@@ -33,6 +33,8 @@ import { pinCollab } from "@/lib/room-pins.functions";
 import { COLLAB_PROMPT_IDS, COLLAB_PROMPTS, type CollabPromptId } from "@/lib/collab-prompts";
 import { workshopEntityUrl } from "@/lib/entities/kinds";
 import { CollabComposerWalkthrough } from "@/components/nudges/collab-composer-walkthrough";
+import type { CollabDraft } from "@/lib/collab-draft";
+
 
 
 export const Route = createFileRoute("/collab/new")({
