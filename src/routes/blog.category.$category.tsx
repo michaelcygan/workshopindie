@@ -11,29 +11,25 @@ import {
 import { BlogFilterBar } from "@/components/blog/blog-filter-bar";
 import { PublicFeaturedStories } from "@/components/home/public-featured-stories";
 import { listPostsBySection } from "@/lib/blog.functions";
-import { resolveBlogClassification } from "@/lib/blog-form";
 import {
-  blogStoryTypeLabel,
+  applyBlogFilters,
+  classifyBlogPosts,
+  deriveBlogFilterOptions,
+  parseBlogFilterSearch,
+  type BlogFilterValue,
+} from "@/lib/blog-filters";
+import {
   getBlogSection,
   isBlogSectionId,
   type BlogSection,
 } from "@/lib/blog-story-types";
-import { fieldLabel } from "@/lib/taxonomy";
 
 const SITE = "https://workshopindie.com";
 
-type Search = { type?: string; field?: string; subject?: string };
-
-function str(v: unknown): string | undefined {
-  return typeof v === "string" && v.trim() ? v.trim() : undefined;
-}
+type Search = BlogFilterValue;
 
 export const Route = createFileRoute("/blog/category/$category")({
-  validateSearch: (search: Record<string, unknown>): Search => ({
-    type: str(search.type),
-    field: str(search.field),
-    subject: str(search.subject),
-  }),
+  validateSearch: (search: Record<string, unknown>): Search => parseBlogFilterSearch(search),
   loader: async ({ params }) => {
     if (!isBlogSectionId(params.category)) throw notFound();
     const posts = (await listPostsBySection({
@@ -93,43 +89,11 @@ function BlogSectionPage() {
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
 
-  const classified = posts.map((p) => ({ post: p, cls: resolveBlogClassification(p) }));
+  const classified = classifyBlogPosts(posts);
+  const { fields: fieldOptions, subjects: subjectOptions } =
+    deriveBlogFilterOptions(classified);
+  const rows = applyBlogFilters(classified, search);
 
-  const uniq = (pairs: Array<[string, string]>) => {
-    const map = new Map<string, string>();
-    for (const [value, label] of pairs) if (!map.has(value)) map.set(value, label);
-    return [...map].map(([value, label]) => ({ value, label }));
-  };
-
-  const typeOptions = uniq(
-    classified
-      .map(({ cls }) => cls.postType)
-      .filter((t): t is NonNullable<typeof t> => !!t)
-      .map((t) => [t, blogStoryTypeLabel(t) ?? t] as [string, string]),
-  );
-  const fieldOptions = uniq(
-    classified.flatMap(({ cls }) =>
-      cls.fields.filter((f) => f !== "other").map((f) => [f, fieldLabel(f)] as [string, string]),
-    ),
-  );
-  const subjectOptions = uniq(
-    classified.flatMap(({ cls }) =>
-      cls.subjects.map((s) => [s.toLowerCase(), s] as [string, string]),
-    ),
-  );
-
-  const filtered = classified.filter(({ cls }) => {
-    if (search.type && cls.postType !== search.type) return false;
-    if (search.field && !cls.fields.includes(search.field as never)) return false;
-    if (
-      search.subject &&
-      !cls.subjects.some((s) => s.toLowerCase() === search.subject!.toLowerCase())
-    )
-      return false;
-    return true;
-  });
-
-  const rows = filtered.map(({ post }) => post);
   const featured = rows.filter((p) => p.featured);
   const featuredIds = new Set(featured.map((p) => p.id));
   const cards = [...featured, ...rows.filter((p) => !featuredIds.has(p.id))].map(toBlogCard);
@@ -156,7 +120,6 @@ function BlogSectionPage() {
 
       <BlogCategoryNav active={section.id} />
       <BlogFilterBar
-        types={typeOptions}
         fields={fieldOptions}
         subjects={subjectOptions}
         value={search}
