@@ -10,6 +10,14 @@ import {
   BlogMoreStories,
   toBlogCard,
 } from "@/components/blog/blog-editorial-sections";
+import { BlogFilterBar } from "@/components/blog/blog-filter-bar";
+import {
+  applyBlogFilters,
+  classifyBlogPosts,
+  deriveBlogFilterOptions,
+  parseBlogFilterSearch,
+  type BlogFilterValue,
+} from "@/lib/blog-filters";
 import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 const SITE = "https://workshopindie.com";
@@ -18,6 +26,8 @@ const DESC = "Ideas, guides, and stories about finding collaborators, making ind
 
 
 export const Route = createFileRoute("/blog/")({
+  validateSearch: (search: Record<string, unknown>): BlogFilterValue =>
+    parseBlogFilterSearch(search),
   loader: async () => {
     const posts = await listPublishedPosts();
     return { posts };
@@ -84,11 +94,17 @@ function Masthead() {
 
 function BlogIndexPage() {
   const { posts } = Route.useLoaderData() as { posts: BlogListItem[] };
+  const search = Route.useSearch();
+  const navigate = Route.useNavigate();
+
+  const classified = classifyBlogPosts(posts);
+  const { fields: fieldOptions, subjects: subjectOptions } = deriveBlogFilterOptions(classified);
+  const rows = applyBlogFilters(classified, search);
 
   // Featured leads, topped up from the newest posts — same rule as the homepage.
-  const featured = posts.filter((p) => p.featured);
+  const featured = rows.filter((p) => p.featured);
   const featuredIds = new Set(featured.map((p) => p.id));
-  const ordered = [...featured, ...posts.filter((p) => !featuredIds.has(p.id))];
+  const ordered = [...featured, ...rows.filter((p) => !featuredIds.has(p.id))];
 
   const cards = ordered.map(toBlogCard);
   // The whole featured set rotates through the lead slot; when nothing is
@@ -104,13 +120,23 @@ function BlogIndexPage() {
     <div className="pb-28 md:pb-16">
       <Masthead />
       <BlogCategoryNav active="all" />
+      <BlogFilterBar
+        fields={fieldOptions}
+        subjects={subjectOptions}
+        value={search}
+        onChange={(next) => navigate({ search: next, replace: true })}
+      />
 
-      {posts.length === 0 ? (
+      {cards.length === 0 ? (
         <div className="mx-auto max-w-7xl px-4 py-10 md:px-6 md:py-14">
           <div className="rounded-xl border border-dashed border-border bg-surface-2/40 p-8 text-center md:p-10">
-            <div className="font-display text-xl text-ink">Nothing published yet.</div>
+            <div className="font-display text-xl text-ink">
+              {posts.length === 0 ? "Nothing published yet." : "Nothing matches those filters."}
+            </div>
             <p className="mt-2 text-ink-muted">
-              The first notes are being written. Come back soon.
+              {posts.length === 0
+                ? "The first notes are being written. Come back soon."
+                : "Try clearing the Field or Subject filter."}
             </p>
           </div>
         </div>
