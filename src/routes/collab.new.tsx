@@ -411,6 +411,20 @@ export function CollabComposer({
     setPostedDialog({ id: post.id, slug: post.slug });
   }
 
+  // Acquisition resume: publish the restored draft exactly once, as soon as the
+  // account is ready. `autoSubmit` is only true when the host page has verified
+  // the draft hasn't already been published.
+  const autoSubmitted = useRef(false);
+  useEffect(() => {
+    if (!autoSubmit || autoSubmitted.current) return;
+    if (loading || !user || !title.trim()) return;
+    autoSubmitted.current = true;
+    void onSubmit({ preventDefault() {} } as unknown as React.FormEvent);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoSubmit, user, loading, title]);
+
+
+
 
   const shareUrl = postedDialog
     ? `${typeof window !== "undefined" ? window.location.origin : ""}${workshopEntityUrl({ kind: "collab", slug: postedDialog.slug })}`
