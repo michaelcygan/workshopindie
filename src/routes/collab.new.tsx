@@ -466,8 +466,13 @@ export function CollabComposer({
 
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
 
-        <h1 className="font-display text-4xl text-ink">Start a Collab</h1>
-        <p className="mt-1 text-ink-muted">Start with an idea. Add roles, timing and detail whenever you want — it's In Progress from the moment you start it.</p>
+        {!hideHeading && (
+          <>
+            <h1 className="font-display text-4xl text-ink">Start a Collab</h1>
+            <p className="mt-1 text-ink-muted">Start with an idea. Add roles, timing and detail whenever you want — it's In Progress from the moment you start it.</p>
+          </>
+        )}
+
         <div className="mt-4 flex items-center gap-2" aria-label="Form progress">
           {dots.map((d, i) => (
             <div key={i} className="flex items-center gap-1.5">
