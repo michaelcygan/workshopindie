@@ -13,7 +13,6 @@ import {
   FILM_STATUSES,
   LOGLINE_MAX,
   SYNOPSIS_MAX,
-  SYNOPSIS_MIN,
   type FilmFestivalSubmission,
   type FilmStatus,
 } from "@/lib/film-festival";

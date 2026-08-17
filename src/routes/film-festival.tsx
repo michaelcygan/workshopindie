@@ -21,7 +21,7 @@ import { normalizeUrlOrKeep } from "@/lib/url-normalize";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { submitFilmFestivalSubmission } from "@/lib/film-festival.functions";
-import { FILM_FORMATS, LOGLINE_MAX, SYNOPSIS_MIN, SYNOPSIS_MAX } from "@/lib/film-festival";
+import { FILM_FORMATS, LOGLINE_MAX, SYNOPSIS_MAX } from "@/lib/film-festival";
 import { gtagEvent } from "@/lib/analytics/google";
 
 const CANONICAL = "https://workshopindie.com/film-festival";
@@ -150,15 +150,6 @@ function FilmFestivalPage() {
   }, [user]);
 
   const cityLabel = location ? [location.name, location.sublabel].filter(Boolean).join(", ") : "";
-  const synopsisLength = synopsis.trim().length;
-  const synopsisTooShort = synopsisLength > 0 && synopsisLength < SYNOPSIS_MIN;
-
-  function focusSynopsis() {
-    const el = document.getElementById("film-synopsis");
-    el?.scrollIntoView({ behavior: "smooth", block: "center" });
-    (el as HTMLTextAreaElement | null)?.focus({ preventScroll: true });
-  }
-
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
