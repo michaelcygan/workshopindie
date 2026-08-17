@@ -257,7 +257,6 @@ function CollabPage() {
   const posts = useMemo(() => {
     const q = query.trim().toLocaleLowerCase();
     return ranked.filter((p) => {
-      if (search.live && !p.live_workshop_id) return false;
       if (comp === "paid" && p.compensation_type !== "paid") return false;
       if (comp === "unpaid" && !["unpaid", "credit"].includes(p.compensation_type)) return false;
       if (search.sug && !p.accepts_suggestions) return false;
@@ -273,7 +272,7 @@ function CollabPage() {
       }
       return true;
     });
-  }, [ranked, query, comp, search.live, search.sug, search.topic, topicData]);
+  }, [ranked, query, comp, search.sug, search.topic, topicData]);
 
   const livePosts = useMemo(() => posts.filter((p) => !!p.live_workshop_id), [posts]);
 
