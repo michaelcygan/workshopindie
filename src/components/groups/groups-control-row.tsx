@@ -21,7 +21,6 @@ const SORT_LABELS: Record<GroupsSort, string> = {
   az: "A–Z",
 };
 
-
 /** True when the page should drop its editorial sections and show results. */
 export function isDirectoryFiltered(state: DirectoryState): boolean {
   return (
@@ -128,5 +127,4 @@ export function GroupsControlRow({ state, onChange, onReset }: Props) {
       </FilterControls>
     </FilterHeader>
   );
-
 }

@@ -163,7 +163,6 @@ function ControlRow({
   );
 }
 
-
 function BlogIndexPage() {
   const { feed, featured } = Route.useLoaderData();
   const search = Route.useSearch();

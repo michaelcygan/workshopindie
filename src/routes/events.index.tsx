@@ -84,9 +84,7 @@ async function fetchPublicEvents(
       cityId: cityId ?? null,
       kind: kind && kind !== "all" ? kind : null,
       daypart:
-        daypart && daypart !== "all"
-          ? (daypart as "morning" | "afternoon" | "evening")
-          : null,
+        daypart && daypart !== "all" ? (daypart as "morning" | "afternoon" | "evening") : null,
     },
   });
   return rows as unknown as EventCardData[];
@@ -199,9 +197,6 @@ function EventsIndexPage() {
   const mapCities = (mapData?.cities ?? []) as unknown as MapCityPoint[];
   const mapCount = mapVenues.length + mapCities.length;
 
-
-
-
   const buckets = useMemo(() => {
     const map = new Map<string, EventCardData[]>();
     for (const e of list) {
@@ -256,7 +251,12 @@ function EventsIndexPage() {
   const cityValue: CityValue | null = cityId && cityName ? { id: cityId, name: cityName } : null;
 
   const filtersActive =
-    when !== "upcoming" || format !== "all" || !!cityId || mine || kind !== "all" || daypart !== "all";
+    when !== "upcoming" ||
+    format !== "all" ||
+    !!cityId ||
+    mine ||
+    kind !== "all" ||
+    daypart !== "all";
 
   const clearFilters = () =>
     navigate({
@@ -269,7 +269,6 @@ function EventsIndexPage() {
       }),
       replace: true,
     });
-
 
   const defaultCityQuery = useDefaultCity();
   const defaultCity = defaultCityQuery.data?.city ?? null;
@@ -415,7 +414,6 @@ function EventsIndexPage() {
             </p>
           )}
         </div>
-
 
         {when === "upcoming" && !mineActive && (
           <section className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:items-start">
