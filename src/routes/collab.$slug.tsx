@@ -70,7 +70,7 @@ export const Route = createFileRoute("/collab/$slug")({
     const description = s?.description?.slice(0, 160)
       ?? "A Collab in progress on Workshop. Apply in one tap — no account needed.";
     // Archived and legacy private drafts are owner-only — keep them out of search.
-    const indexable = s ? isPubliclyVisible(s) : true;
+    const indexable = s ? isPubliclyVisible(s) : false;
     const meta = [
       { title },
       { name: "description", content: description },
@@ -447,6 +447,7 @@ function CollabDetail() {
           </div>
           <div className="flex items-center gap-2 sm:ml-auto justify-end">
             <ShareCollabSheet
+              memberPrivate={memberPrivate}
               postId={post.id}
               slug={post.slug}
               title={post.title}

@@ -190,7 +190,7 @@ function MyCollabsPage() {
 
   const pauseMut = useMutation({
     mutationFn: (v: { id: string; open: boolean }) => pauseFn({ data: { collabPostId: v.id, open: v.open } }),
-    onSuccess: (_d, v) => { toast.success(v.open ? "Accepting collaborators again" : "Submissions paused"); invalidateAll(); },
+    onSuccess: (_d, v) => { toast.success(v.open ? "Submissions resumed — this Collab is public again." : "Submissions paused — this Collab is now private to members."); invalidateAll(); },
     onError: (e: Error) => toast.error(e.message),
   });
   const archiveMut = useMutation({
@@ -316,12 +316,12 @@ function MyCollabsPage() {
                       }}>Extend</Button>
                     )}
                     {recruit === "accepting" ? (
-                      <Button size="sm" variant="outline" className="rounded-md" onClick={() => pauseMut.mutate({ id: r.id, open: false })}>
+                      <Button size="sm" variant="outline" className="rounded-md" onClick={() => { if (confirm("Pause submissions? This Collab will be hidden from public view, but you and its accepted members can still access it. You can resume submissions at any time.")) pauseMut.mutate({ id: r.id, open: false }); }}>
                         Pause submissions
                       </Button>
                     ) : (
                       <Button size="sm" variant="outline" className="rounded-md" onClick={() => pauseMut.mutate({ id: r.id, open: true })}>
-                        Accept collaborators
+                        Resume submissions
                       </Button>
                     )}
                     <Button size="sm" className="rounded-md gap-1" onClick={() => setPublishTarget({ id: r.id, title: r.title, description: r.description })}>
