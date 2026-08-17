@@ -96,9 +96,27 @@ export function sortGroups(rows: GroupCardData[], sort: GroupsSort): GroupCardDa
 export type DirectoryState = {
   tab: GroupsTab;
   query: string;
+  /** City group name, e.g. "Chicago". Independent of `query`. */
+  city: string;
   category: string;
   sort: GroupsSort;
 };
+
+/** Groups tied to a city: the city group itself, anything sharing its city_id,
+ *  and scenes whose name/tagline names the city. */
+export function matchesCity(
+  group: GroupCardData,
+  cityGroup: GroupCardData | undefined,
+  cityName: string,
+): boolean {
+  if (!cityName) return true;
+  if (cityGroup) {
+    if (group.id === cityGroup.id) return true;
+    if (cityGroup.city_id && group.city_id === cityGroup.city_id) return true;
+  }
+  const needle = cityName.toLocaleLowerCase();
+  return `${group.name} ${group.tagline ?? ""}`.toLocaleLowerCase().includes(needle);
+}
 
 type Props = {
   state: DirectoryState;
