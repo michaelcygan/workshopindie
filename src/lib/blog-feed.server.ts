@@ -38,12 +38,28 @@ export type BlogFeedInput = {
   limit?: number;
 };
 
-export type BlogFeedRow = Record<string, unknown> & {
+export type BlogFeedRow = {
   id: string;
   slug: string;
   title: string;
+  excerpt: string;
+  cover_image_url: string | null;
+  cover_image_alt: string | null;
+  author_name: string | null;
   published_at: string | null;
+  updated_at?: string | null;
   featured?: boolean | null;
+  publication_type?: string | null;
+  category_slug?: string | null;
+  fields?: string[] | null;
+  subjects?: string[] | null;
+  story_type?: string | null;
+  story_types?: string[] | null;
+  author_profile?: {
+    username: string | null;
+    display_name: string | null;
+    avatar_url: string | null;
+  } | null;
   topics?: Topic[];
 };
 
