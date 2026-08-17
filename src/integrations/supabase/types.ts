@@ -419,6 +419,42 @@ export type Database = {
           },
         ]
       }
+      blog_post_topics: {
+        Row: {
+          created_at: string
+          post_id: string
+          sort_order: number
+          topic_id: string
+        }
+        Insert: {
+          created_at?: string
+          post_id: string
+          sort_order?: number
+          topic_id: string
+        }
+        Update: {
+          created_at?: string
+          post_id?: string
+          sort_order?: number
+          topic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_post_topics_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_post_topics_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blog_posts: {
         Row: {
           author_name: string
@@ -1180,6 +1216,42 @@ export type Database = {
             columns: ["collab_post_id"]
             isOneToOne: false
             referencedRelation: "collab_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collab_post_topics: {
+        Row: {
+          collab_post_id: string
+          created_at: string
+          sort_order: number
+          topic_id: string
+        }
+        Insert: {
+          collab_post_id: string
+          created_at?: string
+          sort_order?: number
+          topic_id: string
+        }
+        Update: {
+          collab_post_id?: string
+          created_at?: string
+          sort_order?: number
+          topic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collab_post_topics_collab_post_id_fkey"
+            columns: ["collab_post_id"]
+            isOneToOne: false
+            referencedRelation: "collab_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collab_post_topics_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
             referencedColumns: ["id"]
           },
         ]
@@ -2477,6 +2549,42 @@ export type Database = {
           },
         ]
       }
+      group_event_topics: {
+        Row: {
+          created_at: string
+          event_id: string
+          sort_order: number
+          topic_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          sort_order?: number
+          topic_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          sort_order?: number
+          topic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_event_topics_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "group_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_event_topics_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_event_updates: {
         Row: {
           body: string
@@ -3034,6 +3142,42 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_topics: {
+        Row: {
+          created_at: string
+          group_id: string
+          sort_order: number
+          topic_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          sort_order?: number
+          topic_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          sort_order?: number
+          topic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_topics_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_topics_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
             referencedColumns: ["id"]
           },
         ]
@@ -4307,6 +4451,90 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      medium_follows: {
+        Row: {
+          created_at: string
+          field_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          field_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          field_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medium_follows_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "mediums"
+            referencedColumns: ["field_id"]
+          },
+          {
+            foreignKeyName: "medium_follows_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medium_follows_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medium_follows_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medium_follows_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      mediums: {
+        Row: {
+          about_markdown: string | null
+          created_at: string
+          featured: boolean
+          field_id: string
+          short_description: string | null
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          about_markdown?: string | null
+          created_at?: string
+          featured?: boolean
+          field_id: string
+          short_description?: string | null
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          about_markdown?: string | null
+          created_at?: string
+          featured?: boolean
+          field_id?: string
+          short_description?: string | null
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       meetup_occurrences: {
         Row: {
@@ -5981,6 +6209,141 @@ export type Database = {
         }
         Relationships: []
       }
+      topic_follows: {
+        Row: {
+          created_at: string
+          topic_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          topic_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          topic_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topic_follows_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topic_follows_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topic_follows_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topic_follows_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topic_follows_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      topics: {
+        Row: {
+          about_markdown: string | null
+          aliases: string[]
+          created_at: string
+          created_by: string | null
+          featured: boolean
+          id: string
+          merged_into_topic_id: string | null
+          name: string
+          short_description: string | null
+          slug: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          about_markdown?: string | null
+          aliases?: string[]
+          created_at?: string
+          created_by?: string | null
+          featured?: boolean
+          id?: string
+          merged_into_topic_id?: string | null
+          name: string
+          short_description?: string | null
+          slug: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          about_markdown?: string | null
+          aliases?: string[]
+          created_at?: string
+          created_by?: string | null
+          featured?: boolean
+          id?: string
+          merged_into_topic_id?: string | null
+          name?: string
+          short_description?: string | null
+          slug?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "topics_merged_into_topic_id_fkey"
+            columns: ["merged_into_topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tracking_link_clicks: {
         Row: {
           city: string | null
@@ -6893,6 +7256,42 @@ export type Database = {
           },
           {
             foreignKeyName: "work_reactions_work_id_fkey"
+            columns: ["work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_topics: {
+        Row: {
+          created_at: string
+          sort_order: number
+          topic_id: string
+          work_id: string
+        }
+        Insert: {
+          created_at?: string
+          sort_order?: number
+          topic_id: string
+          work_id: string
+        }
+        Update: {
+          created_at?: string
+          sort_order?: number
+          topic_id?: string
+          work_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_topics_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_topics_work_id_fkey"
             columns: ["work_id"]
             isOneToOne: false
             referencedRelation: "works"
@@ -9851,6 +10250,7 @@ export type Database = {
           saved: boolean
         }[]
       }
+      topic_slugify: { Args: { _name: string }; Returns: string }
       touch_presence: {
         Args: never
         Returns: {
