@@ -38,7 +38,10 @@ import {
   listMyPastRsvps,
   listPublicEvents,
   listEventMapPoints,
+  listEventCities,
+  listEventMediums,
 } from "@/lib/group-events.functions";
+
 import { cn } from "@/lib/utils";
 import { workshopEntityUrl } from "@/lib/entities/kinds";
 
