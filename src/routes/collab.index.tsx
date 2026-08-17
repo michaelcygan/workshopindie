@@ -2,7 +2,7 @@ import { NON_PUBLIC_STATUSES, RECRUITING_DEADLINE_OR } from "@/lib/collab/query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Megaphone, Briefcase, Radio } from "lucide-react";
+import { Megaphone, Briefcase } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
@@ -57,7 +57,6 @@ const searchSchema = z.object({
   online: fallback(z.boolean(), false).default(false),
   format: fallback(z.string(), "any").default("any"),
   topic: fallback(z.string(), "").default(""),
-  live: fallback(z.boolean(), false).default(false),
   comp: fallback(z.string(), "any").default("any"),
   sug: fallback(z.boolean(), false).default(false),
 });
@@ -66,18 +65,18 @@ export const Route = createFileRoute("/collab/")({
   validateSearch: zodValidator(searchSchema),
   component: CollabPage,
   head: () => ({
-    meta: [
-      { title: "Collab Board — Workshop" },
-      {
-        name: "description",
-        content:
-          "Things people are trying to make. Help out, or post your own and open live audio on it.",
-      },
-      { property: "og:title", content: "Collab Board — Workshop" },
-      {
-        property: "og:description",
-        content: "Things people are trying to make. Help out, or post your own.",
-      },
+      meta: [
+        { title: "Collab Board — Workshop" },
+        {
+          name: "description",
+          content:
+            "Things people are trying to make. Help out, or post your own.",
+        },
+        { property: "og:title", content: "Collab Board — Workshop" },
+        {
+          property: "og:description",
+          content: "Things people are trying to make. Help out, or post your own.",
+        },
       { property: "og:url", content: "https://workshopindie.com/collab" },
       { property: "og:type", content: "website" },
     ],
@@ -258,7 +257,6 @@ function CollabPage() {
   const posts = useMemo(() => {
     const q = query.trim().toLocaleLowerCase();
     return ranked.filter((p) => {
-      if (search.live && !p.live_workshop_id) return false;
       if (comp === "paid" && p.compensation_type !== "paid") return false;
       if (comp === "unpaid" && !["unpaid", "credit"].includes(p.compensation_type)) return false;
       if (search.sug && !p.accepts_suggestions) return false;
@@ -274,9 +272,7 @@ function CollabPage() {
       }
       return true;
     });
-  }, [ranked, query, comp, search.live, search.sug, search.topic, topicData]);
-
-  const livePosts = useMemo(() => posts.filter((p) => !!p.live_workshop_id), [posts]);
+  }, [ranked, query, comp, search.sug, search.topic, topicData]);
 
   const mediumOptions = useMemo(() => {
     const counts = new Map<string, number>();
@@ -312,7 +308,7 @@ function CollabPage() {
   }
 
   const moreCount =
-    (search.live ? 1 : 0) + (search.sug ? 1 : 0) + (comp !== "any" ? 1 : 0) + (search.topic ? 1 : 0);
+    (search.sug ? 1 : 0) + (comp !== "any" ? 1 : 0) + (search.topic ? 1 : 0);
   const anyActive =
     moreCount > 0 || format !== "any" || !!filters.city || filters.cat !== "all" || !!query.trim();
 
@@ -335,16 +331,7 @@ function CollabPage() {
         <div className="min-w-0">
           <h1 className="font-display text-3xl text-ink md:text-4xl">Collab Board</h1>
           <p className="mt-1 text-sm text-ink-muted">
-            What people are trying to make. Help out — or open live audio on yours.
-            {livePosts.length > 0 ? (
-              <span className="ml-2 inline-flex items-center gap-1.5 text-primary">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
-                </span>
-                {livePosts.length} live now
-              </span>
-            ) : null}
+            What people are trying to make. Help out — or post your own.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -438,9 +425,6 @@ function CollabPage() {
             </FilterMoreSection>
 
             <FilterMoreSection title="Signals">
-              <FilterMoreToggle active={search.live} onClick={() => patch({ live: !search.live })}>
-                Live audio only
-              </FilterMoreToggle>
               <FilterMoreToggle active={search.sug} onClick={() => patch({ sug: !search.sug })}>
                 Open to suggestions
               </FilterMoreToggle>
@@ -457,7 +441,6 @@ function CollabPage() {
                     online: false,
                     format: "any",
                     topic: "",
-                    live: false,
                     comp: "any",
                     sug: false,
                   }),
@@ -498,42 +481,6 @@ function CollabPage() {
           </>
         ) : null}
       </FilterMeta>
-
-      {/* Live Collabs strip */}
-      {livePosts.length > 0 && (
-        <div className="mt-8">
-          <div className="mb-3 flex items-center gap-2 px-1">
-            <Radio className="h-4 w-4 text-primary" />
-            <h2 className="font-display text-lg text-ink">Live right now</h2>
-            <span className="text-xs text-ink-muted">— live audio on these Collabs is running</span>
-          </div>
-          <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 md:-mx-6 md:px-6 [scrollbar-width:thin]">
-            {livePosts.map((p) => (
-              <Link
-                key={p.id}
-                to="/collab/$slug"
-                params={{ slug: p.slug }}
-                className="group relative flex min-w-[260px] max-w-[280px] shrink-0 flex-col gap-1.5 rounded-2xl border border-primary/30 bg-surface p-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift"
-              >
-                <div className="flex items-center gap-1.5">
-                  <span className="relative flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-                  </span>
-                  <span className="text-[11px] font-medium uppercase tracking-wide text-primary">
-                    Live
-                  </span>
-                  <span className="ml-auto text-[11px] text-ink-muted">
-                    {p.user?.display_name ?? p.user?.username ?? "Host"}
-                  </span>
-                </div>
-                <div className="font-display text-base text-ink line-clamp-2">{p.title}</div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
       <div className="mt-8">
         <div className="mb-3 flex items-center gap-3 px-1">
           <h2 className="font-display text-lg text-ink">Collabs looking for people</h2>
