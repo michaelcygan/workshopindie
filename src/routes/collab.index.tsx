@@ -65,18 +65,18 @@ export const Route = createFileRoute("/collab/")({
   validateSearch: zodValidator(searchSchema),
   component: CollabPage,
   head: () => ({
-    meta: [
-      { title: "Collab Board — Workshop" },
-      {
-        name: "description",
-        content:
-          "Things people are trying to make. Help out, or post your own and open live audio on it.",
-      },
-      { property: "og:title", content: "Collab Board — Workshop" },
-      {
-        property: "og:description",
-        content: "Things people are trying to make. Help out, or post your own.",
-      },
+      meta: [
+        { title: "Collab Board — Workshop" },
+        {
+          name: "description",
+          content:
+            "Things people are trying to make. Help out, or post your own.",
+        },
+        { property: "og:title", content: "Collab Board — Workshop" },
+        {
+          property: "og:description",
+          content: "Things people are trying to make. Help out, or post your own.",
+        },
       { property: "og:url", content: "https://workshopindie.com/collab" },
       { property: "og:type", content: "website" },
     ],
