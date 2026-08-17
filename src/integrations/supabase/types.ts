@@ -10571,6 +10571,7 @@ export type Database = {
         | "city_host"
         | "verified_creator"
         | "admin"
+      event_daypart: "morning" | "afternoon" | "evening"
       event_visibility: "public" | "group_only" | "hidden"
       group_category:
         | "music"
@@ -10594,6 +10595,7 @@ export type Database = {
         | "other"
         | "lineup"
         | "hackathon"
+        | "coworking"
       group_event_rsvp_mode: "open" | "approval" | "invite_only"
       group_event_rsvp_status:
         | "going"
@@ -10859,6 +10861,7 @@ export const Constants = {
         "verified_creator",
         "admin",
       ],
+      event_daypart: ["morning", "afternoon", "evening"],
       event_visibility: ["public", "group_only", "hidden"],
       group_category: [
         "music",
@@ -10883,6 +10886,7 @@ export const Constants = {
         "other",
         "lineup",
         "hackathon",
+        "coworking",
       ],
       group_event_rsvp_mode: ["open", "approval", "invite_only"],
       group_event_rsvp_status: [
