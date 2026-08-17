@@ -970,3 +970,47 @@ export const cancelEventSeriesFuture = createServerFn({ method: "POST" })
 
     return { ok: true, canceled: canceled.length };
   });
+
+/**
+ * Venue preflight for Co-working sessions. Hosts and admins record that the
+ * room was confirmed with the venue before people show up; RLS restricts both
+ * reads and writes to the event's hosts and Workshop admins.
+ */
+export const getEventOps = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ event_id: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { data: row } = await context.supabase
+      .from("event_ops")
+      .select("event_id,admin_note,preflight_status,preflight_checked_at")
+      .eq("event_id", data.event_id)
+      .maybeSingle();
+    return row ?? null;
+  });
+
+export const setEventPreflight = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z
+      .object({
+        event_id: z.string().uuid(),
+        preflight_status: z.enum(["check_required", "checked", "issue_found"]),
+        admin_note: z.string().max(500).nullish(),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.from("event_ops").upsert(
+      {
+        event_id: data.event_id,
+        preflight_status: data.preflight_status,
+        admin_note: data.admin_note ?? null,
+        preflight_checked_at:
+          data.preflight_status === "check_required" ? null : new Date().toISOString(),
+        preflight_checked_by: context.userId,
+      } as never,
+      { onConflict: "event_id" },
+    );
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
