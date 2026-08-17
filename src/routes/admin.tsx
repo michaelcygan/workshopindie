@@ -57,6 +57,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     items: [
       { to: "/admin/blog", label: "Blog" },
       { to: "/admin/podcast", label: "Podcast" },
+      { to: "/admin/open-house", label: "Open House" },
       { to: "/admin/blog/subscribers", label: "Email list" },
       { to: "/admin/badges", label: "Badges" },
       { to: "/admin/links", label: "Links" },

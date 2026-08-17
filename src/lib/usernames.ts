@@ -35,6 +35,7 @@ export const ROUTE_RESERVED = [
   "onboarding",
   "pricing",
   "applypodcast",
+  "applyopenhouse",
 
   "redeem",
   "refer",
