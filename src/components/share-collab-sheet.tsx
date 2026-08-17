@@ -28,6 +28,8 @@ type Props = {
   category: string;
   location: string;
   compensation: string;
+  /** Paused Collabs are private: the link only opens for accepted members. */
+  memberPrivate?: boolean;
 };
 
 export function ShareCollabSheet(props: Props) {
@@ -121,7 +123,9 @@ export function ShareCollabSheet(props: Props) {
           <DialogHeader>
             <DialogTitle>Share this call</DialogTitle>
             <DialogDescription>
-              Drop the link in your Instagram story, group chat, or DMs — applicants don't need a Workshop account to reply.
+              {props.memberPrivate
+                ? "Submissions are paused, so this link only opens for you and accepted members — they'll need to be signed in."
+                : "Drop the link in your Instagram story, group chat, or DMs — applicants don't need a Workshop account to reply."}
             </DialogDescription>
           </DialogHeader>
 

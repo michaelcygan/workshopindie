@@ -30,10 +30,12 @@ import {
   recruitmentLabel,
   isLegacyPrivateDraft,
   isPubliclyVisible,
+  isMemberPrivate,
   isDiscoverableOpportunity,
   effectiveApplicationsOpen,
   teamLabel,
 } from "@/lib/collab/lifecycle";
+import { getCollabPage } from "@/lib/collab-page.functions";
 import { applyToCollab, listApplicants, getCollabActivity, getCollabPublicCounts, leaveCollab, acceptCollabChanges, getMyCollabMembership, updateCollab, togglePinCollab, getMyPinForCollab } from "@/lib/collab.functions";
 import { MessageButton } from "@/components/message-button";
 // Vouch + Boost retired in v1 distillation pass.
@@ -68,7 +70,7 @@ export const Route = createFileRoute("/collab/$slug")({
     const description = s?.description?.slice(0, 160)
       ?? "A Collab in progress on Workshop. Apply in one tap — no account needed.";
     // Archived and legacy private drafts are owner-only — keep them out of search.
-    const indexable = s ? isPubliclyVisible(s) : true;
+    const indexable = s ? isPubliclyVisible(s) : false;
     const meta = [
       { title },
       { name: "description", content: description },
@@ -176,18 +178,14 @@ function CollabDetail() {
   const [publishOpen, setPublishOpen] = useState(false);
   const [plusGate, setPlusGate] = useState(false);
 
-  const { data: post, isLoading, isError, error: postError, refetch: refetchPost } = useQuery({
-    queryKey: ["collab", slug],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("collab_posts")
-        .select("id,title,slug,category,categories,category_canonical,categories_canonical,subcategories,description,timeline_text,location_mode,compensation_type,contact_mode,external_contact_url,status,applications_open,archived_at,created_at,closed_at,ends_on,resulting_work_id,user_id,live_workshop_id,rights_arrangement,accepts_suggestions,user:profiles!collab_posts_user_id_fkey(id,display_name,username,avatar_url,headline,first_name),city:cities!collab_posts_city_id_fkey(name),roles:collab_roles(id,role_name,quantity,description,sort_order)")
-        .eq("slug", slug)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
+  // Access is decided on the server: a paused Collab is private to its owner
+  // and accepted members, and nothing about it is returned to anyone else.
+  const fetchCollabPage = useServerFn(getCollabPage);
+  const { data: page, isLoading, isError, error: postError, refetch: refetchPost } = useQuery({
+    queryKey: ["collab", slug, user?.id ?? "anon"],
+    queryFn: () => fetchCollabPage({ data: { slug } }),
   });
+  const post = page?.access === "ok" ? page.post : null;
 
   const { data: resultingWork } = useQuery({
     queryKey: ["collab-resulting-work", post?.resulting_work_id],
@@ -280,7 +278,11 @@ function CollabDetail() {
   const applicationsMut = useMutation({
     mutationFn: (open: boolean) => setApplicationsOpenFn({ data: { collabPostId: post!.id, open } }),
     onSuccess: (_d, open) => {
-      toast.success(open ? "Accepting collaborators again" : "Submissions paused");
+      toast.success(
+        open
+          ? "Submissions resumed — this Collab is public again."
+          : "Submissions paused — this Collab is now private to members.",
+      );
       qc.invalidateQueries({ queryKey: ["collab", slug] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -345,7 +347,16 @@ function CollabDetail() {
       </main>
     );
   }
-  if (!post) return <main className="mx-auto max-w-3xl p-10 text-center text-ink-muted">Not found.</main>;
+  // Server decided access: paused/archived Collabs return nothing to non-members.
+  if (!post) {
+    return (
+      <main className="mx-auto max-w-2xl p-10 text-center">
+        <h1 className="font-display text-3xl">Not found</h1>
+        <p className="mt-2 text-ink-muted">This collab isn't available.</p>
+        <Link to="/collab" className="mt-4 inline-block text-ink-soft underline">Back to Collab Board</Link>
+      </main>
+    );
+  }
 
   const isOwner = user?.id === post.user_id;
   const lifecycle = collabLifecycleState(post);
@@ -357,16 +368,17 @@ function CollabDetail() {
   // Permanent delete is only offered when nothing of value would be lost.
   const canDelete = !post.resulting_work_id && applicantCount === 0;
 
-  // Archived posts and legacy private drafts are owner-only.
-  if (!isPubliclyVisible(post) && !isOwner) {
-    return (
-      <main className="mx-auto max-w-2xl p-10 text-center">
-        <h1 className="font-display text-3xl">Not found</h1>
-        <p className="mt-2 text-ink-muted">This collab isn't available.</p>
-        <Link to="/collab" className="mt-4 inline-block text-ink-soft underline">Back to Collab Board</Link>
-      </main>
-    );
+  const memberPrivate = isMemberPrivate(post);
+
+  function onTogglePause() {
+    if (acceptingNow) {
+      if (!confirm("Pause submissions? This Collab will be hidden from public view, but you and its accepted members can still access it. You can resume submissions at any time.")) return;
+      applicationsMut.mutate(false);
+      return;
+    }
+    applicationsMut.mutate(true);
   }
+
 
   const roles = (post.roles ?? []).slice().sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
   const hostUser = post.user;
@@ -382,11 +394,13 @@ function CollabDetail() {
     ? <StateBadge tone="closed" label="Archived" sublabel="Only you can see this" />
     : isShipped
       ? <StateBadge tone="closed" label="Published" />
-      : <StateBadge
-          tone={acceptingNow ? "open" : "closed"}
-          label="In Progress"
-          sublabel={isDraft ? "Private — only you" : deadlineSoon ? "Deadline soon" : recruitmentLabel(recruit)}
-        />;
+      : memberPrivate
+        ? <StateBadge tone="closed" label="Submissions paused" sublabel="Private to members" />
+        : <StateBadge
+            tone={acceptingNow ? "open" : "closed"}
+            label="In Progress"
+            sublabel={isDraft ? "Private — only you" : deadlineSoon ? "Deadline soon" : recruitmentLabel(recruit)}
+          />;
 
   const daysPast = post.ends_on ? Math.floor((Date.now() - new Date(post.ends_on).getTime()) / 86400000) : 0;
 
@@ -433,6 +447,7 @@ function CollabDetail() {
           </div>
           <div className="flex items-center gap-2 sm:ml-auto justify-end">
             <ShareCollabSheet
+              memberPrivate={memberPrivate}
               postId={post.id}
               slug={post.slug}
               title={post.title}
@@ -473,9 +488,9 @@ function CollabDetail() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
                       {!isArchived && !isShipped && (
-                        <DropdownMenuItem onClick={() => applicationsMut.mutate(!acceptingNow)}>
+                        <DropdownMenuItem onClick={() => onTogglePause()}>
                           <CheckCircle2 className="h-4 w-4 mr-2" />
-                          {acceptingNow ? "Pause submissions" : "Accept collaborators"}
+                          {acceptingNow ? "Pause submissions" : "Resume submissions"}
                         </DropdownMenuItem>
                       )}
                       {isArchived ? (
@@ -537,9 +552,9 @@ function CollabDetail() {
                           <DropdownMenuItem onClick={() => setPublishOpen(true)}>
                             <Sparkles className="h-4 w-4 mr-2" /> Publish Work
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => applicationsMut.mutate(!acceptingNow)}>
+                          <DropdownMenuItem onClick={() => onTogglePause()}>
                             <CheckCircle2 className="h-4 w-4 mr-2" />
-                            {acceptingNow ? "Pause submissions" : "Accept collaborators"}
+                            {acceptingNow ? "Pause submissions" : "Resume submissions"}
                           </DropdownMenuItem>
                         </>
                       )}

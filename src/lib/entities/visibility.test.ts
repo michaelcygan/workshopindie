@@ -21,9 +21,13 @@ describe("public referenceability", () => {
 
   it("treats a finished Collab as valid historical context but drops archived ones", () => {
     expect(isCollabPubliclyReferenceable({ status: "open", resulting_work_id: "w1" })).toBe(true);
+    // Paused / closed without a published Work is member-private, not referenceable.
     expect(isCollabPubliclyReferenceable({ status: "closed", applications_open: false })).toBe(
-      true,
+      false,
     );
+    expect(
+      isCollabPubliclyReferenceable({ status: "closed", applications_open: false, resulting_work_id: "w2" }),
+    ).toBe(true);
     expect(isCollabPubliclyReferenceable({ status: "open", archived_at: "2026-01-01" })).toBe(
       false,
     );

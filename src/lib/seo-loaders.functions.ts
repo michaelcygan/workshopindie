@@ -87,15 +87,31 @@ export const getCitySeo = createServerFn({ method: "GET" })
 export const getCollabSeo = createServerFn({ method: "GET" })
   .inputValidator((d: { slug: string }) => ({ slug: slug.parse(d.slug) }))
   .handler(async ({ data }) => {
-    setResponseHeader("cache-control", PUBLIC_CACHE);
     const { data: row } = await supabaseAdmin
       .from("collab_posts")
       .select(
-        "id,title,description,category,status,applications_open,archived_at,resulting_work_id,created_at,ends_on,compensation_type,location_mode,city:cities!collab_posts_city_id_fkey(name,country),user:profiles!collab_posts_user_id_fkey(display_name,username),roles:collab_roles(role_name,sort_order)",
+        "id,user_id,title,description,category,status,applications_open,archived_at,resulting_work_id,created_at,ends_on,compensation_type,location_mode,city:cities!collab_posts_city_id_fkey(name,country),user:profiles!collab_posts_user_id_fkey(display_name,username),roles:collab_roles(role_name,sort_order)",
       )
       .eq("slug", data.slug)
       .maybeSingle();
-    if (!row) return null;
+    if (!row) {
+      setResponseHeader("cache-control", PUBLIC_CACHE);
+      return null;
+    }
+    // Paused Collabs are private to their members: never leak title/description/OG.
+    const { isPubliclyVisible } = await import("@/lib/collab/lifecycle");
+    const publicRow = isPubliclyVisible(row);
+    if (!publicRow) {
+      setResponseHeader("cache-control", "private, no-store");
+      const { viewerIdFromRequest, isCollabMemberServer } = await import(
+        "@/lib/collab-access.server"
+      );
+      const viewerId = await viewerIdFromRequest();
+      const member = await isCollabMemberServer(row.id, row.user_id, viewerId);
+      if (!member) return null;
+    } else {
+      setResponseHeader("cache-control", PUBLIC_CACHE);
+    }
     let workCover: string | null = null;
     if (row.resulting_work_id) {
       const { data: w } = await supabaseAdmin

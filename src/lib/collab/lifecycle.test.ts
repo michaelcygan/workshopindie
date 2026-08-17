@@ -59,7 +59,8 @@ describe("pause vs archive", () => {
     expect(collabLifecycleState(paused)).toBe("in_progress");
     expect(effectiveApplicationsOpen(paused, TODAY)).toBe(false);
     expect(recruitmentState(paused, TODAY)).toBe("paused");
-    expect(isPubliclyVisible(paused)).toBe(true);
+    // Paused = private to owner + accepted members, not public.
+    expect(isPubliclyVisible(paused)).toBe(false);
   });
   it("archiving hides it publicly and stops recruiting", () => {
     const archived = { ...base, archived_at: "2026-02-02" };

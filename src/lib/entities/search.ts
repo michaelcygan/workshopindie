@@ -25,7 +25,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
-import { NON_PUBLIC_STATUSES, RECRUITING_DEADLINE_OR } from "@/lib/collab/query";
+import { NON_PUBLIC_STATUSES, RECRUITING_DEADLINE_OR, publicCollabs } from "@/lib/collab/query";
 import { DISCOVERABLE_STATUSES } from "@/lib/events/filters";
 import { makeEntityRef, type WorkshopEntityRef } from "@/lib/entities/kinds";
 
@@ -201,7 +201,8 @@ export async function searchCollabs(opts: EntitySearchOptions): Promise<EntitySe
   }
 
   if (out.length < limit) {
-    let all = base().order("created_at", { ascending: false }).limit(limit);
+    // Everyone else only sees publicly visible Collabs — paused ones are member-private.
+    let all = publicCollabs(base()).order("created_at", { ascending: false }).limit(limit);
     if (context === "conversation") all = recruitingOnly(all);
     if (q) all = all.ilike("title", `%${q}%`);
     const { data } = await all;

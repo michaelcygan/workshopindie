@@ -71,11 +71,26 @@ export function isLegacyPrivateDraft(post: CollabLifecycleRecord): boolean {
   return post.status === "draft";
 }
 
+/**
+ * Pausing submissions is a reversible, member-private working mode: the Collab
+ * stays alive for its owner and accepted members, but leaves public view.
+ * A Collab that already published its Work is not affected.
+ */
+export function isMemberPrivate(post: CollabLifecycleRecord): boolean {
+  return (
+    collabLifecycleState(post) === "in_progress" &&
+    !isLegacyPrivateDraft(post) &&
+    post.applications_open !== true
+  );
+}
+
 /** Can anonymous / signed-out visitors see this Collab at all? */
 export function isPubliclyVisible(post: CollabLifecycleRecord): boolean {
   if (isLegacyPrivateDraft(post)) return false;
   const state = collabLifecycleState(post);
-  return state === "in_progress" || state === "published";
+  if (state === "published") return true;
+  // In progress: public only while submissions are open. Paused = private to members.
+  return state === "in_progress" && post.applications_open === true;
 }
 
 /** Should this Collab appear on the opportunity Board / discovery surfaces? */
