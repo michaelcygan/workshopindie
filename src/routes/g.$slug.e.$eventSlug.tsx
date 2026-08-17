@@ -21,6 +21,7 @@ import { EventWhosHere } from "@/components/events/event-whos-here";
 import { updateEventSeriesFuture, cancelEventSeriesFuture } from "@/lib/group-events-admin.functions";
 import { EventLocationCard } from "@/components/event-location-card";
 import { EventRsvpBlock, type MyRsvp } from "@/components/event-rsvp-block";
+import { HackathonPanel } from "@/components/event/hackathon-panel";
 
 import { EventShareSheet } from "@/components/event-share-sheet";
 
@@ -479,6 +480,15 @@ function EventPage() {
             </TabsList>
 
             <TabsContent value="about" className="mt-5 space-y-6">
+              {ev.kind === "hackathon" && (
+                <HackathonPanel
+                  eventId={ev.id}
+                  startsAt={ev.starts_at}
+                  timezone={ev.timezone}
+                  signedIn={Boolean(user)}
+                  fullGroupUrl={joinLink?.online_url ?? null}
+                />
+              )}
               {ev.description ? (
                 <div className="rounded-xl border border-border bg-surface p-5 shadow-soft">
                   <p className="whitespace-pre-wrap text-sm text-ink-soft">{ev.description}</p>

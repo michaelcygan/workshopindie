@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { AdminImportEventDialog } from "@/components/admin-import-event-dialog";
 import { VenueAutocomplete } from "@/components/event/venue-autocomplete";
 import { WorkshopVenuePicker } from "@/components/event/workshop-venue-picker";
+import { HackathonControlRoom } from "@/components/event/hackathon-control-room";
 import { evaluateVenuePolicy, getWorkshopVenue } from "@/lib/events/workshop-venues";
 import { CoverImagePicker } from "@/components/event/cover-image-picker";
 import { SeedChicagoButton } from "@/components/admin/seed-chicago-button";
@@ -82,7 +83,7 @@ function AdminEventsPage() {
           </thead>
           <tbody>
             {(events ?? []).map((e) => {
-              type R = { id: string; slug: string; title: string; starts_at: string; status: string; featured_at: string | null; going_count: number; capacity: number | null; group: { slug: string; name: string } };
+              type R = { id: string; slug: string; title: string; kind: string; starts_at: string; ends_at?: string | null; status: string; featured_at: string | null; going_count: number; capacity: number | null; group: { slug: string; name: string } };
               const ev = e as unknown as R;
               return (
                 <tr key={ev.id} className="border-t border-border">
@@ -96,6 +97,15 @@ function AdminEventsPage() {
                   <td className="px-3 py-2">{ev.going_count}{ev.capacity ? ` / ${ev.capacity}` : ""}</td>
                   <td className="px-3 py-2"><span className="rounded-full bg-muted px-2 py-0.5 text-[10px]">{ev.status}</span></td>
                   <td className="px-3 py-2 text-right">
+                    {ev.kind === "hackathon" && (
+                      <HackathonControlRoom
+                        eventId={ev.id}
+                        eventTitle={ev.title}
+                        startsAt={ev.starts_at}
+                        endsAt={ev.ends_at ?? null}
+                        seats={ev.capacity}
+                      />
+                    )}
                     <Button
                       size="sm"
                       variant={ev.featured_at ? "default" : "ghost"}

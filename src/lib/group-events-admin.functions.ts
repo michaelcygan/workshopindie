@@ -96,6 +96,7 @@ const baseSchema = z.object({
     "online",
     "other",
     "lineup",
+    "hackathon",
   ]),
   /** Optional canonical Field — auto-connects the event to its Field Group. */
   creative_category: z.enum(FIELD_IDS).nullable().optional(),
@@ -586,7 +587,7 @@ export const adminListAllEvents = createServerFn({ method: "POST" })
     const { data, error } = await supabase
       .from("group_events")
       .select(
-        "id,slug,title,kind,format,starts_at,status,featured_at,going_count,capacity,group:groups!inner(id,slug,name)",
+        "id,slug,title,kind,format,starts_at,ends_at,status,featured_at,going_count,capacity,group:groups!inner(id,slug,name)",
       )
       .is("deleted_at", null)
       .order("starts_at", { ascending: false })

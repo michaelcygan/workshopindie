@@ -15,6 +15,7 @@ export const EVENT_KINDS = [
   "workshop_irl",
   "online",
   "lineup",
+  "hackathon",
   "other",
 ] as const;
 
@@ -28,6 +29,7 @@ const KIND_LABELS: Record<EventKind, string> = {
   workshop_irl: "Workshop",
   online: "Online",
   lineup: "Show / Lineup",
+  hackathon: "Hackathon",
   other: "Other",
 };
 
