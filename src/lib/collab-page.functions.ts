@@ -63,11 +63,19 @@ export type CollabPageResult =
  * publicly visible, or the viewer is its owner / an accepted member.
  */
 export const getCollabPage = createServerFn({ method: "GET" })
-  .inputValidator((d: { slug: string }) => ({ slug: slugSchema.parse(d.slug) }))
+  .inputValidator((d: { slug: string }) => ({
+    slug: z.string().trim().min(1).max(200).parse(d.slug),
+  }))
   .handler(async ({ data }): Promise<CollabPageResult> => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { viewerIdFromRequest, isCollabMemberServer, COLLAB_DETAIL_SELECT } = await import(
+      "@/lib/collab-access.server"
+    );
+    const { isPubliclyVisible } = await import("@/lib/collab/lifecycle");
+
     const { data: row } = await supabaseAdmin
       .from("collab_posts")
-      .select(DETAIL_SELECT)
+      .select(COLLAB_DETAIL_SELECT)
       .eq("slug", data.slug)
       .maybeSingle();
     if (!row) return { access: "unavailable" };
@@ -83,7 +91,7 @@ export const getCollabPage = createServerFn({ method: "GET" })
     };
 
     const viewerId = await viewerIdFromRequest();
-    const member = await isCollabMember(record.id, record.user_id, viewerId);
+    const member = await isCollabMemberServer(record.id, record.user_id, viewerId);
     if (!member && !isPubliclyVisible(record)) return { access: "unavailable" };
 
     return { access: "ok", post: row as unknown as CollabDetailRow, viewerIsMember: member };
