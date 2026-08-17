@@ -2539,6 +2539,7 @@ export type Database = {
           notified_2h_at: string | null
           notified_recap_at: string | null
           online_url: string | null
+          overflow: number
           photo_credit_name: string | null
           photo_credit_url: string | null
           pinned_at: string | null
@@ -2562,9 +2563,12 @@ export type Database = {
           venue_lat: number | null
           venue_lng: number | null
           venue_name: string | null
+          venue_policy_confirmed_at: string | null
+          venue_policy_confirmed_by: string | null
           visibility: Database["public"]["Enums"]["group_event_visibility"]
           waitlist_count: number
           waitlist_enabled: boolean
+          workshop_venue_key: string | null
         }
         Insert: {
           accent_color?: string | null
@@ -2595,6 +2599,7 @@ export type Database = {
           notified_2h_at?: string | null
           notified_recap_at?: string | null
           online_url?: string | null
+          overflow?: number
           photo_credit_name?: string | null
           photo_credit_url?: string | null
           pinned_at?: string | null
@@ -2618,9 +2623,12 @@ export type Database = {
           venue_lat?: number | null
           venue_lng?: number | null
           venue_name?: string | null
+          venue_policy_confirmed_at?: string | null
+          venue_policy_confirmed_by?: string | null
           visibility?: Database["public"]["Enums"]["group_event_visibility"]
           waitlist_count?: number
           waitlist_enabled?: boolean
+          workshop_venue_key?: string | null
         }
         Update: {
           accent_color?: string | null
@@ -2651,6 +2659,7 @@ export type Database = {
           notified_2h_at?: string | null
           notified_recap_at?: string | null
           online_url?: string | null
+          overflow?: number
           photo_credit_name?: string | null
           photo_credit_url?: string | null
           pinned_at?: string | null
@@ -2674,9 +2683,12 @@ export type Database = {
           venue_lat?: number | null
           venue_lng?: number | null
           venue_name?: string | null
+          venue_policy_confirmed_at?: string | null
+          venue_policy_confirmed_by?: string | null
           visibility?: Database["public"]["Enums"]["group_event_visibility"]
           waitlist_count?: number
           waitlist_enabled?: boolean
+          workshop_venue_key?: string | null
         }
         Relationships: [
           {

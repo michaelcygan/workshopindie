@@ -22,6 +22,7 @@ export function EventRsvpBlock({
   eventSlug,
   myRsvp,
   capacity,
+  overflow,
   goingCount,
   waitlistEnabled,
   startsAt,
@@ -34,6 +35,8 @@ export function EventRsvpBlock({
   eventSlug: string;
   myRsvp: MyRsvp;
   capacity: number | null;
+  /** Extra RSVPs accepted past capacity. The server is authoritative. */
+  overflow?: number | null;
   goingCount: number;
   waitlistEnabled: boolean;
   startsAt?: string | null;
@@ -47,7 +50,7 @@ export function EventRsvpBlock({
   const [authSheetOpen, setAuthSheetOpen] = useState(false);
   const [pending, setPending] = useState<"going" | "declined" | null>(null);
 
-  const isFull = capacity !== null && goingCount >= capacity;
+  const isFull = capacity !== null && goingCount >= capacity + Math.max(0, overflow ?? 0);
   const status = myRsvp?.status ?? null;
   const redirectTo = workshopEntityUrl({ kind: "event", groupSlug: groupSlug, slug: eventSlug });
   const going = status === "going" || status === "waitlist";

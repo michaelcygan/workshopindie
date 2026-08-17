@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { FIELD_IDS, subcategoryForPrimary } from "@/lib/taxonomy";
+import { reconcileVenue } from "@/lib/events/venue-reconcile";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
@@ -113,6 +114,12 @@ const baseSchema = z.object({
   venue_lng: z.number().nullable().optional(),
   online_url: safeHttpUrl.nullable().optional(),
   capacity: z.number().int().min(1).max(10000).nullable().optional(),
+  /** Extra RSVPs accepted beyond capacity for expected cancellations. Never negative. */
+  overflow: z.number().int().min(0).max(10000).optional(),
+  /** Canonical Workshop venue reference; null whenever the venue was hand-entered. */
+  workshop_venue_key: z.string().max(80).nullable().optional(),
+  /** Admin confirmed the venue's own reservation / Host an Event flow for this occurrence. */
+  venue_policy_confirmed: z.boolean().optional(),
   waitlist_enabled: z.boolean().optional(),
   visibility: z.enum(["public", "group_only", "unlisted"]).optional(),
   rsvp_mode: z.enum(["open", "approval", "invite_only"]).optional(),
@@ -226,7 +233,15 @@ export const createEvent = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertAdmin(supabase, userId);
-    const { featured, status, cover_url, pinned, extra_group_ids, ...rest } = data;
+    const {
+      featured,
+      status,
+      cover_url,
+      pinned,
+      extra_group_ids,
+      venue_policy_confirmed,
+      ...rest
+    } = data;
     const rehostedCover = await rehostCoverIfExternal(cover_url, `g_${data.group_id}`);
     const effectiveStatus = (status ?? "scheduled") as "draft" | "scheduled";
     const venueCityId = await resolveEventCity(supabase as never, {
@@ -236,8 +251,21 @@ export const createEvent = createServerFn({ method: "POST" })
       status: effectiveStatus,
     });
     if (effectiveStatus !== "draft") assertPublishable(data);
+    const { key: venueKey } = reconcileVenue({
+      workshop_venue_key: data.workshop_venue_key ?? null,
+      venue_name: data.venue_name ?? null,
+      venue_address: data.venue_address ?? null,
+      capacity: data.capacity ?? null,
+      overflow: data.overflow ?? 0,
+      venue_policy_confirmed,
+      status: effectiveStatus,
+    });
     const insertRow = {
       ...rest,
+      overflow: data.overflow ?? 0,
+      workshop_venue_key: venueKey,
+      venue_policy_confirmed_at: venue_policy_confirmed ? new Date().toISOString() : null,
+      venue_policy_confirmed_by: venue_policy_confirmed ? userId : null,
       venue_city_id: venueCityId,
       cover_url: rehostedCover,
       slug: "",
@@ -250,6 +278,7 @@ export const createEvent = createServerFn({ method: "POST" })
       archived_at: null,
       is_official: data.source === "external" ? false : (data.is_official ?? true),
     };
+
     const { data: row, error } = await supabase
       .from("group_events")
       .insert(insertRow as never)
@@ -314,7 +343,7 @@ export const updateEvent = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertAdmin(supabase, userId);
-    const { id, featured, pinned, extra_group_ids: _extra, ...rest } = data;
+    const { id, featured, pinned, extra_group_ids: _extra, venue_policy_confirmed, ...rest } = data;
     void _extra;
     const patch: Record<string, unknown> = { ...rest };
     if (typeof featured === "boolean") {
@@ -323,16 +352,42 @@ export const updateEvent = createServerFn({ method: "POST" })
     if (typeof pinned === "boolean") {
       patch.pinned_at = pinned ? new Date().toISOString() : null;
     }
+    const { data: currentRow } = await supabase
+      .from("group_events")
+      .select(
+        "title,kind,format,starts_at,ends_at,timezone,venue_name,venue_address,online_url,external_url,published_at,status,capacity,overflow,workshop_venue_key,venue_policy_confirmed_at",
+      )
+      .eq("id", id)
+      .maybeSingle();
+    const current = (currentRow ?? {}) as Record<string, unknown>;
+
+    // Venue + capacity policy is re-evaluated against the merged row, so a
+    // partial patch can never sneak past the venue's published group policy.
+    {
+      const merged = { ...current, ...rest } as Record<string, unknown>;
+      const confirmed =
+        venue_policy_confirmed ?? Boolean(current.venue_policy_confirmed_at);
+      const { key } = reconcileVenue({
+        workshop_venue_key: (merged.workshop_venue_key as string | null) ?? null,
+        venue_name: (merged.venue_name as string | null) ?? null,
+        venue_address: (merged.venue_address as string | null) ?? null,
+        capacity: (merged.capacity as number | null) ?? null,
+        overflow: (merged.overflow as number | null) ?? 0,
+        venue_policy_confirmed: confirmed,
+        status: (merged.status as string) ?? "draft",
+      });
+      patch.workshop_venue_key = key;
+      if (typeof venue_policy_confirmed === "boolean") {
+        patch.venue_policy_confirmed_at = venue_policy_confirmed
+          ? (current.venue_policy_confirmed_at ?? new Date().toISOString())
+          : null;
+        patch.venue_policy_confirmed_by = venue_policy_confirmed ? userId : null;
+      }
+    }
+
     // Moving a draft to scheduled through the editor publishes it.
     if (rest.status === "scheduled") {
-      const { data: current } = await supabase
-        .from("group_events")
-        .select(
-          "title,kind,format,starts_at,ends_at,timezone,venue_name,venue_address,online_url,external_url,published_at",
-        )
-        .eq("id", id)
-        .maybeSingle();
-      const merged = { ...(current ?? {}), ...rest } as Parameters<typeof assertPublishable>[0] & {
+      const merged = { ...current, ...rest } as Parameters<typeof assertPublishable>[0] & {
         published_at?: string | null;
       };
       assertPublishable(merged);
@@ -342,6 +397,7 @@ export const updateEvent = createServerFn({ method: "POST" })
     if (rest.status === "draft") {
       patch.published_at = null;
     }
+
     const { error } = await supabase
       .from("group_events")
       .update(patch as never)
@@ -360,13 +416,25 @@ export const publishEvent = createServerFn({ method: "POST" })
     const { data: row, error: readErr } = await supabase
       .from("group_events")
       .select(
-        "id,title,kind,format,starts_at,ends_at,timezone,venue_name,venue_address,online_url,external_url,published_at",
+        "id,title,kind,format,starts_at,ends_at,timezone,venue_name,venue_address,online_url,external_url,published_at,capacity,overflow,workshop_venue_key,venue_policy_confirmed_at",
       )
       .eq("id", data.id)
       .maybeSingle();
     if (readErr) throw new Error(readErr.message);
     if (!row) throw new Error("Event not found");
     assertPublishable(row as Parameters<typeof assertPublishable>[0]);
+    {
+      const r = row as Record<string, unknown>;
+      reconcileVenue({
+        workshop_venue_key: (r.workshop_venue_key as string | null) ?? null,
+        venue_name: (r.venue_name as string | null) ?? null,
+        venue_address: (r.venue_address as string | null) ?? null,
+        capacity: (r.capacity as number | null) ?? null,
+        overflow: (r.overflow as number | null) ?? 0,
+        venue_policy_confirmed: Boolean(r.venue_policy_confirmed_at),
+        status: "scheduled",
+      });
+    }
     const { error } = await supabase
       .from("group_events")
       .update({

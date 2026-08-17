@@ -118,6 +118,8 @@ type EventRow = {
   archived_at: string | null;
   deleted_at?: string | null;
   capacity: number | null;
+  overflow: number | null;
+  workshop_venue_key: string | null;
   waitlist_enabled: boolean;
   visibility: "public" | "group_only" | "unlisted";
   rsvp_mode: string;
@@ -210,7 +212,8 @@ function EventPage() {
   const moment = getEventMoment(ev);
   const isDraft = lifecycle === "draft";
   const statusLabel = eventStatusLabel(ev);
-  const isFull = ev.capacity !== null && ev.going_count >= ev.capacity;
+  const isFull =
+    ev.capacity !== null && ev.going_count >= ev.capacity + Math.max(0, ev.overflow ?? 0);
   const host = resolveEventHost(ev);
 
 
@@ -399,6 +402,8 @@ function EventPage() {
               publicAddress={ev.source === "external"}
               venueLat={ev.venue_lat}
               venueLng={ev.venue_lng}
+              workshopVenueKey={ev.workshop_venue_key}
+              hostless={Boolean(ev.workshop_venue_key)}
               onlineUrl={joinLink?.online_url ?? null}
               city={ev.venue_name ?? null}
               variant="embedded"
@@ -420,6 +425,7 @@ function EventPage() {
             eventSlug={ev.slug}
             myRsvp={(myRsvp as MyRsvp) ?? null}
             capacity={ev.capacity}
+            overflow={ev.overflow}
             goingCount={counts?.going ?? ev.going_count}
             waitlistEnabled={ev.waitlist_enabled}
             startsAt={ev.starts_at}
@@ -512,7 +518,15 @@ function EventPage() {
             </TabsContent>
 
             <TabsContent value="wall" className="mt-5">
-              <EventWallFeed eventId={ev.id} view="wall" />
+              <EventWallFeed
+                eventId={ev.id}
+                view="wall"
+                suggestions={
+                  ev.workshop_venue_key
+                    ? ["I'm here — sitting", "Where is everyone sitting?", "I'm on my way — arriving around"]
+                    : undefined
+                }
+              />
             </TabsContent>
 
             <TabsContent value="gallery" className="mt-5">

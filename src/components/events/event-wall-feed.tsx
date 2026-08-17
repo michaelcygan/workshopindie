@@ -17,6 +17,8 @@ type Props = {
   eventId: string;
   /** "wall" = the full chronological stream. "gallery" = the photos in it. */
   view?: "wall" | "gallery";
+  /** Prefill-only coordination prompts. Tapping one fills the box; nothing posts itself. */
+  suggestions?: string[];
 };
 
 function timeAgo(iso: string) {
@@ -33,7 +35,7 @@ function timeAgo(iso: string) {
  * One stream for everything that happened at the Event. The Gallery tab
  * renders the same data with `view="gallery"` — there is no second feed.
  */
-export function EventWallFeed({ eventId, view = "wall" }: Props) {
+export function EventWallFeed({ eventId, view = "wall", suggestions }: Props) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const listFn = useServerFn(listEventWall);
@@ -77,6 +79,7 @@ export function EventWallFeed({ eventId, view = "wall" }: Props) {
           eventId={eventId}
           canPost={data.can_post}
           closesAt={data.closes_at}
+          suggestions={suggestions}
           onPosted={refresh}
         />
       )}
@@ -232,11 +235,13 @@ function WallComposer({
   eventId,
   canPost,
   closesAt,
+  suggestions,
   onPosted,
 }: {
   eventId: string;
   canPost: boolean;
   closesAt: string | null;
+  suggestions?: string[];
   onPosted: () => void;
 }) {
   const [body, setBody] = useState("");
@@ -268,6 +273,20 @@ function WallComposer({
         rows={2}
         className="resize-none border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
       />
+      {suggestions && suggestions.length > 0 && !body.trim() && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {suggestions.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setBody(s)}
+              className="rounded-full border border-border px-2.5 py-1 text-[11px] text-ink-soft hover:border-ink-muted"
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="mt-2 flex items-center justify-between gap-2">
         <PhotoButton eventId={eventId} onUploaded={onPosted} label="Photo" variant="ghost" />
         <div className="flex items-center gap-2">

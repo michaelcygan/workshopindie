@@ -155,6 +155,9 @@ const TEMPLATE_COLUMNS = [
   "venue_lng",
   "online_url",
   "capacity",
+  // Overflow and the canonical venue key must survive into every occurrence.
+  "overflow",
+  "workshop_venue_key",
   "waitlist_enabled",
   "visibility",
   "rsvp_mode",
@@ -168,7 +171,7 @@ const TEMPLATE_COLUMNS = [
   "status",
 ] as const;
 
-function templateRow(template: Record<string, unknown>): Record<string, unknown> {
+export function templateRow(template: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const key of TEMPLATE_COLUMNS) {
     if (template[key] !== undefined) out[key] = template[key];

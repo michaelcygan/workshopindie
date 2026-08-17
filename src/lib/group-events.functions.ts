@@ -14,7 +14,7 @@ function publicClient() {
 }
 
 const EVENT_FIELDS =
-  "id,group_id,slug,title,tagline,description,kind,format,cover_url,photo_credit_name,photo_credit_url,accent_color,starts_at,ends_at,timezone,venue_name,venue_address,venue_city_id,venue_lat,venue_lng,online_url,capacity,waitlist_enabled,visibility,rsvp_mode,status,published_at,archived_at,is_official,featured_at,going_count,maybe_count,waitlist_count,created_by,created_at,series_key,short_code,lineup_capacity,source,external_url,external_organizer,is_recurring,recurrence_label,pinned_at";
+  "id,group_id,slug,title,tagline,description,kind,format,cover_url,photo_credit_name,photo_credit_url,accent_color,starts_at,ends_at,timezone,venue_name,venue_address,venue_city_id,venue_lat,venue_lng,online_url,capacity,overflow,workshop_venue_key,waitlist_enabled,visibility,rsvp_mode,status,published_at,archived_at,is_official,featured_at,going_count,maybe_count,waitlist_count,created_by,created_at,series_key,short_code,lineup_capacity,source,external_url,external_organizer,is_recurring,recurrence_label,pinned_at";
 
 /** The flyer everyone can see. The join link is stripped — it is fetched
  *  separately by confirmed participants via `getEventJoinLink`. */

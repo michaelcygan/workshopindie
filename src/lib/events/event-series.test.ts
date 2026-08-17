@@ -5,6 +5,7 @@ import {
   toZonedParts,
   zonedPartsToUtc,
   TARGET_FUTURE_OCCURRENCES,
+  templateRow,
 } from "@/lib/event-series.server";
 import { DISCOVERABLE_STATUSES, canonicalEventPath, dropDeletedGroups } from "@/lib/events/filters";
 
@@ -123,5 +124,21 @@ describe("discovery invariants", () => {
     expect(canonicalEventPath("austin-comedy", "tbd-comedy-open-mic")).toBe(
       "/g/austin-comedy/e/tbd-comedy-open-mic",
     );
+  });
+});
+
+describe("series templates carry capacity + venue policy forward", () => {
+  it("keeps overflow and the canonical Workshop venue key on every occurrence", () => {
+    const row = templateRow({
+      title: "Workshop Open House",
+      capacity: 8,
+      overflow: 4,
+      workshop_venue_key: "chi_off_color_mousetrap",
+      venue_name: "Off Color Brewing — Mousetrap",
+      not_a_column: true,
+    });
+    expect(row.overflow).toBe(4);
+    expect(row.workshop_venue_key).toBe("chi_off_color_mousetrap");
+    expect(row.not_a_column).toBeUndefined();
   });
 });
