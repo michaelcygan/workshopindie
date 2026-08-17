@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useSmartBack } from "@/hooks/use-smart-back";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Loader2 } from "lucide-react";
@@ -139,7 +140,7 @@ function EditWork() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate({ to: "/login", search: { redirect: `/works/${slug}/edit` } });
+      navigate({ to: "/login", search: { redirect: `${workshopEntityUrl({ kind: "work", slug })}/edit` } });
     }
   }, [user, authLoading, navigate, slug]);
 
