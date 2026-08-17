@@ -363,8 +363,14 @@ function EventsIndexPage() {
           )}
         </div>
 
-        {/* Sticky filter header */}
-        <FilterHeader inset stack className="mt-4">
+        {/* Sticky filter header — one line: search + medium + city + when + format */}
+        <FilterHeader inset className="mt-4">
+          <FilterSearch
+            value={q}
+            onChange={(next) => patch({ q: next })}
+            placeholder="Search events…"
+            label="Search events"
+          />
           <div className={FILTER_ROW_SCROLL}>
             <FilterToggleGroup
               value={when}
@@ -374,14 +380,30 @@ function EventsIndexPage() {
                 { value: "past" as const, label: "Past" },
               ]}
             />
-            {user && (
-              <FilterPillToggle active={mine} onClick={() => setMine(!mine)} icon={Ticket}>
-                My RSVPs
-              </FilterPillToggle>
-            )}
 
             {!mineActive && (
               <>
+                <FilterSelect
+                  label="Filter by medium"
+                  value={medium}
+                  onChange={(next) => patch({ medium: next })}
+                  width="min-w-[11rem]"
+                >
+                  <option value="">All mediums</option>
+                  {mediumOptions.map((m) => (
+                    <option key={m.slug} value={m.slug}>
+                      {m.name} ({m.count})
+                    </option>
+                  ))}
+                </FilterSelect>
+
+                <FilterCityPicker
+                  value={format === "online" ? "" : (cityId ?? "")}
+                  onChange={setCityId}
+                  options={format === "online" ? [] : cityOptions}
+                  allLabel="All cities"
+                />
+
                 <FilterToggleGroup
                   value={format}
                   onChange={setFormat}
@@ -394,50 +416,46 @@ function EventsIndexPage() {
                 <FilterPillToggle
                   active={kind === "coworking"}
                   onClick={() =>
-                    navigate({
-                      search: (prev: SearchShape): SearchShape => ({
-                        ...prev,
-                        kind: prev.kind === "coworking" ? "all" : "coworking",
-                        daypart: "all",
-                      }),
-                    })
+                    patch({ kind: kind === "coworking" ? "all" : "coworking", daypart: "all" })
                   }
                 >
                   Co-working
                 </FilterPillToggle>
-                <div className="min-w-[15rem] shrink-0">
-                  <CityCombobox
-                    value={cityValue}
-                    onChange={setCity}
-                    disabled={format === "online"}
-                    placeholder="Anywhere — search a city"
-                  />
-                </div>
               </>
             )}
 
+            <FilterMore activeCount={moreCount}>
+              <div className="space-y-3">
+                {user && (
+                  <FilterMoreSection title="Yours">
+                    <FilterMoreToggle active={mine} onClick={() => setMine(!mine)}>
+                      My RSVPs
+                    </FilterMoreToggle>
+                  </FilterMoreSection>
+                )}
+                {!mineActive && (
+                  <FilterMoreSection title="Time of day">
+                    <div className="flex flex-wrap gap-1.5">
+                      {(["all", "morning", "afternoon", "evening"] as const).map((d) => (
+                        <FilterPillToggle
+                          key={d}
+                          active={daypart === d}
+                          onClick={() => patch({ daypart: d })}
+                          className="h-8 px-3 text-[12px]"
+                        >
+                          {d === "all" ? "Any time" : d.charAt(0).toUpperCase() + d.slice(1)}
+                        </FilterPillToggle>
+                      ))}
+                    </div>
+                  </FilterMoreSection>
+                )}
+              </div>
+            </FilterMore>
+
             {filtersActive && <FilterClear onClick={clearFilters} />}
           </div>
-
-          {!mineActive && kind === "coworking" && (
-            <div className={cn(FILTER_ROW_SCROLL, "mt-2")}>
-              {(["all", "morning", "afternoon", "evening"] as const).map((d) => (
-                <FilterPillToggle
-                  key={d}
-                  active={daypart === d}
-                  onClick={() =>
-                    navigate({
-                      search: (prev: SearchShape): SearchShape => ({ ...prev, daypart: d }),
-                    })
-                  }
-                  className="h-8 px-3 text-[12px]"
-                >
-                  {d === "all" ? "Any time of day" : d.charAt(0).toUpperCase() + d.slice(1)}
-                </FilterPillToggle>
-              ))}
-            </div>
-          )}
         </FilterHeader>
+
 
         <div className="mt-3 space-y-1">
           {!mineActive &&
