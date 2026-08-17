@@ -370,6 +370,15 @@ function CollabDetail() {
 
   const memberPrivate = isMemberPrivate(post);
 
+  function onTogglePause() {
+    if (acceptingNow) {
+      if (!confirm("Pause submissions? This Collab will be hidden from public view, but you and its accepted members can still access it. You can resume submissions at any time.")) return;
+      applicationsMut.mutate(false);
+      return;
+    }
+    applicationsMut.mutate(true);
+  }
+
 
   const roles = (post.roles ?? []).slice().sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
   const hostUser = post.user;
@@ -478,9 +487,9 @@ function CollabDetail() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
                       {!isArchived && !isShipped && (
-                        <DropdownMenuItem onClick={() => applicationsMut.mutate(!acceptingNow)}>
+                        <DropdownMenuItem onClick={() => onTogglePause()}>
                           <CheckCircle2 className="h-4 w-4 mr-2" />
-                          {acceptingNow ? "Pause submissions" : "Accept collaborators"}
+                          {acceptingNow ? "Pause submissions" : "Resume submissions"}
                         </DropdownMenuItem>
                       )}
                       {isArchived ? (
@@ -542,9 +551,9 @@ function CollabDetail() {
                           <DropdownMenuItem onClick={() => setPublishOpen(true)}>
                             <Sparkles className="h-4 w-4 mr-2" /> Publish Work
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => applicationsMut.mutate(!acceptingNow)}>
+                          <DropdownMenuItem onClick={() => onTogglePause()}>
                             <CheckCircle2 className="h-4 w-4 mr-2" />
-                            {acceptingNow ? "Pause submissions" : "Accept collaborators"}
+                            {acceptingNow ? "Pause submissions" : "Resume submissions"}
                           </DropdownMenuItem>
                         </>
                       )}
