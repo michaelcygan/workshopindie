@@ -71,7 +71,7 @@ export type BlogFeedResult = {
   topic: Topic | null;
 };
 
-const MAX_LIMIT = 24;
+const MAX_LIMIT = 60;
 
 export function isBlogFeedTab(value: unknown): value is BlogFeedTab {
   return typeof value === "string" && (BLOG_FEED_TABS as readonly string[]).includes(value);

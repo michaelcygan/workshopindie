@@ -13,7 +13,7 @@ const feedInput = z.object({
   postType: z.string().max(40).nullish(),
   section: z.string().max(40).nullish(),
   cursor: z.object({ published_at: z.string(), id: z.string() }).nullish(),
-  limit: z.number().int().min(1).max(24).optional(),
+  limit: z.number().int().min(1).max(60).optional(),
 });
 
 function normalizeTab(value: string): BlogFeedTab {
