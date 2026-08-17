@@ -11,6 +11,7 @@ import { markAllNotificationsRead } from "@/lib/notifications.functions";
 import { formatRoomTitle } from "@/lib/instant";
 import { workshopEntityUrl } from "@/lib/entities/kinds";
 import { programTypeLabel } from "@/lib/open-house";
+import { filmFormatLabel } from "@/lib/film-festival";
 
 type Row = {
   id: string;
@@ -231,6 +232,20 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
         title: `New Open House application — ${who}`,
         subtitle: bits || "Tap to review.",
         href: "/admin/open-house",
+      };
+    }
+    case "film_festival_submission_new": {
+      const who = (n.payload?.name as string) || "A film";
+      const bits = [
+        filmFormatLabel((n.payload?.film_format as string) || ""),
+        n.payload?.city as string | undefined,
+      ]
+        .filter(Boolean)
+        .join(" · ");
+      return {
+        title: `New film submission — ${who}`,
+        subtitle: bits || "Tap to review.",
+        href: "/admin/film-festival",
       };
     }
     case "admin_new_member": {

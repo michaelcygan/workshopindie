@@ -41,6 +41,7 @@ import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 import { Route as AdminBadgesRouteImport } from './routes/admin.badges'
 import { Route as AdminEngagementRouteImport } from './routes/admin.engagement'
 import { Route as AdminEventsRouteImport } from './routes/admin.events'
+import { Route as AdminFilmFestivalRouteImport } from './routes/admin.film-festival'
 import { Route as AdminGeoRouteImport } from './routes/admin.geo'
 import { Route as AdminGroupsRouteImport } from './routes/admin.groups'
 import { Route as AdminGrowthRouteImport } from './routes/admin.growth'
@@ -291,6 +292,11 @@ const AdminEngagementRoute = AdminEngagementRouteImport.update({
 const AdminEventsRoute = AdminEventsRouteImport.update({
   id: '/events',
   path: '/events',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminFilmFestivalRoute = AdminFilmFestivalRouteImport.update({
+  id: '/film-festival',
+  path: '/film-festival',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminGeoRoute = AdminGeoRouteImport.update({
@@ -776,6 +782,7 @@ export interface FileRoutesByFullPath {
   '/admin/badges': typeof AdminBadgesRoute
   '/admin/engagement': typeof AdminEngagementRoute
   '/admin/events': typeof AdminEventsRoute
+  '/admin/film-festival': typeof AdminFilmFestivalRoute
   '/admin/geo': typeof AdminGeoRoute
   '/admin/groups': typeof AdminGroupsRoute
   '/admin/growth': typeof AdminGrowthRoute
@@ -893,6 +900,7 @@ export interface FileRoutesByTo {
   '/admin/badges': typeof AdminBadgesRoute
   '/admin/engagement': typeof AdminEngagementRoute
   '/admin/events': typeof AdminEventsRoute
+  '/admin/film-festival': typeof AdminFilmFestivalRoute
   '/admin/geo': typeof AdminGeoRoute
   '/admin/groups': typeof AdminGroupsRoute
   '/admin/growth': typeof AdminGrowthRoute
@@ -1017,6 +1025,7 @@ export interface FileRoutesById {
   '/admin/badges': typeof AdminBadgesRoute
   '/admin/engagement': typeof AdminEngagementRoute
   '/admin/events': typeof AdminEventsRoute
+  '/admin/film-festival': typeof AdminFilmFestivalRoute
   '/admin/geo': typeof AdminGeoRoute
   '/admin/groups': typeof AdminGroupsRoute
   '/admin/growth': typeof AdminGrowthRoute
@@ -1142,6 +1151,7 @@ export interface FileRouteTypes {
     | '/admin/badges'
     | '/admin/engagement'
     | '/admin/events'
+    | '/admin/film-festival'
     | '/admin/geo'
     | '/admin/groups'
     | '/admin/growth'
@@ -1259,6 +1269,7 @@ export interface FileRouteTypes {
     | '/admin/badges'
     | '/admin/engagement'
     | '/admin/events'
+    | '/admin/film-festival'
     | '/admin/geo'
     | '/admin/groups'
     | '/admin/growth'
@@ -1382,6 +1393,7 @@ export interface FileRouteTypes {
     | '/admin/badges'
     | '/admin/engagement'
     | '/admin/events'
+    | '/admin/film-festival'
     | '/admin/geo'
     | '/admin/groups'
     | '/admin/growth'
@@ -1776,6 +1788,13 @@ declare module '@tanstack/react-router' {
       path: '/events'
       fullPath: '/admin/events'
       preLoaderRoute: typeof AdminEventsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/film-festival': {
+      id: '/admin/film-festival'
+      path: '/film-festival'
+      fullPath: '/admin/film-festival'
+      preLoaderRoute: typeof AdminFilmFestivalRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/geo': {
@@ -2421,6 +2440,7 @@ interface AdminRouteChildren {
   AdminBadgesRoute: typeof AdminBadgesRoute
   AdminEngagementRoute: typeof AdminEngagementRoute
   AdminEventsRoute: typeof AdminEventsRoute
+  AdminFilmFestivalRoute: typeof AdminFilmFestivalRoute
   AdminGeoRoute: typeof AdminGeoRoute
   AdminGroupsRoute: typeof AdminGroupsRoute
   AdminGrowthRoute: typeof AdminGrowthRoute
@@ -2449,6 +2469,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminBadgesRoute: AdminBadgesRoute,
   AdminEngagementRoute: AdminEngagementRoute,
   AdminEventsRoute: AdminEventsRoute,
+  AdminFilmFestivalRoute: AdminFilmFestivalRoute,
   AdminGeoRoute: AdminGeoRoute,
   AdminGroupsRoute: AdminGroupsRoute,
   AdminGrowthRoute: AdminGrowthRoute,

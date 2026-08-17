@@ -2590,6 +2590,106 @@ export type Database = {
         }
         Relationships: []
       }
+      film_festival_submissions: {
+        Row: {
+          access_notes: string | null
+          city: string
+          city_id: string | null
+          completion_year: number | null
+          contact_name: string
+          created_at: string
+          credits: string | null
+          email: string
+          film_format: string
+          film_title: string
+          film_url: string | null
+          id: string
+          internal_notes: string | null
+          logline: string
+          marketing_opt_in: boolean
+          rights_confirmed: boolean
+          runtime_minutes: number
+          status: string
+          synopsis: string
+          trailer_url: string
+          user_id: string | null
+          wants_account: boolean
+          workshop_username: string | null
+        }
+        Insert: {
+          access_notes?: string | null
+          city: string
+          city_id?: string | null
+          completion_year?: number | null
+          contact_name: string
+          created_at?: string
+          credits?: string | null
+          email: string
+          film_format: string
+          film_title: string
+          film_url?: string | null
+          id?: string
+          internal_notes?: string | null
+          logline: string
+          marketing_opt_in?: boolean
+          rights_confirmed?: boolean
+          runtime_minutes: number
+          status?: string
+          synopsis: string
+          trailer_url: string
+          user_id?: string | null
+          wants_account?: boolean
+          workshop_username?: string | null
+        }
+        Update: {
+          access_notes?: string | null
+          city?: string
+          city_id?: string | null
+          completion_year?: number | null
+          contact_name?: string
+          created_at?: string
+          credits?: string | null
+          email?: string
+          film_format?: string
+          film_title?: string
+          film_url?: string | null
+          id?: string
+          internal_notes?: string | null
+          logline?: string
+          marketing_opt_in?: boolean
+          rights_confirmed?: boolean
+          runtime_minutes?: number
+          status?: string
+          synopsis?: string
+          trailer_url?: string
+          user_id?: string | null
+          wants_account?: boolean
+          workshop_username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "film_festival_submissions_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "film_festival_submissions_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "film_festival_submissions_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
+            referencedColumns: ["city_id"]
+          },
+        ]
+      }
       follows: {
         Row: {
           created_at: string
