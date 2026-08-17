@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useSmartBack } from "@/hooks/use-smart-back";
+import { workshopEntityUrl } from "@/lib/entities/kinds";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Loader2 } from "lucide-react";
@@ -43,7 +44,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export const Route = createFileRoute("/works/$slug/edit")({
+export const Route = createFileRoute("/works/$slug_/edit")({
   component: EditWork,
 });
 
@@ -61,7 +62,7 @@ function EditWork() {
   const goBack = useSmartBack({ to: "/works/$slug", params: { slug } });
   const queryClient = useQueryClient();
 
-  const { data: work, isLoading } = useQuery({
+  const { data: work, isLoading, error: loadError, refetch } = useQuery({
     queryKey: ["work-edit", slug],
     enabled: !!slug,
     queryFn: async () => {
@@ -93,6 +94,8 @@ function EditWork() {
   const [embedUrl, setEmbedUrl] = useState("");
   const [licenseType, setLicenseType] = useState("portfolio_credit_only");
   const [book, setBook] = useState<BookDetails>(emptyBookDetails);
+  const [visibility, setVisibility] = useState<"public" | "unlisted">("public");
+  const [deleting, setDeleting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const categoryLabel = workCategoryById(categoryId)?.label ?? (customCategory.trim() || null);
@@ -117,6 +120,7 @@ function EditWork() {
     setPrimaryUrl(work.primary_url ?? "");
     setEmbedUrl(work.embed_url ?? "");
     setLicenseType(work.license_type ?? "portfolio_credit_only");
+    setVisibility(work.visibility === "unlisted" ? "unlisted" : "public");
     if (isBookWork(work.category, work.subtype)) {
       setBook({
         author: work.book_author ?? "",
@@ -135,8 +139,10 @@ function EditWork() {
   }, [work, hydrated]);
 
   useEffect(() => {
-    if (!authLoading && !user) navigate({ to: "/login" });
-  }, [user, authLoading, navigate]);
+    if (!authLoading && !user) {
+      navigate({ to: "/login", search: { redirect: `${workshopEntityUrl({ kind: "work", slug })}/edit` } });
+    }
+  }, [user, authLoading, navigate, slug]);
 
   useEffect(() => {
     if (work && user && work.created_by !== user.id) {
@@ -198,7 +204,7 @@ function EditWork() {
       embedUrl,
       coverUrl,
       licenseType,
-      visibility: work.visibility === "unlisted" ? "unlisted" : "public",
+      visibility,
       ownsRights: true,
     };
 
@@ -221,7 +227,28 @@ function EditWork() {
     navigate({ to: "/works/$slug", params: { slug } });
   }
 
-  if (isLoading || !hydrated) {
+  if (loadError) {
+    return (
+      <main className="mx-auto max-w-3xl px-4 py-20 text-center">
+        <h1 className="font-display text-3xl text-ink">Couldn't open the editor</h1>
+        <p className="mt-2 text-sm text-ink-muted">
+          {loadError instanceof Error ? loadError.message : "Something went wrong loading this Work."}
+        </p>
+        <div className="mt-6 flex justify-center gap-2">
+          <Button className="rounded-md" onClick={() => void refetch()}>
+            Try again
+          </Button>
+          <Link to="/works/$slug" params={{ slug }}>
+            <Button variant="outline" className="rounded-md">
+              Back to the Work
+            </Button>
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  if (isLoading || (work && !hydrated)) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-20 text-center text-ink-muted">
         <Loader2 className="mx-auto h-6 w-6 animate-spin" />
@@ -347,6 +374,23 @@ function EditWork() {
 
         {isBookWork(null, categoryLabel) && <BookDetailsSection value={book} onChange={setBook} />}
 
+        <div className="space-y-2">
+          <Label>Visibility</Label>
+          <Select
+            value={visibility}
+            onValueChange={(v) => setVisibility(v === "unlisted" ? "unlisted" : "public")}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="public">Public — appears in the Gallery and search</SelectItem>
+              <SelectItem value="unlisted">Unlisted — only people with the link</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+
         <div className="flex items-center gap-3 border-t border-border pt-6">
           <Button onClick={save} disabled={submitting} className="rounded-md">
             {submitting ? (
@@ -362,6 +406,32 @@ function EditWork() {
               Cancel
             </Button>
           </Link>
+        </div>
+
+        <div className="rounded-xl border border-border p-4">
+          <p className="text-sm font-medium text-ink">Delete this Work</p>
+          <p className="mt-1 text-sm text-ink-muted">
+            Removes the page, its assets and its credits for good. If you only want it out of the
+            Gallery, set visibility to Unlisted instead.
+          </p>
+          <Button
+            variant="outline"
+            disabled={deleting}
+            className="mt-3 rounded-md text-destructive hover:text-destructive"
+            onClick={async () => {
+              if (typeof window !== "undefined" && !window.confirm(`Delete "${title}"? This can't be undone.`)) return;
+              setDeleting(true);
+              const { error } = await supabase.from("works").delete().eq("id", work.id);
+              setDeleting(false);
+              if (error) return toast.error(error.message);
+              toast.success("Work deleted");
+              await queryClient.invalidateQueries({ queryKey: ["member-home"] });
+              navigate({ to: "/gallery" });
+            }}
+          >
+            {deleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Delete Work
+          </Button>
         </div>
       </div>
     </main>
