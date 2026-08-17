@@ -43,8 +43,52 @@ const DETAIL_SELECT =
   "city:cities!collab_posts_city_id_fkey(name)," +
   "roles:collab_roles(id,role_name,quantity,description,sort_order)";
 
+export type CollabDetailRow = {
+  id: string;
+  title: string | null;
+  slug: string;
+  category: string | null;
+  categories: string[] | null;
+  category_canonical: string | null;
+  categories_canonical: string[] | null;
+  subcategories: string[] | null;
+  description: string | null;
+  timeline_text: string | null;
+  location_mode: string | null;
+  compensation_type: string | null;
+  contact_mode: string | null;
+  external_contact_url: string | null;
+  status: string | null;
+  applications_open: boolean | null;
+  archived_at: string | null;
+  created_at: string;
+  closed_at: string | null;
+  ends_on: string | null;
+  resulting_work_id: string | null;
+  user_id: string;
+  live_workshop_id: string | null;
+  rights_arrangement: string | null;
+  accepts_suggestions: boolean | null;
+  user: {
+    id: string;
+    display_name: string | null;
+    username: string | null;
+    avatar_url: string | null;
+    headline: string | null;
+    first_name: string | null;
+  } | null;
+  city: { name: string | null } | null;
+  roles: Array<{
+    id: string;
+    role_name: string | null;
+    quantity: number | null;
+    description: string | null;
+    sort_order: number | null;
+  }>;
+};
+
 export type CollabPageResult =
-  | { access: "ok"; post: Record<string, unknown>; viewerIsMember: boolean }
+  | { access: "ok"; post: CollabDetailRow; viewerIsMember: boolean }
   | { access: "unavailable" };
 
 /**
