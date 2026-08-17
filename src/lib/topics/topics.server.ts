@@ -333,3 +333,23 @@ export async function toggleMediumFollowServer(
 }
 
 export { mediumSlugForField };
+
+/**
+ * Mirror a Blog post's authored Subjects into canonical Topic connections.
+ * Subjects remain the authoring surface; Topics are the canonical graph the
+ * feed, hubs, and follows read from.
+ */
+export async function syncPostTopicsAdminServer(
+  postId: string,
+  names: string[],
+  createdBy?: string,
+) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return setEntityTopicsServer(
+    supabaseAdmin as unknown as SupabaseClient<Database>,
+    "post",
+    postId,
+    names,
+    createdBy,
+  );
+}

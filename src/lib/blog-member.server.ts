@@ -442,6 +442,11 @@ export async function updateMyBlogPostServer(
 
   // Entity tags are part of the same save. A tag failure must fail the save so
   // the editor never reports success with tags silently dropped.
+  if (input.subjects !== undefined) {
+    const { syncPostTopicsAdminServer } = await import("./topics/topics.server");
+    await syncPostTopicsAdminServer(id, patch.subjects as string[], context.userId);
+  }
+
   let entity_tags: BlogEntityTag[] | null = null;
   if (input.tags !== undefined) {
     const { setBlogPostEntityTagsForOwnerServer } = await import("./blog-entity-tags.server");
