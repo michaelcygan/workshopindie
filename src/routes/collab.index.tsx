@@ -285,6 +285,7 @@ function CollabPage() {
       if (comp === "paid" && p.compensation_type !== "paid") return false;
       if (comp === "unpaid" && !["unpaid", "credit"].includes(p.compensation_type)) return false;
       if (search.sug && !p.accepts_suggestions) return false;
+      if (filters.city && !collabCityIds(p as never).has(filters.city)) return false;
       if (search.topic) {
         const slugs = topicData?.byPost.get(p.id) ?? [];
         if (!slugs.includes(search.topic)) return false;
