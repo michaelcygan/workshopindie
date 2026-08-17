@@ -4,7 +4,7 @@ import { useFormDraftStash } from "@/hooks/use-form-draft-stash";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Link2, Loader2, Sparkles, ArrowRight, Play, ChevronDown } from "lucide-react";
+import { Link2, Loader2, Sparkles, ArrowRight, Play, ChevronDown, Shield } from "lucide-react";
 import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -391,6 +391,19 @@ function NewWork() {
         </a>
       </motion.div>
 
+      {/* Rights reassurance */}
+      <div className="mt-4 rounded-2xl border border-border bg-surface p-4">
+        <div className="flex items-start gap-3">
+          <Shield className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          <p className="text-sm text-ink-soft">
+            You keep all rights to your work. Posting only grants Workshop a license to display it
+            on the platform and our social channels, as-is. That license ends when you delete the
+            media from Workshop.
+          </p>
+        </div>
+      </div>
+
+
       {step === "drop" && (
         <DropStep
           urlInput={urlInput}
@@ -500,7 +513,9 @@ function NewWork() {
               <span className="text-sm text-ink">
                 <span className="font-medium">I made this, or I have the rights to share it.</span>
                 <span className="mt-1 block text-xs text-ink-muted">
-                  You can fine-tune rights and add downloads later from the Work page.
+                  You keep all rights. Publishing only grants Workshop a license to display this
+                  Work on the platform and our social channels. You can fine-tune rights and add
+                  downloads later from the Work page.
                 </span>
               </span>
             </label>
@@ -593,6 +608,11 @@ function NewWork() {
 
           {/* Sticky publish bar */}
           <div className="sticky bottom-4 z-10 flex flex-wrap items-center justify-end gap-2 rounded-2xl border border-border bg-background/95 backdrop-blur p-3 shadow-lift">
+            <p className="w-full text-xs text-ink-muted">
+              You keep all rights. Posting grants Workshop a license to display this Work on the
+              platform and our social channels, as-is. That license ends when you delete the media
+              from Workshop.
+            </p>
             <Button
               type="button"
               variant="ghost"
