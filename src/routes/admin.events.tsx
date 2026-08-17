@@ -31,6 +31,8 @@ import { EVENT_KIND_OPTIONS, type EventKind } from "@/lib/events/kinds";
 import { toast } from "sonner";
 import { AdminImportEventDialog } from "@/components/admin-import-event-dialog";
 import { VenueAutocomplete } from "@/components/event/venue-autocomplete";
+import { WorkshopVenuePicker } from "@/components/event/workshop-venue-picker";
+import { evaluateVenuePolicy, getWorkshopVenue } from "@/lib/events/workshop-venues";
 import { CoverImagePicker } from "@/components/event/cover-image-picker";
 import { SeedChicagoButton } from "@/components/admin/seed-chicago-button";
 import { workshopEntityUrl } from "@/lib/entities/kinds";
@@ -148,7 +150,8 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
     venue_name: string; venue_address: string; online_url: string;
     venue_lat: number | null; venue_lng: number | null;
     venue_city_id: string | null; city_label: string | null;
-    capacity: string; featured: boolean;
+    capacity: string; overflow: string; featured: boolean;
+    workshop_venue_key: string | null; venue_policy_confirmed: boolean;
     lineup_capacity: string;
     // v2
     source: "workshop" | "external";
@@ -179,7 +182,9 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
     city_label: null,
     online_url: "",
     capacity: "",
-    
+    overflow: "",
+    workshop_venue_key: null,
+    venue_policy_confirmed: false,
     featured: false,
     lineup_capacity: "",
     source: "workshop",
@@ -232,6 +237,9 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
         venue_city_id: form.venue_city_id,
         online_url: form.online_url || null,
         capacity: form.capacity ? Number(form.capacity) : null,
+        overflow: form.capacity && form.overflow ? Math.max(0, Number(form.overflow)) : 0,
+        workshop_venue_key: form.workshop_venue_key,
+        venue_policy_confirmed: form.venue_policy_confirmed,
         status: mode === "draft" ? ("draft" as const) : ("scheduled" as const),
         featured: form.featured,
         is_official: form.source === "workshop",
@@ -447,6 +455,23 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
             onChange={(url) => setForm({ ...form, cover_url: url })}
           />
           {(form.format === "in_person" || form.format === "hybrid") && (
+            <div className="space-y-3">
+            <WorkshopVenuePicker
+              selectedKey={form.workshop_venue_key}
+              onSelect={(venue, resolved) =>
+                setForm((prev) => ({
+                  ...prev,
+                  workshop_venue_key: venue.key,
+                  venue_policy_confirmed: false,
+                  venue_name: resolved.venue_name,
+                  venue_address: resolved.venue_address,
+                  venue_lat: resolved.venue_lat ?? prev.venue_lat,
+                  venue_lng: resolved.venue_lng ?? prev.venue_lng,
+                  venue_city_id: resolved.venue_city_id ?? prev.venue_city_id,
+                  city_label: resolved.city_label ?? prev.city_label,
+                }))
+              }
+            />
             <VenueAutocomplete
               venueName={form.venue_name}
               venueAddress={form.venue_address}
@@ -454,6 +479,11 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
               onChange={(next) =>
                 setForm((prev) => ({
                   ...prev,
+                  // Any hand-entered or searched venue detaches the canonical record.
+                  workshop_venue_key:
+                    next.venue_name === getWorkshopVenue(prev.workshop_venue_key)?.venue_name
+                      ? prev.workshop_venue_key
+                      : null,
                   venue_name: next.venue_name,
                   venue_address: next.venue_address,
                   venue_lat: next.venue_lat ?? prev.venue_lat,
@@ -463,6 +493,7 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
                 }))
               }
             />
+            </div>
           )}
           {(form.format === "online" || form.format === "hybrid") && (
             <div>
@@ -470,10 +501,27 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
               <Input className="rounded-xl" value={form.online_url} onChange={(e) => setForm({ ...form, online_url: e.target.value })} />
             </div>
           )}
-          <div>
-            <Label>Capacity (optional)</Label>
-            <Input type="number" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <Label>Capacity (optional)</Label>
+              <Input type="number" min={1} value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} />
+              <p className="mt-1 text-[11px] text-ink-muted">How many people this Event is intended for.</p>
+            </div>
+            <div>
+              <Label>Overflow</Label>
+              <Input
+                type="number"
+                min={0}
+                disabled={!form.capacity}
+                value={form.overflow}
+                onChange={(e) => setForm({ ...form, overflow: e.target.value })}
+              />
+              <p className="mt-1 text-[11px] text-ink-muted">
+                Additional RSVPs to accept for expected cancellations or no-shows.
+              </p>
+            </div>
           </div>
+          <VenuePolicyStrip form={form} setForm={setForm} />
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} />
             Feature on homepage
