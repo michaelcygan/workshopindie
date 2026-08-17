@@ -9,7 +9,7 @@
  * instant rooms, workshop links) keep working, with labels always resolved
  * through the canonical taxonomy so a concept reads identically everywhere.
  */
-import { categoryClassFor, categoryLabel, TOPICS } from "@/lib/taxonomy";
+import { categoryClassFor, categoryLabel, GATHERING_TYPES } from "@/lib/taxonomy";
 
 export {
   normalizeCategory,
@@ -62,7 +62,7 @@ export const CATEGORIES: { id: Category; label: string }[] = [
     id: Category;
     label: string;
   }[]),
-  ...(TOPICS.map((t) => ({ id: t.id as Category, label: t.label })) as {
+  ...(GATHERING_TYPES.map((t) => ({ id: t.id as Category, label: t.label })) as {
     id: Category;
     label: string;
   }[]),
