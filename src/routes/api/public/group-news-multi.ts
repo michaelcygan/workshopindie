@@ -20,7 +20,7 @@ type AggregateItem = NewsItem & { groupName: string; groupSlug: string };
 
 const MAX_SLUGS = 12;
 const MAX_ITEMS = 18;
-const MAX_REFRESH = 2;
+const MAX_REFRESH = 4;
 
 const SHORT = "public, max-age=300, s-maxage=300";
 const NO_STORE = "no-store";
