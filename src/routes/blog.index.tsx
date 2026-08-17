@@ -46,7 +46,7 @@ export const Route = createFileRoute("/blog/")({
           limit: 60,
         },
       }),
-      blogFeed({ data: { tab: "featured", limit: 6 } }),
+      blogFeed({ data: { tab: "featured", limit: 24 } }),
     ]);
     return { feed, featured: featured.posts };
   },
