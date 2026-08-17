@@ -274,8 +274,6 @@ function CollabPage() {
     });
   }, [ranked, query, comp, search.sug, search.topic, topicData]);
 
-  const livePosts = useMemo(() => posts.filter((p) => !!p.live_workshop_id), [posts]);
-
   const mediumOptions = useMemo(() => {
     const counts = new Map<string, number>();
     for (const p of ranked) {
