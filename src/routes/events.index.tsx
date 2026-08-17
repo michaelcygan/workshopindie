@@ -17,14 +17,18 @@ import {
   type MapCityPoint,
   type MapVenuePoint,
 } from "@/components/events/events-mini-map";
-import { CityCombobox, type CityValue } from "@/components/city-combobox";
 import {
   FILTER_ROW_SCROLL,
   FilterClear,
   FilterHeader,
   FilterPillToggle,
+  FilterSearch,
+  FilterSelect,
   FilterToggleGroup,
 } from "@/components/filter-header";
+import { FilterCityPicker, type FilterCityOption } from "@/components/filter-header/filter-city-picker";
+import { FilterMore, FilterMoreSection, FilterMoreToggle } from "@/components/filter-header/filter-more";
+
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -34,7 +38,10 @@ import {
   listMyPastRsvps,
   listPublicEvents,
   listEventMapPoints,
+  listEventCities,
+  listEventMediums,
 } from "@/lib/group-events.functions";
+
 import { cn } from "@/lib/utils";
 import { workshopEntityUrl } from "@/lib/entities/kinds";
 
@@ -56,6 +63,8 @@ const searchSchema = z.object({
     .string()
     .catch(undefined as unknown as string)
     .optional(),
+  q: fallback(z.string(), "").default(""),
+  medium: fallback(z.string(), "").default(""),
   mine: fallback(z.boolean(), false).default(false),
   kind: fallback(z.enum(["all", "coworking"]), "all").default("all"),
   daypart: fallback(z.enum(["all", "morning", "afternoon", "evening"]), "all").default("all"),
@@ -69,6 +78,8 @@ async function fetchPublicEvents(
       cityId?: string | null;
       kind?: string | null;
       daypart?: "morning" | "afternoon" | "evening" | null;
+      medium?: string | null;
+      q?: string | null;
     };
   }) => Promise<unknown>,
   when: When,
@@ -76,6 +87,8 @@ async function fetchPublicEvents(
   cityId?: string,
   kind?: string,
   daypart?: string,
+  medium?: string,
+  q?: string,
 ) {
   const rows = await fn({
     data: {
@@ -85,10 +98,13 @@ async function fetchPublicEvents(
       kind: kind && kind !== "all" ? kind : null,
       daypart:
         daypart && daypart !== "all" ? (daypart as "morning" | "afternoon" | "evening") : null,
+      medium: medium ? medium : null,
+      q: q && q.trim() ? q.trim() : null,
     },
   });
   return rows as unknown as EventCardData[];
 }
+
 
 export const Route = createFileRoute("/events/")({
   validateSearch: zodValidator(searchSchema),
@@ -147,21 +163,47 @@ type SearchShape = z.infer<typeof searchSchema>;
 function EventsIndexPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/events/" });
-  const { when, format, city: cityId, cityName, mine, kind, daypart } = search;
+  const { when, format, city: cityId, cityName, mine, kind, daypart, q, medium } = search;
   const { user } = useAuth();
 
   const mineUpcomingFn = useServerFn(listMyUpcomingRsvps);
   const minePastFn = useServerFn(listMyPastRsvps);
   const publicEventsFn = useServerFn(listPublicEvents);
+  const eventCitiesFn = useServerFn(listEventCities);
+  const eventMediumsFn = useServerFn(listEventMediums);
 
   const mineActive = mine && !!user;
 
   const { data: publicData, isLoading: publicLoading } = useQuery({
-    queryKey: ["public-events", when, format, cityId ?? null, kind, daypart],
-    queryFn: () => fetchPublicEvents(publicEventsFn, when, format, cityId, kind, daypart),
+    queryKey: ["public-events", when, format, cityId ?? null, kind, daypart, medium, q],
+    queryFn: () =>
+      fetchPublicEvents(publicEventsFn, when, format, cityId, kind, daypart, medium, q),
     staleTime: 60_000,
     enabled: !mineActive,
   });
+
+  // City + medium option lists come from events that actually exist.
+  const { data: cityRows } = useQuery({
+    queryKey: ["events", "filter-cities", when],
+    queryFn: () => eventCitiesFn({ data: { when } }),
+    staleTime: 5 * 60_000,
+  });
+  const { data: mediumRows } = useQuery({
+    queryKey: ["events", "filter-mediums"],
+    queryFn: () => eventMediumsFn(),
+    staleTime: 10 * 60_000,
+  });
+  const cityOptions: FilterCityOption[] = useMemo(
+    () =>
+      ((cityRows ?? []) as { id: string; name: string; count: number }[]).map((c) => ({
+        value: c.id,
+        label: c.name,
+        count: c.count,
+      })),
+    [cityRows],
+  );
+  const mediumOptions = (mediumRows ?? []) as { slug: string; name: string; count: number }[];
+
 
   const { data: mineData, isLoading: mineLoading } = useQuery({
     queryKey: ["my-rsvps-feed", when, user?.id],
@@ -235,7 +277,7 @@ function EventsIndexPage() {
       }),
     });
   }
-  function setCity(next: CityValue | null) {
+  function setCity(next: { id: string; name: string } | null) {
     navigate({
       search: (prev: SearchShape): SearchShape => ({
         ...prev,
@@ -244,11 +286,16 @@ function EventsIndexPage() {
       }),
     });
   }
+  function setCityId(nextId: string) {
+    const match = cityOptions.find((c) => c.value === nextId);
+    setCity(nextId && match ? { id: nextId, name: match.label } : null);
+  }
   function setMine(next: boolean) {
     navigate({ search: (prev: SearchShape): SearchShape => ({ ...prev, mine: next }) });
   }
-
-  const cityValue: CityValue | null = cityId && cityName ? { id: cityId, name: cityName } : null;
+  function patch(next: Partial<SearchShape>) {
+    navigate({ search: (prev: SearchShape): SearchShape => ({ ...prev, ...next }) });
+  }
 
   const filtersActive =
     when !== "upcoming" ||
@@ -256,7 +303,11 @@ function EventsIndexPage() {
     !!cityId ||
     mine ||
     kind !== "all" ||
-    daypart !== "all";
+    daypart !== "all" ||
+    !!medium ||
+    !!q;
+
+  const moreCount = (daypart !== "all" ? 1 : 0) + (mine ? 1 : 0);
 
   const clearFilters = () =>
     navigate({
@@ -266,9 +317,12 @@ function EventsIndexPage() {
         mine: false,
         kind: "all" as const,
         daypart: "all" as const,
+        q: "",
+        medium: "",
       }),
       replace: true,
     });
+
 
   const defaultCityQuery = useDefaultCity();
   const defaultCity = defaultCityQuery.data?.city ?? null;
@@ -309,8 +363,14 @@ function EventsIndexPage() {
           )}
         </div>
 
-        {/* Sticky filter header */}
-        <FilterHeader inset stack className="mt-4">
+        {/* Sticky filter header — one line: search + medium + city + when + format */}
+        <FilterHeader inset className="mt-4">
+          <FilterSearch
+            value={q}
+            onChange={(next) => patch({ q: next })}
+            placeholder="Search events…"
+            label="Search events"
+          />
           <div className={FILTER_ROW_SCROLL}>
             <FilterToggleGroup
               value={when}
@@ -320,14 +380,30 @@ function EventsIndexPage() {
                 { value: "past" as const, label: "Past" },
               ]}
             />
-            {user && (
-              <FilterPillToggle active={mine} onClick={() => setMine(!mine)} icon={Ticket}>
-                My RSVPs
-              </FilterPillToggle>
-            )}
 
             {!mineActive && (
               <>
+                <FilterSelect
+                  label="Filter by medium"
+                  value={medium}
+                  onChange={(next) => patch({ medium: next })}
+                  width="min-w-[11rem]"
+                >
+                  <option value="">All mediums</option>
+                  {mediumOptions.map((m) => (
+                    <option key={m.slug} value={m.slug}>
+                      {m.name} ({m.count})
+                    </option>
+                  ))}
+                </FilterSelect>
+
+                <FilterCityPicker
+                  value={format === "online" ? "" : (cityId ?? "")}
+                  onChange={setCityId}
+                  options={format === "online" ? [] : cityOptions}
+                  allLabel="All cities"
+                />
+
                 <FilterToggleGroup
                   value={format}
                   onChange={setFormat}
@@ -340,50 +416,46 @@ function EventsIndexPage() {
                 <FilterPillToggle
                   active={kind === "coworking"}
                   onClick={() =>
-                    navigate({
-                      search: (prev: SearchShape): SearchShape => ({
-                        ...prev,
-                        kind: prev.kind === "coworking" ? "all" : "coworking",
-                        daypart: "all",
-                      }),
-                    })
+                    patch({ kind: kind === "coworking" ? "all" : "coworking", daypart: "all" })
                   }
                 >
                   Co-working
                 </FilterPillToggle>
-                <div className="min-w-[15rem] shrink-0">
-                  <CityCombobox
-                    value={cityValue}
-                    onChange={setCity}
-                    disabled={format === "online"}
-                    placeholder="Anywhere — search a city"
-                  />
-                </div>
               </>
             )}
 
+            <FilterMore activeCount={moreCount}>
+              <div className="space-y-3">
+                {user && (
+                  <FilterMoreSection title="Yours">
+                    <FilterMoreToggle active={mine} onClick={() => setMine(!mine)}>
+                      My RSVPs
+                    </FilterMoreToggle>
+                  </FilterMoreSection>
+                )}
+                {!mineActive && (
+                  <FilterMoreSection title="Time of day">
+                    <div className="flex flex-wrap gap-1.5">
+                      {(["all", "morning", "afternoon", "evening"] as const).map((d) => (
+                        <FilterPillToggle
+                          key={d}
+                          active={daypart === d}
+                          onClick={() => patch({ daypart: d })}
+                          className="h-8 px-3 text-[12px]"
+                        >
+                          {d === "all" ? "Any time" : d.charAt(0).toUpperCase() + d.slice(1)}
+                        </FilterPillToggle>
+                      ))}
+                    </div>
+                  </FilterMoreSection>
+                )}
+              </div>
+            </FilterMore>
+
             {filtersActive && <FilterClear onClick={clearFilters} />}
           </div>
-
-          {!mineActive && kind === "coworking" && (
-            <div className={cn(FILTER_ROW_SCROLL, "mt-2")}>
-              {(["all", "morning", "afternoon", "evening"] as const).map((d) => (
-                <FilterPillToggle
-                  key={d}
-                  active={daypart === d}
-                  onClick={() =>
-                    navigate({
-                      search: (prev: SearchShape): SearchShape => ({ ...prev, daypart: d }),
-                    })
-                  }
-                  className="h-8 px-3 text-[12px]"
-                >
-                  {d === "all" ? "Any time of day" : d.charAt(0).toUpperCase() + d.slice(1)}
-                </FilterPillToggle>
-              ))}
-            </div>
-          )}
         </FilterHeader>
+
 
         <div className="mt-3 space-y-1">
           {!mineActive &&
@@ -461,8 +533,9 @@ function EventsIndexPage() {
                   ? when === "past"
                     ? "Events you attend will show up here."
                     : "RSVP to an event and it'll appear here for quick access."
-                  : cityValue
-                    ? `No ${when} events in ${cityValue.name} yet. Try Worldwide or a different city.`
+                  : cityName
+                    ? `No ${when} events in ${cityName} yet. Try Worldwide or a different city.`
+
                     : "Events hosted by the Groups you join will list here."
               }
               action={

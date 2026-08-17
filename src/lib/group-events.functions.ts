@@ -247,6 +247,8 @@ export const listPublicEvents = createServerFn({ method: "GET" })
         cityId: z.string().uuid().nullish(),
         kind: z.string().max(40).nullish(),
         daypart: z.enum(["morning", "afternoon", "evening"]).nullish(),
+        medium: z.string().max(40).nullish(),
+        q: z.string().max(80).nullish(),
         limit: z.number().int().min(1).max(100).default(60),
       })
       .parse(i ?? {}),
@@ -259,9 +261,68 @@ export const listPublicEvents = createServerFn({ method: "GET" })
       cityId: data.cityId ?? null,
       kind: data.kind ?? null,
       daypart: data.daypart ?? null,
+      medium: data.medium ?? null,
+      q: data.q ?? null,
       limit: data.limit,
     });
   });
+
+/** Cities that actually have discoverable events, with counts — powers the city picker. */
+export const listEventCities = createServerFn({ method: "GET" })
+  .inputValidator((i) =>
+    z
+      .object({ when: z.enum(["upcoming", "past"]).default("upcoming") })
+      .parse(i ?? {}),
+  )
+  .handler(async ({ data }) => {
+    const supabase = publicClient();
+    const nowIso = new Date().toISOString();
+    let q = supabase
+      .from("group_events")
+      .select("venue_city_id, city:cities!group_events_venue_city_id_fkey(id,name,slug,country)")
+      .is("deleted_at", null)
+      .eq("visibility", "public")
+      .neq("status", "canceled")
+      .not("published_at", "is", null)
+      .is("archived_at", null)
+      .not("venue_city_id", "is", null)
+      .limit(2000);
+    q = data.when === "past" ? q.lt("starts_at", nowIso) : q.gte("starts_at", nowIso);
+    const { data: rows, error } = await q;
+    if (error) return [];
+    type Row = { city: { id: string; name: string; slug: string; country: string } | null };
+    const map = new Map<string, { id: string; name: string; slug: string; country: string; count: number }>();
+    for (const r of (rows ?? []) as unknown as Row[]) {
+      if (!r.city) continue;
+      const ex = map.get(r.city.id);
+      if (ex) ex.count += 1;
+      else map.set(r.city.id, { ...r.city, count: 1 });
+    }
+    return Array.from(map.values()).sort(
+      (a, b) => b.count - a.count || a.name.localeCompare(b.name),
+    );
+  });
+
+/** System medium groups that have events attached, with counts. */
+export const listEventMediums = createServerFn({ method: "GET" }).handler(async () => {
+  const supabase = publicClient();
+  const { data, error } = await supabase
+    .from("event_groups")
+    .select("group:groups!inner(slug,name,system_type)")
+    .eq("groups.system_type", "medium")
+    .limit(5000);
+  if (error) return [];
+  type Row = { group: { slug: string; name: string } | null };
+  const map = new Map<string, { slug: string; name: string; count: number }>();
+  for (const r of (data ?? []) as unknown as Row[]) {
+    if (!r.group) continue;
+    const ex = map.get(r.group.slug);
+    if (ex) ex.count += 1;
+    else map.set(r.group.slug, { slug: r.group.slug, name: r.group.name, count: 1 });
+  }
+  return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+});
+
 
 export const listGroupEvents = createServerFn({ method: "GET" })
   .inputValidator((i) =>
