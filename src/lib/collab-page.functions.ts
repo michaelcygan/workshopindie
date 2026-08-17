@@ -12,21 +12,21 @@ import { z } from "zod";
 
 export type CollabDetailRow = {
   id: string;
-  title: string | null;
+  title: string;
   slug: string;
-  category: string | null;
-  categories: string[] | null;
+  category: string;
+  categories: string[];
   category_canonical: string | null;
-  categories_canonical: string[] | null;
-  subcategories: string[] | null;
+  categories_canonical: string[];
+  subcategories: string[];
   description: string | null;
   timeline_text: string | null;
-  location_mode: string | null;
-  compensation_type: string | null;
-  contact_mode: string | null;
+  location_mode: string;
+  compensation_type: string;
+  contact_mode: string;
   external_contact_url: string | null;
-  status: string | null;
-  applications_open: boolean | null;
+  status: string;
+  applications_open: boolean;
   archived_at: string | null;
   created_at: string;
   closed_at: string | null;
@@ -35,7 +35,7 @@ export type CollabDetailRow = {
   user_id: string;
   live_workshop_id: string | null;
   rights_arrangement: string | null;
-  accepts_suggestions: boolean | null;
+  accepts_suggestions: boolean;
   user: {
     id: string;
     display_name: string | null;
@@ -44,13 +44,13 @@ export type CollabDetailRow = {
     headline: string | null;
     first_name: string | null;
   } | null;
-  city: { name: string | null } | null;
+  city: { name: string } | null;
   roles: Array<{
     id: string;
-    role_name: string | null;
-    quantity: number | null;
+    role_name: string;
+    quantity: number;
     description: string | null;
-    sort_order: number | null;
+    sort_order: number;
   }>;
 };
 
