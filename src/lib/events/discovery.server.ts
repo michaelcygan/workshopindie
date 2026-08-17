@@ -108,7 +108,12 @@ export type DiscoveryFilters = {
   kind?: string | null;
   /** Co-working: restrict to a part of the day. */
   daypart?: string | null;
+  /** Free-text match on title / tagline / venue name. */
+  q?: string | null;
+  /** Slug of a system medium group (music, film-video, writing, …). */
+  medium?: string | null;
   format?: EventFormatFilter;
+
   /** Only events marked featured. */
   featuredOnly?: boolean;
   /** Hard lower bound on starts_at (ISO). */
