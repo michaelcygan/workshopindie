@@ -4,12 +4,13 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { BLOG_CATEGORIES } from "@/lib/blog-categories";
 import { workshopEntityUrl } from "@/lib/entities/kinds";
+import { MEDIUM_LIST } from "@/lib/topics/topics";
 
 const SITE = "https://workshopindie.com";
 
 const STATIC_PATHS = [
   "", "gallery", "workshops", "collab", "cities", "groups", "g", "events",
-  "pricing", "refer", "onboarding", "login", "signup", "forgot-password", "reset-password", "blog",
+  "pricing", "refer", "onboarding", "login", "signup", "forgot-password", "reset-password", "blog", "topics", "mediums",
 ];
 
 
@@ -50,6 +51,9 @@ export const Route = createFileRoute("/sitemap.xml")({
         for (const w of workshops.data ?? []) urls.push({ loc: `${SITE}/workshops/${w.slug}`, lastmod: w.updated_at ?? undefined, priority: 0.7 });
         for (const c of collabs.data ?? []) urls.push({ loc: `${SITE}${workshopEntityUrl({ kind: "collab", slug: c.slug })}`, lastmod: c.updated_at ?? undefined, priority: 0.7 });
         for (const c of cities.data ?? []) urls.push({ loc: `${SITE}${workshopEntityUrl({ kind: "group", slug: c.slug })}`, priority: 0.5 });
+        for (const m of MEDIUM_LIST) urls.push({ loc: `${SITE}/mediums/${m.slug}`, priority: 0.6 });
+        const topics = await sb.from("topics").select("slug,updated_at").eq("status", "active").limit(5000);
+        for (const t of topics.data ?? []) urls.push({ loc: `${SITE}/topics/${t.slug}`, lastmod: t.updated_at ?? undefined, priority: 0.6 });
         for (const c of BLOG_CATEGORIES) urls.push({ loc: `${SITE}/blog/c/${c.slug}`, priority: 0.6 });
         for (const p of posts.data ?? []) urls.push({ loc: `${SITE}${workshopEntityUrl({ kind: "post", slug: p.slug })}`, lastmod: p.updated_at ?? p.published_at ?? undefined, priority: 0.7 });
 
