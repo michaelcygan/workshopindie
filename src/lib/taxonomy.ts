@@ -289,7 +289,7 @@ const STORAGE_CLASS_OVERRIDES: Record<string, string> = {
 };
 
 /** Conversation / gathering topics. Not creative categories. */
-export const TOPICS: { id: string; label: string; className: string }[] = [
+export const GATHERING_TYPES: { id: string; label: string; className: string }[] = [
   { id: "critique", label: "Critique", className: "bg-cat-critique text-cat-critique-ink" },
   { id: "business", label: "Business of Art", className: "bg-cat-business text-cat-business-ink" },
   { id: "coworking", label: "Co-working", className: "bg-cat-coworking text-cat-coworking-ink" },
@@ -310,10 +310,10 @@ export const TOPICS: { id: string; label: string; className: string }[] = [
   { id: "standup", label: "Stand-up", className: "bg-cat-standup text-cat-standup-ink" },
 ];
 
-const TOPIC_BY_ID = new Map(TOPICS.map((t) => [t.id, t]));
+const GATHERING_TYPE_BY_ID = new Map(GATHERING_TYPES.map((t) => [t.id, t]));
 
-export const isTopic = (value: string | null | undefined): boolean =>
-  !!value && TOPIC_BY_ID.has(value);
+export const isGatheringType = (value: string | null | undefined): boolean =>
+  !!value && GATHERING_TYPE_BY_ID.has(value);
 
 /** Legacy or canonical value in, canonical id out. */
 export function normalizeCategory(value: string | null | undefined): CanonicalCategory {
@@ -325,7 +325,7 @@ export function normalizeCategory(value: string | null | undefined): CanonicalCa
 export function categoryLabel(value: string | null | undefined): string {
   if (!value) return "General";
   if (STORAGE_LABEL_OVERRIDES[value]) return STORAGE_LABEL_OVERRIDES[value];
-  const topic = TOPIC_BY_ID.get(value);
+  const topic = GATHERING_TYPE_BY_ID.get(value);
   if (topic) return topic.label;
   return BY_ID.get(normalizeCategory(value))?.label ?? "General";
 }
@@ -334,7 +334,7 @@ export function categoryLabel(value: string | null | undefined): string {
 export function categoryClassFor(value: string | null | undefined): string {
   if (!value) return "bg-muted text-ink-soft";
   if (STORAGE_CLASS_OVERRIDES[value]) return STORAGE_CLASS_OVERRIDES[value];
-  const topic = TOPIC_BY_ID.get(value);
+  const topic = GATHERING_TYPE_BY_ID.get(value);
   if (topic) return topic.className;
   return BY_ID.get(normalizeCategory(value))?.className ?? "bg-muted text-ink-soft";
 }
@@ -356,7 +356,7 @@ export const CATEGORY_ENUM_VALUES = new Set<string>([
   "build",
   "visual",
   "other",
-  ...TOPICS.map((t) => t.id),
+  ...GATHERING_TYPES.map((t) => t.id),
 ]);
 
 /**

@@ -80,7 +80,11 @@ import { Route as MeEditRouteImport } from './routes/me.edit'
 import { Route as MeFriendsRouteImport } from './routes/me.friends'
 import { Route as MeNetworkRouteImport } from './routes/me.network'
 import { Route as MeTicketsRouteImport } from './routes/me.tickets'
+import { Route as MediumsIndexRouteImport } from './routes/mediums.index'
+import { Route as MediumsSlugRouteImport } from './routes/mediums.$slug'
 import { Route as RedeemCodeRouteImport } from './routes/redeem.$code'
+import { Route as TopicsIndexRouteImport } from './routes/topics.index'
+import { Route as TopicsSlugRouteImport } from './routes/topics.$slug'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as WTokenRouteImport } from './routes/w.$token'
 import { Route as WorksSlugRouteImport } from './routes/works.$slug'
@@ -481,9 +485,29 @@ const MeTicketsRoute = MeTicketsRouteImport.update({
   path: '/me/tickets',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MediumsIndexRoute = MediumsIndexRouteImport.update({
+  id: '/mediums/',
+  path: '/mediums/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MediumsSlugRoute = MediumsSlugRouteImport.update({
+  id: '/mediums/$slug',
+  path: '/mediums/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RedeemCodeRoute = RedeemCodeRouteImport.update({
   id: '/redeem/$code',
   path: '/redeem/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TopicsIndexRoute = TopicsIndexRouteImport.update({
+  id: '/topics/',
+  path: '/topics/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TopicsSlugRoute = TopicsSlugRouteImport.update({
+  id: '/topics/$slug',
+  path: '/topics/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UUsernameRoute = UUsernameRouteImport.update({
@@ -765,7 +789,9 @@ export interface FileRoutesByFullPath {
   '/me/friends': typeof MeFriendsRoute
   '/me/network': typeof MeNetworkRoute
   '/me/tickets': typeof MeTicketsRoute
+  '/mediums/$slug': typeof MediumsSlugRoute
   '/redeem/$code': typeof RedeemCodeRoute
+  '/topics/$slug': typeof TopicsSlugRoute
   '/u/$username': typeof UUsernameRoute
   '/w/$token': typeof WTokenRoute
   '/works/$slug': typeof WorksSlugRoute
@@ -781,6 +807,8 @@ export interface FileRoutesByFullPath {
   '/groups/': typeof GroupsIndexRoute
   '/lounge/': typeof LoungeIndexRoute
   '/me/': typeof MeIndexRoute
+  '/mediums/': typeof MediumsIndexRoute
+  '/topics/': typeof TopicsIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -875,7 +903,9 @@ export interface FileRoutesByTo {
   '/me/friends': typeof MeFriendsRoute
   '/me/network': typeof MeNetworkRoute
   '/me/tickets': typeof MeTicketsRoute
+  '/mediums/$slug': typeof MediumsSlugRoute
   '/redeem/$code': typeof RedeemCodeRoute
+  '/topics/$slug': typeof TopicsSlugRoute
   '/u/$username': typeof UUsernameRoute
   '/w/$token': typeof WTokenRoute
   '/works/$slug': typeof WorksSlugRoute
@@ -891,6 +921,8 @@ export interface FileRoutesByTo {
   '/groups': typeof GroupsIndexRoute
   '/lounge': typeof LoungeIndexRoute
   '/me': typeof MeIndexRoute
+  '/mediums': typeof MediumsIndexRoute
+  '/topics': typeof TopicsIndexRoute
   '/workshops': typeof WorkshopsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -992,7 +1024,9 @@ export interface FileRoutesById {
   '/me/friends': typeof MeFriendsRoute
   '/me/network': typeof MeNetworkRoute
   '/me/tickets': typeof MeTicketsRoute
+  '/mediums/$slug': typeof MediumsSlugRoute
   '/redeem/$code': typeof RedeemCodeRoute
+  '/topics/$slug': typeof TopicsSlugRoute
   '/u/$username': typeof UUsernameRoute
   '/w/$token': typeof WTokenRoute
   '/works/$slug': typeof WorksSlugRoute
@@ -1008,6 +1042,8 @@ export interface FileRoutesById {
   '/groups/': typeof GroupsIndexRoute
   '/lounge/': typeof LoungeIndexRoute
   '/me/': typeof MeIndexRoute
+  '/mediums/': typeof MediumsIndexRoute
+  '/topics/': typeof TopicsIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -1110,7 +1146,9 @@ export interface FileRouteTypes {
     | '/me/friends'
     | '/me/network'
     | '/me/tickets'
+    | '/mediums/$slug'
     | '/redeem/$code'
+    | '/topics/$slug'
     | '/u/$username'
     | '/w/$token'
     | '/works/$slug'
@@ -1126,6 +1164,8 @@ export interface FileRouteTypes {
     | '/groups/'
     | '/lounge/'
     | '/me/'
+    | '/mediums/'
+    | '/topics/'
     | '/workshops/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -1220,7 +1260,9 @@ export interface FileRouteTypes {
     | '/me/friends'
     | '/me/network'
     | '/me/tickets'
+    | '/mediums/$slug'
     | '/redeem/$code'
+    | '/topics/$slug'
     | '/u/$username'
     | '/w/$token'
     | '/works/$slug'
@@ -1236,6 +1278,8 @@ export interface FileRouteTypes {
     | '/groups'
     | '/lounge'
     | '/me'
+    | '/mediums'
+    | '/topics'
     | '/workshops'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -1336,7 +1380,9 @@ export interface FileRouteTypes {
     | '/me/friends'
     | '/me/network'
     | '/me/tickets'
+    | '/mediums/$slug'
     | '/redeem/$code'
+    | '/topics/$slug'
     | '/u/$username'
     | '/w/$token'
     | '/works/$slug'
@@ -1352,6 +1398,8 @@ export interface FileRouteTypes {
     | '/groups/'
     | '/lounge/'
     | '/me/'
+    | '/mediums/'
+    | '/topics/'
     | '/workshops/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -1430,7 +1478,9 @@ export interface RootRouteChildren {
   MeFriendsRoute: typeof MeFriendsRoute
   MeNetworkRoute: typeof MeNetworkRoute
   MeTicketsRoute: typeof MeTicketsRoute
+  MediumsSlugRoute: typeof MediumsSlugRoute
   RedeemCodeRoute: typeof RedeemCodeRoute
+  TopicsSlugRoute: typeof TopicsSlugRoute
   UUsernameRoute: typeof UUsernameRoute
   WTokenRoute: typeof WTokenRoute
   WorksSlugRoute: typeof WorksSlugRoute
@@ -1439,6 +1489,8 @@ export interface RootRouteChildren {
   DmsIndexRoute: typeof DmsIndexRoute
   EventsIndexRoute: typeof EventsIndexRoute
   MeIndexRoute: typeof MeIndexRoute
+  MediumsIndexRoute: typeof MediumsIndexRoute
+  TopicsIndexRoute: typeof TopicsIndexRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiPublicGroupNewsMultiRoute: typeof ApiPublicGroupNewsMultiRoute
@@ -1961,11 +2013,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MeTicketsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mediums/': {
+      id: '/mediums/'
+      path: '/mediums'
+      fullPath: '/mediums/'
+      preLoaderRoute: typeof MediumsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mediums/$slug': {
+      id: '/mediums/$slug'
+      path: '/mediums/$slug'
+      fullPath: '/mediums/$slug'
+      preLoaderRoute: typeof MediumsSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/redeem/$code': {
       id: '/redeem/$code'
       path: '/redeem/$code'
       fullPath: '/redeem/$code'
       preLoaderRoute: typeof RedeemCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/topics/': {
+      id: '/topics/'
+      path: '/topics'
+      fullPath: '/topics/'
+      preLoaderRoute: typeof TopicsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/topics/$slug': {
+      id: '/topics/$slug'
+      path: '/topics/$slug'
+      fullPath: '/topics/$slug'
+      preLoaderRoute: typeof TopicsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/u/$username': {
@@ -2486,7 +2566,9 @@ const rootRouteChildren: RootRouteChildren = {
   MeFriendsRoute: MeFriendsRoute,
   MeNetworkRoute: MeNetworkRoute,
   MeTicketsRoute: MeTicketsRoute,
+  MediumsSlugRoute: MediumsSlugRoute,
   RedeemCodeRoute: RedeemCodeRoute,
+  TopicsSlugRoute: TopicsSlugRoute,
   UUsernameRoute: UUsernameRoute,
   WTokenRoute: WTokenRoute,
   WorksSlugRoute: WorksSlugRoute,
@@ -2495,6 +2577,8 @@ const rootRouteChildren: RootRouteChildren = {
   DmsIndexRoute: DmsIndexRoute,
   EventsIndexRoute: EventsIndexRoute,
   MeIndexRoute: MeIndexRoute,
+  MediumsIndexRoute: MediumsIndexRoute,
+  TopicsIndexRoute: TopicsIndexRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiPublicGroupNewsMultiRoute: ApiPublicGroupNewsMultiRoute,

@@ -495,6 +495,10 @@ export async function adminCreateDraftServer(context: AuthContext, data: BlogWri
     .select("id,slug")
     .single();
   if (error) throw new Error(error.message);
+  if (data.subjects !== undefined) {
+    const { syncPostTopicsAdminServer } = await import("./topics/topics.server");
+    await syncPostTopicsAdminServer(row.id, normalizeBlogSubjects(data.subjects), context.userId);
+  }
   await audit("blog_post.created", row.id, context.userId, { title: data.title });
   return row;
 }
@@ -546,6 +550,10 @@ export async function adminUpdatePostServer(
     })
     .eq("id", data.id);
   if (error) throw new Error(error.message);
+  if (data.subjects !== undefined) {
+    const { syncPostTopicsAdminServer } = await import("./topics/topics.server");
+    await syncPostTopicsAdminServer(data.id, normalizeBlogSubjects(data.subjects), context.userId);
+  }
   await audit("blog_post.updated", data.id, context.userId);
   return { id: data.id, slug };
 }
