@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Search, X, Plus } from "lucide-react";
+import { useEffect, useMemo, useRef } from "react";
+import { Plus } from "lucide-react";
 import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,9 +12,18 @@ import { FIELD_FILTER_OPTIONS, canonicalFilterValues, normalizeCategory } from "
 import { categoriesForField } from "@/lib/work-categories";
 import { WORK_CARD_SELECT, toWorkCard, type WorkCardRow } from "@/lib/work-card-query";
 import { SUBJECT_SUGGESTIONS } from "@/lib/work-tags";
-import { CategoryScroller } from "@/components/category-scroller";
-import { GalleryCityFilter, type CityOption } from "@/components/gallery-city-filter";
-import { FilterClear, FilterHeader, FilterToggleGroup } from "@/components/filter-header";
+import type { CityOption } from "@/components/gallery-city-filter";
+import {
+  FilterClear,
+  FilterControls,
+  FilterHeader,
+  FilterSearch,
+  FilterSelect,
+  FilterToggleGroup,
+} from "@/components/filter-header";
+import { FilterCityPicker } from "@/components/filter-header/filter-city-picker";
+import { FilterMore, FilterMoreSection } from "@/components/filter-header/filter-more";
+
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -37,7 +46,9 @@ const searchSchema = z.object({
   kind: fallback(z.string(), "all").default("all"),
   subject: fallback(z.string(), "all").default("all"),
   city: fallback(z.string(), "all").default("all"),
+  topic: fallback(z.string(), "").default(""),
   sort: fallback(z.enum(["recent", "trending"]), "recent").default("recent"),
+
 });
 
 export const Route = createFileRoute("/gallery")({
@@ -79,41 +90,76 @@ export const Route = createFileRoute("/gallery")({
 
 const PAGE_SIZE = 30;
 
-function useDebounced<T>(value: T, ms = 250): T {
-  const [v, setV] = useState(value);
-  useEffect(() => {
-    const t = setTimeout(() => setV(value), ms);
-    return () => clearTimeout(t);
-  }, [value, ms]);
-  return v;
-}
-
 type CityChip = CityOption;
 
+type GalleryCityRow = {
+  city_id: string | null;
+  cities: { id: string; name: string; slug: string; country: string } | null;
+  profiles: {
+    city_id: string | null;
+    cities: { id: string; name: string; slug: string; country: string } | null;
+  } | null;
+};
+
 async function fetchGalleryCities(): Promise<CityChip[]> {
-  // Pull a sample of recent published works with their city; aggregate client-side.
+  // Recent published works with their city — plus the author's home city, so a
+  // scene shows up in the picker even when the piece itself has no city set.
   const { data, error } = await supabase
     .from("works")
-    .select("city_id, cities(id, name, slug, country)")
+    .select(
+      "city_id, cities(id, name, slug, country), profiles!works_created_by_fkey(city_id, cities!profiles_city_id_fkey(id, name, slug, country))",
+    )
     .eq("status", "published")
     .in("visibility", ["public", "unlisted"])
-    .not("city_id", "is", null)
     .order("published_at", { ascending: false, nullsFirst: false })
     .limit(1000);
   if (error) return [];
   const map = new Map<string, CityChip>();
-  for (const row of (data ?? []) as Array<{
-    city_id: string | null;
-    cities: { id: string; name: string; slug: string; country: string } | null;
-  }>) {
-    const c = row.cities;
+  for (const row of (data ?? []) as unknown as GalleryCityRow[]) {
+    const c = row.cities ?? row.profiles?.cities ?? null;
     if (!c) continue;
     const ex = map.get(c.id);
     if (ex) ex.count += 1;
     else map.set(c.id, { id: c.id, name: c.name, slug: c.slug, country: c.country, count: 1 });
   }
-  return Array.from(map.values()).sort((a, b) => b.count - a.count);
+  return Array.from(map.values()).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 }
+
+/** Topics that actually appear on published Works, for the Topic filter. */
+async function fetchGalleryTopics(): Promise<{ slug: string; name: string; count: number }[]> {
+  const { data, error } = await supabase
+    .from("work_topics")
+    .select("topic:topics(slug,name)")
+    .limit(2000);
+  if (error) return [];
+  const map = new Map<string, { slug: string; name: string; count: number }>();
+  for (const row of (data ?? []) as unknown as { topic: { slug: string; name: string } | null }[]) {
+    if (!row.topic) continue;
+    const ex = map.get(row.topic.slug);
+    if (ex) ex.count += 1;
+    else map.set(row.topic.slug, { slug: row.topic.slug, name: row.topic.name, count: 1 });
+  }
+  return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Work ids carrying a topic — used to narrow the feed when a Topic is picked. */
+async function fetchWorkIdsForTopic(slug: string): Promise<string[]> {
+  const { data: topic } = await supabase.from("topics").select("id").eq("slug", slug).maybeSingle();
+  if (!topic) return [];
+  const { data } = await supabase
+    .from("work_topics")
+    .select("work_id")
+    .eq("topic_id", (topic as { id: string }).id)
+    .limit(1000);
+  return ((data ?? []) as { work_id: string }[]).map((r) => r.work_id);
+}
+
+/** Author ids who call this city home — city filter falls back to them. */
+async function fetchCityAuthorIds(cityId: string): Promise<string[]> {
+  const { data } = await supabase.from("profiles").select("id").eq("city_id", cityId).limit(500);
+  return ((data ?? []) as { id: string }[]).map((r) => r.id);
+}
+
 
 async function fetchForYouPage(params: {
   category: string;
@@ -121,11 +167,16 @@ async function fetchForYouPage(params: {
   subject: string;
   citySlug: string;
   cityIdMap: Map<string, string>;
+  cityAuthorIds: string[];
+  topicWorkIds: string[] | null;
   sort: "recent" | "trending";
   q: string;
   cursor: string | null;
   blockedIds: string[];
 }): Promise<{ works: WorkCardData[]; nextCursor: string | null }> {
+  if (params.topicWorkIds && params.topicWorkIds.length === 0)
+    return { works: [], nextCursor: null };
+
   let qb = supabase
     .from("works")
     .select(`${WORK_CARD_SELECT},popularity_score`)
@@ -133,6 +184,7 @@ async function fetchForYouPage(params: {
     .in("visibility", ["public", "unlisted"])
     .limit(PAGE_SIZE);
 
+  if (params.topicWorkIds) qb = qb.in("id", params.topicWorkIds);
   if (params.category !== "all")
     qb = qb.overlaps("categories_canonical", canonicalFilterValues(params.category));
   if (params.kind !== "all") qb = qb.eq("category_id", params.kind);
@@ -140,8 +192,11 @@ async function fetchForYouPage(params: {
   if (params.citySlug !== "all") {
     const cid = params.cityIdMap.get(params.citySlug);
     if (!cid) return { works: [], nextCursor: null };
-    qb = qb.eq("city_id", cid);
+    qb = params.cityAuthorIds.length
+      ? qb.or(`city_id.eq.${cid},created_by.in.(${params.cityAuthorIds.join(",")})`)
+      : qb.eq("city_id", cid);
   }
+
   if (params.q.trim()) {
     const s = params.q.trim().replace(/[%,]/g, " ");
     qb = qb.or(`title.ilike.%${s}%,excerpt.ilike.%${s}%`);
@@ -179,10 +234,15 @@ async function fetchFavoritesPage(params: {
   subject: string;
   citySlug: string;
   cityIdMap: Map<string, string>;
+  cityAuthorIds: string[];
+  topicWorkIds: string[] | null;
   q: string;
   cursor: string | null;
   blockedIds: string[];
 }): Promise<{ works: WorkCardData[]; nextCursor: string | null }> {
+  if (params.topicWorkIds && params.topicWorkIds.length === 0)
+    return { works: [], nextCursor: null };
+
   let rq = supabase
     .from("work_reactions")
     .select("work_id, created_at")
@@ -195,7 +255,15 @@ async function fetchFavoritesPage(params: {
   if (rErr) throw rErr;
   const rxns = (reactions ?? []) as Array<{ work_id: string; created_at: string }>;
   if (rxns.length === 0) return { works: [], nextCursor: null };
-  const ids = rxns.map((r) => r.work_id);
+  const topicSet = params.topicWorkIds ? new Set(params.topicWorkIds) : null;
+  const ids = rxns.map((r) => r.work_id).filter((id) => !topicSet || topicSet.has(id));
+  if (ids.length === 0) {
+    const lastEmpty = rxns[rxns.length - 1];
+    return {
+      works: [],
+      nextCursor: rxns.length === PAGE_SIZE && lastEmpty ? lastEmpty.created_at : null,
+    };
+  }
 
   let qb = supabase.from("works").select(WORK_CARD_SELECT).in("id", ids);
   if (params.category !== "all")
@@ -205,8 +273,11 @@ async function fetchFavoritesPage(params: {
   if (params.citySlug !== "all") {
     const cid = params.cityIdMap.get(params.citySlug);
     if (!cid) return { works: [], nextCursor: null };
-    qb = qb.eq("city_id", cid);
+    qb = params.cityAuthorIds.length
+      ? qb.or(`city_id.eq.${cid},created_by.in.(${params.cityAuthorIds.join(",")})`)
+      : qb.eq("city_id", cid);
   }
+
   if (params.q.trim()) {
     const s = params.q.trim().replace(/[%,]/g, " ");
     qb = qb.or(`title.ilike.%${s}%,excerpt.ilike.%${s}%`);
@@ -238,19 +309,6 @@ function GalleryPage() {
   const { user } = useAuth();
   const { ids: blockedIds } = useBlockedIds();
   const blockedKey = useMemo(() => Array.from(blockedIds).sort().join(","), [blockedIds]);
-  const [qInput, setQInput] = useState(search.q);
-  const [searchOpen, setSearchOpen] = useState(search.q.trim().length > 0);
-  const qDebounced = useDebounced(qInput, 250);
-
-  useEffect(() => {
-    if (qDebounced !== search.q) {
-      navigate({
-        search: (prev: Record<string, unknown>) => ({ ...prev, q: qDebounced }),
-        replace: true,
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qDebounced]);
 
   const tab = search.tab;
   // Accept legacy values (?cat=film / visual / build) from old shared links.
@@ -258,6 +316,7 @@ function GalleryPage() {
   const kind = search.kind;
   const subject = search.subject;
   const citySlug = search.city;
+  const topic = search.topic;
   const sort = search.sort;
   const q = search.q;
 
@@ -274,6 +333,30 @@ function GalleryPage() {
     return m;
   }, [cities]);
 
+  const topicsQuery = useQuery({
+    queryKey: ["gallery-topics"],
+    queryFn: fetchGalleryTopics,
+    staleTime: 5 * 60_000,
+  });
+  const topicOptions = topicsQuery.data ?? [];
+
+  const topicIdsQuery = useQuery({
+    queryKey: ["gallery-topic-works", topic],
+    enabled: topic.length > 0,
+    staleTime: 60_000,
+    queryFn: () => fetchWorkIdsForTopic(topic),
+  });
+  const topicWorkIds = topic ? (topicIdsQuery.data ?? null) : null;
+
+  const activeCityId = citySlug === "all" ? null : (cityIdMap.get(citySlug) ?? null);
+  const cityAuthorsQuery = useQuery({
+    queryKey: ["gallery-city-authors", activeCityId],
+    enabled: !!activeCityId,
+    staleTime: 5 * 60_000,
+    queryFn: () => fetchCityAuthorIds(activeCityId as string),
+  });
+  const cityAuthorIds = cityAuthorsQuery.data ?? [];
+
   const queryKey = useMemo(
     () => [
       "gallery",
@@ -282,21 +365,40 @@ function GalleryPage() {
       kind,
       subject,
       citySlug,
+      topic,
       sort,
       q,
       user?.id ?? null,
       blockedKey,
+      cityAuthorIds.length,
+      topicWorkIds?.length ?? null,
     ],
-    [tab, category, kind, subject, citySlug, sort, q, user?.id, blockedKey],
+    [
+      tab,
+      category,
+      kind,
+      subject,
+      citySlug,
+      topic,
+      sort,
+      q,
+      user?.id,
+      blockedKey,
+      cityAuthorIds.length,
+      topicWorkIds,
+    ],
   );
 
   const queryResult = useInfiniteQuery({
     queryKey,
     initialPageParam: null as string | null,
-    enabled: (tab === "for-you" || !!user) && (citySlug === "all" || cities.length > 0),
+    enabled:
+      (tab === "for-you" || !!user) &&
+      (citySlug === "all" || cities.length > 0) &&
+      (!topic || topicIdsQuery.isSuccess),
     queryFn: async ({ pageParam }) => {
       if (tab === "following") {
-        return await listFollowingWorks({
+        const res = await listFollowingWorks({
           data: {
             limit: PAGE_SIZE,
             cursor: pageParam,
@@ -308,6 +410,9 @@ function GalleryPage() {
             q,
           },
         });
+        if (!topicWorkIds) return res;
+        const allow = new Set(topicWorkIds);
+        return { ...res, works: res.works.filter((w) => allow.has(w.id)) };
       }
       if (tab === "favorites") {
         if (!user) return { works: [], nextCursor: null };
@@ -318,6 +423,8 @@ function GalleryPage() {
           subject,
           citySlug,
           cityIdMap,
+          cityAuthorIds,
+          topicWorkIds,
           q,
           cursor: pageParam,
           blockedIds: Array.from(blockedIds),
@@ -329,6 +436,8 @@ function GalleryPage() {
         subject,
         citySlug,
         cityIdMap,
+        cityAuthorIds,
+        topicWorkIds,
         sort,
         q,
         cursor: pageParam,
@@ -337,6 +446,7 @@ function GalleryPage() {
     },
     getNextPageParam: (last) => last.nextCursor,
   });
+
 
   const pages = queryResult.data?.pages ?? [];
   const flatWorks = pages.flatMap((p) => p.works);
@@ -379,32 +489,49 @@ function GalleryPage() {
     defaultCity,
   });
 
-  const categoryTabs: { id: string; label: string }[] = [
-    { id: "all", label: "All" },
-    ...FIELD_FILTER_OPTIONS.map((c) => ({ id: c.id as string, label: c.label })),
-  ];
-
   // Category is scoped to the selected Field; Subject stays a flat discovery cue.
   const kindOptions = category === "all" ? [] : categoriesForField(category);
 
+  const cityPickerOptions = useMemo(
+    () => cities.map((c) => ({ value: c.slug, label: c.name, count: c.count, hint: c.country })),
+    [cities],
+  );
+
   const showFeatured =
-    tab === "for-you" && category === "all" && kind === "all" && subject === "all" && !q.trim();
+    tab === "for-you" &&
+    category === "all" &&
+    kind === "all" &&
+    subject === "all" &&
+    !topic &&
+    !q.trim();
+
+  const moreCount = (kind !== "all" ? 1 : 0) + (subject !== "all" ? 1 : 0) + (topic ? 1 : 0);
 
   const filtersActive =
     category !== "all" ||
     kind !== "all" ||
     subject !== "all" ||
     citySlug !== "all" ||
+    topic.length > 0 ||
     sort !== "recent" ||
     q.trim().length > 0;
 
   const clearAll = () => {
-    setQInput("");
     navigate({
-      search: { q: "", tab, cat: "all", kind: "all", subject: "all", city: "all", sort: "recent" },
+      search: {
+        q: "",
+        tab,
+        cat: "all",
+        kind: "all",
+        subject: "all",
+        city: "all",
+        topic: "",
+        sort: "recent",
+      },
       replace: true,
     });
   };
+
 
   return (
     <main className="pb-mobile-island">
@@ -433,44 +560,62 @@ function GalleryPage() {
             </Link>
           </div>
 
+          {/* Lens tabs — navigation, not a filter, so the sticky bar stays one line */}
+          <div className="mt-3 flex items-center gap-2 overflow-x-auto no-scrollbar">
+            <FilterToggleGroup
+              className="h-9"
+              value={tab}
+              onChange={(t) => {
+                if (t !== "for-you" && !user) {
+                  navigate({ to: "/login" });
+                  return;
+                }
+                setSearch({ tab: t });
+              }}
+              options={[
+                { value: "for-you" as const, label: "For you" },
+                { value: "following" as const, label: "Following" },
+                { value: "favorites" as const, label: "Favorites" },
+              ]}
+            />
+          </div>
+
           {/* Personal groups rail (self-hides when empty) */}
           <YourGroupsStrip variant="inline" className="mt-3" />
         </div>
       </section>
 
-      {/* Sticky one-row toolbar */}
-      <FilterHeader stack>
-        <div className="relative flex items-center gap-2">
-          {/* Tabs (desktop) — the primary lens sits first */}
-          <FilterToggleGroup
-            className="hidden h-9 lg:flex"
-            value={tab}
-            onChange={(t) => {
-              if (t !== "for-you" && !user) {
-                navigate({ to: "/login" });
-                return;
-              }
-              setSearch({ tab: t });
-            }}
-            options={[
-              { value: "for-you" as const, label: "For you" },
-              { value: "following" as const, label: "Following" },
-              { value: "favorites" as const, label: "Favorites" },
-            ]}
+      {/* Sticky filter header — same primitive as Blog, Groups and Collabs */}
+      <FilterHeader>
+        <FilterSearch
+          value={q}
+          onChange={(next) => setSearch({ q: next })}
+          label="Search Gallery"
+          placeholder="Search works by title or description…"
+        />
+
+        <FilterControls>
+          <FilterSelect
+            label="Filter by medium"
+            width="min-w-[11rem]"
+            value={category}
+            onChange={(v) => setSearch({ cat: v, kind: "all" })}
+          >
+            <option value="all">All mediums</option>
+            {FIELD_FILTER_OPTIONS.map((c) => (
+              <option key={c.id as string} value={c.id as string}>
+                {c.label}
+              </option>
+            ))}
+          </FilterSelect>
+
+          <FilterCityPicker
+            value={citySlug === "all" ? "" : citySlug}
+            onChange={(slug) => setSearch({ city: slug || "all" })}
+            options={cityPickerOptions}
           />
 
-          {/* Field chips — single scrolling line + overflow menu */}
-          <div className="min-w-0 flex-1">
-            <CategoryScroller
-              tabs={categoryTabs}
-              value={category}
-              onChange={(v) => setSearch({ cat: v, kind: "all" })}
-            />
-          </div>
-
-          {/* Sort */}
           <FilterToggleGroup
-            className="hidden h-9 sm:flex"
             value={sort}
             onChange={(s) => setSearch({ sort: s })}
             options={[
@@ -479,159 +624,66 @@ function GalleryPage() {
             ]}
           />
 
-          {/* City filter */}
-          <div className="hidden shrink-0 md:block">
-            <GalleryCityFilter
-              cities={cities}
-              value={citySlug}
-              onChange={(slug) => setSearch({ city: slug })}
-            />
-          </div>
-
-          {/* Search toggle */}
-          <button
-            onClick={() => setSearchOpen((v) => !v)}
-            className={cn(
-              "shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-full border border-border bg-surface text-ink-soft shadow-soft transition hover:bg-muted",
-              searchOpen && "bg-ink text-background",
-            )}
-            aria-label="Search"
-          >
-            <Search className="h-4 w-4" />
-          </button>
-
-          {filtersActive && <FilterClear onClick={clearAll} className="hidden h-8 w-8 md:grid" />}
-        </div>
-
-        {/* Category (scoped to the Field) + Subject — the secondary lenses */}
-        {(kindOptions.length > 0 || subject !== "all") && (
-          <div className="mt-2 flex items-center gap-2 overflow-x-auto pb-0.5 no-scrollbar">
-            {kindOptions.length > 0 && (
-              <div className="flex shrink-0 items-center gap-1.5">
-                <span className="text-[11px] uppercase tracking-wide text-ink-muted">Category</span>
-                <button
-                  onClick={() => setSearch({ kind: "all" })}
-                  className={cn(
-                    "rounded-full border px-2.5 py-1 text-xs transition",
-                    kind === "all"
-                      ? "border-ink bg-ink text-background"
-                      : "border-border bg-surface text-ink-soft hover:bg-muted",
-                  )}
+          <FilterMore activeCount={moreCount}>
+            {topicOptions.length > 0 ? (
+              <FilterMoreSection title="Topic">
+                <FilterSelect
+                  label="Filter by topic"
+                  width="w-full"
+                  value={topic}
+                  onChange={(v) => setSearch({ topic: v })}
                 >
-                  All
-                </button>
-                {kindOptions.map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => setSearch({ kind: kind === c.id ? "all" : c.id })}
-                    className={cn(
-                      "shrink-0 rounded-full border px-2.5 py-1 text-xs transition",
-                      kind === c.id
-                        ? "border-ink bg-ink text-background"
-                        : "border-border bg-surface text-ink-soft hover:bg-muted",
-                    )}
-                  >
-                    {c.label}
-                  </button>
-                ))}
-              </div>
-            )}
-            <div className="flex shrink-0 items-center gap-1.5">
-              <span className="text-[11px] uppercase tracking-wide text-ink-muted">Subject</span>
-              <select
+                  <option value="">All topics</option>
+                  {topicOptions.map((t) => (
+                    <option key={t.slug} value={t.slug}>
+                      {t.name}
+                    </option>
+                  ))}
+                </FilterSelect>
+              </FilterMoreSection>
+            ) : null}
+
+            {kindOptions.length > 0 ? (
+              <FilterMoreSection title="Category">
+                <FilterSelect
+                  label="Filter by category"
+                  width="w-full"
+                  value={kind}
+                  onChange={(v) => setSearch({ kind: v })}
+                >
+                  <option value="all">All categories</option>
+                  {kindOptions.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.label}
+                    </option>
+                  ))}
+                </FilterSelect>
+              </FilterMoreSection>
+            ) : null}
+
+            <FilterMoreSection title="Subject">
+              <FilterSelect
+                label="Filter by subject"
+                width="w-full"
                 value={subject}
-                onChange={(e) => setSearch({ subject: e.target.value })}
-                className="rounded-full border border-border bg-surface px-2.5 py-1 text-xs text-ink-soft"
+                onChange={(v) => setSearch({ subject: v })}
               >
-                <option value="all">Any</option>
+                <option value="all">Any subject</option>
                 {SUBJECT_SUGGESTIONS.map((sug) => (
                   <option key={sug} value={sug}>
                     {sug}
                   </option>
                 ))}
-              </select>
-            </div>
-          </div>
-        )}
+              </FilterSelect>
+            </FilterMoreSection>
+          </FilterMore>
 
-        {/* Expandable search — overlays the row on desktop so it adds no height */}
-        {searchOpen && (
-          <div className="relative mt-2 md:absolute md:inset-x-4 md:top-2.5 md:z-10 md:mt-0 md:px-0">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
-            <input
-              value={qInput}
-              onChange={(e) => setQInput(e.target.value)}
-              autoFocus
-              placeholder="Search works by title or description…"
-              className="w-full rounded-full border border-border bg-surface py-2 pl-9 pr-9 text-sm text-ink placeholder:text-ink-muted shadow-soft focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-            <button
-              onClick={() => {
-                setQInput("");
-                setSearchOpen(false);
-              }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink"
-              aria-label="Close search"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        )}
+          {filtersActive ? <FilterClear onClick={clearAll} /> : null}
+        </FilterControls>
+      </FilterHeader>
 
-        {/* Mobile-only quick controls: tabs + city */}
-        <div className="mt-2 flex items-center gap-2 lg:hidden">
-          <div className="flex shrink-0 gap-1 rounded-full border border-border bg-surface p-1 shadow-soft">
-            {(["for-you", "following", "favorites"] as const).map((t) => (
-              <button
-                key={t}
-                onClick={() => {
-                  if (t !== "for-you" && !user) {
-                    navigate({ to: "/login" });
-                    return;
-                  }
-                  setSearch({ tab: t });
-                }}
-                className={cn(
-                  "rounded-full px-2.5 py-1 text-[11px] transition",
-                  tab === t ? "bg-ink text-background" : "text-ink-soft hover:bg-muted",
-                )}
-              >
-                {t === "for-you" ? "For you" : t === "following" ? "Following" : "Favorites"}
-              </button>
-            ))}
-          </div>
-          <div className="flex shrink-0 gap-1 rounded-full border border-border bg-surface p-1 shadow-soft sm:hidden">
-            {(["recent", "trending"] as const).map((s) => (
-              <button
-                key={s}
-                onClick={() => setSearch({ sort: s })}
-                className={cn(
-                  "rounded-full px-2.5 py-1 text-[11px] capitalize transition",
-                  sort === s ? "bg-ink text-background" : "text-ink-soft hover:bg-muted",
-                )}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-          <div className="ml-auto shrink-0 md:hidden">
-            <GalleryCityFilter
-              cities={cities}
-              value={citySlug}
-              onChange={(slug) => setSearch({ city: slug })}
-            />
-          </div>
-          {filtersActive && (
-            <button
-              onClick={clearAll}
-              className="shrink-0 rounded-full px-2 py-1 text-[11px] text-ink-muted hover:text-ink md:hidden"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-
-        {/* Geo banner — inline, only when actionable */}
+      {/* Geo banner — inline, only when actionable */}
+      <div className="mx-auto max-w-7xl px-4 md:px-6">
         <GeoDefaultBanner
           defaultCity={defaultCity}
           isOnDefault={!!defaultCity && citySlug === defaultCity.slug}
@@ -639,7 +691,8 @@ function GalleryPage() {
           onApply={(city) => setSearch({ city: city.slug })}
           onWorldwide={() => setSearch({ city: "all" })}
         />
-      </FilterHeader>
+      </div>
+
 
       {/* Editorial lead-in — only on the default, unfiltered view */}
       {showFeatured && (
