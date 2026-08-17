@@ -29,7 +29,7 @@ export const EVENT_FIELDS =
 
 /** Lean column list for cards / lists. */
 export const EVENT_CARD_FIELDS =
-  "id,group_id,slug,title,tagline,kind,format,cover_url,accent_color,starts_at,ends_at,timezone,venue_name,venue_address,venue_city_id,online_url,capacity,going_count,maybe_count,status,visibility,featured_at,pinned_at,is_recurring,recurrence_label,series_key,short_code,published_at,archived_at";
+  "id,group_id,slug,title,tagline,kind,format,cover_url,accent_color,starts_at,ends_at,timezone,venue_name,venue_address,venue_city_id,online_url,capacity,going_count,maybe_count,status,visibility,featured_at,pinned_at,is_recurring,recurrence_label,series_key,short_code,published_at,archived_at,daypart,min_age,facilitation,drop_in_allowed";
 
 export const GROUP_JOIN =
   "group:groups!group_events_group_id_fkey!inner(id,slug,name,avatar_url,kind,accent_color,visibility,deleted_at)";
@@ -106,6 +106,8 @@ export type DiscoveryFilters = {
   groupIds?: string[] | null;
   /** Restrict to an event kind. */
   kind?: string | null;
+  /** Co-working: restrict to a part of the day. */
+  daypart?: string | null;
   format?: EventFormatFilter;
   /** Only events marked featured. */
   featuredOnly?: boolean;
@@ -142,6 +144,7 @@ export async function listDiscoveryEvents(
     groupId = null,
     groupIds = null,
     kind = null,
+    daypart = null,
     format = "all",
     featuredOnly = false,
     after = null,
@@ -197,6 +200,7 @@ export async function listDiscoveryEvents(
   if (groupId) q = q.eq("group_id", groupId);
   if (groupIds && groupIds.length > 0) q = q.in("group_id", groupIds);
   if (kind) q = q.eq("kind", kind);
+  if (daypart) q = q.eq("daypart", daypart);
   if (featuredOnly) q = q.not("featured_at", "is", null);
 
   const { data, error } = await q.limit(limit);
