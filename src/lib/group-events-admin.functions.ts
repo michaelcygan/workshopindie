@@ -385,7 +385,7 @@ export const updateEvent = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertAdmin(supabase, userId);
-    const { id, featured, pinned, extra_group_ids: _extra, ...rest } = data;
+    const { id, featured, pinned, extra_group_ids: _extra, venue_policy_confirmed, ...rest } = data;
     void _extra;
     const patch: Record<string, unknown> = { ...rest };
     if (typeof featured === "boolean") {
@@ -394,16 +394,42 @@ export const updateEvent = createServerFn({ method: "POST" })
     if (typeof pinned === "boolean") {
       patch.pinned_at = pinned ? new Date().toISOString() : null;
     }
+    const { data: currentRow } = await supabase
+      .from("group_events")
+      .select(
+        "title,kind,format,starts_at,ends_at,timezone,venue_name,venue_address,online_url,external_url,published_at,status,capacity,overflow,workshop_venue_key,venue_policy_confirmed_at",
+      )
+      .eq("id", id)
+      .maybeSingle();
+    const current = (currentRow ?? {}) as Record<string, unknown>;
+
+    // Venue + capacity policy is re-evaluated against the merged row, so a
+    // partial patch can never sneak past the venue's published group policy.
+    {
+      const merged = { ...current, ...rest } as Record<string, unknown>;
+      const confirmed =
+        venue_policy_confirmed ?? Boolean(current.venue_policy_confirmed_at);
+      const { key } = reconcileVenue({
+        workshop_venue_key: (merged.workshop_venue_key as string | null) ?? null,
+        venue_name: (merged.venue_name as string | null) ?? null,
+        venue_address: (merged.venue_address as string | null) ?? null,
+        capacity: (merged.capacity as number | null) ?? null,
+        overflow: (merged.overflow as number | null) ?? 0,
+        venue_policy_confirmed: confirmed,
+        status: (merged.status as string) ?? "draft",
+      });
+      patch.workshop_venue_key = key;
+      if (typeof venue_policy_confirmed === "boolean") {
+        patch.venue_policy_confirmed_at = venue_policy_confirmed
+          ? (current.venue_policy_confirmed_at ?? new Date().toISOString())
+          : null;
+        patch.venue_policy_confirmed_by = venue_policy_confirmed ? userId : null;
+      }
+    }
+
     // Moving a draft to scheduled through the editor publishes it.
     if (rest.status === "scheduled") {
-      const { data: current } = await supabase
-        .from("group_events")
-        .select(
-          "title,kind,format,starts_at,ends_at,timezone,venue_name,venue_address,online_url,external_url,published_at",
-        )
-        .eq("id", id)
-        .maybeSingle();
-      const merged = { ...(current ?? {}), ...rest } as Parameters<typeof assertPublishable>[0] & {
+      const merged = { ...current, ...rest } as Parameters<typeof assertPublishable>[0] & {
         published_at?: string | null;
       };
       assertPublishable(merged);
@@ -413,6 +439,7 @@ export const updateEvent = createServerFn({ method: "POST" })
     if (rest.status === "draft") {
       patch.published_at = null;
     }
+
     const { error } = await supabase
       .from("group_events")
       .update(patch as never)
