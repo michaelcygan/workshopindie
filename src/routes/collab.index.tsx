@@ -331,16 +331,7 @@ function CollabPage() {
         <div className="min-w-0">
           <h1 className="font-display text-3xl text-ink md:text-4xl">Collab Board</h1>
           <p className="mt-1 text-sm text-ink-muted">
-            What people are trying to make. Help out — or open live audio on yours.
-            {livePosts.length > 0 ? (
-              <span className="ml-2 inline-flex items-center gap-1.5 text-primary">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
-                </span>
-                {livePosts.length} live now
-              </span>
-            ) : null}
+            What people are trying to make. Help out — or post your own.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
