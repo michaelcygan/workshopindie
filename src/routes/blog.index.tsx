@@ -1,9 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { X } from "lucide-react";
 
 import { BlogMastheadActions } from "@/components/blog/blog-masthead-actions";
 import { BlogSearch } from "@/components/blog/blog-search";
+import {
+  FilterClear,
+  FilterControls,
+  FilterHeader,
+  FilterSelect,
+} from "@/components/filter-header";
 import { PublicFeaturedStories } from "@/components/home/public-featured-stories";
+
 import {
   BlogArchive,
   BlogLatestStories,
@@ -110,9 +116,6 @@ function Masthead() {
   );
 }
 
-const PILL =
-  "h-10 shrink-0 rounded-full border border-border bg-surface px-3.5 text-[13px] text-ink-soft outline-none transition-colors hover:border-ink/40 focus:border-ink/50";
-
 /** Search on the left, Topic · Medium · clear on the right. */
 function ControlRow({
   search,
@@ -125,49 +128,38 @@ function ControlRow({
 }) {
   const active = !!(search.topic || search.medium);
   return (
-    <div className="sticky top-11 z-30 border-b border-border bg-background/80 backdrop-blur-md md:top-14">
-      <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-2.5 md:flex-row md:items-center md:justify-between md:px-6">
-        <BlogSearch />
-        <div className="flex items-center gap-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <select
-            aria-label="Filter by topic"
-            className={`${PILL} min-w-[13rem]`}
-            value={search.topic ?? ""}
-            onChange={(e) => onChange({ topic: e.target.value || undefined })}
-          >
-            <option value="">All topics</option>
-            {topics.map((t) => (
-              <option key={t.slug} value={t.slug}>
-                {t.name}
-              </option>
-            ))}
-          </select>
-          <select
-            aria-label="Filter by medium"
-            className={`${PILL} min-w-[13rem]`}
-            value={search.medium ?? ""}
-            onChange={(e) => onChange({ medium: e.target.value || undefined })}
-          >
-            <option value="">All mediums</option>
-            {MEDIUM_LIST.map((m) => (
-              <option key={m.fieldId} value={m.fieldId}>
-                {m.label}
-              </option>
-            ))}
-          </select>
-          {active ? (
-            <button
-              type="button"
-              aria-label="Clear filters"
-              onClick={() => onChange({ topic: undefined, medium: undefined })}
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border bg-surface text-ink-muted transition-colors hover:border-ink/40 hover:text-ink"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          ) : null}
-        </div>
-      </div>
-    </div>
+    <FilterHeader>
+      <BlogSearch />
+      <FilterControls>
+        <FilterSelect
+          label="Filter by topic"
+          value={search.topic ?? ""}
+          onChange={(v) => onChange({ topic: v || undefined })}
+        >
+          <option value="">All topics</option>
+          {topics.map((t) => (
+            <option key={t.slug} value={t.slug}>
+              {t.name}
+            </option>
+          ))}
+        </FilterSelect>
+        <FilterSelect
+          label="Filter by medium"
+          value={search.medium ?? ""}
+          onChange={(v) => onChange({ medium: v || undefined })}
+        >
+          <option value="">All mediums</option>
+          {MEDIUM_LIST.map((m) => (
+            <option key={m.fieldId} value={m.fieldId}>
+              {m.label}
+            </option>
+          ))}
+        </FilterSelect>
+        {active ? (
+          <FilterClear onClick={() => onChange({ topic: undefined, medium: undefined })} />
+        ) : null}
+      </FilterControls>
+    </FilterHeader>
   );
 }
 

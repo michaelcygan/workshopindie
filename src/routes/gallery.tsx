@@ -14,6 +14,8 @@ import { WORK_CARD_SELECT, toWorkCard, type WorkCardRow } from "@/lib/work-card-
 import { SUBJECT_SUGGESTIONS } from "@/lib/work-tags";
 import { CategoryScroller } from "@/components/category-scroller";
 import { GalleryCityFilter, type CityOption } from "@/components/gallery-city-filter";
+import { FilterClear, FilterHeader, FilterToggleGroup } from "@/components/filter-header";
+
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { listFollowingWorks } from "@/lib/gallery.functions";
@@ -437,227 +439,207 @@ function GalleryPage() {
       </section>
 
       {/* Sticky one-row toolbar */}
-      <div className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur md:top-14">
-        <div className="relative mx-auto max-w-7xl px-4 py-2.5 md:px-6">
-          <div className="relative flex items-center gap-2">
-            {/* Tabs (desktop) — the primary lens sits first */}
-            <div className="hidden shrink-0 gap-1 rounded-full border border-border bg-surface p-1 shadow-soft lg:flex">
-              {(["for-you", "following", "favorites"] as const).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => {
-                    if (t !== "for-you" && !user) {
-                      navigate({ to: "/login" });
-                      return;
-                    }
-                    setSearch({ tab: t });
-                  }}
-                  className={cn(
-                    "rounded-full px-3 py-1 text-xs transition",
-                    tab === t ? "bg-ink text-background" : "text-ink-soft hover:bg-muted",
-                  )}
-                >
-                  {t === "for-you" ? "For you" : t === "following" ? "Following" : "Favorites"}
-                </button>
-              ))}
-            </div>
+      <FilterHeader stack>
+        <div className="relative flex items-center gap-2">
+          {/* Tabs (desktop) — the primary lens sits first */}
+          <FilterToggleGroup
+            className="hidden h-9 lg:flex"
+            value={tab}
+            onChange={(t) => {
+              if (t !== "for-you" && !user) {
+                navigate({ to: "/login" });
+                return;
+              }
+              setSearch({ tab: t });
+            }}
+            options={[
+              { value: "for-you" as const, label: "For you" },
+              { value: "following" as const, label: "Following" },
+              { value: "favorites" as const, label: "Favorites" },
+            ]}
+          />
 
-            {/* Field chips — single scrolling line + overflow menu */}
-            <div className="min-w-0 flex-1">
-              <CategoryScroller
-                tabs={categoryTabs}
-                value={category}
-                onChange={(v) => setSearch({ cat: v, kind: "all" })}
-              />
-            </div>
-
-            {/* Sort */}
-            <div className="hidden shrink-0 gap-1 rounded-full border border-border bg-surface p-1 shadow-soft sm:flex">
-              {(["recent", "trending"] as const).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setSearch({ sort: s })}
-                  className={cn(
-                    "rounded-full px-3 py-1 text-xs capitalize transition",
-                    sort === s ? "bg-ink text-background" : "text-ink-soft hover:bg-muted",
-                  )}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-
-            {/* City filter */}
-            <div className="hidden shrink-0 md:block">
-              <GalleryCityFilter
-                cities={cities}
-                value={citySlug}
-                onChange={(slug) => setSearch({ city: slug })}
-              />
-            </div>
-
-            {/* Search toggle */}
-            <button
-              onClick={() => setSearchOpen((v) => !v)}
-              className={cn(
-                "shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-full border border-border bg-surface text-ink-soft shadow-soft transition hover:bg-muted",
-                searchOpen && "bg-ink text-background",
-              )}
-              aria-label="Search"
-            >
-              <Search className="h-4 w-4" />
-            </button>
-
-            {filtersActive && (
-              <button
-                onClick={clearAll}
-                className="hidden shrink-0 rounded-full px-2.5 py-1 text-xs text-ink-muted hover:text-ink md:inline"
-              >
-                Clear
-              </button>
-            )}
+          {/* Field chips — single scrolling line + overflow menu */}
+          <div className="min-w-0 flex-1">
+            <CategoryScroller
+              tabs={categoryTabs}
+              value={category}
+              onChange={(v) => setSearch({ cat: v, kind: "all" })}
+            />
           </div>
 
-          {/* Category (scoped to the Field) + Subject — the secondary lenses */}
-          {(kindOptions.length > 0 || subject !== "all") && (
-            <div className="mt-2 flex items-center gap-2 overflow-x-auto pb-0.5 no-scrollbar">
-              {kindOptions.length > 0 && (
-                <div className="flex shrink-0 items-center gap-1.5">
-                  <span className="text-[11px] uppercase tracking-wide text-ink-muted">
-                    Category
-                  </span>
+          {/* Sort */}
+          <FilterToggleGroup
+            className="hidden h-9 sm:flex"
+            value={sort}
+            onChange={(s) => setSearch({ sort: s })}
+            options={[
+              { value: "recent" as const, label: "Recent" },
+              { value: "trending" as const, label: "Trending" },
+            ]}
+          />
+
+          {/* City filter */}
+          <div className="hidden shrink-0 md:block">
+            <GalleryCityFilter
+              cities={cities}
+              value={citySlug}
+              onChange={(slug) => setSearch({ city: slug })}
+            />
+          </div>
+
+          {/* Search toggle */}
+          <button
+            onClick={() => setSearchOpen((v) => !v)}
+            className={cn(
+              "shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-full border border-border bg-surface text-ink-soft shadow-soft transition hover:bg-muted",
+              searchOpen && "bg-ink text-background",
+            )}
+            aria-label="Search"
+          >
+            <Search className="h-4 w-4" />
+          </button>
+
+          {filtersActive && <FilterClear onClick={clearAll} className="hidden h-8 w-8 md:grid" />}
+        </div>
+
+        {/* Category (scoped to the Field) + Subject — the secondary lenses */}
+        {(kindOptions.length > 0 || subject !== "all") && (
+          <div className="mt-2 flex items-center gap-2 overflow-x-auto pb-0.5 no-scrollbar">
+            {kindOptions.length > 0 && (
+              <div className="flex shrink-0 items-center gap-1.5">
+                <span className="text-[11px] uppercase tracking-wide text-ink-muted">Category</span>
+                <button
+                  onClick={() => setSearch({ kind: "all" })}
+                  className={cn(
+                    "rounded-full border px-2.5 py-1 text-xs transition",
+                    kind === "all"
+                      ? "border-ink bg-ink text-background"
+                      : "border-border bg-surface text-ink-soft hover:bg-muted",
+                  )}
+                >
+                  All
+                </button>
+                {kindOptions.map((c) => (
                   <button
-                    onClick={() => setSearch({ kind: "all" })}
+                    key={c.id}
+                    onClick={() => setSearch({ kind: kind === c.id ? "all" : c.id })}
                     className={cn(
-                      "rounded-full border px-2.5 py-1 text-xs transition",
-                      kind === "all"
+                      "shrink-0 rounded-full border px-2.5 py-1 text-xs transition",
+                      kind === c.id
                         ? "border-ink bg-ink text-background"
                         : "border-border bg-surface text-ink-soft hover:bg-muted",
                     )}
                   >
-                    All
+                    {c.label}
                   </button>
-                  {kindOptions.map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => setSearch({ kind: kind === c.id ? "all" : c.id })}
-                      className={cn(
-                        "shrink-0 rounded-full border px-2.5 py-1 text-xs transition",
-                        kind === c.id
-                          ? "border-ink bg-ink text-background"
-                          : "border-border bg-surface text-ink-soft hover:bg-muted",
-                      )}
-                    >
-                      {c.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-              <div className="flex shrink-0 items-center gap-1.5">
-                <span className="text-[11px] uppercase tracking-wide text-ink-muted">Subject</span>
-                <select
-                  value={subject}
-                  onChange={(e) => setSearch({ subject: e.target.value })}
-                  className="rounded-full border border-border bg-surface px-2.5 py-1 text-xs text-ink-soft"
-                >
-                  <option value="all">Any</option>
-                  {SUBJECT_SUGGESTIONS.map((sug) => (
-                    <option key={sug} value={sug}>
-                      {sug}
-                    </option>
-                  ))}
-                </select>
+                ))}
               </div>
-            </div>
-          )}
-
-          {/* Expandable search — overlays the row on desktop so it adds no height */}
-          {searchOpen && (
-            <div className="relative mt-2 md:absolute md:inset-x-4 md:top-2.5 md:z-10 md:mt-0 md:px-0">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
-              <input
-                value={qInput}
-                onChange={(e) => setQInput(e.target.value)}
-                autoFocus
-                placeholder="Search works by title or description…"
-                className="w-full rounded-full border border-border bg-surface py-2 pl-9 pr-9 text-sm text-ink placeholder:text-ink-muted shadow-soft focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-              <button
-                onClick={() => {
-                  setQInput("");
-                  setSearchOpen(false);
-                }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink"
-                aria-label="Close search"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          )}
-
-          {/* Mobile-only quick controls: tabs + city */}
-          <div className="mt-2 flex items-center gap-2 lg:hidden">
-            <div className="flex shrink-0 gap-1 rounded-full border border-border bg-surface p-1 shadow-soft">
-              {(["for-you", "following", "favorites"] as const).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => {
-                    if (t !== "for-you" && !user) {
-                      navigate({ to: "/login" });
-                      return;
-                    }
-                    setSearch({ tab: t });
-                  }}
-                  className={cn(
-                    "rounded-full px-2.5 py-1 text-[11px] transition",
-                    tab === t ? "bg-ink text-background" : "text-ink-soft hover:bg-muted",
-                  )}
-                >
-                  {t === "for-you" ? "For you" : t === "following" ? "Following" : "Favorites"}
-                </button>
-              ))}
-            </div>
-            <div className="flex shrink-0 gap-1 rounded-full border border-border bg-surface p-1 shadow-soft sm:hidden">
-              {(["recent", "trending"] as const).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setSearch({ sort: s })}
-                  className={cn(
-                    "rounded-full px-2.5 py-1 text-[11px] capitalize transition",
-                    sort === s ? "bg-ink text-background" : "text-ink-soft hover:bg-muted",
-                  )}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-            <div className="ml-auto shrink-0 md:hidden">
-              <GalleryCityFilter
-                cities={cities}
-                value={citySlug}
-                onChange={(slug) => setSearch({ city: slug })}
-              />
-            </div>
-            {filtersActive && (
-              <button
-                onClick={clearAll}
-                className="shrink-0 rounded-full px-2 py-1 text-[11px] text-ink-muted hover:text-ink md:hidden"
-              >
-                Clear
-              </button>
             )}
+            <div className="flex shrink-0 items-center gap-1.5">
+              <span className="text-[11px] uppercase tracking-wide text-ink-muted">Subject</span>
+              <select
+                value={subject}
+                onChange={(e) => setSearch({ subject: e.target.value })}
+                className="rounded-full border border-border bg-surface px-2.5 py-1 text-xs text-ink-soft"
+              >
+                <option value="all">Any</option>
+                {SUBJECT_SUGGESTIONS.map((sug) => (
+                  <option key={sug} value={sug}>
+                    {sug}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
+        )}
 
-          {/* Geo banner — inline, only when actionable */}
-          <GeoDefaultBanner
-            defaultCity={defaultCity}
-            isOnDefault={!!defaultCity && citySlug === defaultCity.slug}
-            isWorldwide={citySlug === "all"}
-            onApply={(city) => setSearch({ city: city.slug })}
-            onWorldwide={() => setSearch({ city: "all" })}
-          />
+        {/* Expandable search — overlays the row on desktop so it adds no height */}
+        {searchOpen && (
+          <div className="relative mt-2 md:absolute md:inset-x-4 md:top-2.5 md:z-10 md:mt-0 md:px-0">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
+            <input
+              value={qInput}
+              onChange={(e) => setQInput(e.target.value)}
+              autoFocus
+              placeholder="Search works by title or description…"
+              className="w-full rounded-full border border-border bg-surface py-2 pl-9 pr-9 text-sm text-ink placeholder:text-ink-muted shadow-soft focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            <button
+              onClick={() => {
+                setQInput("");
+                setSearchOpen(false);
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink"
+              aria-label="Close search"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Mobile-only quick controls: tabs + city */}
+        <div className="mt-2 flex items-center gap-2 lg:hidden">
+          <div className="flex shrink-0 gap-1 rounded-full border border-border bg-surface p-1 shadow-soft">
+            {(["for-you", "following", "favorites"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => {
+                  if (t !== "for-you" && !user) {
+                    navigate({ to: "/login" });
+                    return;
+                  }
+                  setSearch({ tab: t });
+                }}
+                className={cn(
+                  "rounded-full px-2.5 py-1 text-[11px] transition",
+                  tab === t ? "bg-ink text-background" : "text-ink-soft hover:bg-muted",
+                )}
+              >
+                {t === "for-you" ? "For you" : t === "following" ? "Following" : "Favorites"}
+              </button>
+            ))}
+          </div>
+          <div className="flex shrink-0 gap-1 rounded-full border border-border bg-surface p-1 shadow-soft sm:hidden">
+            {(["recent", "trending"] as const).map((s) => (
+              <button
+                key={s}
+                onClick={() => setSearch({ sort: s })}
+                className={cn(
+                  "rounded-full px-2.5 py-1 text-[11px] capitalize transition",
+                  sort === s ? "bg-ink text-background" : "text-ink-soft hover:bg-muted",
+                )}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+          <div className="ml-auto shrink-0 md:hidden">
+            <GalleryCityFilter
+              cities={cities}
+              value={citySlug}
+              onChange={(slug) => setSearch({ city: slug })}
+            />
+          </div>
+          {filtersActive && (
+            <button
+              onClick={clearAll}
+              className="shrink-0 rounded-full px-2 py-1 text-[11px] text-ink-muted hover:text-ink md:hidden"
+            >
+              Clear
+            </button>
+          )}
         </div>
-      </div>
+
+        {/* Geo banner — inline, only when actionable */}
+        <GeoDefaultBanner
+          defaultCity={defaultCity}
+          isOnDefault={!!defaultCity && citySlug === defaultCity.slug}
+          isWorldwide={citySlug === "all"}
+          onApply={(city) => setSearch({ city: city.slug })}
+          onWorldwide={() => setSearch({ city: "all" })}
+        />
+      </FilterHeader>
 
       {/* Editorial lead-in — only on the default, unfiltered view */}
       {showFeatured && (

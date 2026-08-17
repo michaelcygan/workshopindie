@@ -13,6 +13,12 @@ import { COLLAB_CARD_SELECT } from "@/lib/collab/card-select";
 
 import { CategoryScroller } from "@/components/category-scroller";
 import { CityCombobox } from "@/components/city-combobox";
+import {
+  FILTER_ROW_SCROLL,
+  FilterClear,
+  FilterHeader,
+  FilterPillToggle,
+} from "@/components/filter-header";
 
 import { FIELD_FILTER_OPTIONS, canonicalFilterValues, normalizeCategory } from "@/lib/taxonomy";
 
@@ -28,13 +34,18 @@ import { useGroupTagsFor, rerankByMyGroups } from "@/hooks/use-group-tags";
 import { PageHeaderCompact } from "@/components/page-header-compact";
 import { KickerChip } from "@/components/kicker-chip";
 
-
-
 const searchSchema = z.object({
   // Free string so legacy links (?cat=film / visual / build) still resolve; normalized below.
   cat: fallback(z.string(), "all").default("all"),
-  city: z.string().uuid().catch(undefined as unknown as string).optional(),
-  cityName: z.string().catch(undefined as unknown as string).optional(),
+  city: z
+    .string()
+    .uuid()
+    .catch(undefined as unknown as string)
+    .optional(),
+  cityName: z
+    .string()
+    .catch(undefined as unknown as string)
+    .optional(),
   online: fallback(z.boolean(), false).default(false),
 });
 
@@ -44,9 +55,16 @@ export const Route = createFileRoute("/collab/")({
   head: () => ({
     meta: [
       { title: "Collab Board — Workshop" },
-      { name: "description", content: "Things people are trying to make. Help out, or post your own and open live audio on it." },
+      {
+        name: "description",
+        content:
+          "Things people are trying to make. Help out, or post your own and open live audio on it.",
+      },
       { property: "og:title", content: "Collab Board — Workshop" },
-      { property: "og:description", content: "Things people are trying to make. Help out, or post your own." },
+      {
+        property: "og:description",
+        content: "Things people are trying to make. Help out, or post your own.",
+      },
       { property: "og:url", content: "https://workshopindie.com/collab" },
       { property: "og:type", content: "website" },
     ],
@@ -78,7 +96,11 @@ async function fetchPosts({ cat, city, online, blockedIds }: Filters & { blocked
     .from("collab_posts")
     .select(COLLAB_CARD_SELECT)
 
-    .is("archived_at", null).not("status", "in", NON_PUBLIC_STATUSES).is("resulting_work_id", null).eq("applications_open", true).or(RECRUITING_DEADLINE_OR())
+    .is("archived_at", null)
+    .not("status", "in", NON_PUBLIC_STATUSES)
+    .is("resulting_work_id", null)
+    .eq("applications_open", true)
+    .or(RECRUITING_DEADLINE_OR())
     .or(`ends_on.is.null,ends_on.gte.${new Date().toISOString().slice(0, 10)}`)
     .order("created_at", { ascending: false })
     .limit(60);
@@ -94,26 +116,24 @@ async function fetchPosts({ cat, city, online, blockedIds }: Filters & { blocked
   const { data, error } = await q;
   if (error) throw error;
   const blocked = new Set(blockedIds);
-  const rows = ((data ?? []) as unknown as (CollabCardData & { user_id: string })[])
-    .filter((r) => !blocked.has(r.user_id)) as CollabCardData[];
+  const rows = ((data ?? []) as unknown as (CollabCardData & { user_id: string })[]).filter(
+    (r) => !blocked.has(r.user_id),
+  ) as CollabCardData[];
 
   // Light blended sort: newest first, gentle lift for posts that are more open
   // (more roles listed, or accepting suggestions). Deterministic and readable.
-  return rows
-    .slice()
-    .sort((a, b) => {
-      const ta = new Date(a.created_at).getTime();
-      const tb = new Date(b.created_at).getTime();
-      const openness = (r: CollabCardData) =>
-        (r.roles?.length ?? 0) + (r.accepts_suggestions ? 1 : 0);
-      const ra = openness(a) * 1000 * 60 * 60 * 6;
-      const rb = openness(b) * 1000 * 60 * 60 * 6;
-      return tb + rb - (ta + ra);
-    });
+  return rows.slice().sort((a, b) => {
+    const ta = new Date(a.created_at).getTime();
+    const tb = new Date(b.created_at).getTime();
+    const openness = (r: CollabCardData) =>
+      (r.roles?.length ?? 0) + (r.accepts_suggestions ? 1 : 0);
+    const ra = openness(a) * 1000 * 60 * 60 * 6;
+    const rb = openness(b) * 1000 * 60 * 60 * 6;
+    return tb + rb - (ta + ra);
+  });
 }
 
 // City filtering uses the shared, ranked CityCombobox (see components/city-combobox).
-
 
 function CollabPage() {
   const search = Route.useSearch();
@@ -149,7 +169,6 @@ function CollabPage() {
 
   // Live Collabs (have a running Lounge)
   const livePosts = useMemo(() => (posts ?? []).filter((p) => !!p.live_workshop_id), [posts]);
-
 
   const tabs = useMemo(
     () => [
@@ -226,52 +245,79 @@ function CollabPage() {
         )}
       </div>
 
-      {/* Unified filter cluster — medium + location on one line */}
-      <div className="mx-auto mt-5 max-w-5xl space-y-2.5">
-        <div className="min-w-0">
-          <CategoryScroller tabs={tabs} value={filters.cat} onChange={setCat} className="w-full" />
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex min-w-[16rem] flex-1 items-center gap-2">
-
+      {/* Sticky filter header */}
+      <FilterHeader inset stack className="mt-4">
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <CategoryScroller
+              tabs={tabs}
+              value={filters.cat}
+              onChange={setCat}
+              className="w-full"
+            />
+          </div>
+          <div className="hidden min-w-[15rem] shrink-0 md:block">
             <CityCombobox
               value={
-                filters.city
-                  ? { id: filters.city, name: search.cityName ?? "Selected city" }
-                  : null
+                filters.city ? { id: filters.city, name: search.cityName ?? "Selected city" } : null
               }
               onChange={(next) => setCity({ id: next?.id, name: next?.name })}
               disabled={filters.online}
             />
-
-            <button
-              type="button"
-              onClick={toggleOnline}
-              className={cn(
-                "h-11 shrink-0 rounded-full border px-4 text-sm font-medium transition shadow-soft",
-                filters.online
-                  ? "border-transparent bg-ink text-background"
-                  : "border-border bg-surface text-ink-soft hover:bg-muted",
-              )}
-              aria-pressed={filters.online}
-              aria-label="Toggle online-only Collabs"
-            >
-              Online only
-            </button>
-            {filters.city && !filters.online && (
-              <button
-                type="button"
-                onClick={() => setCity({ id: undefined, name: undefined })}
-                className="h-11 shrink-0 rounded-full border border-border bg-surface px-4 text-sm font-medium text-ink-soft shadow-soft transition hover:bg-muted"
-              >
-                Worldwide
-              </button>
-            )}
           </div>
+          <FilterPillToggle
+            active={filters.online}
+            onClick={toggleOnline}
+            label="Toggle online-only Collabs"
+            className="hidden sm:inline-flex"
+          >
+            Online only
+          </FilterPillToggle>
+          {(filters.online || filters.city || filters.cat !== "all") && (
+            <FilterClear
+              onClick={() =>
+                navigate({
+                  search: () => ({ cat: "all", online: false }),
+                  replace: true,
+                })
+              }
+            />
+          )}
         </div>
 
+        <div className={cn(FILTER_ROW_SCROLL, "mt-2 md:hidden")}>
+          <div className="min-w-[14rem] flex-1">
+            <CityCombobox
+              value={
+                filters.city ? { id: filters.city, name: search.cityName ?? "Selected city" } : null
+              }
+              onChange={(next) => setCity({ id: next?.id, name: next?.name })}
+              disabled={filters.online}
+            />
+          </div>
+          <FilterPillToggle
+            active={filters.online}
+            onClick={toggleOnline}
+            label="Toggle online-only Collabs"
+            className="sm:hidden"
+          >
+            Online only
+          </FilterPillToggle>
+        </div>
+      </FilterHeader>
+
+      <div className="mt-3 space-y-1">
         {defaultCity && filters.city === defaultCity.id && defaultCity.source === "ip" && (
-          <p className="px-1 text-xs text-ink-muted">Based on your location · <button type="button" onClick={() => setCity({ id: undefined, name: undefined })} className="underline underline-offset-2 hover:text-ink">see worldwide</button></p>
+          <p className="px-1 text-xs text-ink-muted">
+            Based on your location ·{" "}
+            <button
+              type="button"
+              onClick={() => setCity({ id: undefined, name: undefined })}
+              className="underline underline-offset-2 hover:text-ink"
+            >
+              see worldwide
+            </button>
+          </p>
         )}
         {!filters.city && !filters.online && defaultCity && (
           <p className="px-1 text-xs text-ink-muted">
@@ -308,8 +354,12 @@ function CollabPage() {
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
                   </span>
-                  <span className="text-[11px] font-medium uppercase tracking-wide text-primary">Live</span>
-                  <span className="ml-auto text-[11px] text-ink-muted">{p.user?.display_name ?? p.user?.username ?? "Host"}</span>
+                  <span className="text-[11px] font-medium uppercase tracking-wide text-primary">
+                    Live
+                  </span>
+                  <span className="ml-auto text-[11px] text-ink-muted">
+                    {p.user?.display_name ?? p.user?.username ?? "Host"}
+                  </span>
                 </div>
                 <div className="font-display text-base text-ink line-clamp-2">{p.title}</div>
               </Link>
@@ -317,7 +367,6 @@ function CollabPage() {
           </div>
         </div>
       )}
-
 
       <div className="mt-10">
         <div className="mb-3 flex items-center gap-3 px-1">
@@ -333,7 +382,9 @@ function CollabPage() {
         ) : !posts || posts.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border bg-surface p-12 text-center">
             <h3 className="font-display text-2xl text-ink">
-              {filters.city || filters.online ? "Nothing open here yet." : "Nothing open right now."}
+              {filters.city || filters.online
+                ? "Nothing open here yet."
+                : "Nothing open right now."}
             </h3>
             <p className="mx-auto mt-2 max-w-sm text-sm text-ink-muted">
               {filters.city
@@ -347,7 +398,12 @@ function CollabPage() {
         ) : (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
             {posts.map((p) => (
-              <CollabCard key={p.id} post={p} groups={groupTagMap?.get(p.id)} myGroupIds={myGroupIds} />
+              <CollabCard
+                key={p.id}
+                post={p}
+                groups={groupTagMap?.get(p.id)}
+                myGroupIds={myGroupIds}
+              />
             ))}
           </div>
         )}
