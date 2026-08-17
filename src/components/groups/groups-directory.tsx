@@ -1,32 +1,16 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Search, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GroupCard, type GroupCardData } from "@/components/group-card";
 import { GroupsKindSwitcher, type KindTab } from "@/components/groups-kind-switcher";
 import { useGroupMemberAvatars } from "@/hooks/use-group-member-avatars";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { categoryLabel, normalizeCategory } from "@/lib/taxonomy";
 
 export const SORT_VALUES = ["featured", "members", "content", "az"] as const;
 export type GroupsSort = (typeof SORT_VALUES)[number];
 export type GroupsTab = KindTab;
-
-const SORT_LABELS: Record<GroupsSort, string> = {
-  featured: "Featured",
-  members: "Most members",
-  content: "Most content",
-  az: "A–Z",
-};
 
 const KIND_LABELS: Record<GroupCardData["kind"], string> = {
   city: "City",
@@ -122,27 +106,14 @@ type Props = {
   onReset: () => void;
   authenticated: boolean;
   myIds: Set<string>;
-  /** Section eyebrow + heading, rendered above the controls. */
-  eyebrow?: string;
-  heading?: string;
-  intro?: string;
 };
 
 /**
- * The full Groups directory: search, kind switcher, category + sort, card
- * grid and progressive Show More. Shared by the member and public surfaces;
- * all state is URL-backed and owned by the route.
+ * The Groups results grid: kind tabs, result count, cards and progressive
+ * Show More. Search / field / sort live in the sticky control row above.
  */
-export function GroupsDirectory({
-  state,
-  onChange,
-  onReset,
-  authenticated,
-  myIds,
-  eyebrow = "Explore",
-  heading = "All Groups",
-  intro,
-}: Props) {
+export function GroupsDirectory({ state, onChange, onReset, authenticated, myIds }: Props) {
+
   const { tab, query, sort } = state;
   const category = state.category === "all" ? "all" : normalizeCategory(state.category);
   const { data: allGroups = [], isLoading } = useAllPublicGroups();
@@ -158,19 +129,6 @@ export function GroupsDirectory({
     }),
     [allGroups, myIds],
   ) satisfies Record<GroupsTab, number>;
-
-  const categoryOptions = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const g of allGroups) {
-      if (!g.category) continue;
-      const c = normalizeCategory(g.category);
-      counts.set(c, (counts.get(c) ?? 0) + 1);
-    }
-    const present = Array.from(counts.entries())
-      .sort((a, b) => b[1] - a[1] || catLabel(a[0]).localeCompare(catLabel(b[0])))
-      .map(([id, count]) => ({ id, count }));
-    return [{ id: "all", count: allGroups.length }, ...present];
-  }, [allGroups]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLocaleLowerCase();
@@ -201,113 +159,38 @@ export function GroupsDirectory({
   const resultsTitle = query.trim() ? "Search results" : TITLE_BY_TAB[tab];
 
   return (
-    <section className="border-t border-border pt-8 md:pt-10">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
-        {eyebrow}
-      </p>
-      <h2 className="mt-1 font-display text-[24px] text-ink md:text-[30px]">{heading}</h2>
-      {intro && <p className="mt-2 max-w-2xl text-sm text-ink-muted">{intro}</p>}
+    <section>
+      <GroupsKindSwitcher
+        value={tab}
+        counts={kindCounts}
+        authenticated={authenticated}
+        onChange={(t) => onChange({ tab: t })}
+      />
 
-      {/* Search */}
-      <label className="mt-5 flex h-12 items-center gap-2 rounded-full border border-border bg-surface px-4">
-        <Search className="h-4 w-4 shrink-0 text-ink-muted" aria-hidden />
-        <span className="sr-only">Search groups</span>
-        <input
-          value={query}
-          onChange={(e) => onChange({ query: e.target.value })}
-          placeholder="Search groups, cities, scenes, or languages…"
-          aria-label="Search groups"
-          className="min-w-0 flex-1 bg-transparent text-sm text-ink placeholder:text-ink-muted/70 focus:outline-none"
-        />
-        {query && (
-          <button
-            type="button"
-            onClick={() => onChange({ query: "" })}
-            aria-label="Clear search"
-            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ink-muted transition hover:bg-muted hover:text-ink"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        )}
-      </label>
-
-      <div className="mt-3">
-        <GroupsKindSwitcher
-          value={tab}
-          counts={kindCounts}
-          authenticated={authenticated}
-          onChange={(t) => onChange({ tab: t })}
-        />
-      </div>
-
-      <div className="mt-6 flex flex-wrap items-end justify-between gap-3">
+      <div className="mt-5 flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="font-display text-lg text-ink md:text-xl">{resultsTitle}</h3>
+          <h2 className="font-display text-lg text-ink md:text-xl">{resultsTitle}</h2>
           <p className="mt-0.5 text-sm text-ink-muted">
             {isLoading
               ? "Loading…"
               : `${filtered.length.toLocaleString()} ${filtered.length === 1 ? "result" : "results"}`}
+            {category !== "all" ? ` · ${catLabel(category)}` : ""}
+            {query.trim() ? ` · “${query.trim()}”` : ""}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {tab !== "city" && (
-            <div className="flex items-center gap-1.5">
-              <span className="sr-only" id="category-label">
-                Field
-              </span>
-              <Select value={category} onValueChange={(v) => onChange({ category: v })}>
-                <SelectTrigger
-                  aria-labelledby="category-label"
-                  className={cn(
-                    "h-9 rounded-full border-border bg-surface text-xs",
-                    category !== "all" && "border-ink bg-ink text-background",
-                  )}
-                >
-                  <SelectValue placeholder="Field" />
-                </SelectTrigger>
-                <SelectContent align="end">
-                  {categoryOptions.map(({ id, count }) => (
-                    <SelectItem key={id} value={id}>
-                      {catLabel(id)} ({count})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-          <div className="flex items-center gap-1.5">
-            <span className="sr-only" id="sort-label">
-              Sort
-            </span>
-            <Select value={sort} onValueChange={(v) => onChange({ sort: v as GroupsSort })}>
-              <SelectTrigger
-                aria-labelledby="sort-label"
-                className="h-9 rounded-full border-border bg-surface text-xs"
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent align="end">
-                {SORT_VALUES.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    Sort: {SORT_LABELS[s]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {filtersActive && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-9 rounded-full text-xs"
-              onClick={onReset}
-            >
-              Clear filters
-            </Button>
-          )}
-        </div>
+        {filtersActive && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-9 rounded-full text-xs"
+            onClick={onReset}
+          >
+            Clear filters
+          </Button>
+        )}
       </div>
+
 
       <div className="mt-5">
         {tab === "for-you" && !authenticated ? (
