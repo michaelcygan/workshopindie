@@ -27,7 +27,11 @@ type Filterable = {
  * Excludes archived rows and legacy private drafts.
  */
 export function publicCollabs<T extends Filterable>(q: T): T {
-  return q.is("archived_at", null).not("status", "in", NON_PUBLIC_STATUSES) as T;
+  return q
+    .is("archived_at", null)
+    .not("status", "in", NON_PUBLIC_STATUSES)
+    // Paused submissions = private to owner + accepted members. Published Collabs stay public.
+    .or("resulting_work_id.not.is.null,applications_open.is.true") as T;
 }
 
 /**
