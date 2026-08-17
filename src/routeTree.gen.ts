@@ -47,6 +47,7 @@ import { Route as AdminInvestorRouteImport } from './routes/admin.investor'
 import { Route as AdminLinksRouteImport } from './routes/admin.links'
 import { Route as AdminMarketplaceRouteImport } from './routes/admin.marketplace'
 import { Route as AdminModerationRouteImport } from './routes/admin.moderation'
+import { Route as AdminOpenHouseRouteImport } from './routes/admin.open-house'
 import { Route as AdminOpsRouteImport } from './routes/admin.ops'
 import { Route as AdminPlusRouteImport } from './routes/admin.plus'
 import { Route as AdminPodcastRouteImport } from './routes/admin.podcast'
@@ -319,6 +320,11 @@ const AdminMarketplaceRoute = AdminMarketplaceRouteImport.update({
 const AdminModerationRoute = AdminModerationRouteImport.update({
   id: '/moderation',
   path: '/moderation',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminOpenHouseRoute = AdminOpenHouseRouteImport.update({
+  id: '/open-house',
+  path: '/open-house',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminOpsRoute = AdminOpsRouteImport.update({
@@ -770,6 +776,7 @@ export interface FileRoutesByFullPath {
   '/admin/links': typeof AdminLinksRoute
   '/admin/marketplace': typeof AdminMarketplaceRoute
   '/admin/moderation': typeof AdminModerationRoute
+  '/admin/open-house': typeof AdminOpenHouseRoute
   '/admin/ops': typeof AdminOpsRoute
   '/admin/plus': typeof AdminPlusRoute
   '/admin/podcast': typeof AdminPodcastRoute
@@ -885,6 +892,7 @@ export interface FileRoutesByTo {
   '/admin/links': typeof AdminLinksRoute
   '/admin/marketplace': typeof AdminMarketplaceRoute
   '/admin/moderation': typeof AdminModerationRoute
+  '/admin/open-house': typeof AdminOpenHouseRoute
   '/admin/ops': typeof AdminOpsRoute
   '/admin/plus': typeof AdminPlusRoute
   '/admin/podcast': typeof AdminPodcastRoute
@@ -1007,6 +1015,7 @@ export interface FileRoutesById {
   '/admin/links': typeof AdminLinksRoute
   '/admin/marketplace': typeof AdminMarketplaceRoute
   '/admin/moderation': typeof AdminModerationRoute
+  '/admin/open-house': typeof AdminOpenHouseRoute
   '/admin/ops': typeof AdminOpsRoute
   '/admin/plus': typeof AdminPlusRoute
   '/admin/podcast': typeof AdminPodcastRoute
@@ -1130,6 +1139,7 @@ export interface FileRouteTypes {
     | '/admin/links'
     | '/admin/marketplace'
     | '/admin/moderation'
+    | '/admin/open-house'
     | '/admin/ops'
     | '/admin/plus'
     | '/admin/podcast'
@@ -1245,6 +1255,7 @@ export interface FileRouteTypes {
     | '/admin/links'
     | '/admin/marketplace'
     | '/admin/moderation'
+    | '/admin/open-house'
     | '/admin/ops'
     | '/admin/plus'
     | '/admin/podcast'
@@ -1366,6 +1377,7 @@ export interface FileRouteTypes {
     | '/admin/links'
     | '/admin/marketplace'
     | '/admin/moderation'
+    | '/admin/open-house'
     | '/admin/ops'
     | '/admin/plus'
     | '/admin/podcast'
@@ -1793,6 +1805,13 @@ declare module '@tanstack/react-router' {
       path: '/moderation'
       fullPath: '/admin/moderation'
       preLoaderRoute: typeof AdminModerationRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/open-house': {
+      id: '/admin/open-house'
+      path: '/open-house'
+      fullPath: '/admin/open-house'
+      preLoaderRoute: typeof AdminOpenHouseRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/ops': {
@@ -2389,6 +2408,7 @@ interface AdminRouteChildren {
   AdminLinksRoute: typeof AdminLinksRoute
   AdminMarketplaceRoute: typeof AdminMarketplaceRoute
   AdminModerationRoute: typeof AdminModerationRoute
+  AdminOpenHouseRoute: typeof AdminOpenHouseRoute
   AdminOpsRoute: typeof AdminOpsRoute
   AdminPlusRoute: typeof AdminPlusRoute
   AdminPodcastRoute: typeof AdminPodcastRoute
@@ -2416,6 +2436,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminLinksRoute: AdminLinksRoute,
   AdminMarketplaceRoute: AdminMarketplaceRoute,
   AdminModerationRoute: AdminModerationRoute,
+  AdminOpenHouseRoute: AdminOpenHouseRoute,
   AdminOpsRoute: AdminOpsRoute,
   AdminPlusRoute: AdminPlusRoute,
   AdminPodcastRoute: AdminPodcastRoute,
