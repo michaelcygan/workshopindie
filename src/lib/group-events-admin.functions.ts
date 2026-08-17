@@ -96,6 +96,7 @@ const baseSchema = z.object({
     "online",
     "other",
     "lineup",
+    "hackathon",
   ]),
   /** Optional canonical Field — auto-connects the event to its Field Group. */
   creative_category: z.enum(FIELD_IDS).nullable().optional(),
