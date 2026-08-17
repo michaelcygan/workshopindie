@@ -101,30 +101,74 @@ function useDebounced<T>(value: T, ms = 250): T {
 
 type CityChip = CityOption;
 
+type GalleryCityRow = {
+  city_id: string | null;
+  cities: { id: string; name: string; slug: string; country: string } | null;
+  profiles: {
+    city_id: string | null;
+    cities: { id: string; name: string; slug: string; country: string } | null;
+  } | null;
+};
+
 async function fetchGalleryCities(): Promise<CityChip[]> {
-  // Pull a sample of recent published works with their city; aggregate client-side.
+  // Recent published works with their city — plus the author's home city, so a
+  // scene shows up in the picker even when the piece itself has no city set.
   const { data, error } = await supabase
     .from("works")
-    .select("city_id, cities(id, name, slug, country)")
+    .select(
+      "city_id, cities(id, name, slug, country), profiles!works_created_by_fkey(city_id, cities(id, name, slug, country))",
+    )
     .eq("status", "published")
     .in("visibility", ["public", "unlisted"])
-    .not("city_id", "is", null)
     .order("published_at", { ascending: false, nullsFirst: false })
     .limit(1000);
   if (error) return [];
   const map = new Map<string, CityChip>();
-  for (const row of (data ?? []) as Array<{
-    city_id: string | null;
-    cities: { id: string; name: string; slug: string; country: string } | null;
-  }>) {
-    const c = row.cities;
+  for (const row of (data ?? []) as unknown as GalleryCityRow[]) {
+    const c = row.cities ?? row.profiles?.cities ?? null;
     if (!c) continue;
     const ex = map.get(c.id);
     if (ex) ex.count += 1;
     else map.set(c.id, { id: c.id, name: c.name, slug: c.slug, country: c.country, count: 1 });
   }
-  return Array.from(map.values()).sort((a, b) => b.count - a.count);
+  return Array.from(map.values()).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 }
+
+/** Topics that actually appear on published Works, for the Topic filter. */
+async function fetchGalleryTopics(): Promise<{ slug: string; name: string; count: number }[]> {
+  const { data, error } = await supabase
+    .from("work_topics")
+    .select("topic:topics(slug,name)")
+    .limit(2000);
+  if (error) return [];
+  const map = new Map<string, { slug: string; name: string; count: number }>();
+  for (const row of (data ?? []) as unknown as { topic: { slug: string; name: string } | null }[]) {
+    if (!row.topic) continue;
+    const ex = map.get(row.topic.slug);
+    if (ex) ex.count += 1;
+    else map.set(row.topic.slug, { slug: row.topic.slug, name: row.topic.name, count: 1 });
+  }
+  return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Work ids carrying a topic — used to narrow the feed when a Topic is picked. */
+async function fetchWorkIdsForTopic(slug: string): Promise<string[]> {
+  const { data: topic } = await supabase.from("topics").select("id").eq("slug", slug).maybeSingle();
+  if (!topic) return [];
+  const { data } = await supabase
+    .from("work_topics")
+    .select("work_id")
+    .eq("topic_id", (topic as { id: string }).id)
+    .limit(1000);
+  return ((data ?? []) as { work_id: string }[]).map((r) => r.work_id);
+}
+
+/** Author ids who call this city home — city filter falls back to them. */
+async function fetchCityAuthorIds(cityId: string): Promise<string[]> {
+  const { data } = await supabase.from("profiles").select("id").eq("city_id", cityId).limit(500);
+  return ((data ?? []) as { id: string }[]).map((r) => r.id);
+}
+
 
 async function fetchForYouPage(params: {
   category: string;
