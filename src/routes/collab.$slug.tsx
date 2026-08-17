@@ -367,16 +367,8 @@ function CollabDetail() {
   // Permanent delete is only offered when nothing of value would be lost.
   const canDelete = !post.resulting_work_id && applicantCount === 0;
 
-  // Archived posts and legacy private drafts are owner-only.
-  if (!isPubliclyVisible(post) && !isOwner) {
-    return (
-      <main className="mx-auto max-w-2xl p-10 text-center">
-        <h1 className="font-display text-3xl">Not found</h1>
-        <p className="mt-2 text-ink-muted">This collab isn't available.</p>
-        <Link to="/collab" className="mt-4 inline-block text-ink-soft underline">Back to Collab Board</Link>
-      </main>
-    );
-  }
+  const memberPrivate = isMemberPrivate(post);
+
 
   const roles = (post.roles ?? []).slice().sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
   const hostUser = post.user;
