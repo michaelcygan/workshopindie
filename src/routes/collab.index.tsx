@@ -425,9 +425,6 @@ function CollabPage() {
             </FilterMoreSection>
 
             <FilterMoreSection title="Signals">
-              <FilterMoreToggle active={search.live} onClick={() => patch({ live: !search.live })}>
-                Live audio only
-              </FilterMoreToggle>
               <FilterMoreToggle active={search.sug} onClick={() => patch({ sug: !search.sug })}>
                 Open to suggestions
               </FilterMoreToggle>
