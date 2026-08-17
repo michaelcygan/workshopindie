@@ -144,6 +144,22 @@ async function fetchPosts({ cat, format, blockedIds }: Filters & { blockedIds: s
   });
 }
 
+/**
+ * A Collab counts for a city when it is posted there, opened to it, or its
+ * author calls that city home — most posts are online with no city of their own.
+ */
+export function collabCityIds(p: {
+  city_id?: string | null;
+  also_cities?: string[] | null;
+  user?: { city_id?: string | null } | null;
+}) {
+  const ids = new Set<string>();
+  if (p.city_id) ids.add(p.city_id);
+  for (const id of p.also_cities ?? []) if (id) ids.add(id);
+  if (p.user?.city_id) ids.add(p.user.city_id);
+  return ids;
+}
+
 /** Cities that actually have open Collabs — the city picker's option list. */
 function useCollabCities() {
   return useQuery({
@@ -152,24 +168,39 @@ function useCollabCities() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("collab_posts")
-        .select("city_id,city:cities!collab_posts_city_id_fkey(name)")
+        .select(
+          "city_id,also_cities,city:cities!collab_posts_city_id_fkey(name)," +
+            "user:profiles!collab_posts_user_id_fkey(city_id,city:cities!profiles_city_id_fkey(name))",
+        )
         .is("archived_at", null)
         .not("status", "in", NON_PUBLIC_STATUSES)
-        .not("city_id", "is", null)
         .limit(500);
       if (error) throw error;
       const counts = new Map<string, { value: string; label: string; count: number }>();
-      for (const row of (data ?? []) as unknown as {
-        city_id: string;
+      const names = new Map<string, string>();
+      const rows = (data ?? []) as unknown as {
+        city_id: string | null;
+        also_cities: string[] | null;
         city: { name: string } | null;
-      }[]) {
-        const name = row.city?.name;
-        if (!row.city_id || !name) continue;
-        const hit = counts.get(row.city_id);
-        if (hit) hit.count += 1;
-        else counts.set(row.city_id, { value: row.city_id, label: name, count: 1 });
+        user: { city_id: string | null; city: { name: string } | null } | null;
+      }[];
+      for (const row of rows) {
+        if (row.city_id && row.city?.name) names.set(row.city_id, row.city.name);
+        if (row.user?.city_id && row.user.city?.name)
+          names.set(row.user.city_id, row.user.city.name);
       }
-      return Array.from(counts.values());
+      for (const row of rows) {
+        for (const id of collabCityIds(row)) {
+          const label = names.get(id);
+          if (!label) continue;
+          const hit = counts.get(id);
+          if (hit) hit.count += 1;
+          else counts.set(id, { value: id, label, count: 1 });
+        }
+      }
+      return Array.from(counts.values()).sort(
+        (a, b) => b.count - a.count || a.label.localeCompare(b.label),
+      );
     },
   });
 }
