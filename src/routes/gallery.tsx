@@ -14,6 +14,12 @@ import { WORK_CARD_SELECT, toWorkCard, type WorkCardRow } from "@/lib/work-card-
 import { SUBJECT_SUGGESTIONS } from "@/lib/work-tags";
 import { CategoryScroller } from "@/components/category-scroller";
 import { GalleryCityFilter, type CityOption } from "@/components/gallery-city-filter";
+import {
+  FilterClear,
+  FilterHeader,
+  FilterToggleGroup,
+} from "@/components/filter-header";
+
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { listFollowingWorks } from "@/lib/gallery.functions";
