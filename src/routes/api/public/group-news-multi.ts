@@ -2,10 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import type { NewsItem } from "@/lib/group-news";
 import {
   CACHE_FRESH_MS,
-  fetchFeedItems,
+  REFRESH_BUDGET_MS,
   publicSupabase,
   readNewsCache,
-  writeNewsCache,
+  refreshFeed,
+  withBudget,
 } from "@/lib/group-news.server";
 
 /**
@@ -76,32 +77,24 @@ export const Route = createFileRoute("/api/public/group-news-multi")({
           feeds.map((g) => g.slug),
         );
 
-        // Refresh only the stalest handful; everything else is served from cache.
+        // Refresh the stalest handful within a bounded wall-clock budget.
+        // Background work is killed once the response returns, so anything we
+        // do not await here would never write to the cache.
         const stale = feeds.filter((g) => {
           const entry = cache.get(g.slug);
           return !entry || entry.items.length === 0 || entry.ageMs >= CACHE_FRESH_MS;
         });
 
-        // Only block on feeds we have nothing cached for; everything else is
-        // refreshed in the background so the response stays instant.
-        const cold = stale.filter((g) => (cache.get(g.slug)?.items.length ?? 0) === 0).slice(0, MAX_REFRESH);
-        const warm = stale.filter((g) => (cache.get(g.slug)?.items.length ?? 0) > 0).slice(0, MAX_REFRESH);
-
-        const anyCached = feeds.some((g) => (cache.get(g.slug)?.items.length ?? 0) > 0);
-
         const refresh = async (g: { slug: string; news_feed_url: string | null }) => {
-          const { items, reason } = await fetchFeedItems(g.news_feed_url!, g.slug, 8);
-          if (reason === "ok") {
-            cache.set(g.slug, { items, ageMs: 0 });
-            await writeNewsCache(g.slug, items);
-          }
+          const { items, reason } = await refreshFeed(g.slug, g.news_feed_url!, 8);
+          if (reason === "ok") cache.set(g.slug, { items, ageMs: 0 });
         };
 
-        if (anyCached) {
-          void Promise.all([...cold, ...warm].map((g) => refresh(g).catch(() => {})));
-        } else {
-          await Promise.all(cold.map((g) => refresh(g).catch(() => {})));
-          void Promise.all(warm.map((g) => refresh(g).catch(() => {})));
+        if (stale.length > 0) {
+          await withBudget(
+            Promise.all(stale.slice(0, MAX_REFRESH).map((g) => refresh(g).catch(() => {}))),
+            REFRESH_BUDGET_MS,
+          );
         }
 
         const merged: AggregateItem[] = [];
