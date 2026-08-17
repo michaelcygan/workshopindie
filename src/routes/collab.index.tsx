@@ -298,7 +298,7 @@ function CollabPage() {
       }
       return true;
     });
-  }, [ranked, query, comp, search.sug, search.topic, topicData]);
+  }, [ranked, query, comp, search.sug, search.topic, topicData, filters.city]);
 
   const mediumOptions = useMemo(() => {
     const counts = new Map<string, number>();
