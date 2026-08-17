@@ -11,6 +11,7 @@ import { markAllNotificationsRead } from "@/lib/notifications.functions";
 import { formatRoomTitle } from "@/lib/instant";
 import { workshopEntityUrl } from "@/lib/entities/kinds";
 import { programTypeLabel } from "@/lib/open-house";
+import { filmFormatLabel } from "@/lib/film-festival";
 
 type Row = {
   id: string;
