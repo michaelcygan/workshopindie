@@ -15,6 +15,8 @@ type Props = {
   title?: string;
   subtitle?: string;
   onAuthed?: () => void;
+  /** Optional slot rendered under the sign-in/sign-up toggle. */
+  footer?: React.ReactNode;
 };
 
 /**
