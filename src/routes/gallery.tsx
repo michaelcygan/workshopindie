@@ -107,7 +107,7 @@ async function fetchGalleryCities(): Promise<CityChip[]> {
   const { data, error } = await supabase
     .from("works")
     .select(
-      "city_id, cities(id, name, slug, country), profiles!works_created_by_fkey(city_id, cities(id, name, slug, country))",
+      "city_id, cities(id, name, slug, country), profiles!works_created_by_fkey(city_id, cities!profiles_city_id_fkey(id, name, slug, country))",
     )
     .eq("status", "published")
     .in("visibility", ["public", "unlisted"])
