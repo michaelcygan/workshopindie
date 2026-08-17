@@ -135,8 +135,10 @@ function EditWork() {
   }, [work, hydrated]);
 
   useEffect(() => {
-    if (!authLoading && !user) navigate({ to: "/login" });
-  }, [user, authLoading, navigate]);
+    if (!authLoading && !user) {
+      navigate({ to: "/login", search: { redirect: `/works/${slug}/edit` } });
+    }
+  }, [user, authLoading, navigate, slug]);
 
   useEffect(() => {
     if (work && user && work.created_by !== user.id) {
