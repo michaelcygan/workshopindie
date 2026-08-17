@@ -485,42 +485,6 @@ function CollabPage() {
           </>
         ) : null}
       </FilterMeta>
-
-      {/* Live Collabs strip */}
-      {livePosts.length > 0 && (
-        <div className="mt-8">
-          <div className="mb-3 flex items-center gap-2 px-1">
-            <Radio className="h-4 w-4 text-primary" />
-            <h2 className="font-display text-lg text-ink">Live right now</h2>
-            <span className="text-xs text-ink-muted">— live audio on these Collabs is running</span>
-          </div>
-          <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 md:-mx-6 md:px-6 [scrollbar-width:thin]">
-            {livePosts.map((p) => (
-              <Link
-                key={p.id}
-                to="/collab/$slug"
-                params={{ slug: p.slug }}
-                className="group relative flex min-w-[260px] max-w-[280px] shrink-0 flex-col gap-1.5 rounded-2xl border border-primary/30 bg-surface p-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift"
-              >
-                <div className="flex items-center gap-1.5">
-                  <span className="relative flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-                  </span>
-                  <span className="text-[11px] font-medium uppercase tracking-wide text-primary">
-                    Live
-                  </span>
-                  <span className="ml-auto text-[11px] text-ink-muted">
-                    {p.user?.display_name ?? p.user?.username ?? "Host"}
-                  </span>
-                </div>
-                <div className="font-display text-base text-ink line-clamp-2">{p.title}</div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
       <div className="mt-8">
         <div className="mb-3 flex items-center gap-3 px-1">
           <h2 className="font-display text-lg text-ink">Collabs looking for people</h2>
