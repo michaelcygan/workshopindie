@@ -1,33 +1,37 @@
-# Blog filters: General, Featured, Process notes, Field, Subject
+# Fix: "Edit Work" opens the Work page instead of the editor
 
-Drop the "Type" filter — how a post is formatted isn't what readers browse by. The blog's top row becomes one coherent control strip.
+## What's actually broken
 
-## The new filter row on /blog
+Reproduced in a browser: loading `/works/<slug>/edit` directly renders the **Work detail page**, not the editor. So clicking "Edit Work" appears to do nothing — the URL changes but the same page stays on screen.
 
-Replacing the five category chips at the top of the blog:
+Cause: `src/routes/works.$slug.tsx` and `src/routes/works.$slug.edit.tsx` both exist, which makes the Work page a *parent layout* of the edit route (confirmed in the generated route tree: the edit route's parent is the Work route). A parent must render `<Outlet />` for its child to mount; the Work page renders the article instead. The editor is therefore never mounted.
 
-- **General** — everything, the default.
-- **Featured** — only posts the team has featured.
-- **Process notes** — only posts whose type is Process note.
-- **Filter by field** — dropdown of the canonical Fields present in the posts.
-- **Filter by subject** — dropdown of the subjects authors tagged.
+Same defect exists on sibling routes with the same shape:
+- `/collab/$slug/edit` (parent `collab.$slug.tsx` has no `Outlet`)
+- `/workshops/$slug/archive`, `/workshops/$slug/tools`, `/workshops/$slug/tools/$tool` (parent `workshops.$slug.tsx` has no `Outlet`)
 
-Behavior:
+## The fix
 
-- General / Featured / Process notes act as one exclusive group (pick one).
-- Field and Subject are independent and combine with whichever of the three is active.
-- Options are derived from the posts actually loaded, so no dead options.
-- Selections live in the URL (`/blog?view=process&field=film_video&subject=chicago`) so a view is shareable and survives refresh/back.
-- Tapping an active chip or picking the same option again clears it; a "Clear" link resets everything.
-- Filters narrow the whole page — lead, Latest, More, Archive — with the existing empty state when nothing matches.
-- Row scrolls horizontally on mobile, no page overflow. Keyboard-operable, clear focus states.
+Opt these child routes out of nesting using TanStack's trailing-underscore convention, so each becomes its own top-level route at the same URL:
 
-Interviews stay reachable through the existing `/blog/category/interviews` page; they just aren't a top-level chip.
+- `works.$slug.edit.tsx` → `works.$slug_.edit.tsx`, `createFileRoute("/works/$slug_/edit")`
+- `collab.$slug.edit.tsx` → `collab.$slug_.edit.tsx`
+- `workshops.$slug.archive.tsx` → `workshops.$slug_.archive.tsx`
+- `workshops.$slug.tools.tsx` and `workshops.$slug.tools.$tool.tsx` → `workshops.$slug_.tools*.tsx`
 
-## Technical notes
+URLs, links, and `<Link to="/works/$slug/edit">` call sites stay valid (the underscore is stripped from the URL); only the route ids change. `src/routeTree.gen.ts` regenerates itself.
 
-- `src/routes/blog.index.tsx`: add `validateSearch` for `view` (`all` | `featured` | `process`), `field`, `subject` as plain strings with `fallback`. Classify posts with `resolveBlogClassification`, derive Field/Subject options, apply filters before the featured/latest/more/archive split.
-- Rework `src/components/blog/blog-filter-bar.tsx`: remove the `types` group, add the exclusive `view` segment (General / Featured / Process notes) ahead of the Field and Subject dropdowns. Keep the existing chip/dropdown styling.
-- `src/routes/blog.category.$category.tsx` already uses the bar — update it to the new prop shape and keep Field/Subject there (no view segment, since the category already scopes it).
-- Replace `<BlogCategoryNav>` on the index with the new bar; leave the category routes and nav component itself intact for the category pages.
-- Head metadata stays canonical to `/blog` so filtered permutations aren't separately indexed.
+## Work lifecycle audit (rest of the pass)
+
+Verify end-to-end after the routing fix, and fix what's found:
+
+1. **Create** — `/works/new`: draft insert → asset uploads → publish transition (`status: draft` → `published`), slug generation, taxonomy required fields.
+2. **Edit** — `/works/<slug>/edit`: hydration from the row, ownership guard, save payload via `buildWorkWritePayload`, cache invalidation and redirect back to the Work.
+3. **Edit entry points** — the "Edit Work" pill on the Work page, the Now-board suggestion link, and any profile/gallery owner shortcut all land on a working editor.
+4. **Failure state** — the editor currently shows an infinite spinner when the row query errors (it waits on a `hydrated` flag that never flips). Add an explicit error state with a retry and a link back to the Work.
+5. **Ownership** — collaborators who are credited but are not `created_by` are bounced out of the editor today. Confirm this is intended; if not, note it rather than silently changing access rules.
+6. **Visibility / end of life** — public vs unlisted saves, and what a creator can do to retire a Work (delete/unlist) from the UI.
+
+## Verification
+
+Direct-load and in-app click-through of `/works/<slug>/edit`, `/collab/<slug>/edit`, and the workshops tools/archive routes in a headless browser, plus a save round-trip on a Work.
