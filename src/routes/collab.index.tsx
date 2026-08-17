@@ -57,7 +57,6 @@ const searchSchema = z.object({
   online: fallback(z.boolean(), false).default(false),
   format: fallback(z.string(), "any").default("any"),
   topic: fallback(z.string(), "").default(""),
-  live: fallback(z.boolean(), false).default(false),
   comp: fallback(z.string(), "any").default("any"),
   sug: fallback(z.boolean(), false).default(false),
 });
