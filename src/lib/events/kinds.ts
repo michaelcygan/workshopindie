@@ -13,6 +13,7 @@ export const EVENT_KINDS = [
   "networking",
   "screening",
   "workshop_irl",
+  "coworking",
   "online",
   "lineup",
   "hackathon",
@@ -27,11 +28,13 @@ const KIND_LABELS: Record<EventKind, string> = {
   networking: "Networking",
   screening: "Screening",
   workshop_irl: "Workshop",
+  coworking: "Co-working",
   online: "Online",
   lineup: "Show / Lineup",
   hackathon: "Hackathon",
   other: "Other",
 };
+
 
 export function isEventKind(value: string | null | undefined): value is EventKind {
   return !!value && (EVENT_KINDS as readonly string[]).includes(value);
