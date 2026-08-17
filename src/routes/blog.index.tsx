@@ -228,7 +228,7 @@ function BlogIndexPage() {
     setLoadingPersonal(true);
     void personalFeed({
       data: {
-        tab: search.tab,
+        tab,
         topic: search.topic ?? null,
         medium: search.medium ?? null,
         postType: search.type ?? null,
@@ -248,7 +248,7 @@ function BlogIndexPage() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [personalized, user, search.tab, search.topic, search.medium, search.type]);
+  }, [personalized, user, tab, search.topic, search.medium, search.type]);
 
   // Topic options come from the loaded feed plus whatever is filtered on, so the
   // control always shows a meaningful set without a second round trip.
@@ -262,14 +262,14 @@ function BlogIndexPage() {
     .sort((a, b) => a.name.localeCompare(b.name));
 
   const showHero =
-    search.tab === "latest" && !search.topic && !search.medium && !search.type && featured.length > 0;
+    tab === "latest" && !search.topic && !search.medium && !search.type && featured.length > 0;
 
   const posts = personalized ? (personalPosts ?? []) : feed.posts;
 
   return (
     <div className="pb-28 md:pb-16">
       <Masthead />
-      <BlogFeedNav active={search.tab} search={{ topic: search.topic, medium: search.medium, type: search.type }} />
+      <BlogFeedNav active={tab} search={{ topic: search.topic, medium: search.medium, type: search.type }} />
       <BlogCategoryNav active="all" />
       <FeedFilters
         search={search}
@@ -301,12 +301,12 @@ function BlogIndexPage() {
           <BlogFeedList
             posts={posts}
             emptyTitle={
-              search.tab === "following"
+              tab === "following"
                 ? "Nothing from what you follow yet."
                 : "Nothing matches those filters."
             }
             emptyBody={
-              search.tab === "following"
+              tab === "following"
                 ? "Follow a few topics and writers to fill this tab."
                 : "Try clearing a filter, or browse all topics."
             }
