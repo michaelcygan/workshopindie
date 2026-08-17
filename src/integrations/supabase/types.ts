@@ -2053,6 +2053,122 @@ export type Database = {
           },
         ]
       }
+      event_hackathon_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          assignment_source: string
+          event_id: string
+          team_id: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          assignment_source?: string
+          event_id: string
+          team_id: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          assignment_source?: string
+          event_id?: string
+          team_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_hackathon_assignments_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "event_hackathons"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "event_hackathon_assignments_rsvp_fk"
+            columns: ["event_id", "user_id"]
+            isOneToOne: true
+            referencedRelation: "group_event_rsvps"
+            referencedColumns: ["event_id", "user_id"]
+          },
+          {
+            foreignKeyName: "event_hackathon_assignments_team_fk"
+            columns: ["team_id", "event_id"]
+            isOneToOne: false
+            referencedRelation: "event_hackathon_teams"
+            referencedColumns: ["id", "event_id"]
+          },
+        ]
+      }
+      event_hackathon_teams: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          meeting_url: string | null
+          name: string
+          position: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          meeting_url?: string | null
+          name: string
+          position: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          meeting_url?: string | null
+          name?: string
+          position?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_hackathon_teams_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "event_hackathons"
+            referencedColumns: ["event_id"]
+          },
+        ]
+      }
+      event_hackathons: {
+        Row: {
+          created_at: string
+          event_id: string
+          full_group_meeting_at: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          full_group_meeting_at: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          full_group_meeting_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_hackathons_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: true
+            referencedRelation: "group_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_lineup_signups: {
         Row: {
           created_at: string
@@ -10477,6 +10593,7 @@ export type Database = {
         | "online"
         | "other"
         | "lineup"
+        | "hackathon"
       group_event_rsvp_mode: "open" | "approval" | "invite_only"
       group_event_rsvp_status:
         | "going"
@@ -10765,6 +10882,7 @@ export const Constants = {
         "online",
         "other",
         "lineup",
+        "hackathon",
       ],
       group_event_rsvp_mode: ["open", "approval", "invite_only"],
       group_event_rsvp_status: [
