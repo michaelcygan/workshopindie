@@ -155,6 +155,9 @@ const TEMPLATE_COLUMNS = [
   "venue_lng",
   "online_url",
   "capacity",
+  // Overflow and the canonical venue key must survive into every occurrence.
+  "overflow",
+  "workshop_venue_key",
   "waitlist_enabled",
   "visibility",
   "rsvp_mode",

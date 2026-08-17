@@ -25,7 +25,7 @@ import {
 
 /** Full column list for an event detail read. */
 export const EVENT_FIELDS =
-  "id,group_id,slug,title,tagline,description,kind,format,cover_url,accent_color,starts_at,ends_at,timezone,venue_name,venue_address,venue_city_id,venue_lat,venue_lng,online_url,capacity,waitlist_enabled,visibility,rsvp_mode,status,is_official,featured_at,going_count,maybe_count,waitlist_count,created_by,created_at,series_key,short_code,lineup_capacity,source,external_url,external_organizer,is_recurring,recurrence_label,pinned_at,published_at,archived_at";
+  "id,group_id,slug,title,tagline,description,kind,format,cover_url,accent_color,starts_at,ends_at,timezone,venue_name,venue_address,venue_city_id,venue_lat,venue_lng,online_url,capacity,overflow,workshop_venue_key,waitlist_enabled,visibility,rsvp_mode,status,is_official,featured_at,going_count,maybe_count,waitlist_count,created_by,created_at,series_key,short_code,lineup_capacity,source,external_url,external_organizer,is_recurring,recurrence_label,pinned_at,published_at,archived_at";
 
 /** Lean column list for cards / lists. */
 export const EVENT_CARD_FIELDS =

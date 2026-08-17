@@ -113,6 +113,12 @@ const baseSchema = z.object({
   venue_lng: z.number().nullable().optional(),
   online_url: safeHttpUrl.nullable().optional(),
   capacity: z.number().int().min(1).max(10000).nullable().optional(),
+  /** Extra RSVPs accepted beyond capacity for expected cancellations. Never negative. */
+  overflow: z.number().int().min(0).max(10000).optional(),
+  /** Canonical Workshop venue reference; null whenever the venue was hand-entered. */
+  workshop_venue_key: z.string().max(80).nullable().optional(),
+  /** Admin confirmed the venue's own reservation / Host an Event flow for this occurrence. */
+  venue_policy_confirmed: z.boolean().optional(),
   waitlist_enabled: z.boolean().optional(),
   visibility: z.enum(["public", "group_only", "unlisted"]).optional(),
   rsvp_mode: z.enum(["open", "approval", "invite_only"]).optional(),
