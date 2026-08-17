@@ -34,6 +34,7 @@ import {
   effectiveApplicationsOpen,
   teamLabel,
 } from "@/lib/collab/lifecycle";
+import { getCollabPage } from "@/lib/collab-page.functions";
 import { applyToCollab, listApplicants, getCollabActivity, getCollabPublicCounts, leaveCollab, acceptCollabChanges, getMyCollabMembership, updateCollab, togglePinCollab, getMyPinForCollab } from "@/lib/collab.functions";
 import { MessageButton } from "@/components/message-button";
 // Vouch + Boost retired in v1 distillation pass.
