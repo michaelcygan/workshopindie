@@ -213,7 +213,9 @@ function BlogIndexPage() {
   const { user } = useAuth();
   const personalFeed = useServerFn(blogFeedPersonal);
 
-  const personalized = search.tab === "for-you" || search.tab === "following";
+  const tab: BlogFeedTab = search.tab ?? "latest";
+  const personalized = tab === "for-you" || tab === "following";
+
   const [personalPosts, setPersonalPosts] = useState<BlogFeedRow[] | null>(null);
   const [loadingPersonal, setLoadingPersonal] = useState(false);
 
