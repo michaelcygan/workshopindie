@@ -297,13 +297,13 @@ type PinnedCollab = {
   status: string;
 };
 async function fetchPinnedCollabs(userId: string): Promise<PinnedCollab[]> {
-  const { data, error } = await supabase
-    .from("collab_posts")
-    .select("id,title,slug,category,pinned_at,status")
-    .eq("user_id", userId)
-    .not("pinned_at", "is", null)
-    .is("archived_at", null)
-    .not("status", "in", NON_PUBLIC_STATUSES)
+  const { data, error } = await publicCollabs(
+    supabase
+      .from("collab_posts")
+      .select("id,title,slug,category,pinned_at,status")
+      .eq("user_id", userId)
+      .not("pinned_at", "is", null),
+  )
     .order("pinned_at", { ascending: false })
     .limit(6);
   if (error) throw error;
@@ -313,13 +313,12 @@ async function fetchPinnedCollabs(userId: string): Promise<PinnedCollab[]> {
 
 type CollabRow = { id: string; title: string; slug: string; category: Category; description: string | null; created_at: string };
 async function fetchOpenCollabs(userId: string): Promise<CollabRow[]> {
-  const { data } = await supabase
-    .from("collab_posts")
-    .select("id,title,slug,category,description,created_at")
-    .eq("user_id", userId)
-    .is("archived_at", null)
-    .not("status", "in", NON_PUBLIC_STATUSES)
-    .order("created_at", { ascending: false });
+  const { data } = await publicCollabs(
+    supabase
+      .from("collab_posts")
+      .select("id,title,slug,category,description,created_at")
+      .eq("user_id", userId),
+  ).order("created_at", { ascending: false });
   return (data ?? []) as CollabRow[];
 }
 
