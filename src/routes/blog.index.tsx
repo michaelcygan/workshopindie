@@ -92,15 +92,15 @@ export const Route = createFileRoute("/blog/")({
 function Masthead() {
   return (
     <section className="border-b border-border">
-      <div className="mx-auto flex max-w-7xl items-start justify-between gap-6 px-4 py-5 md:px-6 md:py-7">
+      <div className="mx-auto flex max-w-7xl items-start justify-between gap-6 px-4 py-4 md:px-6 md:py-5">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
             Blog
           </p>
-          <h1 className="mt-1.5 max-w-3xl font-display text-[28px] leading-[1.06] tracking-tight text-ink md:text-[42px]">
+          <h1 className="mt-1 max-w-3xl font-display text-[28px] leading-[1.06] tracking-tight text-ink md:text-[42px]">
             Notes from Workshop
           </h1>
-          <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-ink-soft md:text-[15px]">
+          <p className="mt-1 max-w-2xl text-[14px] leading-relaxed text-ink-soft md:text-[15px]">
             {DESC}
           </p>
         </div>
@@ -126,12 +126,12 @@ function ControlRow({
   const active = !!(search.topic || search.medium);
   return (
     <div className="border-b border-border">
-      <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between md:px-6">
+      <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-2.5 md:flex-row md:items-center md:justify-between md:px-6">
         <BlogSearch />
         <div className="flex items-center gap-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <select
             aria-label="Filter by topic"
-            className={PILL}
+            className={`${PILL} min-w-[13rem]`}
             value={search.topic ?? ""}
             onChange={(e) => onChange({ topic: e.target.value || undefined })}
           >
@@ -144,7 +144,7 @@ function ControlRow({
           </select>
           <select
             aria-label="Filter by medium"
-            className={PILL}
+            className={`${PILL} min-w-[13rem]`}
             value={search.medium ?? ""}
             onChange={(e) => onChange({ medium: e.target.value || undefined })}
           >

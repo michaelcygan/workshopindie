@@ -77,7 +77,7 @@ export function BlogLatestStories({ posts }: { posts: PublicBlogCard[] }) {
   return (
     <section
       aria-labelledby="blog-latest"
-      className="mx-auto max-w-7xl border-b border-border px-4 py-10 md:px-6 md:py-14"
+      className="mx-auto max-w-7xl border-b border-border px-4 py-8 md:px-6 md:py-10"
     >
       <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
         The Blog
