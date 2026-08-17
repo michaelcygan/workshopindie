@@ -6,7 +6,7 @@ import {
   maxRsvps,
   publicVenueDetails,
 } from "./workshop-venues";
-import { reconcileVenue } from "@/lib/group-events-admin.functions";
+import { reconcileVenue } from "./venue-reconcile";
 
 describe("capacity + overflow", () => {
   it("treats a missing overflow as zero", () => {
