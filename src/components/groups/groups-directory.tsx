@@ -3,9 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { GroupCard, type GroupCardData } from "@/components/group-card";
-import { GroupsKindSwitcher, type KindTab } from "@/components/groups-kind-switcher";
+import type { KindTab } from "@/components/groups-kind-switcher";
 import { useGroupMemberAvatars } from "@/hooks/use-group-member-avatars";
-import { Button } from "@/components/ui/button";
 import { categoryLabel, normalizeCategory } from "@/lib/taxonomy";
 
 export const SORT_VALUES = ["featured", "members", "content", "az"] as const;
