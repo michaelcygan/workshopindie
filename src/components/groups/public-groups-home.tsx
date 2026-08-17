@@ -93,7 +93,7 @@ export function PublicGroupsHome({ state, onChange, onReset }: Props) {
         </div>
       </header>
 
-      <GroupsControlRow state={state} onChange={onChange} onReset={onReset} />
+      <GroupsControlRow state={state} onChange={onChange} onReset={onReset} authenticated={false} />
 
       <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
         {filtered ? null : (
@@ -174,7 +174,7 @@ export function PublicGroupsHome({ state, onChange, onReset }: Props) {
                 <Link
                   key={c}
                   to="/groups"
-                  search={{ t: "genre", q: "", c, s: "members" }}
+                  search={{ t: "genre", q: "", city: "", c, s: "members" }}
                   className="shrink-0 whitespace-nowrap rounded-full border border-border bg-surface px-3.5 py-1.5 text-sm text-ink transition hover:bg-muted"
                 >
                   {categoryLabel(c)}

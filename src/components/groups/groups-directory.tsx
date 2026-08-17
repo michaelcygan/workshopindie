@@ -3,9 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { GroupCard, type GroupCardData } from "@/components/group-card";
-import { GroupsKindSwitcher, type KindTab } from "@/components/groups-kind-switcher";
+import type { KindTab } from "@/components/groups-kind-switcher";
 import { useGroupMemberAvatars } from "@/hooks/use-group-member-avatars";
-import { Button } from "@/components/ui/button";
 import { categoryLabel, normalizeCategory } from "@/lib/taxonomy";
 
 export const SORT_VALUES = ["featured", "members", "content", "az"] as const;
@@ -44,7 +43,7 @@ export function useAllPublicGroups() {
       const { data } = await supabase
         .from("groups")
         .select(
-          "id,slug,name,tagline,kind,cover_url,avatar_url,accent_color,member_count,workshop_count,collab_count,work_count,is_official,featured_at,category",
+          "id,slug,name,tagline,kind,cover_url,avatar_url,accent_color,member_count,workshop_count,collab_count,work_count,is_official,featured_at,category,city_id",
         )
         .is("deleted_at", null)
         .eq("visibility", "public")
@@ -96,9 +95,27 @@ export function sortGroups(rows: GroupCardData[], sort: GroupsSort): GroupCardDa
 export type DirectoryState = {
   tab: GroupsTab;
   query: string;
+  /** City group name, e.g. "Chicago". Independent of `query`. */
+  city: string;
   category: string;
   sort: GroupsSort;
 };
+
+/** Groups tied to a city: the city group itself, anything sharing its city_id,
+ *  and scenes whose name/tagline names the city. */
+export function matchesCity(
+  group: GroupCardData,
+  cityGroup: GroupCardData | undefined,
+  cityName: string,
+): boolean {
+  if (!cityName) return true;
+  if (cityGroup) {
+    if (group.id === cityGroup.id) return true;
+    if (cityGroup.city_id && group.city_id === cityGroup.city_id) return true;
+  }
+  const needle = cityName.toLocaleLowerCase();
+  return `${group.name} ${group.tagline ?? ""}`.toLocaleLowerCase().includes(needle);
+}
 
 type Props = {
   state: DirectoryState;
@@ -109,87 +126,66 @@ type Props = {
 };
 
 /**
- * The Groups results grid: kind tabs, result count, cards and progressive
- * Show More. Search / field / sort live in the sticky control row above.
+ * The Groups results grid: a one-line result summary, cards and progressive
+ * Show More. Kind / search / city / medium / sort all live in the sticky
+ * control row above.
  */
 export function GroupsDirectory({ state, onChange, onReset, authenticated, myIds }: Props) {
 
-  const { tab, query, sort } = state;
+  const { tab, query, sort, city } = state;
   const category = state.category === "all" ? "all" : normalizeCategory(state.category);
   const { data: allGroups = [], isLoading } = useAllPublicGroups();
 
-  const kindCounts = useMemo(
-    () => ({
-      all: allGroups.length,
-      "for-you": allGroups.filter((g) => myIds.has(g.id)).length,
-      genre: allGroups.filter((g) => g.kind === "genre").length,
-      scene: allGroups.filter((g) => g.kind === "scene").length,
-      micro: allGroups.filter((g) => g.kind === "micro").length,
-      city: allGroups.filter((g) => g.kind === "city").length,
-    }),
-    [allGroups, myIds],
-  ) satisfies Record<GroupsTab, number>;
-
   const filtered = useMemo(() => {
     const q = query.trim().toLocaleLowerCase();
+    const cityName = city.trim();
+    const cityGroup = cityName
+      ? allGroups.find(
+          (g) => g.kind === "city" && g.name.toLocaleLowerCase() === cityName.toLocaleLowerCase(),
+        )
+      : undefined;
     let rows = allGroups;
     if (tab === "for-you") {
       rows = rows.filter((g) => myIds.has(g.id));
     } else if (tab !== "all") {
       rows = rows.filter((g) => g.kind === tab);
     }
+    if (cityName) rows = rows.filter((g) => matchesCity(g, cityGroup, cityName));
     if (category !== "all") {
       rows = rows.filter((g) => !!g.category && normalizeCategory(g.category) === category);
     }
     if (q) rows = rows.filter((g) => matchesGroupSearch(g, q));
     return sortGroups(rows, sort);
-  }, [allGroups, tab, query, category, sort, myIds]);
+  }, [allGroups, tab, query, city, category, sort, myIds]);
 
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [tab, query, category, sort]);
+  }, [tab, query, city, category, sort]);
   const visibleRows = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
 
   const avatarIds = useMemo(() => visibleRows.slice(0, 32).map((g) => g.id), [visibleRows]);
   const { data: avatarMap } = useGroupMemberAvatars(avatarIds);
 
-  const filtersActive =
-    tab !== "all" || category !== "all" || sort !== "featured" || !!query.trim();
   const resultsTitle = query.trim() ? "Search results" : TITLE_BY_TAB[tab];
 
   return (
     <section>
-      <GroupsKindSwitcher
-        value={tab}
-        counts={kindCounts}
-        authenticated={authenticated}
-        onChange={(t) => onChange({ tab: t })}
-      />
-
-      <div className="mt-5 flex flex-wrap items-end justify-between gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
           <h2 className="font-display text-lg text-ink md:text-xl">{resultsTitle}</h2>
           <p className="mt-0.5 text-sm text-ink-muted">
             {isLoading
               ? "Loading…"
-              : `${filtered.length.toLocaleString()} ${filtered.length === 1 ? "result" : "results"}`}
+              : `${filtered.length.toLocaleString()} ${filtered.length === 1 ? "scene" : "scenes"}`}
+            {city.trim() ? ` · ${city.trim()}` : ""}
             {category !== "all" ? ` · ${catLabel(category)}` : ""}
             {query.trim() ? ` · “${query.trim()}”` : ""}
           </p>
         </div>
-        {filtersActive && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-9 rounded-full text-xs"
-            onClick={onReset}
-          >
-            Clear filters
-          </Button>
-        )}
       </div>
+
+
 
 
       <div className="mt-5">

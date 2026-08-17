@@ -19,6 +19,8 @@ const TAB_VALUES = ["for-you", "city", "genre", "micro", "scene", "all"] as cons
 const searchSchema = z.object({
   t: fallback(z.enum(TAB_VALUES), "all").default("all"),
   q: fallback(z.string(), "").default(""),
+  // City group name, e.g. "Chicago". Independent of the search box.
+  city: fallback(z.string(), "").default(""),
   // Free string so any group_category value (and legacy aliases) resolves.
   c: fallback(z.string(), "all").default("all"),
   s: fallback(z.enum(SORT_VALUES), "featured").default("featured"),
@@ -61,10 +63,11 @@ function GroupsIndex() {
     () => ({
       tab: search.t as GroupsTab,
       query: search.q,
+      city: search.city,
       category: search.c,
       sort: search.s as GroupsSort,
     }),
-    [search.t, search.q, search.c, search.s],
+    [search.t, search.q, search.city, search.c, search.s],
   );
 
   const onChange = (patch: Partial<DirectoryState>) =>
@@ -73,6 +76,7 @@ function GroupsIndex() {
         ...prev,
         ...(patch.tab !== undefined ? { t: patch.tab } : {}),
         ...(patch.query !== undefined ? { q: patch.query } : {}),
+        ...(patch.city !== undefined ? { city: patch.city } : {}),
         ...(patch.category !== undefined ? { c: patch.category } : {}),
         ...(patch.sort !== undefined ? { s: patch.sort } : {}),
       }),
@@ -80,7 +84,10 @@ function GroupsIndex() {
     });
 
   const onReset = () =>
-    navigate({ search: () => ({ t: "all", q: "", c: "all", s: "featured" }), replace: true });
+    navigate({
+      search: () => ({ t: "all", q: "", city: "", c: "all", s: "featured" }),
+      replace: true,
+    });
 
   const { data: myIds = [] } = useQuery({
     queryKey: ["my-group-ids", user?.id ?? "anon"],

@@ -66,7 +66,7 @@ export function MemberGroupsHome({ state, onChange, onReset, myIds }: Props) {
         </p>
       </header>
 
-      <GroupsControlRow state={state} onChange={onChange} onReset={onReset} />
+      <GroupsControlRow state={state} onChange={onChange} onReset={onReset} authenticated={true} />
 
       <div className="mx-auto max-w-7xl px-4 md:px-6">
       {filtered ? null : (
@@ -119,7 +119,7 @@ export function MemberGroupsHome({ state, onChange, onReset, myIds }: Props) {
             </h2>
             <Link
               to="/groups"
-              search={{ t: "all", q: "", c: "all", s: "featured" }}
+              search={{ t: "all", q: "", city: "", c: "all", s: "featured" }}
               className="inline-flex items-center gap-1 text-sm text-ink-soft underline-offset-4 hover:text-ink hover:underline"
             >
               See all <ArrowRight className="h-3.5 w-3.5" />
