@@ -58,13 +58,13 @@ export type FilmFestivalSubmission = {
   city: string;
   city_id: string | null;
   film_format: string;
-  runtime_minutes: number;
+  runtime_minutes: number | null;
   completion_year: number | null;
   trailer_url: string;
   film_url: string | null;
   access_notes: string | null;
   logline: string;
-  synopsis: string;
+  synopsis: string | null;
   credits: string | null;
   rights_confirmed: boolean;
   marketing_opt_in: boolean;

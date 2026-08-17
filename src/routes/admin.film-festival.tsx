@@ -197,7 +197,7 @@ function AdminFilmFestivalPage() {
                     <span className="block text-xs text-ink-muted">{r.contact_name}</span>
                   </td>
                   <td className="px-4 py-3 text-ink-muted">{filmFormatLabel(r.film_format)}</td>
-                  <td className="px-4 py-3 text-ink-muted">{r.runtime_minutes} min</td>
+                  <td className="px-4 py-3 text-ink-muted">{r.runtime_minutes ? `${r.runtime_minutes} min` : "—"}</td>
                   <td className="px-4 py-3 text-ink-muted">{r.city || "—"}</td>
                   <td className="px-4 py-3 text-ink-muted">
                     {new Date(r.created_at).toLocaleDateString()}
@@ -226,7 +226,9 @@ function AdminFilmFestivalPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <StatusBadge status={selected.status} />
                   <span className="text-ink-muted">{filmFormatLabel(selected.film_format)}</span>
+                  {selected.runtime_minutes ? (
                   <span className="text-ink-muted">· {selected.runtime_minutes} min</span>
+                ) : null}
                   {selected.completion_year && (
                     <span className="text-ink-muted">· {selected.completion_year}</span>
                   )}
@@ -300,7 +302,9 @@ function AdminFilmFestivalPage() {
                 </div>
 
                 <Section title="Logline">{selected.logline}</Section>
-                <Section title="About the film">{selected.synopsis}</Section>
+                {selected.synopsis ? (
+                  <Section title="About the film">{selected.synopsis}</Section>
+                ) : null}
                 {selected.credits && <Section title="Credits">{selected.credits}</Section>}
 
                 <div className="space-y-2">

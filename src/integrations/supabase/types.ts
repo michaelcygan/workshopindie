@@ -2608,9 +2608,9 @@ export type Database = {
           logline: string
           marketing_opt_in: boolean
           rights_confirmed: boolean
-          runtime_minutes: number
+          runtime_minutes: number | null
           status: string
-          synopsis: string
+          synopsis: string | null
           trailer_url: string
           user_id: string | null
           wants_account: boolean
@@ -2633,9 +2633,9 @@ export type Database = {
           logline: string
           marketing_opt_in?: boolean
           rights_confirmed?: boolean
-          runtime_minutes: number
+          runtime_minutes?: number | null
           status?: string
-          synopsis: string
+          synopsis?: string | null
           trailer_url: string
           user_id?: string | null
           wants_account?: boolean
@@ -2658,9 +2658,9 @@ export type Database = {
           logline?: string
           marketing_opt_in?: boolean
           rights_confirmed?: boolean
-          runtime_minutes?: number
+          runtime_minutes?: number | null
           status?: string
-          synopsis?: string
+          synopsis?: string | null
           trailer_url?: string
           user_id?: string | null
           wants_account?: boolean

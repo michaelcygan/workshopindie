@@ -13,7 +13,6 @@ import {
   FILM_STATUSES,
   LOGLINE_MAX,
   SYNOPSIS_MAX,
-  SYNOPSIS_MIN,
   type FilmFestivalSubmission,
   type FilmStatus,
 } from "@/lib/film-festival";
@@ -83,8 +82,11 @@ const submissionSchema = z.object({
   runtimeMinutes: z
     .number()
     .int()
-    .min(1, "Please add the runtime in minutes.")
-    .max(1000, "That runtime looks too long."),
+    .min(1)
+    .max(1000, "That runtime looks too long.")
+    .nullable()
+    .optional()
+    .transform((v) => v ?? null),
   completionYear: z
     .number()
     .int()
@@ -100,8 +102,9 @@ const submissionSchema = z.object({
   synopsis: z
     .string()
     .trim()
-    .min(SYNOPSIS_MIN, "Tell us a little more about the film.")
-    .max(SYNOPSIS_MAX),
+    .max(SYNOPSIS_MAX)
+    .optional()
+    .transform((v) => (v && v.length ? v : null)),
   credits: z
     .string()
     .trim()
