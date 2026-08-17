@@ -54,6 +54,12 @@ export function useMobileIslandVisibility(): MobileIslandVisibility {
     return { islandVisible: false, composerVisible: false };
   }
 
+  // Blog is a public editorial surface — no member chrome for logged-out readers.
+  if (!user && pathname.startsWith("/blog")) {
+    return { islandVisible: false, composerVisible: false };
+  }
+
+
   const islandVisible = !pathHidesIsland(pathname);
   return { islandVisible, composerVisible: islandVisible };
 }
