@@ -1,32 +1,16 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Search, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GroupCard, type GroupCardData } from "@/components/group-card";
 import { GroupsKindSwitcher, type KindTab } from "@/components/groups-kind-switcher";
 import { useGroupMemberAvatars } from "@/hooks/use-group-member-avatars";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { categoryLabel, normalizeCategory } from "@/lib/taxonomy";
 
 export const SORT_VALUES = ["featured", "members", "content", "az"] as const;
 export type GroupsSort = (typeof SORT_VALUES)[number];
 export type GroupsTab = KindTab;
-
-const SORT_LABELS: Record<GroupsSort, string> = {
-  featured: "Featured",
-  members: "Most members",
-  content: "Most content",
-  az: "A–Z",
-};
 
 const KIND_LABELS: Record<GroupCardData["kind"], string> = {
   city: "City",
@@ -145,19 +129,6 @@ export function GroupsDirectory({ state, onChange, onReset, authenticated, myIds
     }),
     [allGroups, myIds],
   ) satisfies Record<GroupsTab, number>;
-
-  const categoryOptions = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const g of allGroups) {
-      if (!g.category) continue;
-      const c = normalizeCategory(g.category);
-      counts.set(c, (counts.get(c) ?? 0) + 1);
-    }
-    const present = Array.from(counts.entries())
-      .sort((a, b) => b[1] - a[1] || catLabel(a[0]).localeCompare(catLabel(b[0])))
-      .map(([id, count]) => ({ id, count }));
-    return [{ id: "all", count: allGroups.length }, ...present];
-  }, [allGroups]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLocaleLowerCase();
