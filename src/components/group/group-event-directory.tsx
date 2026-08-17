@@ -439,34 +439,8 @@ export function GroupEventDirectory({
   );
 }
 
-function FilterMenu({
-  label,
-  active,
-  children,
-}: {
-  label: string;
-  active: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          className={cn(
-            "inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs transition hover:bg-surface-2",
-            active && "bg-surface-2 font-medium text-ink",
-          )}
-        >
-          {label}
-          <ChevronDown className="h-3 w-3" />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="max-h-72 w-48 overflow-y-auto">
-        {children}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
+
+
 
 export function EventCardLite({ ev }: { ev: EventLite }) {
   const starts = new Date(ev.starts_at);
