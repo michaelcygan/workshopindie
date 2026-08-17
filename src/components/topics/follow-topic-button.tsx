@@ -94,7 +94,7 @@ export function FollowTopicButton(props: Props) {
         open={gateOpen}
         onOpenChange={setGateOpen}
         title={`Follow ${props.label}`}
-        description="Join Workshop to follow topics and build a feed that matches what you make."
+        subtitle="Join Workshop to follow topics and build a feed that matches what you make."
       />
     </>
   );
