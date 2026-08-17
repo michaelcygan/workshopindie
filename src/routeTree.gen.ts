@@ -81,6 +81,7 @@ import { Route as MeFriendsRouteImport } from './routes/me.friends'
 import { Route as MeNetworkRouteImport } from './routes/me.network'
 import { Route as MeTicketsRouteImport } from './routes/me.tickets'
 import { Route as RedeemCodeRouteImport } from './routes/redeem.$code'
+import { Route as TopicsIndexRouteImport } from './routes/topics.index'
 import { Route as TopicsSlugRouteImport } from './routes/topics.$slug'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as WTokenRouteImport } from './routes/w.$token'
@@ -487,6 +488,11 @@ const RedeemCodeRoute = RedeemCodeRouteImport.update({
   path: '/redeem/$code',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TopicsIndexRoute = TopicsIndexRouteImport.update({
+  id: '/topics/',
+  path: '/topics/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TopicsSlugRoute = TopicsSlugRouteImport.update({
   id: '/topics/$slug',
   path: '/topics/$slug',
@@ -788,6 +794,7 @@ export interface FileRoutesByFullPath {
   '/groups/': typeof GroupsIndexRoute
   '/lounge/': typeof LoungeIndexRoute
   '/me/': typeof MeIndexRoute
+  '/topics/': typeof TopicsIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -899,6 +906,7 @@ export interface FileRoutesByTo {
   '/groups': typeof GroupsIndexRoute
   '/lounge': typeof LoungeIndexRoute
   '/me': typeof MeIndexRoute
+  '/topics': typeof TopicsIndexRoute
   '/workshops': typeof WorkshopsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -1017,6 +1025,7 @@ export interface FileRoutesById {
   '/groups/': typeof GroupsIndexRoute
   '/lounge/': typeof LoungeIndexRoute
   '/me/': typeof MeIndexRoute
+  '/topics/': typeof TopicsIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -1136,6 +1145,7 @@ export interface FileRouteTypes {
     | '/groups/'
     | '/lounge/'
     | '/me/'
+    | '/topics/'
     | '/workshops/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -1247,6 +1257,7 @@ export interface FileRouteTypes {
     | '/groups'
     | '/lounge'
     | '/me'
+    | '/topics'
     | '/workshops'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -1364,6 +1375,7 @@ export interface FileRouteTypes {
     | '/groups/'
     | '/lounge/'
     | '/me/'
+    | '/topics/'
     | '/workshops/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -1452,6 +1464,7 @@ export interface RootRouteChildren {
   DmsIndexRoute: typeof DmsIndexRoute
   EventsIndexRoute: typeof EventsIndexRoute
   MeIndexRoute: typeof MeIndexRoute
+  TopicsIndexRoute: typeof TopicsIndexRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiPublicGroupNewsMultiRoute: typeof ApiPublicGroupNewsMultiRoute
@@ -1979,6 +1992,13 @@ declare module '@tanstack/react-router' {
       path: '/redeem/$code'
       fullPath: '/redeem/$code'
       preLoaderRoute: typeof RedeemCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/topics/': {
+      id: '/topics/'
+      path: '/topics'
+      fullPath: '/topics/'
+      preLoaderRoute: typeof TopicsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/topics/$slug': {
@@ -2516,6 +2536,7 @@ const rootRouteChildren: RootRouteChildren = {
   DmsIndexRoute: DmsIndexRoute,
   EventsIndexRoute: EventsIndexRoute,
   MeIndexRoute: MeIndexRoute,
+  TopicsIndexRoute: TopicsIndexRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiPublicGroupNewsMultiRoute: ApiPublicGroupNewsMultiRoute,
