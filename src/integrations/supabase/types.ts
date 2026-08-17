@@ -2210,6 +2210,44 @@ export type Database = {
           },
         ]
       }
+      event_ops: {
+        Row: {
+          admin_note: string | null
+          created_at: string
+          event_id: string
+          preflight_checked_at: string | null
+          preflight_checked_by: string | null
+          preflight_status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_note?: string | null
+          created_at?: string
+          event_id: string
+          preflight_checked_at?: string | null
+          preflight_checked_by?: string | null
+          preflight_status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_note?: string | null
+          created_at?: string
+          event_id?: string
+          preflight_checked_at?: string | null
+          preflight_checked_by?: string | null
+          preflight_status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_ops_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: true
+            referencedRelation: "group_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_photos: {
         Row: {
           created_at: string
@@ -2374,6 +2412,154 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "works"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_venues: {
+        Row: {
+          accessibility_note: string | null
+          activity_types: string[]
+          address: string | null
+          age_policy_note: string | null
+          city_id: string | null
+          coworking_eligible: boolean
+          created_at: string
+          dayparts: string[]
+          default_capacity: number | null
+          default_overflow: number | null
+          food_note: string | null
+          group_threshold: number | null
+          id: string
+          indoor_outdoor: string | null
+          internal_note: string | null
+          key: string
+          lat: number | null
+          lng: number | null
+          min_age: number | null
+          min_age_after: number | null
+          min_age_after_local_time: string | null
+          neighborhood: string | null
+          noise_note: string | null
+          open_house_eligible: boolean
+          policy_source_url: string | null
+          policy_verified_at: string | null
+          power: string
+          programming_conflicts: string | null
+          purchase_expected: boolean
+          relationship_status: string
+          reservation_policy: string | null
+          seating_policy: string | null
+          small_groups_allowed: boolean | null
+          status: string
+          threshold_kind: string
+          updated_at: string
+          venue_name: string
+          venue_type: string | null
+          wifi: string
+        }
+        Insert: {
+          accessibility_note?: string | null
+          activity_types?: string[]
+          address?: string | null
+          age_policy_note?: string | null
+          city_id?: string | null
+          coworking_eligible?: boolean
+          created_at?: string
+          dayparts?: string[]
+          default_capacity?: number | null
+          default_overflow?: number | null
+          food_note?: string | null
+          group_threshold?: number | null
+          id?: string
+          indoor_outdoor?: string | null
+          internal_note?: string | null
+          key: string
+          lat?: number | null
+          lng?: number | null
+          min_age?: number | null
+          min_age_after?: number | null
+          min_age_after_local_time?: string | null
+          neighborhood?: string | null
+          noise_note?: string | null
+          open_house_eligible?: boolean
+          policy_source_url?: string | null
+          policy_verified_at?: string | null
+          power?: string
+          programming_conflicts?: string | null
+          purchase_expected?: boolean
+          relationship_status?: string
+          reservation_policy?: string | null
+          seating_policy?: string | null
+          small_groups_allowed?: boolean | null
+          status?: string
+          threshold_kind?: string
+          updated_at?: string
+          venue_name: string
+          venue_type?: string | null
+          wifi?: string
+        }
+        Update: {
+          accessibility_note?: string | null
+          activity_types?: string[]
+          address?: string | null
+          age_policy_note?: string | null
+          city_id?: string | null
+          coworking_eligible?: boolean
+          created_at?: string
+          dayparts?: string[]
+          default_capacity?: number | null
+          default_overflow?: number | null
+          food_note?: string | null
+          group_threshold?: number | null
+          id?: string
+          indoor_outdoor?: string | null
+          internal_note?: string | null
+          key?: string
+          lat?: number | null
+          lng?: number | null
+          min_age?: number | null
+          min_age_after?: number | null
+          min_age_after_local_time?: string | null
+          neighborhood?: string | null
+          noise_note?: string | null
+          open_house_eligible?: boolean
+          policy_source_url?: string | null
+          policy_verified_at?: string | null
+          power?: string
+          programming_conflicts?: string | null
+          purchase_expected?: boolean
+          relationship_status?: string
+          reservation_policy?: string | null
+          seating_policy?: string | null
+          small_groups_allowed?: boolean | null
+          status?: string
+          threshold_kind?: string
+          updated_at?: string
+          venue_name?: string
+          venue_type?: string | null
+          wifi?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_venues_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_venues_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "event_venues_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
+            referencedColumns: ["city_id"]
           },
         ]
       }
@@ -2736,17 +2922,22 @@ export type Database = {
       group_events: {
         Row: {
           accent_color: string | null
+          allowed_activities: string[]
           archived_at: string | null
+          arrival_note_public: string | null
           capacity: number | null
           cover_url: string | null
           created_at: string
           created_by: string
           creative_category: string | null
+          daypart: Database["public"]["Enums"]["event_daypart"] | null
           deleted_at: string | null
           description: string | null
+          drop_in_allowed: boolean
           ends_at: string
           external_organizer: string | null
           external_url: string | null
+          facilitation: string
           featured_at: string | null
           format: Database["public"]["Enums"]["group_event_format"]
           going_count: number
@@ -2758,6 +2949,7 @@ export type Database = {
           lineup_capacity: number | null
           lineup_reminder_sent_at: string | null
           maybe_count: number
+          min_age: number | null
           needs_review: boolean
           notified_24h_at: string | null
           notified_2h_at: string | null
@@ -2772,6 +2964,7 @@ export type Database = {
           recurrence_label: string | null
           rsvp_mode: Database["public"]["Enums"]["group_event_rsvp_mode"]
           series_key: string | null
+          series_mode: string | null
           short_code: string | null
           slug: string
           source: string
@@ -2784,6 +2977,7 @@ export type Database = {
           updated_at: string
           venue_address: string | null
           venue_city_id: string | null
+          venue_id: string | null
           venue_lat: number | null
           venue_lng: number | null
           venue_name: string | null
@@ -2796,17 +2990,22 @@ export type Database = {
         }
         Insert: {
           accent_color?: string | null
+          allowed_activities?: string[]
           archived_at?: string | null
+          arrival_note_public?: string | null
           capacity?: number | null
           cover_url?: string | null
           created_at?: string
           created_by: string
           creative_category?: string | null
+          daypart?: Database["public"]["Enums"]["event_daypart"] | null
           deleted_at?: string | null
           description?: string | null
+          drop_in_allowed?: boolean
           ends_at: string
           external_organizer?: string | null
           external_url?: string | null
+          facilitation?: string
           featured_at?: string | null
           format?: Database["public"]["Enums"]["group_event_format"]
           going_count?: number
@@ -2818,6 +3017,7 @@ export type Database = {
           lineup_capacity?: number | null
           lineup_reminder_sent_at?: string | null
           maybe_count?: number
+          min_age?: number | null
           needs_review?: boolean
           notified_24h_at?: string | null
           notified_2h_at?: string | null
@@ -2832,6 +3032,7 @@ export type Database = {
           recurrence_label?: string | null
           rsvp_mode?: Database["public"]["Enums"]["group_event_rsvp_mode"]
           series_key?: string | null
+          series_mode?: string | null
           short_code?: string | null
           slug: string
           source?: string
@@ -2844,6 +3045,7 @@ export type Database = {
           updated_at?: string
           venue_address?: string | null
           venue_city_id?: string | null
+          venue_id?: string | null
           venue_lat?: number | null
           venue_lng?: number | null
           venue_name?: string | null
@@ -2856,17 +3058,22 @@ export type Database = {
         }
         Update: {
           accent_color?: string | null
+          allowed_activities?: string[]
           archived_at?: string | null
+          arrival_note_public?: string | null
           capacity?: number | null
           cover_url?: string | null
           created_at?: string
           created_by?: string
           creative_category?: string | null
+          daypart?: Database["public"]["Enums"]["event_daypart"] | null
           deleted_at?: string | null
           description?: string | null
+          drop_in_allowed?: boolean
           ends_at?: string
           external_organizer?: string | null
           external_url?: string | null
+          facilitation?: string
           featured_at?: string | null
           format?: Database["public"]["Enums"]["group_event_format"]
           going_count?: number
@@ -2878,6 +3085,7 @@ export type Database = {
           lineup_capacity?: number | null
           lineup_reminder_sent_at?: string | null
           maybe_count?: number
+          min_age?: number | null
           needs_review?: boolean
           notified_24h_at?: string | null
           notified_2h_at?: string | null
@@ -2892,6 +3100,7 @@ export type Database = {
           recurrence_label?: string | null
           rsvp_mode?: Database["public"]["Enums"]["group_event_rsvp_mode"]
           series_key?: string | null
+          series_mode?: string | null
           short_code?: string | null
           slug?: string
           source?: string
@@ -2904,6 +3113,7 @@ export type Database = {
           updated_at?: string
           venue_address?: string | null
           venue_city_id?: string | null
+          venue_id?: string | null
           venue_lat?: number | null
           venue_lng?: number | null
           venue_name?: string | null
@@ -2942,6 +3152,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "vw_geo_city_stats"
             referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "group_events_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "event_venues"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -9952,6 +10169,10 @@ export type Database = {
       ensure_medium_membership: {
         Args: { _canonical: string; _source: string; _user_id: string }
         Returns: undefined
+      }
+      event_max_rsvps: {
+        Args: { _capacity: number; _overflow: number }
+        Returns: number
       }
       finalize_host_claim: { Args: { _room_id: string }; Returns: undefined }
       gen_event_short_code: { Args: never; Returns: string }
