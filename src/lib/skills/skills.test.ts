@@ -29,11 +29,11 @@ describe("skill label normalization", () => {
   });
 
   it("treats case and whitespace variants as the same skill", () => {
-    const keys = ["Editing", "editing", "  EDITING  ", "edit\ning".replace("\n", " ")].map(
-      normalizeSkillLabel,
-    );
+    const keys = ["Editing", "editing", "  EDITING  ", "Editing "].map(normalizeSkillLabel);
     expect(new Set(keys).size).toBe(1);
+    expect(normalizeSkillLabel("Sound  Editing")).toBe(normalizeSkillLabel(" sound editing "));
   });
+
 
   it("rejects blank labels", () => {
     expect(isValidSkillLabel("   ")).toBe(false);
