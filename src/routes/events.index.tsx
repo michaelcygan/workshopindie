@@ -286,47 +286,36 @@ function EventsIndexPage() {
           )}
         </div>
 
-        {/* Unified filter cluster */}
-        <div className="mx-auto mt-5 max-w-5xl space-y-2.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <SegToggle
+        {/* Sticky filter header */}
+        <FilterHeader inset stack className="mt-4">
+          <div className={FILTER_ROW_SCROLL}>
+            <FilterToggleGroup
               value={when}
               onChange={setWhen}
               options={[
-                { value: "upcoming", label: "Upcoming" },
-                { value: "past", label: "Past" },
+                { value: "upcoming" as const, label: "Upcoming" },
+                { value: "past" as const, label: "Past" },
               ]}
             />
             {user && (
-              <button
-                type="button"
-                onClick={() => setMine(!mine)}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium shadow-soft transition",
-                  mine
-                    ? "border-ink bg-ink text-surface"
-                    : "border-border bg-surface text-ink-soft hover:text-ink",
-                )}
-                aria-pressed={mine}
-              >
-                <Ticket className="h-3 w-3" />
+              <FilterPillToggle active={mine} onClick={() => setMine(!mine)} icon={Ticket}>
                 My RSVPs
-              </button>
+              </FilterPillToggle>
             )}
 
             {!mineActive && (
               <>
-                <SegToggle
+                <FilterToggleGroup
                   value={format}
                   onChange={setFormat}
                   options={[
-                    { value: "all", label: "All", icon: Calendar },
-                    { value: "in_person", label: "In person", icon: MapPin },
-                    { value: "online", label: "Online", icon: Radio },
+                    { value: "all" as const, label: "All", icon: Calendar },
+                    { value: "in_person" as const, label: "In person", icon: MapPin },
+                    { value: "online" as const, label: "Online", icon: Radio },
                   ]}
                 />
-                <button
-                  type="button"
+                <FilterPillToggle
+                  active={kind === "coworking"}
                   onClick={() =>
                     navigate({
                       search: (prev: SearchShape): SearchShape => ({
@@ -336,62 +325,44 @@ function EventsIndexPage() {
                       }),
                     })
                   }
-                  aria-pressed={kind === "coworking"}
-                  className={cn(
-                    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium shadow-soft transition",
-                    kind === "coworking"
-                      ? "border-ink bg-ink text-surface"
-                      : "border-border bg-surface text-ink-soft hover:text-ink",
-                  )}
                 >
                   Co-working
-                </button>
-                <div className="flex min-w-[16rem] flex-1 items-center gap-2">
+                </FilterPillToggle>
+                <div className="min-w-[15rem] shrink-0">
                   <CityCombobox
                     value={cityValue}
                     onChange={setCity}
                     disabled={format === "online"}
                     placeholder="Anywhere — search a city"
                   />
-                  {cityValue && format !== "online" && (
-                    <button
-                      type="button"
-                      onClick={() => setCity(null)}
-                      className="h-11 shrink-0 rounded-full border border-border bg-surface px-4 text-sm font-medium text-ink-soft shadow-soft transition hover:bg-muted"
-                    >
-                      Worldwide
-                    </button>
-                  )}
                 </div>
               </>
             )}
+
+            {filtersActive && <FilterClear onClick={clearFilters} />}
           </div>
 
           {!mineActive && kind === "coworking" && (
-            <div className="flex flex-wrap items-center gap-1.5 px-1">
+            <div className={cn(FILTER_ROW_SCROLL, "mt-2")}>
               {(["all", "morning", "afternoon", "evening"] as const).map((d) => (
-                <button
+                <FilterPillToggle
                   key={d}
-                  type="button"
+                  active={daypart === d}
                   onClick={() =>
                     navigate({
                       search: (prev: SearchShape): SearchShape => ({ ...prev, daypart: d }),
                     })
                   }
-                  aria-pressed={daypart === d}
-                  className={cn(
-                    "rounded-full border px-2.5 py-1 text-[11px] font-medium transition",
-                    daypart === d
-                      ? "border-ink bg-ink text-surface"
-                      : "border-border bg-surface text-ink-soft hover:text-ink",
-                  )}
+                  className="h-8 px-3 text-[12px]"
                 >
                   {d === "all" ? "Any time of day" : d.charAt(0).toUpperCase() + d.slice(1)}
-                </button>
+                </FilterPillToggle>
               ))}
             </div>
           )}
+        </FilterHeader>
 
+        <div className="mt-3 space-y-1">
           {!mineActive &&
             defaultCity &&
             cityId === defaultCity.id &&
@@ -420,6 +391,7 @@ function EventsIndexPage() {
             </p>
           )}
         </div>
+
 
         {when === "upcoming" && !mineActive && (
           <section className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:items-start">
