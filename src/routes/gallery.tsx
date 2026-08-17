@@ -46,7 +46,9 @@ const searchSchema = z.object({
   kind: fallback(z.string(), "all").default("all"),
   subject: fallback(z.string(), "all").default("all"),
   city: fallback(z.string(), "all").default("all"),
+  topic: fallback(z.string(), "").default(""),
   sort: fallback(z.enum(["recent", "trending"]), "recent").default("recent"),
+
 });
 
 export const Route = createFileRoute("/gallery")({
