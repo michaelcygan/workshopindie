@@ -1,11 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Search, X } from "lucide-react";
+import { useMemo } from "react";
 import {
   useAllPublicGroups,
   type DirectoryState,
   type GroupsSort,
   SORT_VALUES,
 } from "@/components/groups/groups-directory";
+import {
+  FilterClear,
+  FilterControls,
+  FilterHeader,
+  FilterSearch,
+  FilterSelect,
+} from "@/components/filter-header";
 import { categoryLabel, normalizeCategory } from "@/lib/taxonomy";
 
 const SORT_LABELS: Record<GroupsSort, string> = {
@@ -15,8 +21,6 @@ const SORT_LABELS: Record<GroupsSort, string> = {
   az: "A–Z",
 };
 
-const PILL =
-  "h-10 shrink-0 rounded-full border border-border bg-surface px-3.5 text-[13px] text-ink-soft outline-none transition-colors hover:border-ink/40 focus:border-ink/50";
 
 /** True when the page should drop its editorial sections and show results. */
 export function isDirectoryFiltered(state: DirectoryState): boolean {
