@@ -19,6 +19,7 @@ export type GroupCardData = {
   is_official: boolean;
   featured_at: string | null;
   category?: string | null;
+  city_id?: string | null;
 };
 
 const KIND_LABEL: Record<GroupCardData["kind"], string> = {
