@@ -47,7 +47,8 @@ export const Route = createFileRoute("/blog/")({
     // Public tabs render server-side; personalized tabs hydrate in the client
     // where the viewer's session (and therefore their follows) exists.
     const publicTab: BlogFeedTab =
-      deps.tab === "for-you" || deps.tab === "following" ? "latest" : deps.tab;
+      !deps.tab || deps.tab === "for-you" || deps.tab === "following" ? "latest" : deps.tab;
+
     const [feed, featured] = await Promise.all([
       blogFeed({
         data: {
