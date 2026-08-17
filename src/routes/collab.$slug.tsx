@@ -385,11 +385,13 @@ function CollabDetail() {
     ? <StateBadge tone="closed" label="Archived" sublabel="Only you can see this" />
     : isShipped
       ? <StateBadge tone="closed" label="Published" />
-      : <StateBadge
-          tone={acceptingNow ? "open" : "closed"}
-          label="In Progress"
-          sublabel={isDraft ? "Private — only you" : deadlineSoon ? "Deadline soon" : recruitmentLabel(recruit)}
-        />;
+      : memberPrivate
+        ? <StateBadge tone="closed" label="Submissions paused" sublabel="Private to members" />
+        : <StateBadge
+            tone={acceptingNow ? "open" : "closed"}
+            label="In Progress"
+            sublabel={isDraft ? "Private — only you" : deadlineSoon ? "Deadline soon" : recruitmentLabel(recruit)}
+          />;
 
   const daysPast = post.ends_on ? Math.floor((Date.now() - new Date(post.ends_on).getTime()) / 86400000) : 0;
 
