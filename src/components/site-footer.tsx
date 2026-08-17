@@ -185,29 +185,19 @@ export function SiteFooter() {
                   </Link>
                 </li>
                 <li>
-                  <Link to="/refer" className="text-ink-soft hover:text-ink">
-                    Refer & Earn
+                  <Link to="/applyopenhouse" className="text-ink-soft hover:text-ink">
+                    Open House
                   </Link>
                 </li>
                 <li>
-                  <a
-                    href="https://www.infinitefilmfest.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-ink-soft hover:text-ink"
-                  >
-                    Infinite Film Fest
-                  </a>
+                  <Link to="/film-festival" className="text-ink-soft hover:text-ink">
+                    Film Festival
+                  </Link>
                 </li>
                 <li>
-                  <a
-                    href="https://www.infiniteremix.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-ink-soft hover:text-ink"
-                  >
-                    Infinite Remix
-                  </a>
+                  <Link to="/refer" className="text-ink-soft hover:text-ink">
+                    Refer & Earn
+                  </Link>
                 </li>
               </ul>
             </div>
