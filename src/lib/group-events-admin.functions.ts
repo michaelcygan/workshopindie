@@ -226,13 +226,64 @@ export function assertPublishable(ev: {
   }
 }
 
+/**
+ * Reconcile the canonical Workshop venue reference with the Event's own venue
+ * snapshot, then enforce the venue's published group policy server-side so a
+ * stale or modified client can never bypass it.
+ *
+ * - A hand-edited name/address detaches the canonical key (the snapshot stays
+ *   authoritative for that occurrence).
+ * - Reaching a published group-policy trigger, or an unverified walk-in
+ *   policy, blocks publication until an admin explicitly confirms they went
+ *   through the venue's own reservation / Host an Event flow.
+ */
+export function reconcileVenue(input: {
+  workshop_venue_key?: string | null;
+  venue_name?: string | null;
+  venue_address?: string | null;
+  capacity?: number | null;
+  overflow?: number | null;
+  venue_policy_confirmed?: boolean;
+  status: string;
+}): { key: string | null; policy: ReturnType<typeof evaluateVenuePolicy> } {
+  const venue = getWorkshopVenue(input.workshop_venue_key);
+  let key = venue?.key ?? null;
+  if (venue) {
+    const nameChanged =
+      input.venue_name != null && input.venue_name.trim() !== venue.venue_name;
+    const addressChanged =
+      input.venue_address != null && input.venue_address.trim() !== venue.address;
+    if (nameChanged || addressChanged) key = null;
+  }
+  const policy = evaluateVenuePolicy({
+    key,
+    capacity: input.capacity ?? null,
+    overflow: input.overflow ?? 0,
+    confirmed: input.venue_policy_confirmed === true,
+  });
+  if (input.status !== "draft" && policy.requiresReview) {
+    throw new Error(
+      `${policy.reason} Confirm the venue policy for this occurrence to publish it anyway.`,
+    );
+  }
+  return { key, policy };
+}
+
 export const createEvent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => baseSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertAdmin(supabase, userId);
-    const { featured, status, cover_url, pinned, extra_group_ids, ...rest } = data;
+    const {
+      featured,
+      status,
+      cover_url,
+      pinned,
+      extra_group_ids,
+      venue_policy_confirmed,
+      ...rest
+    } = data;
     const rehostedCover = await rehostCoverIfExternal(cover_url, `g_${data.group_id}`);
     const effectiveStatus = (status ?? "scheduled") as "draft" | "scheduled";
     const venueCityId = await resolveEventCity(supabase as never, {
@@ -242,8 +293,21 @@ export const createEvent = createServerFn({ method: "POST" })
       status: effectiveStatus,
     });
     if (effectiveStatus !== "draft") assertPublishable(data);
+    const { key: venueKey } = reconcileVenue({
+      workshop_venue_key: data.workshop_venue_key ?? null,
+      venue_name: data.venue_name ?? null,
+      venue_address: data.venue_address ?? null,
+      capacity: data.capacity ?? null,
+      overflow: data.overflow ?? 0,
+      venue_policy_confirmed,
+      status: effectiveStatus,
+    });
     const insertRow = {
       ...rest,
+      overflow: data.overflow ?? 0,
+      workshop_venue_key: venueKey,
+      venue_policy_confirmed_at: venue_policy_confirmed ? new Date().toISOString() : null,
+      venue_policy_confirmed_by: venue_policy_confirmed ? userId : null,
       venue_city_id: venueCityId,
       cover_url: rehostedCover,
       slug: "",
@@ -256,6 +320,7 @@ export const createEvent = createServerFn({ method: "POST" })
       archived_at: null,
       is_official: data.source === "external" ? false : (data.is_official ?? true),
     };
+
     const { data: row, error } = await supabase
       .from("group_events")
       .insert(insertRow as never)
