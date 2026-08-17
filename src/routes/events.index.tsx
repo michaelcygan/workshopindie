@@ -17,14 +17,18 @@ import {
   type MapCityPoint,
   type MapVenuePoint,
 } from "@/components/events/events-mini-map";
-import { CityCombobox, type CityValue } from "@/components/city-combobox";
 import {
   FILTER_ROW_SCROLL,
   FilterClear,
   FilterHeader,
   FilterPillToggle,
+  FilterSearch,
+  FilterSelect,
   FilterToggleGroup,
 } from "@/components/filter-header";
+import { FilterCityPicker, type FilterCityOption } from "@/components/filter-header/filter-city-picker";
+import { FilterMore, FilterMoreSection, FilterMoreToggle } from "@/components/filter-header/filter-more";
+
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
