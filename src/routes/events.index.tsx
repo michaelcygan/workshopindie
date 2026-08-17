@@ -277,7 +277,7 @@ function EventsIndexPage() {
       }),
     });
   }
-  function setCity(next: CityValue | null) {
+  function setCity(next: { id: string; name: string } | null) {
     navigate({
       search: (prev: SearchShape): SearchShape => ({
         ...prev,
@@ -286,11 +286,16 @@ function EventsIndexPage() {
       }),
     });
   }
+  function setCityId(nextId: string) {
+    const match = cityOptions.find((c) => c.value === nextId);
+    setCity(nextId && match ? { id: nextId, name: match.label } : null);
+  }
   function setMine(next: boolean) {
     navigate({ search: (prev: SearchShape): SearchShape => ({ ...prev, mine: next }) });
   }
-
-  const cityValue: CityValue | null = cityId && cityName ? { id: cityId, name: cityName } : null;
+  function patch(next: Partial<SearchShape>) {
+    navigate({ search: (prev: SearchShape): SearchShape => ({ ...prev, ...next }) });
+  }
 
   const filtersActive =
     when !== "upcoming" ||
@@ -298,7 +303,11 @@ function EventsIndexPage() {
     !!cityId ||
     mine ||
     kind !== "all" ||
-    daypart !== "all";
+    daypart !== "all" ||
+    !!medium ||
+    !!q;
+
+  const moreCount = (daypart !== "all" ? 1 : 0) + (mine ? 1 : 0);
 
   const clearFilters = () =>
     navigate({
@@ -308,9 +317,12 @@ function EventsIndexPage() {
         mine: false,
         kind: "all" as const,
         daypart: "all" as const,
+        q: "",
+        medium: "",
       }),
       replace: true,
     });
+
 
   const defaultCityQuery = useDefaultCity();
   const defaultCity = defaultCityQuery.data?.city ?? null;
