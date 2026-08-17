@@ -226,9 +226,9 @@ export function GroupEventDirectory({
     pinnedOrRecurring.length - pinnedShown.length + (upcoming.length - upcomingShown.length);
 
   const clearAll = () => {
-    setSearchOpen(false);
     onFiltersChange({ category: null, kind: null, format: "all", q: "" });
   };
+
 
   return (
     <div className={embedded ? "space-y-6" : "space-y-10"}>
