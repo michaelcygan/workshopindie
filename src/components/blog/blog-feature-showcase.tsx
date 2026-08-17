@@ -44,8 +44,7 @@ function Cover({
           src={post.coverUrl}
           alt={post.coverAlt ?? post.title}
           loading={eager ? "eager" : "lazy"}
-          // @ts-expect-error -- valid DOM attribute
-          fetchpriority={eager ? "high" : undefined}
+          fetchPriority={eager ? "high" : undefined}
           decoding="async"
           className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
         />
