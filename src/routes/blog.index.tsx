@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 
-import { BlogCategoryNav } from "@/components/blog/blog-category-nav";
+
 import { BlogFeedList } from "@/components/blog/blog-feed-cards";
 import { BlogFeedNav } from "@/components/blog/blog-feed-nav";
 import { BlogMastheadActions } from "@/components/blog/blog-masthead-actions";
@@ -270,7 +270,7 @@ function BlogIndexPage() {
     <div className="pb-28 md:pb-16">
       <Masthead />
       <BlogFeedNav active={tab} search={{ topic: search.topic, medium: search.medium, type: search.type }} />
-      <BlogCategoryNav active="all" />
+      
       <FeedFilters
         search={search}
         topics={topics}
