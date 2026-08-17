@@ -346,7 +346,16 @@ function CollabDetail() {
       </main>
     );
   }
-  if (!post) return <main className="mx-auto max-w-3xl p-10 text-center text-ink-muted">Not found.</main>;
+  // Server decided access: paused/archived Collabs return nothing to non-members.
+  if (!post) {
+    return (
+      <main className="mx-auto max-w-2xl p-10 text-center">
+        <h1 className="font-display text-3xl">Not found</h1>
+        <p className="mt-2 text-ink-muted">This collab isn't available.</p>
+        <Link to="/collab" className="mt-4 inline-block text-ink-soft underline">Back to Collab Board</Link>
+      </main>
+    );
+  }
 
   const isOwner = user?.id === post.user_id;
   const lifecycle = collabLifecycleState(post);
