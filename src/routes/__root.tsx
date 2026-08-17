@@ -11,6 +11,7 @@ import {
 import { useEffect } from "react";
 import appCss from "../styles.css?url";
 import { AuthProvider } from "@/hooks/use-auth";
+import { JoinWorkshopPrompt } from "@/components/join-workshop-prompt";
 import { TopNav } from "@/components/top-nav";
 import { MobileBrandHeader } from "@/components/mobile-brand-header";
 import { MobileNav } from "@/components/mobile-nav";
@@ -243,6 +244,7 @@ function RootComponent() {
               <SignOutCacheReset />
 
               <TitleBadge />
+              {!chromeFree && <JoinWorkshopPrompt />}
               <AccountLifecycleGate />
               <PostAuthRunner />
             </div>

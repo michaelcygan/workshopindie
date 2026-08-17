@@ -15,6 +15,8 @@ type Props = {
   title?: string;
   subtitle?: string;
   onAuthed?: () => void;
+  /** Optional slot rendered under the sign-in/sign-up toggle. */
+  footer?: React.ReactNode;
 };
 
 /**
@@ -22,7 +24,7 @@ type Props = {
  * signup + Google. On successful signup, calls onAuthed(). emailRedirectTo
  * is the current URL so confirm-flow lands the user right back here.
  */
-export function SignupGateModal({ open, onOpenChange, title, subtitle, onAuthed }: Props) {
+export function SignupGateModal({ open, onOpenChange, title, subtitle, onAuthed, footer }: Props) {
   const [mode, setMode] = useState<"signup" | "signin">("signup");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -104,6 +106,7 @@ export function SignupGateModal({ open, onOpenChange, title, subtitle, onAuthed 
               {mode === "signup" ? "Sign in" : "Create one"}
             </button>
           </p>
+          {footer}
         </div>
       </DialogContent>
     </Dialog>
