@@ -121,13 +121,7 @@ async function fetchPosts({ cat, format, blockedIds }: Filters & { blockedIds: s
     q = q.eq("location_mode", "online");
   } else {
     if (format === "in_person") q = q.in("location_mode", ["in_person", "hybrid"]);
-    if (city) {
-      // City selected: posts in that city, posts open to that city, or (Any) online posts.
-      q =
-        format === "in_person"
-          ? q.or(`city_id.eq.${city},also_cities.cs.{${city}}`)
-          : q.or(`city_id.eq.${city},also_cities.cs.{${city}},location_mode.eq.online`);
-    }
+    // City is refined client-side so a post can also match its author's home city.
   }
 
   const { data, error } = await q;
