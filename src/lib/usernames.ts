@@ -36,6 +36,7 @@ export const ROUTE_RESERVED = [
   "pricing",
   "applypodcast",
   "applyopenhouse",
+  "film-festival",
 
   "redeem",
   "refer",
