@@ -33,7 +33,15 @@ import { AdminImportEventDialog } from "@/components/admin-import-event-dialog";
 import { VenueAutocomplete } from "@/components/event/venue-autocomplete";
 import { WorkshopVenuePicker } from "@/components/event/workshop-venue-picker";
 import { HackathonControlRoom } from "@/components/event/hackathon-control-room";
-import { evaluateVenuePolicy, getWorkshopVenue } from "@/lib/events/workshop-venues";
+import { coworkingVenueMeta, evaluateVenuePolicy, getWorkshopVenue } from "@/lib/events/workshop-venues";
+import {
+  ACTIVITY_OPTIONS,
+  COWORKING_DEFAULTS,
+  DAYPARTS,
+  daypartLabel,
+  type Daypart,
+} from "@/lib/events/coworking";
+import { CoworkingRotationBuilder } from "@/components/admin/coworking-rotation-builder";
 import { CoverImagePicker } from "@/components/event/cover-image-picker";
 import { SeedChicagoButton } from "@/components/admin/seed-chicago-button";
 import { workshopEntityUrl } from "@/lib/entities/kinds";
@@ -167,6 +175,12 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
     source: "workshop" | "external";
     external_url: string;
     external_organizer: string;
+    daypart: "" | Daypart;
+    min_age: string;
+    facilitation: "hosted" | "hostless";
+    drop_in_allowed: boolean;
+    allowed_activities: string[];
+    arrival_note_public: string;
     is_recurring: boolean;
     recurrence_rule: "WEEKLY" | "BIWEEKLY" | "MONTHLY";
     recurrence_label: string;
@@ -200,6 +214,12 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
     source: "workshop",
     external_url: "",
     external_organizer: "",
+    daypart: "",
+    min_age: "",
+    facilitation: "hosted",
+    drop_in_allowed: true,
+    allowed_activities: [],
+    arrival_note_public: "",
     is_recurring: false,
     recurrence_rule: "WEEKLY",
     recurrence_label: "",
@@ -259,6 +279,13 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
         external_organizer: form.source === "external" ? (form.external_organizer || null) : null,
         is_recurring: form.is_recurring,
         recurrence_label: form.is_recurring ? (form.recurrence_label || null) : null,
+        daypart: form.kind === "coworking" && form.daypart ? form.daypart : null,
+        min_age: form.min_age ? Number(form.min_age) : null,
+        facilitation: form.facilitation,
+        drop_in_allowed: form.drop_in_allowed,
+        allowed_activities: form.kind === "coworking" ? form.allowed_activities : [],
+        arrival_note_public: form.arrival_note_public || null,
+        waitlist_enabled: form.kind === "coworking" ? true : undefined,
         pinned: form.pinned,
         extra_group_ids: extraGroupIds.filter((id) => id !== form.group_id),
       };
@@ -379,7 +406,30 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Kind</Label>
-              <Select value={form.kind} onValueChange={(v) => setForm({ ...form, kind: v as typeof form.kind })}>
+              <Select
+                value={form.kind}
+                onValueChange={(v) => {
+                  const kind = v as EventKind;
+                  setForm((prev) =>
+                    kind === "coworking"
+                      ? {
+                          ...prev,
+                          kind,
+                          format: COWORKING_DEFAULTS.format,
+                          facilitation: COWORKING_DEFAULTS.facilitation,
+                          drop_in_allowed: COWORKING_DEFAULTS.drop_in_allowed,
+                          capacity: prev.capacity || String(COWORKING_DEFAULTS.capacity),
+                          overflow: prev.overflow || String(COWORKING_DEFAULTS.overflow),
+                          tagline: prev.tagline || COWORKING_DEFAULTS.tagline,
+                          allowed_activities:
+                            prev.allowed_activities.length > 0
+                              ? prev.allowed_activities
+                              : [...COWORKING_DEFAULTS_ACTIVITIES],
+                        }
+                      : { ...prev, kind },
+                  );
+                }}
+              >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {EVENT_KIND_OPTIONS.map((k) => (
@@ -469,8 +519,19 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
             <WorkshopVenuePicker
               selectedKey={form.workshop_venue_key}
               onSelect={(venue, resolved) =>
-                setForm((prev) => ({
+                setForm((prev) => {
+                  const meta = prev.kind === "coworking" ? coworkingVenueMeta(venue.key) : null;
+                  return {
                   ...prev,
+                  ...(meta
+                    ? {
+                        capacity: String(meta.capacity),
+                        overflow: String(meta.overflow),
+                        min_age: meta.min_age ? String(meta.min_age) : "",
+                        allowed_activities: [...meta.activities],
+                        daypart: (meta.dayparts[0] ?? prev.daypart) as "" | Daypart,
+                      }
+                    : {}),
                   workshop_venue_key: venue.key,
                   venue_policy_confirmed: false,
                   venue_name: resolved.venue_name,
@@ -479,7 +540,8 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
                   venue_lng: resolved.venue_lng ?? prev.venue_lng,
                   venue_city_id: resolved.venue_city_id ?? prev.venue_city_id,
                   city_label: resolved.city_label ?? prev.city_label,
-                }))
+                  };
+                })
               }
             />
             <VenueAutocomplete
