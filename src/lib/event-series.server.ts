@@ -171,7 +171,7 @@ const TEMPLATE_COLUMNS = [
   "status",
 ] as const;
 
-function templateRow(template: Record<string, unknown>): Record<string, unknown> {
+export function templateRow(template: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const key of TEMPLATE_COLUMNS) {
     if (template[key] !== undefined) out[key] = template[key];
