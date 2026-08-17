@@ -93,6 +93,8 @@ function EditWork() {
   const [embedUrl, setEmbedUrl] = useState("");
   const [licenseType, setLicenseType] = useState("portfolio_credit_only");
   const [book, setBook] = useState<BookDetails>(emptyBookDetails);
+  const [visibility, setVisibility] = useState<"public" | "unlisted">("public");
+  const [deleting, setDeleting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const categoryLabel = workCategoryById(categoryId)?.label ?? (customCategory.trim() || null);
@@ -117,6 +119,7 @@ function EditWork() {
     setPrimaryUrl(work.primary_url ?? "");
     setEmbedUrl(work.embed_url ?? "");
     setLicenseType(work.license_type ?? "portfolio_credit_only");
+    setVisibility(work.visibility === "unlisted" ? "unlisted" : "public");
     if (isBookWork(work.category, work.subtype)) {
       setBook({
         author: work.book_author ?? "",
@@ -200,7 +203,7 @@ function EditWork() {
       embedUrl,
       coverUrl,
       licenseType,
-      visibility: work.visibility === "unlisted" ? "unlisted" : "public",
+      visibility,
       ownsRights: true,
     };
 
