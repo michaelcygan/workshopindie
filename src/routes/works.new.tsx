@@ -383,12 +383,6 @@ function NewWork() {
         <p className="mt-1 text-ink-muted">
           Drop a link, upload a file, or start from scratch — we'll do the rest.
         </p>
-        <a
-          href="/works/collab/new"
-          className="mt-3 inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
-        >
-          Or start a collaborative Work — invite people to publish it with you →
-        </a>
       </motion.div>
 
       {/* Rights reassurance */}
