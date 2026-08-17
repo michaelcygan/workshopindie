@@ -12,28 +12,26 @@
  */
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-import { ChevronDown, Plus, Search, X } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { DISCOVERABLE_STATUSES, collapseSeries, effectiveEndMs } from "@/lib/events/filters";
 import {
   eventKindLabel,
-  attendanceLabel,
   matchesAttendance,
   ATTENDANCE_OPTIONS,
   type AttendanceFilter,
 } from "@/lib/events/kinds";
+import {
+  FilterClear,
+  FilterControls,
+  FilterHeader,
+  FilterSearch,
+  FilterSelect,
+} from "@/components/filter-header";
 import { FIELD_OPTIONS, categoryLabel, normalizeField, subcategoryLabel } from "@/lib/taxonomy";
 import { useEventsRealtime } from "@/hooks/use-events-realtime";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
+
 
 export type DirectoryGroup = {
   id: string;
