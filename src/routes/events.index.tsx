@@ -60,6 +60,8 @@ const searchSchema = z.object({
     .string()
     .catch(undefined as unknown as string)
     .optional(),
+  q: fallback(z.string(), "").default(""),
+  medium: fallback(z.string(), "").default(""),
   mine: fallback(z.boolean(), false).default(false),
   kind: fallback(z.enum(["all", "coworking"]), "all").default("all"),
   daypart: fallback(z.enum(["all", "morning", "afternoon", "evening"]), "all").default("all"),
@@ -73,6 +75,8 @@ async function fetchPublicEvents(
       cityId?: string | null;
       kind?: string | null;
       daypart?: "morning" | "afternoon" | "evening" | null;
+      medium?: string | null;
+      q?: string | null;
     };
   }) => Promise<unknown>,
   when: When,
@@ -80,6 +84,8 @@ async function fetchPublicEvents(
   cityId?: string,
   kind?: string,
   daypart?: string,
+  medium?: string,
+  q?: string,
 ) {
   const rows = await fn({
     data: {
@@ -89,10 +95,13 @@ async function fetchPublicEvents(
       kind: kind && kind !== "all" ? kind : null,
       daypart:
         daypart && daypart !== "all" ? (daypart as "morning" | "afternoon" | "evening") : null,
+      medium: medium ? medium : null,
+      q: q && q.trim() ? q.trim() : null,
     },
   });
   return rows as unknown as EventCardData[];
 }
+
 
 export const Route = createFileRoute("/events/")({
   validateSearch: zodValidator(searchSchema),
