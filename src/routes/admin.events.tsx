@@ -69,6 +69,7 @@ function AdminEventsPage() {
       <div className="mb-5 flex items-center justify-between">
         <h2 className="font-display text-2xl text-ink">Events</h2>
         <div className="flex items-center gap-2">
+          <CoworkingRotationBuilder onCreated={() => { qc.invalidateQueries({ queryKey: ["admin-events"] }); }} />
           <SeedChicagoButton onSeeded={() => { qc.invalidateQueries({ queryKey: ["admin-events"] }); }} />
           <AdminImportEventDialog onCreated={() => { qc.invalidateQueries({ queryKey: ["admin-events"] }); }} />
           <CreateEventDialog onCreated={() => { qc.invalidateQueries({ queryKey: ["admin-events"] }); }} />
