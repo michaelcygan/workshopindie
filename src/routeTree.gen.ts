@@ -16,6 +16,7 @@ import { Route as ApplyopenhouseRouteImport } from './routes/applyopenhouse'
 import { Route as ApplypodcastRouteImport } from './routes/applypodcast'
 import { Route as CitiesRouteImport } from './routes/cities'
 import { Route as CollabRouteImport } from './routes/collab'
+import { Route as FilmFestivalRouteImport } from './routes/film-festival'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as GRouteImport } from './routes/g'
 import { Route as GalleryRouteImport } from './routes/gallery'
@@ -163,6 +164,11 @@ const CitiesRoute = CitiesRouteImport.update({
 const CollabRoute = CollabRouteImport.update({
   id: '/collab',
   path: '/collab',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FilmFestivalRoute = FilmFestivalRouteImport.update({
+  id: '/film-festival',
+  path: '/film-festival',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
@@ -746,6 +752,7 @@ export interface FileRoutesByFullPath {
   '/applypodcast': typeof ApplypodcastRoute
   '/cities': typeof CitiesRouteWithChildren
   '/collab': typeof CollabRouteWithChildren
+  '/film-festival': typeof FilmFestivalRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/g': typeof GRouteWithChildren
   '/gallery': typeof GalleryRoute
@@ -865,6 +872,7 @@ export interface FileRoutesByTo {
   '/$username': typeof UsernameRoute
   '/applyopenhouse': typeof ApplyopenhouseRoute
   '/applypodcast': typeof ApplypodcastRoute
+  '/film-festival': typeof FilmFestivalRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/g': typeof GRouteWithChildren
   '/gallery': typeof GalleryRoute
@@ -985,6 +993,7 @@ export interface FileRoutesById {
   '/applypodcast': typeof ApplypodcastRoute
   '/cities': typeof CitiesRouteWithChildren
   '/collab': typeof CollabRouteWithChildren
+  '/film-festival': typeof FilmFestivalRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/g': typeof GRouteWithChildren
   '/gallery': typeof GalleryRoute
@@ -1109,6 +1118,7 @@ export interface FileRouteTypes {
     | '/applypodcast'
     | '/cities'
     | '/collab'
+    | '/film-festival'
     | '/forgot-password'
     | '/g'
     | '/gallery'
@@ -1228,6 +1238,7 @@ export interface FileRouteTypes {
     | '/$username'
     | '/applyopenhouse'
     | '/applypodcast'
+    | '/film-festival'
     | '/forgot-password'
     | '/g'
     | '/gallery'
@@ -1347,6 +1358,7 @@ export interface FileRouteTypes {
     | '/applypodcast'
     | '/cities'
     | '/collab'
+    | '/film-festival'
     | '/forgot-password'
     | '/g'
     | '/gallery'
@@ -1470,6 +1482,7 @@ export interface RootRouteChildren {
   ApplypodcastRoute: typeof ApplypodcastRoute
   CitiesRoute: typeof CitiesRouteWithChildren
   CollabRoute: typeof CollabRouteWithChildren
+  FilmFestivalRoute: typeof FilmFestivalRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   GRoute: typeof GRouteWithChildren
   GalleryRoute: typeof GalleryRoute
@@ -1588,6 +1601,13 @@ declare module '@tanstack/react-router' {
       path: '/collab'
       fullPath: '/collab'
       preLoaderRoute: typeof CollabRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/film-festival': {
+      id: '/film-festival'
+      path: '/film-festival'
+      fullPath: '/film-festival'
+      preLoaderRoute: typeof FilmFestivalRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forgot-password': {
@@ -2574,6 +2594,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApplypodcastRoute: ApplypodcastRoute,
   CitiesRoute: CitiesRouteWithChildren,
   CollabRoute: CollabRouteWithChildren,
+  FilmFestivalRoute: FilmFestivalRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   GRoute: GRouteWithChildren,
   GalleryRoute: GalleryRoute,
