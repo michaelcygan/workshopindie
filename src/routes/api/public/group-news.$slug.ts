@@ -2,9 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import type { NewsItem } from "@/lib/group-news";
 import {
   CACHE_FRESH_MS,
+  REFRESH_BUDGET_MS,
   fetchFeedItems,
   publicSupabase,
   readNewsCache,
+  refreshFeed,
+  withBudget,
   writeNewsCache,
 } from "@/lib/group-news.server";
 
@@ -26,9 +29,19 @@ type Reason =
   | "upstream_timeout"
   | "upstream_error";
 
-function json(items: NewsItem[], reason: Reason, status: number, cache: string): Response {
-  return Response.json({ items, reason }, { status, headers: { "Cache-Control": cache } });
+function json(
+  items: NewsItem[],
+  reason: Reason,
+  status: number,
+  cache: string,
+  ageMs = 0,
+): Response {
+  return Response.json(
+    { items, reason, ageMs: Number.isFinite(ageMs) ? Math.round(ageMs) : null },
+    { status, headers: { "Cache-Control": cache } },
+  );
 }
+
 
 const SHORT = "public, max-age=300, s-maxage=300";
 const NO_STORE = "no-store";
