@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { markAllNotificationsRead } from "@/lib/notifications.functions";
 import { formatRoomTitle } from "@/lib/instant";
 import { workshopEntityUrl } from "@/lib/entities/kinds";
+import { programTypeLabel } from "@/lib/open-house";
 
 type Row = {
   id: string;
@@ -51,6 +52,7 @@ const ICONS: Record<string, typeof Bell> = {
   event_recap: Calendar,
   event_new_in_my_group: Calendar,
   podcast_application_new: Mic,
+  open_house_application_new: Mic,
   admin_new_member: UserPlus,
   admin_blog_published: FileText,
   admin_work_published: Sparkles,
@@ -215,6 +217,20 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
         title: `New podcast application — ${who}`,
         subtitle: bits || "Tap to review.",
         href: "/admin/podcast",
+      };
+    }
+    case "open_house_application_new": {
+      const who = (n.payload?.name as string) || "Someone";
+      const bits = [
+        programTypeLabel((n.payload?.program_type as string) || ""),
+        n.payload?.city as string | undefined,
+      ]
+        .filter(Boolean)
+        .join(" · ");
+      return {
+        title: `New Open House application — ${who}`,
+        subtitle: bits || "Tap to review.",
+        href: "/admin/open-house",
       };
     }
     case "admin_new_member": {

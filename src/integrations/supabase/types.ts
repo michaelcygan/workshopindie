@@ -5306,6 +5306,94 @@ export type Database = {
           },
         ]
       }
+      open_house_applications: {
+        Row: {
+          approximate_length: string | null
+          city: string
+          city_id: string | null
+          contact_name: string
+          created_at: string
+          email: string
+          id: string
+          internal_notes: string | null
+          marketing_opt_in: boolean
+          portfolio_url: string
+          program_type: string
+          project_name: string | null
+          proposal: string
+          setup_needs: string | null
+          status: string
+          updated_at: string
+          user_id: string | null
+          wants_account: boolean
+          workshop_username: string | null
+        }
+        Insert: {
+          approximate_length?: string | null
+          city: string
+          city_id?: string | null
+          contact_name: string
+          created_at?: string
+          email: string
+          id?: string
+          internal_notes?: string | null
+          marketing_opt_in?: boolean
+          portfolio_url: string
+          program_type: string
+          project_name?: string | null
+          proposal: string
+          setup_needs?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          wants_account?: boolean
+          workshop_username?: string | null
+        }
+        Update: {
+          approximate_length?: string | null
+          city?: string
+          city_id?: string | null
+          contact_name?: string
+          created_at?: string
+          email?: string
+          id?: string
+          internal_notes?: string | null
+          marketing_opt_in?: boolean
+          portfolio_url?: string
+          program_type?: string
+          project_name?: string | null
+          proposal?: string
+          setup_needs?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          wants_account?: boolean
+          workshop_username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "open_house_applications_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "open_house_applications_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "open_house_applications_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_geo_city_stats"
+            referencedColumns: ["city_id"]
+          },
+        ]
+      }
       plus_access_grants: {
         Row: {
           access_ends_at: string | null

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UsernameRouteImport } from './routes/$username'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as ApplyopenhouseRouteImport } from './routes/applyopenhouse'
 import { Route as ApplypodcastRouteImport } from './routes/applypodcast'
 import { Route as CitiesRouteImport } from './routes/cities'
 import { Route as CollabRouteImport } from './routes/collab'
@@ -46,6 +47,7 @@ import { Route as AdminInvestorRouteImport } from './routes/admin.investor'
 import { Route as AdminLinksRouteImport } from './routes/admin.links'
 import { Route as AdminMarketplaceRouteImport } from './routes/admin.marketplace'
 import { Route as AdminModerationRouteImport } from './routes/admin.moderation'
+import { Route as AdminOpenHouseRouteImport } from './routes/admin.open-house'
 import { Route as AdminOpsRouteImport } from './routes/admin.ops'
 import { Route as AdminPlusRouteImport } from './routes/admin.plus'
 import { Route as AdminPodcastRouteImport } from './routes/admin.podcast'
@@ -141,6 +143,11 @@ const UsernameRoute = UsernameRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApplyopenhouseRoute = ApplyopenhouseRouteImport.update({
+  id: '/applyopenhouse',
+  path: '/applyopenhouse',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApplypodcastRoute = ApplypodcastRouteImport.update({
@@ -313,6 +320,11 @@ const AdminMarketplaceRoute = AdminMarketplaceRouteImport.update({
 const AdminModerationRoute = AdminModerationRouteImport.update({
   id: '/moderation',
   path: '/moderation',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminOpenHouseRoute = AdminOpenHouseRouteImport.update({
+  id: '/open-house',
+  path: '/open-house',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminOpsRoute = AdminOpsRouteImport.update({
@@ -730,6 +742,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$username': typeof UsernameRoute
   '/admin': typeof AdminRouteWithChildren
+  '/applyopenhouse': typeof ApplyopenhouseRoute
   '/applypodcast': typeof ApplypodcastRoute
   '/cities': typeof CitiesRouteWithChildren
   '/collab': typeof CollabRouteWithChildren
@@ -763,6 +776,7 @@ export interface FileRoutesByFullPath {
   '/admin/links': typeof AdminLinksRoute
   '/admin/marketplace': typeof AdminMarketplaceRoute
   '/admin/moderation': typeof AdminModerationRoute
+  '/admin/open-house': typeof AdminOpenHouseRoute
   '/admin/ops': typeof AdminOpsRoute
   '/admin/plus': typeof AdminPlusRoute
   '/admin/podcast': typeof AdminPodcastRoute
@@ -849,6 +863,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$username': typeof UsernameRoute
+  '/applyopenhouse': typeof ApplyopenhouseRoute
   '/applypodcast': typeof ApplypodcastRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/g': typeof GRouteWithChildren
@@ -877,6 +892,7 @@ export interface FileRoutesByTo {
   '/admin/links': typeof AdminLinksRoute
   '/admin/marketplace': typeof AdminMarketplaceRoute
   '/admin/moderation': typeof AdminModerationRoute
+  '/admin/open-house': typeof AdminOpenHouseRoute
   '/admin/ops': typeof AdminOpsRoute
   '/admin/plus': typeof AdminPlusRoute
   '/admin/podcast': typeof AdminPodcastRoute
@@ -965,6 +981,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/$username': typeof UsernameRoute
   '/admin': typeof AdminRouteWithChildren
+  '/applyopenhouse': typeof ApplyopenhouseRoute
   '/applypodcast': typeof ApplypodcastRoute
   '/cities': typeof CitiesRouteWithChildren
   '/collab': typeof CollabRouteWithChildren
@@ -998,6 +1015,7 @@ export interface FileRoutesById {
   '/admin/links': typeof AdminLinksRoute
   '/admin/marketplace': typeof AdminMarketplaceRoute
   '/admin/moderation': typeof AdminModerationRoute
+  '/admin/open-house': typeof AdminOpenHouseRoute
   '/admin/ops': typeof AdminOpsRoute
   '/admin/plus': typeof AdminPlusRoute
   '/admin/podcast': typeof AdminPodcastRoute
@@ -1087,6 +1105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$username'
     | '/admin'
+    | '/applyopenhouse'
     | '/applypodcast'
     | '/cities'
     | '/collab'
@@ -1120,6 +1139,7 @@ export interface FileRouteTypes {
     | '/admin/links'
     | '/admin/marketplace'
     | '/admin/moderation'
+    | '/admin/open-house'
     | '/admin/ops'
     | '/admin/plus'
     | '/admin/podcast'
@@ -1206,6 +1226,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/$username'
+    | '/applyopenhouse'
     | '/applypodcast'
     | '/forgot-password'
     | '/g'
@@ -1234,6 +1255,7 @@ export interface FileRouteTypes {
     | '/admin/links'
     | '/admin/marketplace'
     | '/admin/moderation'
+    | '/admin/open-house'
     | '/admin/ops'
     | '/admin/plus'
     | '/admin/podcast'
@@ -1321,6 +1343,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$username'
     | '/admin'
+    | '/applyopenhouse'
     | '/applypodcast'
     | '/cities'
     | '/collab'
@@ -1354,6 +1377,7 @@ export interface FileRouteTypes {
     | '/admin/links'
     | '/admin/marketplace'
     | '/admin/moderation'
+    | '/admin/open-house'
     | '/admin/ops'
     | '/admin/plus'
     | '/admin/podcast'
@@ -1442,6 +1466,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   UsernameRoute: typeof UsernameRoute
   AdminRoute: typeof AdminRouteWithChildren
+  ApplyopenhouseRoute: typeof ApplyopenhouseRoute
   ApplypodcastRoute: typeof ApplypodcastRoute
   CitiesRoute: typeof CitiesRouteWithChildren
   CollabRoute: typeof CollabRouteWithChildren
@@ -1535,6 +1560,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/applyopenhouse': {
+      id: '/applyopenhouse'
+      path: '/applyopenhouse'
+      fullPath: '/applyopenhouse'
+      preLoaderRoute: typeof ApplyopenhouseRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/applypodcast': {
@@ -1773,6 +1805,13 @@ declare module '@tanstack/react-router' {
       path: '/moderation'
       fullPath: '/admin/moderation'
       preLoaderRoute: typeof AdminModerationRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/open-house': {
+      id: '/admin/open-house'
+      path: '/open-house'
+      fullPath: '/admin/open-house'
+      preLoaderRoute: typeof AdminOpenHouseRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/ops': {
@@ -2369,6 +2408,7 @@ interface AdminRouteChildren {
   AdminLinksRoute: typeof AdminLinksRoute
   AdminMarketplaceRoute: typeof AdminMarketplaceRoute
   AdminModerationRoute: typeof AdminModerationRoute
+  AdminOpenHouseRoute: typeof AdminOpenHouseRoute
   AdminOpsRoute: typeof AdminOpsRoute
   AdminPlusRoute: typeof AdminPlusRoute
   AdminPodcastRoute: typeof AdminPodcastRoute
@@ -2396,6 +2436,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminLinksRoute: AdminLinksRoute,
   AdminMarketplaceRoute: AdminMarketplaceRoute,
   AdminModerationRoute: AdminModerationRoute,
+  AdminOpenHouseRoute: AdminOpenHouseRoute,
   AdminOpsRoute: AdminOpsRoute,
   AdminPlusRoute: AdminPlusRoute,
   AdminPodcastRoute: AdminPodcastRoute,
@@ -2529,6 +2570,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   UsernameRoute: UsernameRoute,
   AdminRoute: AdminRouteWithChildren,
+  ApplyopenhouseRoute: ApplyopenhouseRoute,
   ApplypodcastRoute: ApplypodcastRoute,
   CitiesRoute: CitiesRouteWithChildren,
   CollabRoute: CollabRouteWithChildren,
