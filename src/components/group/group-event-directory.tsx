@@ -175,16 +175,18 @@ export function GroupEventDirectory({
   });
 
   const { data: events, isLoading } = useGroupDirectoryEvents(group.id);
-  const [searchOpen, setSearchOpen] = useState(!!filters.q);
 
   const all = events ?? [];
   const now = Date.now();
 
   // Only offer filters the Group's own dataset can actually satisfy.
   const availableKinds = Array.from(new Set(all.map((e) => e.kind).filter(Boolean)));
-  const availableCategories = FIELD_OPTIONS.filter((f) =>
-    all.some((e) => e.creative_category && normalizeField(e.creative_category) === f.id),
-  );
+  const availableCategories = FIELD_OPTIONS.map((f) => ({
+    ...f,
+    count: all.filter((e) => e.creative_category && normalizeField(e.creative_category) === f.id)
+      .length,
+  })).filter((f) => f.count > 0);
+
 
   const matches = (e: EventLite) => {
     if (filters.category && (!e.creative_category || normalizeField(e.creative_category) !== filters.category)) return false;
