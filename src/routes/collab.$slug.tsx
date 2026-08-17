@@ -30,6 +30,7 @@ import {
   recruitmentLabel,
   isLegacyPrivateDraft,
   isPubliclyVisible,
+  isMemberPrivate,
   isDiscoverableOpportunity,
   effectiveApplicationsOpen,
   teamLabel,
