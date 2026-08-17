@@ -43,7 +43,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export const Route = createFileRoute("/works/$slug/edit")({
+export const Route = createFileRoute("/works/$slug_/edit")({
   component: EditWork,
 });
 

@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { updateCollab } from "@/lib/collab.functions";
 import { AlertTriangle } from "lucide-react";
 
-export const Route = createFileRoute("/collab/$slug/edit")({
+export const Route = createFileRoute("/collab/$slug_/edit")({
   component: EditCollab,
 });
 
