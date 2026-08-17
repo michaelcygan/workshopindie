@@ -2,9 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import type { NewsItem } from "@/lib/group-news";
 import {
   CACHE_FRESH_MS,
+  REFRESH_BUDGET_MS,
   fetchFeedItems,
   publicSupabase,
   readNewsCache,
+  refreshFeed,
+  withBudget,
   writeNewsCache,
 } from "@/lib/group-news.server";
 
@@ -26,9 +29,19 @@ type Reason =
   | "upstream_timeout"
   | "upstream_error";
 
-function json(items: NewsItem[], reason: Reason, status: number, cache: string): Response {
-  return Response.json({ items, reason }, { status, headers: { "Cache-Control": cache } });
+function json(
+  items: NewsItem[],
+  reason: Reason,
+  status: number,
+  cache: string,
+  ageMs = 0,
+): Response {
+  return Response.json(
+    { items, reason, ageMs: Number.isFinite(ageMs) ? Math.round(ageMs) : null },
+    { status, headers: { "Cache-Control": cache } },
+  );
 }
+
 
 const SHORT = "public, max-age=300, s-maxage=300";
 const NO_STORE = "no-store";
@@ -76,19 +89,17 @@ export const Route = createFileRoute("/api/public/group-news/$slug")({
           return json(cachedItems, "ok", 200, SUCCESS);
         }
 
-        // Stale-but-usable snapshot: answer instantly and refresh in the
-        // background so a slow RSS host never delays the ticker.
+        // Stale-but-usable snapshot: try to repair the cache within a short
+        // budget (background work is killed once the response returns), and
+        // fall back to the stale snapshot if the feed is slow.
         if (cachedItems.length > 0) {
-          void (async () => {
-            try {
-              const bg = await fetchFeedItems(feedUrl, slug, 12);
-              if (bg.reason === "ok") await writeNewsCache(slug, bg.items);
-            } catch {
-              /* best effort */
-            }
-          })();
-          return json(cachedItems, "ok", 200, SHORT);
+          const fresh = await withBudget(refreshFeed(slug, feedUrl, 12), REFRESH_BUDGET_MS);
+          if (fresh && fresh.reason === "ok") {
+            return json(fresh.items, "ok", 200, SUCCESS, 0);
+          }
+          return json(cachedItems, "ok", 200, SHORT, cachedAgeMs);
         }
+
 
         const { items, reason } = await fetchFeedItems(feedUrl, slug, 12);
 

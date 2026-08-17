@@ -140,3 +140,32 @@ export async function writeNewsCache(slug: string, items: NewsItem[]): Promise<v
     );
   }
 }
+
+/**
+ * Refresh one feed and persist it, bounded by an overall time budget.
+ *
+ * Background ("fire-and-forget") refreshes do not survive on the serverless
+ * runtime — the request context ends with the response, so the cache write
+ * never lands and snapshots go stale forever. Callers must await this with a
+ * short budget instead, falling back to the stale snapshot on timeout.
+ */
+export async function refreshFeed(
+  slug: string,
+  feedUrl: string,
+  limit = 12,
+): Promise<{ items: NewsItem[]; reason: FetchReason }> {
+  const result = await fetchFeedItems(feedUrl, slug, limit);
+  if (result.reason === "ok") await writeNewsCache(slug, result.items);
+  return result;
+}
+
+/** Resolves to `null` when the promise does not settle within `ms`. */
+export function withBudget<T>(promise: Promise<T>, ms: number): Promise<T | null> {
+  return Promise.race([
+    promise.catch(() => null),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
+  ]);
+}
+
+/** Overall wall-clock budget for in-request refreshes. */
+export const REFRESH_BUDGET_MS = 2500;

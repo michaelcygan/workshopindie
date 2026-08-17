@@ -115,6 +115,7 @@ import { Route as ApiPublicEventsMaterializeRouteImport } from './routes/api/pub
 import { Route as ApiPublicEventsReportSweepRouteImport } from './routes/api/public/events.report-sweep'
 import { Route as ApiPublicEventsSweepRouteImport } from './routes/api/public/events.sweep'
 import { Route as ApiPublicGroupNewsSlugRouteImport } from './routes/api/public/group-news.$slug'
+import { Route as ApiPublicGroupNewsRefreshRouteImport } from './routes/api/public/group-news.refresh'
 import { Route as ApiPublicLoungeSweepRouteImport } from './routes/api/public/lounge.sweep'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as ApiPublicTrafficLiveRouteImport } from './routes/api/public/traffic/live'
@@ -658,6 +659,12 @@ const ApiPublicGroupNewsSlugRoute = ApiPublicGroupNewsSlugRouteImport.update({
   path: '/api/public/group-news/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicGroupNewsRefreshRoute =
+  ApiPublicGroupNewsRefreshRouteImport.update({
+    id: '/api/public/group-news/refresh',
+    path: '/api/public/group-news/refresh',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicLoungeSweepRoute = ApiPublicLoungeSweepRouteImport.update({
   id: '/api/public/lounge/sweep',
   path: '/api/public/lounge/sweep',
@@ -802,6 +809,7 @@ export interface FileRoutesByFullPath {
   '/api/public/events/report-sweep': typeof ApiPublicEventsReportSweepRoute
   '/api/public/events/sweep': typeof ApiPublicEventsSweepRoute
   '/api/public/group-news/$slug': typeof ApiPublicGroupNewsSlugRoute
+  '/api/public/group-news/refresh': typeof ApiPublicGroupNewsRefreshRoute
   '/api/public/lounge/sweep': typeof ApiPublicLoungeSweepRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/traffic/live': typeof ApiPublicTrafficLiveRoute
@@ -911,6 +919,7 @@ export interface FileRoutesByTo {
   '/api/public/events/report-sweep': typeof ApiPublicEventsReportSweepRoute
   '/api/public/events/sweep': typeof ApiPublicEventsSweepRoute
   '/api/public/group-news/$slug': typeof ApiPublicGroupNewsSlugRoute
+  '/api/public/group-news/refresh': typeof ApiPublicGroupNewsRefreshRoute
   '/api/public/lounge/sweep': typeof ApiPublicLoungeSweepRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/traffic/live': typeof ApiPublicTrafficLiveRoute
@@ -1027,6 +1036,7 @@ export interface FileRoutesById {
   '/api/public/events/report-sweep': typeof ApiPublicEventsReportSweepRoute
   '/api/public/events/sweep': typeof ApiPublicEventsSweepRoute
   '/api/public/group-news/$slug': typeof ApiPublicGroupNewsSlugRoute
+  '/api/public/group-news/refresh': typeof ApiPublicGroupNewsRefreshRoute
   '/api/public/lounge/sweep': typeof ApiPublicLoungeSweepRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/traffic/live': typeof ApiPublicTrafficLiveRoute
@@ -1144,6 +1154,7 @@ export interface FileRouteTypes {
     | '/api/public/events/report-sweep'
     | '/api/public/events/sweep'
     | '/api/public/group-news/$slug'
+    | '/api/public/group-news/refresh'
     | '/api/public/lounge/sweep'
     | '/api/public/payments/webhook'
     | '/api/public/traffic/live'
@@ -1253,6 +1264,7 @@ export interface FileRouteTypes {
     | '/api/public/events/report-sweep'
     | '/api/public/events/sweep'
     | '/api/public/group-news/$slug'
+    | '/api/public/group-news/refresh'
     | '/api/public/lounge/sweep'
     | '/api/public/payments/webhook'
     | '/api/public/traffic/live'
@@ -1368,6 +1380,7 @@ export interface FileRouteTypes {
     | '/api/public/events/report-sweep'
     | '/api/public/events/sweep'
     | '/api/public/group-news/$slug'
+    | '/api/public/group-news/refresh'
     | '/api/public/lounge/sweep'
     | '/api/public/payments/webhook'
     | '/api/public/traffic/live'
@@ -1442,6 +1455,7 @@ export interface RootRouteChildren {
   ApiPublicEventsReportSweepRoute: typeof ApiPublicEventsReportSweepRoute
   ApiPublicEventsSweepRoute: typeof ApiPublicEventsSweepRoute
   ApiPublicGroupNewsSlugRoute: typeof ApiPublicGroupNewsSlugRoute
+  ApiPublicGroupNewsRefreshRoute: typeof ApiPublicGroupNewsRefreshRoute
   ApiPublicLoungeSweepRoute: typeof ApiPublicLoungeSweepRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
   ApiPublicWorkshopsSweepRoute: typeof ApiPublicWorkshopsSweepRoute
@@ -2192,6 +2206,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicGroupNewsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/group-news/refresh': {
+      id: '/api/public/group-news/refresh'
+      path: '/api/public/group-news/refresh'
+      fullPath: '/api/public/group-news/refresh'
+      preLoaderRoute: typeof ApiPublicGroupNewsRefreshRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/lounge/sweep': {
       id: '/api/public/lounge/sweep'
       path: '/api/public/lounge/sweep'
@@ -2490,6 +2511,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicEventsReportSweepRoute: ApiPublicEventsReportSweepRoute,
   ApiPublicEventsSweepRoute: ApiPublicEventsSweepRoute,
   ApiPublicGroupNewsSlugRoute: ApiPublicGroupNewsSlugRoute,
+  ApiPublicGroupNewsRefreshRoute: ApiPublicGroupNewsRefreshRoute,
   ApiPublicLoungeSweepRoute: ApiPublicLoungeSweepRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
   ApiPublicWorkshopsSweepRoute: ApiPublicWorkshopsSweepRoute,
