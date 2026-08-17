@@ -441,7 +441,6 @@ function CollabPage() {
                     online: false,
                     format: "any",
                     topic: "",
-                    live: false,
                     comp: "any",
                     sug: false,
                   }),
