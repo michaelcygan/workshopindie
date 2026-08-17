@@ -3,6 +3,7 @@ import {
   useAllPublicGroups,
   type DirectoryState,
   type GroupsSort,
+  type GroupsTab,
   SORT_VALUES,
 } from "@/components/groups/groups-directory";
 import {
@@ -11,7 +12,9 @@ import {
   FilterHeader,
   FilterSearch,
   FilterSelect,
+  FilterToggleGroup,
 } from "@/components/filter-header";
+import { FilterCityPicker } from "@/components/filter-header/filter-city-picker";
 import { categoryLabel, normalizeCategory } from "@/lib/taxonomy";
 
 const SORT_LABELS: Record<GroupsSort, string> = {
@@ -27,6 +30,7 @@ export function isDirectoryFiltered(state: DirectoryState): boolean {
     state.tab !== "all" ||
     (state.category !== "all" && !!state.category) ||
     state.sort !== "featured" ||
+    !!state.city.trim() ||
     !!state.query.trim()
   );
 }
@@ -35,14 +39,16 @@ type Props = {
   state: DirectoryState;
   onChange: (patch: Partial<DirectoryState>) => void;
   onReset: () => void;
+  authenticated: boolean;
 };
 
 /**
- * The single sticky control row for /groups: live search on the left, City ·
- * Field · Sort on the right, and a clear button once anything is active.
- * All state is URL-backed and owned by the route.
+ * The single sticky control row for /groups: kind, live search, City · Medium ·
+ * Sort, and a clear button once anything is active. Identical for logged-out
+ * and signed-in visitors apart from the "Your groups" tab. All state is
+ * URL-backed and owned by the route.
  */
-export function GroupsControlRow({ state, onChange, onReset }: Props) {
+export function GroupsControlRow({ state, onChange, onReset, authenticated }: Props) {
   const { data: allGroups = [] } = useAllPublicGroups();
   const active = isDirectoryFiltered(state);
 
@@ -50,12 +56,11 @@ export function GroupsControlRow({ state, onChange, onReset }: Props) {
     () =>
       allGroups
         .filter((g) => g.kind === "city")
-        .sort((a, b) => b.member_count - a.member_count || a.name.localeCompare(b.name))
-        .map((g) => g.name),
+        .map((g) => ({ value: g.name, label: g.name, count: g.member_count })),
     [allGroups],
   );
 
-  const fields = useMemo(() => {
+  const mediums = useMemo(() => {
     const counts = new Map<string, number>();
     for (const g of allGroups) {
       if (!g.category) continue;
@@ -67,10 +72,20 @@ export function GroupsControlRow({ state, onChange, onReset }: Props) {
       .map(([id, count]) => ({ id, count }));
   }, [allGroups]);
 
-  const selectedCity =
-    cities.find((c) => c.toLocaleLowerCase() === state.query.trim().toLocaleLowerCase()) ?? "";
   const category =
     state.category === "all" || !state.category ? "all" : normalizeCategory(state.category);
+
+  const kindOptions = useMemo(() => {
+    const base: { value: GroupsTab; label: string }[] = [
+      { value: "all", label: "All" },
+      { value: "for-you", label: "Yours" },
+      { value: "genre", label: "Fields" },
+      { value: "scene", label: "Scenes" },
+      { value: "micro", label: "Micro" },
+      { value: "city", label: "Cities" },
+    ];
+    return base.filter((o) => (o.value === "for-you" ? authenticated : true));
+  }, [authenticated]);
 
   return (
     <FilterHeader>
@@ -82,28 +97,26 @@ export function GroupsControlRow({ state, onChange, onReset }: Props) {
       />
 
       <FilterControls>
-        <FilterSelect
-          label="Filter by city"
-          width="min-w-[11rem]"
-          value={selectedCity}
-          onChange={(v) => onChange({ query: v, tab: "all" })}
-        >
-          <option value="">All cities</option>
-          {cities.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </FilterSelect>
+        <FilterToggleGroup
+          value={state.tab}
+          onChange={(t) => onChange({ tab: t })}
+          options={kindOptions}
+        />
+
+        <FilterCityPicker
+          value={state.city}
+          onChange={(city) => onChange({ city })}
+          options={cities}
+        />
 
         <FilterSelect
-          label="Filter by field"
+          label="Filter by medium"
           width="min-w-[11rem]"
           value={category}
           onChange={(v) => onChange({ category: v })}
         >
-          <option value="all">All fields</option>
-          {fields.map(({ id, count }) => (
+          <option value="all">All mediums</option>
+          {mediums.map(({ id, count }) => (
             <option key={id} value={id}>
               {categoryLabel(id)} ({count})
             </option>
