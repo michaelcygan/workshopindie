@@ -22,6 +22,13 @@ import { updateEventSeriesFuture, cancelEventSeriesFuture } from "@/lib/group-ev
 import { EventLocationCard } from "@/components/event-location-card";
 import { EventRsvpBlock, type MyRsvp } from "@/components/event-rsvp-block";
 import { HackathonPanel } from "@/components/event/hackathon-panel";
+import { CoworkingBlock } from "@/components/events/coworking-block";
+import {
+  COWORKING_NOTE_PLACEHOLDER,
+  COWORKING_NOTE_PROMPT,
+  daypartLabel,
+} from "@/lib/events/coworking";
+import { eventKindLabel } from "@/lib/events/kinds";
 
 import { EventShareSheet } from "@/components/event-share-sheet";
 
@@ -136,6 +143,12 @@ type EventRow = {
   created_by: string | null;
   lineup_capacity: number | null;
   source?: string | null;
+  daypart: string | null;
+  min_age: number | null;
+  facilitation: string | null;
+  drop_in_allowed: boolean | null;
+  allowed_activities: string[] | null;
+  arrival_note_public: string | null;
   external_organizer: string | null;
   external_url: string | null;
   group: { id: string; slug: string; name: string; avatar_url: string | null; kind?: string | null };
@@ -216,6 +229,7 @@ function EventPage() {
   const isFull =
     ev.capacity !== null && ev.going_count >= ev.capacity + Math.max(0, ev.overflow ?? 0);
   const host = resolveEventHost(ev);
+  const isCoworking = ev.kind === "coworking";
 
 
   const canonicalUrl = typeof window !== "undefined"
@@ -288,7 +302,8 @@ function EventPage() {
         <div className="rounded-xl border border-border bg-surface p-6 shadow-lift">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-soft">
-              <Tag className="h-3 w-3" /> {ev.kind.replace(/_/g, " ")}
+              <Tag className="h-3 w-3" /> {eventKindLabel(ev.kind)}
+              {isCoworking && ev.daypart ? ` · ${daypartLabel(ev.daypart)}` : ""}
             </span>
             {ev.source === "external" ? (
               <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-ink-muted">
@@ -432,6 +447,8 @@ function EventPage() {
             startsAt={ev.starts_at}
             timezone={ev.timezone}
             isRecurring={Boolean(ev.series_key)}
+            notePrompt={isCoworking ? COWORKING_NOTE_PROMPT : null}
+            notePlaceholder={isCoworking ? COWORKING_NOTE_PLACEHOLDER : null}
             footerSlot={
               !user ? (
                 <p className="text-sm text-ink-muted">
@@ -471,7 +488,11 @@ function EventPage() {
 
         {/* Four tabs. Nothing else. */}
         <div className="mt-6">
-          <Tabs defaultValue={moment === "upcoming" ? "about" : "wall"}>
+          <Tabs
+            defaultValue={
+              moment === "live" && isCoworking ? "here" : moment === "upcoming" ? "about" : "wall"
+            }
+          >
             <TabsList className="sticky top-2 z-10 grid w-full grid-cols-4 rounded-full bg-muted p-1 backdrop-blur">
               <TabsTrigger value="about" className="rounded-full text-xs"><Info className="mr-1 h-3.5 w-3.5" /> About</TabsTrigger>
               <TabsTrigger value="here" className="rounded-full text-xs"><Users className="mr-1 h-3.5 w-3.5" /> Who's here</TabsTrigger>
@@ -480,6 +501,22 @@ function EventPage() {
             </TabsList>
 
             <TabsContent value="about" className="mt-5 space-y-6">
+              {isCoworking && (
+                <CoworkingBlock
+                  daypart={ev.daypart}
+                  facilitation={ev.facilitation}
+                  dropInAllowed={ev.drop_in_allowed}
+                  allowedActivities={ev.allowed_activities}
+                  arrivalNote={ev.arrival_note_public}
+                  minAge={ev.min_age}
+                  capacity={ev.capacity}
+                  overflow={ev.overflow}
+                  workshopVenueKey={ev.workshop_venue_key}
+                  startsAt={ev.starts_at}
+                  endsAt={ev.ends_at}
+                  timezone={ev.timezone}
+                />
+              )}
               {ev.kind === "hackathon" && (
                 <HackathonPanel
                   eventId={ev.id}
@@ -532,9 +569,15 @@ function EventPage() {
                 eventId={ev.id}
                 view="wall"
                 suggestions={
-                  ev.workshop_venue_key
-                    ? ["I'm here — sitting", "Where is everyone sitting?", "I'm on my way — arriving around"]
-                    : undefined
+                  isCoworking
+                    ? [
+                        "I'm here — sitting",
+                        "Working on",
+                        "Heading out — good session",
+                      ]
+                    : ev.workshop_venue_key
+                      ? ["I'm here — sitting", "Where is everyone sitting?", "I'm on my way — arriving around"]
+                      : undefined
                 }
               />
             </TabsContent>

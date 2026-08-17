@@ -93,6 +93,7 @@ const baseSchema = z.object({
     "networking",
     "screening",
     "workshop_irl",
+    "coworking",
     "online",
     "other",
     "lineup",
@@ -122,6 +123,15 @@ const baseSchema = z.object({
   /** Admin confirmed the venue's own reservation / Host an Event flow for this occurrence. */
   venue_policy_confirmed: z.boolean().optional(),
   waitlist_enabled: z.boolean().optional(),
+  /** Co-working: which part of the day this session occupies. */
+  daypart: z.enum(["morning", "afternoon", "evening"]).nullable().optional(),
+  /** Venue- or program-set minimum age. Enforced server-side at RSVP time. */
+  min_age: z.number().int().min(1).max(99).nullable().optional(),
+  /** Co-working sessions run hostless by default; nobody runs the room. */
+  facilitation: z.enum(["hosted", "hostless"]).optional(),
+  drop_in_allowed: z.boolean().optional(),
+  allowed_activities: z.array(z.string().max(40)).max(20).optional(),
+  arrival_note_public: z.string().max(400).nullable().optional(),
   visibility: z.enum(["public", "group_only", "unlisted"]).optional(),
   rsvp_mode: z.enum(["open", "approval", "invite_only"]).optional(),
   is_official: z.boolean().optional(),
@@ -959,4 +969,48 @@ export const cancelEventSeriesFuture = createServerFn({ method: "POST" })
     }
 
     return { ok: true, canceled: canceled.length };
+  });
+
+/**
+ * Venue preflight for Co-working sessions. Hosts and admins record that the
+ * room was confirmed with the venue before people show up; RLS restricts both
+ * reads and writes to the event's hosts and Workshop admins.
+ */
+export const getEventOps = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ event_id: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { data: row } = await context.supabase
+      .from("event_ops")
+      .select("event_id,admin_note,preflight_status,preflight_checked_at")
+      .eq("event_id", data.event_id)
+      .maybeSingle();
+    return row ?? null;
+  });
+
+export const setEventPreflight = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z
+      .object({
+        event_id: z.string().uuid(),
+        preflight_status: z.enum(["check_required", "checked", "issue_found"]),
+        admin_note: z.string().max(500).nullish(),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.from("event_ops").upsert(
+      {
+        event_id: data.event_id,
+        preflight_status: data.preflight_status,
+        admin_note: data.admin_note ?? null,
+        preflight_checked_at:
+          data.preflight_status === "check_required" ? null : new Date().toISOString(),
+        preflight_checked_by: context.userId,
+      } as never,
+      { onConflict: "event_id" },
+    );
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });

@@ -33,7 +33,16 @@ import { AdminImportEventDialog } from "@/components/admin-import-event-dialog";
 import { VenueAutocomplete } from "@/components/event/venue-autocomplete";
 import { WorkshopVenuePicker } from "@/components/event/workshop-venue-picker";
 import { HackathonControlRoom } from "@/components/event/hackathon-control-room";
-import { evaluateVenuePolicy, getWorkshopVenue } from "@/lib/events/workshop-venues";
+import { coworkingVenueMeta, evaluateVenuePolicy, getWorkshopVenue } from "@/lib/events/workshop-venues";
+import {
+  ACTIVITY_OPTIONS,
+  COWORKING_DEFAULTS,
+  DEFAULT_COWORKING_ACTIVITIES,
+  DAYPARTS,
+  daypartLabel,
+  type Daypart,
+} from "@/lib/events/coworking";
+import { CoworkingRotationBuilder } from "@/components/admin/coworking-rotation-builder";
 import { CoverImagePicker } from "@/components/event/cover-image-picker";
 import { SeedChicagoButton } from "@/components/admin/seed-chicago-button";
 import { workshopEntityUrl } from "@/lib/entities/kinds";
@@ -60,6 +69,7 @@ function AdminEventsPage() {
       <div className="mb-5 flex items-center justify-between">
         <h2 className="font-display text-2xl text-ink">Events</h2>
         <div className="flex items-center gap-2">
+          <CoworkingRotationBuilder onCreated={() => { qc.invalidateQueries({ queryKey: ["admin-events"] }); }} />
           <SeedChicagoButton onSeeded={() => { qc.invalidateQueries({ queryKey: ["admin-events"] }); }} />
           <AdminImportEventDialog onCreated={() => { qc.invalidateQueries({ queryKey: ["admin-events"] }); }} />
           <CreateEventDialog onCreated={() => { qc.invalidateQueries({ queryKey: ["admin-events"] }); }} />
@@ -167,6 +177,12 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
     source: "workshop" | "external";
     external_url: string;
     external_organizer: string;
+    daypart: "" | Daypart;
+    min_age: string;
+    facilitation: "hosted" | "hostless";
+    drop_in_allowed: boolean;
+    allowed_activities: string[];
+    arrival_note_public: string;
     is_recurring: boolean;
     recurrence_rule: "WEEKLY" | "BIWEEKLY" | "MONTHLY";
     recurrence_label: string;
@@ -200,6 +216,12 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
     source: "workshop",
     external_url: "",
     external_organizer: "",
+    daypart: "",
+    min_age: "",
+    facilitation: "hosted",
+    drop_in_allowed: true,
+    allowed_activities: [],
+    arrival_note_public: "",
     is_recurring: false,
     recurrence_rule: "WEEKLY",
     recurrence_label: "",
@@ -259,6 +281,13 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
         external_organizer: form.source === "external" ? (form.external_organizer || null) : null,
         is_recurring: form.is_recurring,
         recurrence_label: form.is_recurring ? (form.recurrence_label || null) : null,
+        daypart: form.kind === "coworking" && form.daypart ? form.daypart : null,
+        min_age: form.min_age ? Number(form.min_age) : null,
+        facilitation: form.facilitation,
+        drop_in_allowed: form.drop_in_allowed,
+        allowed_activities: form.kind === "coworking" ? form.allowed_activities : [],
+        arrival_note_public: form.arrival_note_public || null,
+        waitlist_enabled: form.kind === "coworking" ? true : undefined,
         pinned: form.pinned,
         extra_group_ids: extraGroupIds.filter((id) => id !== form.group_id),
       };
@@ -379,7 +408,30 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Kind</Label>
-              <Select value={form.kind} onValueChange={(v) => setForm({ ...form, kind: v as typeof form.kind })}>
+              <Select
+                value={form.kind}
+                onValueChange={(v) => {
+                  const kind = v as EventKind;
+                  setForm((prev) =>
+                    kind === "coworking"
+                      ? {
+                          ...prev,
+                          kind,
+                          format: COWORKING_DEFAULTS.format,
+                          facilitation: COWORKING_DEFAULTS.facilitation,
+                          drop_in_allowed: COWORKING_DEFAULTS.drop_in_allowed,
+                          capacity: prev.capacity || String(COWORKING_DEFAULTS.capacity),
+                          overflow: prev.overflow || String(COWORKING_DEFAULTS.overflow),
+                          tagline: prev.tagline || COWORKING_DEFAULTS.tagline,
+                          allowed_activities:
+                            prev.allowed_activities.length > 0
+                              ? prev.allowed_activities
+                              : [...DEFAULT_COWORKING_ACTIVITIES],
+                        }
+                      : { ...prev, kind },
+                  );
+                }}
+              >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {EVENT_KIND_OPTIONS.map((k) => (
@@ -469,8 +521,19 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
             <WorkshopVenuePicker
               selectedKey={form.workshop_venue_key}
               onSelect={(venue, resolved) =>
-                setForm((prev) => ({
+                setForm((prev) => {
+                  const meta = prev.kind === "coworking" ? coworkingVenueMeta(venue.key) : null;
+                  return {
                   ...prev,
+                  ...(meta
+                    ? {
+                        capacity: String(meta.capacity),
+                        overflow: String(meta.overflow),
+                        min_age: meta.min_age ? String(meta.min_age) : "",
+                        allowed_activities: [...meta.activities],
+                        daypart: (meta.dayparts[0] ?? prev.daypart) as "" | Daypart,
+                      }
+                    : {}),
                   workshop_venue_key: venue.key,
                   venue_policy_confirmed: false,
                   venue_name: resolved.venue_name,
@@ -479,7 +542,8 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
                   venue_lng: resolved.venue_lng ?? prev.venue_lng,
                   venue_city_id: resolved.venue_city_id ?? prev.venue_city_id,
                   city_label: resolved.city_label ?? prev.city_label,
-                }))
+                  };
+                })
               }
             />
             <VenueAutocomplete
@@ -531,6 +595,101 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
               </p>
             </div>
           </div>
+          {form.kind === "coworking" && (
+            <div className="space-y-3 rounded-2xl border border-border bg-muted/30 p-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+                Co-working session
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <Label>Part of day</Label>
+                  <Select
+                    value={form.daypart || "none"}
+                    onValueChange={(v) =>
+                      setForm({ ...form, daypart: v === "none" ? "" : (v as Daypart) })
+                    }
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Unset</SelectItem>
+                      {DAYPARTS.map((d) => (
+                        <SelectItem key={d} value={d}>{daypartLabel(d)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Minimum age (optional)</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={99}
+                    value={form.min_age}
+                    onChange={(e) => setForm({ ...form, min_age: e.target.value })}
+                    placeholder="21"
+                  />
+                  <p className="mt-1 text-[11px] text-ink-muted">
+                    Checked against the member's birthdate when they RSVP.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-4 text-sm">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={form.facilitation === "hostless"}
+                    onChange={(e) =>
+                      setForm({ ...form, facilitation: e.target.checked ? "hostless" : "hosted" })
+                    }
+                  />
+                  No host (ordinary public seating)
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={form.drop_in_allowed}
+                    onChange={(e) => setForm({ ...form, drop_in_allowed: e.target.checked })}
+                  />
+                  Drop in any time
+                </label>
+              </div>
+              <div>
+                <Label>Good for</Label>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {ACTIVITY_OPTIONS.map((a) => {
+                    const on = form.allowed_activities.includes(a.value);
+                    return (
+                      <button
+                        key={a.value}
+                        type="button"
+                        onClick={() =>
+                          setForm((prev) => ({
+                            ...prev,
+                            allowed_activities: on
+                              ? prev.allowed_activities.filter((x) => x !== a.value)
+                              : [...prev.allowed_activities, a.value],
+                          }))
+                        }
+                        className={`rounded-full border px-2.5 py-1 text-xs ${on ? "border-ink bg-ink text-background" : "border-border bg-background text-ink-soft"}`}
+                      >
+                        {a.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <Label>Arrival note (public)</Label>
+                <Textarea
+                  rows={2}
+                  maxLength={400}
+                  value={form.arrival_note_public}
+                  onChange={(e) => setForm({ ...form, arrival_note_public: e.target.value })}
+                  placeholder="Look for the long table near the back windows…"
+                />
+              </div>
+            </div>
+          )}
           <VenuePolicyStrip form={form} setForm={(u) => setForm((prev) => u(prev))} />
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} />

@@ -28,6 +28,8 @@ export function EventRsvpBlock({
   startsAt,
   timezone,
   isRecurring,
+  notePrompt,
+  notePlaceholder,
   footerSlot,
 }: {
   eventId: string;
@@ -42,6 +44,9 @@ export function EventRsvpBlock({
   startsAt?: string | null;
   timezone?: string | null;
   isRecurring?: boolean;
+  /** When set, the RSVP collects a one-line note (Co-working: "What are you working on?"). */
+  notePrompt?: string | null;
+  notePlaceholder?: string | null;
   footerSlot?: ReactNode;
 }) {
   const { user } = useAuth();
@@ -49,6 +54,8 @@ export function EventRsvpBlock({
   const qc = useQueryClient();
   const [authSheetOpen, setAuthSheetOpen] = useState(false);
   const [pending, setPending] = useState<"going" | "declined" | null>(null);
+  const [note, setNote] = useState(myRsvp?.note ?? "");
+  const [savingNote, setSavingNote] = useState(false);
 
   const isFull = capacity !== null && goingCount >= capacity + Math.max(0, overflow ?? 0);
   const status = myRsvp?.status ?? null;
@@ -77,6 +84,8 @@ export function EventRsvpBlock({
 
   // Resume pending RSVP after returning signed-in.
   useEffect(() => { void pending; }, [pending]);
+  // Adopt the saved note once the RSVP query resolves.
+  useEffect(() => { if (myRsvp?.note) setNote(myRsvp.note); }, [myRsvp?.note]);
 
   async function commit(s: "going" | "declined") {
     if (!user) {
@@ -85,7 +94,14 @@ export function EventRsvpBlock({
       return;
     }
     try {
-      await rsvpFn({ data: { event_id: eventId, status: s, plus_ones: 0, note: null } });
+      await rsvpFn({
+        data: {
+          event_id: eventId,
+          status: s,
+          plus_ones: 0,
+          note: notePrompt && s === "going" ? (note.trim() || null) : null,
+        },
+      });
       qc.invalidateQueries({ queryKey: ["event-rsvp", eventId] });
       qc.invalidateQueries({ queryKey: ["event-attendees", eventId] });
       qc.invalidateQueries({ queryKey: ["event", eventId] });
@@ -142,6 +158,57 @@ export function EventRsvpBlock({
           <span className="truncate">Can't make it</span>
         </Button>
       </div>
+
+      {notePrompt && (
+        <div className="mt-3">
+          <label htmlFor={`rsvp-note-${eventId}`} className="text-xs font-medium text-ink">
+            {notePrompt}
+          </label>
+          <div className="mt-1 flex gap-2">
+            <input
+              id={`rsvp-note-${eventId}`}
+              value={note}
+              maxLength={140}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder={notePlaceholder ?? undefined}
+              className="min-w-0 flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm text-ink placeholder:text-ink-muted"
+            />
+            {going && (
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-xl"
+                disabled={savingNote || note === (myRsvp?.note ?? "")}
+                onClick={async () => {
+                  setSavingNote(true);
+                  try {
+                    await rsvpFn({
+                      data: {
+                        event_id: eventId,
+                        status: "going",
+                        plus_ones: 0,
+                        note: note.trim() || null,
+                      },
+                    });
+                    qc.invalidateQueries({ queryKey: ["event-rsvp", eventId] });
+                    qc.invalidateQueries({ queryKey: ["event-roster", eventId] });
+                    toast.success("Saved.");
+                  } catch (e) {
+                    toast.error((e as Error).message);
+                  } finally {
+                    setSavingNote(false);
+                  }
+                }}
+              >
+                Save
+              </Button>
+            )}
+          </div>
+          <p className="mt-1 text-[11px] text-ink-muted">
+            Shown to others who are going, so people can find their table.
+          </p>
+        </div>
+      )}
 
       <p className="mt-3 text-[11px] text-ink-muted">
         RSVPs are visible to other group members.

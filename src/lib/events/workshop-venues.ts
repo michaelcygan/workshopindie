@@ -17,6 +17,12 @@
  * invented policy, capacity, or source URL.
  */
 
+import {
+  DEFAULT_COWORKING_ACTIVITIES,
+  type CoworkingActivity,
+  type Daypart,
+} from "@/lib/events/coworking";
+
 export type WorkshopVenue = {
   /** Stable internal key persisted on `group_events.workshop_venue_key`. */
   key: string;
@@ -262,7 +268,105 @@ export const WORKSHOP_VENUES: readonly WorkshopVenue[] = Object.freeze([
     lat: 41.8281,
     lng: -87.6552,
   },
+  {
+    key: "chi_long_room",
+    venue_name: "Long Room",
+    address: "1612 W Irving Park Rd, Chicago, IL 60613",
+    neighborhood: "North Center",
+    venue_type: "Bar with cafe-style room",
+    is_workshop_venue: true,
+    is_open_house_home_base: false,
+    walk_in_supported: true,
+    walk_in_policy_verified: false,
+    group_policy_trigger: null,
+    reservation_policy_note:
+      "No ordinary reservations for small groups; ordinary seating is first-come.",
+    age_policy: null,
+    food_note: null,
+    wifi: null,
+    indoor_outdoor: "Indoor room with long communal seating",
+    scheduling_note: "Morning and early afternoon coverage on the North Side.",
+    source_url: null,
+    policy_last_verified_at: null,
+    active: true,
+    internal_note: "Daytime North Side co-working option. Confirm walk-in language before automating.",
+    lat: 41.9541,
+    lng: -87.669,
+  },
+  {
+    key: "chi_life_on_marz",
+    venue_name: "Life on Marz Community Club",
+    address: "3040 W Armitage Ave, Chicago, IL 60647",
+    neighborhood: "Logan Square",
+    venue_type: "Bar / community club",
+    is_workshop_venue: true,
+    is_open_house_home_base: false,
+    walk_in_supported: true,
+    walk_in_policy_verified: false,
+    group_policy_trigger: null,
+    reservation_policy_note: "No ordinary reservations for small groups.",
+    age_policy: "21+ in the evening",
+    food_note: null,
+    wifi: null,
+    indoor_outdoor: "Indoor bar room",
+    scheduling_note: "Frequent evening programming — verify the calendar before publishing.",
+    source_url: null,
+    policy_last_verified_at: null,
+    active: true,
+    internal_note: "Late afternoon and selected evenings only.",
+    lat: 41.9174,
+    lng: -87.704,
+  },
+  {
+    key: "chi_waterfront_cafe",
+    venue_name: "Waterfront Café",
+    address: "2800 W Lake Shore Dr, Chicago, IL 60657",
+    neighborhood: "Lakefront",
+    venue_type: "Seasonal lakefront café",
+    is_workshop_venue: true,
+    is_open_house_home_base: false,
+    walk_in_supported: true,
+    walk_in_policy_verified: false,
+    group_policy_trigger: null,
+    reservation_policy_note: "Seasonal, walk-in only.",
+    age_policy: null,
+    food_note: null,
+    wifi: null,
+    indoor_outdoor: "Seasonal outdoor lakefront seating",
+    scheduling_note: "Warm months only. No outlets — schedule for offline work.",
+    source_url: null,
+    policy_last_verified_at: null,
+    active: true,
+    internal_note: "Seasonal morning/afternoon option. Outdoors, no power.",
+    lat: 41.933,
+    lng: -87.638,
+  },
+  {
+    key: "chi_obama_center_cafe",
+    venue_name: "Obama Presidential Center Café",
+    address: "5235 S Cornell Dr, Chicago, IL 60615",
+    neighborhood: "Jackson Park",
+    venue_type: "Museum café",
+    is_workshop_venue: false,
+    is_open_house_home_base: false,
+    walk_in_supported: null,
+    walk_in_policy_verified: false,
+    group_policy_trigger: null,
+    reservation_policy_note: "Public café seating; no reservations.",
+    age_policy: null,
+    food_note: null,
+    wifi: null,
+    indoor_outdoor: null,
+    scheduling_note: "Scout later — too busy for dependable recurring Co-working.",
+    source_url: null,
+    policy_last_verified_at: null,
+    active: false,
+    internal_note: "Scout later. Small trial only; excluded from rotation.",
+    lat: 41.793,
+    lng: -87.586,
+  },
 ]);
+
 
 /** Home base first, then the rotation venues in registry order. */
 export function listWorkshopVenues(): WorkshopVenue[] {
@@ -388,4 +492,89 @@ export function evaluateVenuePolicy(input: {
   }
 
   return { status: "eligible", requiresReview: false, reason: null, maxRsvps: max };
+}
+
+// -------------------------------------------------------------- co-working --
+
+/**
+ * Co-working suitability, keyed by venue. Kept beside the policy registry so
+ * a session can never be scheduled into a room that was never reviewed for
+ * quiet daytime work. Unknown power/Wi-Fi stays unknown — the flyer says
+ * "come charged" rather than inventing a promise.
+ */
+export type CoworkingVenueMeta = {
+  eligible: boolean;
+  dayparts: Daypart[];
+  power: "likely" | "limited" | "unavailable" | null;
+  activities: CoworkingActivity[];
+  /** Venue-published minimum age for the whole room, when one exists. */
+  min_age: number | null;
+  capacity: number;
+  overflow: number;
+};
+
+const DEFAULT_ACTIVITIES = DEFAULT_COWORKING_ACTIVITIES;
+
+const COWORKING_META: Record<string, CoworkingVenueMeta> = {
+  chi_begyle_brewing: {
+    eligible: true, dayparts: ["morning", "afternoon"], power: "likely",
+    activities: [...DEFAULT_ACTIVITIES, "handwork", "contained_art"], min_age: null,
+    capacity: 8, overflow: 4,
+  },
+  chi_long_room: {
+    eligible: true, dayparts: ["morning", "afternoon"], power: "likely",
+    activities: [...DEFAULT_ACTIVITIES, "handwork"], min_age: null, capacity: 6, overflow: 3,
+  },
+  chi_off_color_mousetrap: {
+    eligible: true, dayparts: ["afternoon", "evening"], power: "likely",
+    activities: [...DEFAULT_ACTIVITIES, "handwork"], min_age: null, capacity: 6, overflow: 3,
+  },
+  chi_goose_island_fulton: {
+    eligible: true, dayparts: ["afternoon", "evening"], power: null,
+    activities: [...DEFAULT_ACTIVITIES], min_age: null, capacity: 6, overflow: 3,
+  },
+  chi_district_brew_yards_west_loop: {
+    eligible: true, dayparts: ["evening"], power: "likely",
+    activities: [...DEFAULT_ACTIVITIES], min_age: 21, capacity: 8, overflow: 2,
+  },
+  chi_half_acre_balmoral: {
+    eligible: true, dayparts: ["afternoon", "evening"], power: "limited",
+    activities: [...DEFAULT_ACTIVITIES], min_age: null, capacity: 6, overflow: 3,
+  },
+  chi_marz_mothership: {
+    eligible: true, dayparts: ["afternoon"], power: "limited",
+    activities: [...DEFAULT_ACTIVITIES], min_age: null, capacity: 6, overflow: 3,
+  },
+  chi_life_on_marz: {
+    eligible: true, dayparts: ["afternoon", "evening"], power: "limited",
+    activities: [...DEFAULT_ACTIVITIES], min_age: 21, capacity: 6, overflow: 2,
+  },
+  chi_solemn_oath_still_life: {
+    eligible: true, dayparts: ["evening"], power: null,
+    activities: [...DEFAULT_ACTIVITIES], min_age: null, capacity: 6, overflow: 2,
+  },
+  chi_waterfront_cafe: {
+    eligible: true, dayparts: ["morning", "afternoon"], power: "unavailable",
+    activities: ["writing", "reading", "research", "study", "sketching", "handwork"],
+    min_age: null, capacity: 6, overflow: 3,
+  },
+};
+
+export function coworkingVenueMeta(key: string | null | undefined): CoworkingVenueMeta | null {
+  if (!key) return null;
+  const meta = COWORKING_META[key];
+  if (!meta || !meta.eligible) return null;
+  const venue = getWorkshopVenue(key);
+  if (!venue || !venue.active) return null;
+  return meta;
+}
+
+/** Venues reviewed for Co-working, optionally narrowed to one daypart. */
+export function listCoworkingVenues(
+  daypart?: Daypart,
+): { venue: WorkshopVenue; meta: CoworkingVenueMeta }[] {
+  return listWorkshopVenues()
+    .map((venue) => ({ venue, meta: coworkingVenueMeta(venue.key) }))
+    .filter((x): x is { venue: WorkshopVenue; meta: CoworkingVenueMeta } => x.meta !== null)
+    .filter((x) => !daypart || x.meta.dayparts.includes(daypart));
 }
