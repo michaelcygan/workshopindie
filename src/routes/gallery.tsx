@@ -498,32 +498,49 @@ function GalleryPage() {
     defaultCity,
   });
 
-  const categoryTabs: { id: string; label: string }[] = [
-    { id: "all", label: "All" },
-    ...FIELD_FILTER_OPTIONS.map((c) => ({ id: c.id as string, label: c.label })),
-  ];
-
   // Category is scoped to the selected Field; Subject stays a flat discovery cue.
   const kindOptions = category === "all" ? [] : categoriesForField(category);
 
+  const cityPickerOptions = useMemo(
+    () => cities.map((c) => ({ value: c.slug, label: c.name, count: c.count, hint: c.country })),
+    [cities],
+  );
+
   const showFeatured =
-    tab === "for-you" && category === "all" && kind === "all" && subject === "all" && !q.trim();
+    tab === "for-you" &&
+    category === "all" &&
+    kind === "all" &&
+    subject === "all" &&
+    !topic &&
+    !q.trim();
+
+  const moreCount = (kind !== "all" ? 1 : 0) + (subject !== "all" ? 1 : 0) + (topic ? 1 : 0);
 
   const filtersActive =
     category !== "all" ||
     kind !== "all" ||
     subject !== "all" ||
     citySlug !== "all" ||
+    topic.length > 0 ||
     sort !== "recent" ||
     q.trim().length > 0;
 
   const clearAll = () => {
-    setQInput("");
     navigate({
-      search: { q: "", tab, cat: "all", kind: "all", subject: "all", city: "all", sort: "recent" },
+      search: {
+        q: "",
+        tab,
+        cat: "all",
+        kind: "all",
+        subject: "all",
+        city: "all",
+        topic: "",
+        sort: "recent",
+      },
       replace: true,
     });
   };
+
 
   return (
     <main className="pb-mobile-island">
