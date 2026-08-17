@@ -521,7 +521,7 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
               </p>
             </div>
           </div>
-          <VenuePolicyStrip form={form} setForm={setForm} />
+          <VenuePolicyStrip form={form} setForm={(u) => setForm((prev) => u(prev))} />
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} />
             Feature on homepage
@@ -718,6 +718,55 @@ function ReportsAlertStrip({ onAnyChange }: { onAnyChange: () => void }) {
           );
         })}
       </ul>
+    </div>
+  );
+}
+
+/**
+ * Live "up to N RSVPs" summary plus the canonical venue's published group
+ * policy. The same rule is enforced server-side — this strip only surfaces it
+ * early and lets an admin record that they went through the venue's own flow.
+ */
+function VenuePolicyStrip<
+  T extends {
+    capacity: string;
+    overflow: string;
+    workshop_venue_key: string | null;
+    venue_policy_confirmed: boolean;
+  },
+>({ form, setForm }: { form: T; setForm: (updater: (prev: T) => T) => void }) {
+  const capacity = form.capacity ? Number(form.capacity) : null;
+  const overflow = capacity && form.overflow ? Math.max(0, Number(form.overflow)) : 0;
+  const policy = evaluateVenuePolicy({
+    key: form.workshop_venue_key,
+    capacity,
+    overflow,
+    confirmed: form.venue_policy_confirmed,
+  });
+  if (capacity == null && !policy.reason) return null;
+  return (
+    <div className="rounded-2xl border border-border bg-muted/20 p-3 text-sm">
+      {capacity != null && (
+        <p className="text-ink-soft">
+          Up to <span className="font-medium text-ink">{capacity + overflow}</span> RSVPs will be
+          accepted: {capacity} intended + {overflow} overflow.
+        </p>
+      )}
+      {policy.reason && (
+        <div className="mt-2 rounded-xl border border-amber-500/40 bg-amber-500/10 p-2.5">
+          <p className="text-[13px] leading-snug text-ink">{policy.reason}</p>
+          <label className="mt-2 flex items-center gap-2 text-[13px]">
+            <input
+              type="checkbox"
+              checked={form.venue_policy_confirmed}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, venue_policy_confirmed: e.target.checked }))
+              }
+            />
+            I confirmed this occurrence through the venue&apos;s own flow.
+          </label>
+        </div>
+      )}
     </div>
   );
 }
