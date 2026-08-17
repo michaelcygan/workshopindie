@@ -167,6 +167,26 @@ export async function listDiscoveryEvents(
   const nowIso = new Date().toISOString();
   const select = [fields, GROUP_JOIN, withCity ? CITY_JOIN : null].filter(Boolean).join(",");
 
+  // Medium is expressed as a link to a system medium group, so resolve the
+  // event ids first — PostgREST can't filter on a many-to-many from here.
+  let mediumEventIds: string[] | null = null;
+  if (medium) {
+    const { data: mgroup } = await supabase
+      .from("groups")
+      .select("id")
+      .eq("slug", medium)
+      .eq("system_type", "medium")
+      .maybeSingle();
+    if (!mgroup) return [];
+    const { data: links } = await supabase
+      .from("event_groups")
+      .select("event_id")
+      .eq("group_id", (mgroup as { id: string }).id)
+      .limit(2000);
+    mediumEventIds = ((links ?? []) as { event_id: string }[]).map((l) => l.event_id);
+    if (mediumEventIds.length === 0) return [];
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let q: any = supabase
     .from("group_events")
@@ -174,6 +194,7 @@ export async function listDiscoveryEvents(
     .is("deleted_at", null)
     .eq("visibility", "public")
     .in("status", STATUSES as never)
+
     // Lifecycle: only published, non-archived flyers are discoverable.
     .not("published_at", "is", null)
     .is("archived_at", null);
