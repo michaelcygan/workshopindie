@@ -40,12 +40,14 @@ import { EntityBlogPosts } from "@/components/entity-blog-posts";
 import { EditorialCard, EditorialChip } from "@/components/editorial-card";
 import { InfluencesGrid } from "@/components/influences/influence-card";
 import { useInfluences } from "@/hooks/use-influences";
+import { useSkills } from "@/hooks/use-skills";
+import { SkillsGrid } from "@/components/skills/skill-card";
 import { validateUsername } from "@/lib/usernames";
 import { canonicalLanguageLabels } from "@/lib/languages";
 
 
 
-const TAB_VALUES = ["works", "blog", "collabs", "influences", "activity", "about"] as const;
+const TAB_VALUES = ["works", "skills", "blog", "collabs", "influences", "activity", "about"] as const;
 type ProfileTab = typeof TAB_VALUES[number];
 
 
@@ -358,6 +360,7 @@ function ProfilePage() {
   } = useQuery({ queryKey: ["profile", username], queryFn: () => fetchProfile(username), retry: 1 });
   // Must stay above every early return — hook order has to be stable.
   const { data: influences = [] } = useInfluences(profile?.id);
+  const { data: skills = [] } = useSkills(profile?.id);
   const { data: ownedWorks } = useQuery({
     queryKey: ["profile-owned", profile?.id],
     queryFn: () => fetchOwnedWorks(profile!.id),
@@ -575,6 +578,8 @@ function ProfilePage() {
     works: worksTotal,
     collabs: openCollabs?.length ?? 0,
     blog: blogCount,
+    // Only Skills with live public evidence count toward the public tab.
+    skills: skills.filter((s) => s.work).length,
     influences: influences.length,
     activity: activityCount,
     about: 1,
@@ -603,6 +608,8 @@ function ProfilePage() {
     if (t === "blog") return blogCount > 0;
     // Influences stay invisible until the creator opts in by adding one.
     if (t === "influences") return counts.influences > 0;
+    // Skills stay hidden until at least one links to a live public Work.
+    if (t === "skills") return counts.skills > 0;
     return true; // works, about always
   });
 
@@ -998,6 +1005,14 @@ function ProfilePage() {
               participating={(participating ?? []) as ParticipatingRow[]}
               isLoading={!applied || !participating || !drafts || !workshops}
             />
+          )}
+          {defaultTab === "skills" && (
+            <div className="space-y-4">
+              <p className="max-w-prose text-sm text-ink-muted">
+                What {isOwn ? "you can" : `${name} can`} do, shown through work posted to Workshop.
+              </p>
+              <SkillsGrid skills={skills} />
+            </div>
           )}
           {defaultTab === "influences" && (
             <div className="space-y-4">

@@ -30,7 +30,8 @@ import { cn } from "@/lib/utils";
 import { LANGUAGES, canonicalLanguageLabels, normalizeLanguage } from "@/lib/languages";
 
 import { toast } from "sonner";
-import { Plus, X, User, Sparkles, MapPin, Link2, Pin, Copy, Check, Library } from "lucide-react";
+import { Plus, X, User, Sparkles, MapPin, Link2, Pin, Copy, Check, Library, Wrench } from "lucide-react";
+import { SkillsEditor } from "@/components/skills/skills-editor";
 import { sanitizeInstagramHandle } from "@/lib/display-name";
 import { RequireAuth } from "@/components/require-auth";
 import { PinnedWorksPicker, type PinnableWork } from "@/components/pinned-works-picker";
@@ -56,10 +57,11 @@ export const Route = createFileRoute("/me/edit")({
 
 type ExtLink = { label: string; url: string };
 
-type SectionId = "identity" | "fields" | "location" | "links" | "pinned" | "influences";
+type SectionId = "identity" | "fields" | "skills" | "location" | "links" | "pinned" | "influences";
 const SECTIONS: { id: SectionId; label: string; icon: typeof User }[] = [
   { id: "identity", label: "Identity", icon: User },
   { id: "fields", label: "Fields & bio", icon: Sparkles },
+  { id: "skills", label: "Skills", icon: Wrench },
   { id: "location", label: "Location & languages", icon: MapPin },
   { id: "links", label: "Links", icon: Link2 },
   { id: "pinned", label: "Pinned pieces", icon: Pin },
@@ -861,6 +863,18 @@ function EditProfile() {
               </p>
             </div>
           </Section>
+
+          {/* SKILLS */}
+          <Section
+            id="skills"
+            title="Skills"
+            subtitle="Show what you can do through work you've posted to Workshop."
+            refMap={sectionRefs}
+          >
+            <SkillsEditor profileId={user?.id} suggestions={form.specialties} />
+          </Section>
+
+
 
           {/* LOCATION & LANGUAGES */}
           <Section
