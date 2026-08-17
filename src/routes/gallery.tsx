@@ -243,10 +243,15 @@ async function fetchFavoritesPage(params: {
   subject: string;
   citySlug: string;
   cityIdMap: Map<string, string>;
+  cityAuthorIds: string[];
+  topicWorkIds: string[] | null;
   q: string;
   cursor: string | null;
   blockedIds: string[];
 }): Promise<{ works: WorkCardData[]; nextCursor: string | null }> {
+  if (params.topicWorkIds && params.topicWorkIds.length === 0)
+    return { works: [], nextCursor: null };
+
   let rq = supabase
     .from("work_reactions")
     .select("work_id, created_at")
@@ -259,7 +264,15 @@ async function fetchFavoritesPage(params: {
   if (rErr) throw rErr;
   const rxns = (reactions ?? []) as Array<{ work_id: string; created_at: string }>;
   if (rxns.length === 0) return { works: [], nextCursor: null };
-  const ids = rxns.map((r) => r.work_id);
+  const topicSet = params.topicWorkIds ? new Set(params.topicWorkIds) : null;
+  const ids = rxns.map((r) => r.work_id).filter((id) => !topicSet || topicSet.has(id));
+  if (ids.length === 0) {
+    const lastEmpty = rxns[rxns.length - 1];
+    return {
+      works: [],
+      nextCursor: rxns.length === PAGE_SIZE && lastEmpty ? lastEmpty.created_at : null,
+    };
+  }
 
   let qb = supabase.from("works").select(WORK_CARD_SELECT).in("id", ids);
   if (params.category !== "all")
@@ -269,8 +282,11 @@ async function fetchFavoritesPage(params: {
   if (params.citySlug !== "all") {
     const cid = params.cityIdMap.get(params.citySlug);
     if (!cid) return { works: [], nextCursor: null };
-    qb = qb.eq("city_id", cid);
+    qb = params.cityAuthorIds.length
+      ? qb.or(`city_id.eq.${cid},created_by.in.(${params.cityAuthorIds.join(",")})`)
+      : qb.eq("city_id", cid);
   }
+
   if (params.q.trim()) {
     const s = params.q.trim().replace(/[%,]/g, " ");
     qb = qb.or(`title.ilike.%${s}%,excerpt.ilike.%${s}%`);
