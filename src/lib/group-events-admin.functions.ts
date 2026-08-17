@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { FIELD_IDS, subcategoryForPrimary } from "@/lib/taxonomy";
+import { evaluateVenuePolicy, getWorkshopVenue } from "@/lib/events/workshop-venues";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
@@ -458,13 +459,25 @@ export const publishEvent = createServerFn({ method: "POST" })
     const { data: row, error: readErr } = await supabase
       .from("group_events")
       .select(
-        "id,title,kind,format,starts_at,ends_at,timezone,venue_name,venue_address,online_url,external_url,published_at",
+        "id,title,kind,format,starts_at,ends_at,timezone,venue_name,venue_address,online_url,external_url,published_at,capacity,overflow,workshop_venue_key,venue_policy_confirmed_at",
       )
       .eq("id", data.id)
       .maybeSingle();
     if (readErr) throw new Error(readErr.message);
     if (!row) throw new Error("Event not found");
     assertPublishable(row as Parameters<typeof assertPublishable>[0]);
+    {
+      const r = row as Record<string, unknown>;
+      reconcileVenue({
+        workshop_venue_key: (r.workshop_venue_key as string | null) ?? null,
+        venue_name: (r.venue_name as string | null) ?? null,
+        venue_address: (r.venue_address as string | null) ?? null,
+        capacity: (r.capacity as number | null) ?? null,
+        overflow: (r.overflow as number | null) ?? 0,
+        venue_policy_confirmed: Boolean(r.venue_policy_confirmed_at),
+        status: "scheduled",
+      });
+    }
     const { error } = await supabase
       .from("group_events")
       .update({
