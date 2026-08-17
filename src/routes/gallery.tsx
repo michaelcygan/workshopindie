@@ -318,19 +318,6 @@ function GalleryPage() {
   const { user } = useAuth();
   const { ids: blockedIds } = useBlockedIds();
   const blockedKey = useMemo(() => Array.from(blockedIds).sort().join(","), [blockedIds]);
-  const [qInput, setQInput] = useState(search.q);
-  const [searchOpen, setSearchOpen] = useState(search.q.trim().length > 0);
-  const qDebounced = useDebounced(qInput, 250);
-
-  useEffect(() => {
-    if (qDebounced !== search.q) {
-      navigate({
-        search: (prev: Record<string, unknown>) => ({ ...prev, q: qDebounced }),
-        replace: true,
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qDebounced]);
 
   const tab = search.tab;
   // Accept legacy values (?cat=film / visual / build) from old shared links.
@@ -338,6 +325,7 @@ function GalleryPage() {
   const kind = search.kind;
   const subject = search.subject;
   const citySlug = search.city;
+  const topic = search.topic;
   const sort = search.sort;
   const q = search.q;
 
@@ -354,6 +342,30 @@ function GalleryPage() {
     return m;
   }, [cities]);
 
+  const topicsQuery = useQuery({
+    queryKey: ["gallery-topics"],
+    queryFn: fetchGalleryTopics,
+    staleTime: 5 * 60_000,
+  });
+  const topicOptions = topicsQuery.data ?? [];
+
+  const topicIdsQuery = useQuery({
+    queryKey: ["gallery-topic-works", topic],
+    enabled: topic.length > 0,
+    staleTime: 60_000,
+    queryFn: () => fetchWorkIdsForTopic(topic),
+  });
+  const topicWorkIds = topic ? (topicIdsQuery.data ?? null) : null;
+
+  const activeCityId = citySlug === "all" ? null : (cityIdMap.get(citySlug) ?? null);
+  const cityAuthorsQuery = useQuery({
+    queryKey: ["gallery-city-authors", activeCityId],
+    enabled: !!activeCityId,
+    staleTime: 5 * 60_000,
+    queryFn: () => fetchCityAuthorIds(activeCityId as string),
+  });
+  const cityAuthorIds = cityAuthorsQuery.data ?? [];
+
   const queryKey = useMemo(
     () => [
       "gallery",
@@ -362,21 +374,40 @@ function GalleryPage() {
       kind,
       subject,
       citySlug,
+      topic,
       sort,
       q,
       user?.id ?? null,
       blockedKey,
+      cityAuthorIds.length,
+      topicWorkIds?.length ?? null,
     ],
-    [tab, category, kind, subject, citySlug, sort, q, user?.id, blockedKey],
+    [
+      tab,
+      category,
+      kind,
+      subject,
+      citySlug,
+      topic,
+      sort,
+      q,
+      user?.id,
+      blockedKey,
+      cityAuthorIds.length,
+      topicWorkIds,
+    ],
   );
 
   const queryResult = useInfiniteQuery({
     queryKey,
     initialPageParam: null as string | null,
-    enabled: (tab === "for-you" || !!user) && (citySlug === "all" || cities.length > 0),
+    enabled:
+      (tab === "for-you" || !!user) &&
+      (citySlug === "all" || cities.length > 0) &&
+      (!topic || topicIdsQuery.isSuccess),
     queryFn: async ({ pageParam }) => {
       if (tab === "following") {
-        return await listFollowingWorks({
+        const res = await listFollowingWorks({
           data: {
             limit: PAGE_SIZE,
             cursor: pageParam,
@@ -388,6 +419,9 @@ function GalleryPage() {
             q,
           },
         });
+        if (!topicWorkIds) return res;
+        const allow = new Set(topicWorkIds);
+        return { ...res, works: res.works.filter((w) => allow.has(w.id)) };
       }
       if (tab === "favorites") {
         if (!user) return { works: [], nextCursor: null };
@@ -398,6 +432,8 @@ function GalleryPage() {
           subject,
           citySlug,
           cityIdMap,
+          cityAuthorIds,
+          topicWorkIds,
           q,
           cursor: pageParam,
           blockedIds: Array.from(blockedIds),
@@ -409,6 +445,8 @@ function GalleryPage() {
         subject,
         citySlug,
         cityIdMap,
+        cityAuthorIds,
+        topicWorkIds,
         sort,
         q,
         cursor: pageParam,
@@ -417,6 +455,7 @@ function GalleryPage() {
     },
     getNextPageParam: (last) => last.nextCursor,
   });
+
 
   const pages = queryResult.data?.pages ?? [];
   const flatWorks = pages.flatMap((p) => p.works);
