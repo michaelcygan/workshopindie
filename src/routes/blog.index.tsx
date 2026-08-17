@@ -125,7 +125,7 @@ function ControlRow({
 }) {
   const active = !!(search.topic || search.medium);
   return (
-    <div className="border-b border-border">
+    <div className="sticky top-11 z-30 border-b border-border bg-background/80 backdrop-blur-md md:top-14">
       <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-2.5 md:flex-row md:items-center md:justify-between md:px-6">
         <BlogSearch />
         <div className="flex items-center gap-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
