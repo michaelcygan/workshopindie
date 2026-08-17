@@ -259,96 +259,73 @@ export function GroupEventDirectory({
         )}
       </header>
 
-      {/* Category → Event type → Attendance → Search */}
+      {/* Shared sticky filter header — same primitive as /groups. */}
       {all.length > 0 && (
-        <div className="-mt-4 flex flex-wrap items-center gap-1 text-ink-muted md:justify-end">
+        <FilterHeader
+          inset
+          className={cn(
+            "-mt-4",
+            embedded && "top-[5.5rem] z-20 md:top-[7.25rem]",
+          )}
+        >
+          <FilterSearch
+            value={filters.q}
+            onChange={(q) => onFiltersChange({ q })}
+            label="Search events"
+            placeholder="Search events, venues, organizers…"
+          />
 
-          {availableCategories.length > 1 && (
-            <FilterMenu
-              label={
-                filters.category
-                  ? categoryLabel(filters.category)
-                  : "All categories"
-              }
-              active={!!filters.category}
+          <FilterControls>
+            {availableCategories.length > 1 && (
+              <FilterSelect
+                label="Filter by medium"
+                width="min-w-[11rem]"
+                value={filters.category ?? "all"}
+                onChange={(v) => onFiltersChange({ category: v === "all" ? null : v })}
+              >
+                <option value="all">All mediums</option>
+                {availableCategories.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.label} ({m.count})
+                  </option>
+                ))}
+              </FilterSelect>
+            )}
+
+            {availableKinds.length > 1 && (
+              <FilterSelect
+                label="Filter by event type"
+                width="min-w-[11rem]"
+                value={filters.kind ?? "all"}
+                onChange={(v) => onFiltersChange({ kind: v === "all" ? null : v })}
+              >
+                <option value="all">All event types</option>
+                {availableKinds.map((k) => (
+                  <option key={k} value={k}>
+                    {eventKindLabel(k)}
+                  </option>
+                ))}
+              </FilterSelect>
+            )}
+
+            <FilterSelect
+              label="Filter by attendance"
+              width="min-w-[10rem]"
+              value={filters.format}
+              onChange={(v) => onFiltersChange({ format: v as AttendanceFilter })}
             >
-              <DropdownMenuItem onClick={() => onFiltersChange({ category: null })}>
-                All categories
-              </DropdownMenuItem>
-              {availableCategories.map((m) => (
-                <DropdownMenuItem key={m.id} onClick={() => onFiltersChange({ category: m.id })}>
-                  {m.label}
-                </DropdownMenuItem>
+              {ATTENDANCE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
               ))}
-            </FilterMenu>
-          )}
+            </FilterSelect>
 
-          {availableKinds.length > 1 && (
-            <FilterMenu
-              label={filters.kind ? eventKindLabel(filters.kind) : "All event types"}
-              active={!!filters.kind}
-            >
-              <DropdownMenuItem onClick={() => onFiltersChange({ kind: null })}>
-                All event types
-              </DropdownMenuItem>
-              {availableKinds.map((k) => (
-                <DropdownMenuItem key={k} onClick={() => onFiltersChange({ kind: k })}>
-                  {eventKindLabel(k)}
-                </DropdownMenuItem>
-              ))}
-            </FilterMenu>
-          )}
-
-          <FilterMenu label={attendanceLabel(filters.format)} active={filters.format !== "all"}>
-            {ATTENDANCE_OPTIONS.map((o) => (
-              <DropdownMenuItem key={o.value} onClick={() => onFiltersChange({ format: o.value })}>
-                {o.label}
-              </DropdownMenuItem>
-            ))}
-          </FilterMenu>
-
-          {searchOpen || filters.q ? (
-            <div className="flex items-center gap-1">
-              <Input
-                autoFocus
-                value={filters.q}
-                onChange={(e) => onFiltersChange({ q: e.target.value })}
-                onKeyDown={(e) => {
-                  if (e.key === "Escape") {
-                    onFiltersChange({ q: "" });
-                    setSearchOpen(false);
-                  }
-                }}
-                onBlur={() => {
-                  if (!filters.q) setSearchOpen(false);
-                }}
-                placeholder="Search events…"
-                className="h-8 w-[200px] text-xs"
-              />
-              {filters.q && (
-                <button
-                  onClick={() => {
-                    onFiltersChange({ q: "" });
-                    setSearchOpen(false);
-                  }}
-                  className="rounded-full p-1 hover:bg-surface-2"
-                  aria-label="Clear search"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
-          ) : (
-            <button
-              onClick={() => setSearchOpen(true)}
-              className="rounded-full p-1.5 hover:bg-surface-2"
-              aria-label="Search events"
-            >
-              <Search className="h-4 w-4" />
-            </button>
-          )}
-        </div>
+            {hasFilters ? <FilterClear onClick={clearAll} /> : null}
+          </FilterControls>
+        </FilterHeader>
       )}
+
 
       {isLoading && <p className="text-sm text-ink-muted">Loading…</p>}
 
