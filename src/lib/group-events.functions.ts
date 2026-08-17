@@ -245,6 +245,8 @@ export const listPublicEvents = createServerFn({ method: "GET" })
         when: z.enum(["upcoming", "past"]).default("upcoming"),
         format: z.enum(["all", "in_person", "online"]).default("all"),
         cityId: z.string().uuid().nullish(),
+        kind: z.string().max(40).nullish(),
+        daypart: z.enum(["morning", "afternoon", "evening"]).nullish(),
         limit: z.number().int().min(1).max(100).default(60),
       })
       .parse(i ?? {}),
@@ -255,6 +257,8 @@ export const listPublicEvents = createServerFn({ method: "GET" })
       when: data.when,
       format: data.format,
       cityId: data.cityId ?? null,
+      kind: data.kind ?? null,
+      daypart: data.daypart ?? null,
       limit: data.limit,
     });
   });
