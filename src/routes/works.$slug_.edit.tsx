@@ -373,6 +373,23 @@ function EditWork() {
 
         {isBookWork(null, categoryLabel) && <BookDetailsSection value={book} onChange={setBook} />}
 
+        <div className="space-y-2">
+          <Label>Visibility</Label>
+          <Select
+            value={visibility}
+            onValueChange={(v) => setVisibility(v === "unlisted" ? "unlisted" : "public")}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="public">Public — appears in the Gallery and search</SelectItem>
+              <SelectItem value="unlisted">Unlisted — only people with the link</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+
         <div className="flex items-center gap-3 border-t border-border pt-6">
           <Button onClick={save} disabled={submitting} className="rounded-md">
             {submitting ? (
