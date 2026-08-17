@@ -170,16 +170,11 @@ function FilmFestivalPage() {
       toast.error("Please tell us where you're based.");
       return;
     }
-    const runtimeMinutes = Number.parseInt(runtime, 10);
-    if (!Number.isFinite(runtimeMinutes) || runtimeMinutes <= 0) {
-      toast.error("Please add the runtime in minutes.");
-      return;
-    }
-    if (synopsis.trim().length < SYNOPSIS_MIN) {
-      toast.error("Tell us a little more about the film.");
-      focusSynopsis();
-      return;
-    }
+    const parsedRuntime = runtime.trim() ? Number.parseInt(runtime, 10) : null;
+    const runtimeMinutes =
+      parsedRuntime !== null && Number.isFinite(parsedRuntime) && parsedRuntime > 0
+        ? parsedRuntime
+        : null;
     if (!rightsConfirmed) {
       toast.error("Please confirm you have the rights to have this film screened.");
       return;
@@ -203,7 +198,7 @@ function FilmFestivalPage() {
           filmUrl: filmUrl.trim() ? normalizeUrlOrKeep(filmUrl) : "",
           accessNotes: accessNotes.trim(),
           logline: logline.trim(),
-          synopsis: synopsis.trim(),
+          synopsis: synopsis.trim() || undefined,
           credits: credits.trim(),
           rightsConfirmed,
           marketingOptIn,
@@ -327,11 +322,10 @@ function FilmFestivalPage() {
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Runtime (minutes)" required>
+            <Field label="Runtime (minutes)">
               <Input
                 value={runtime}
                 onChange={(e) => setRuntime(e.target.value.replace(/[^\d]/g, ""))}
-                required
                 inputMode="numeric"
                 maxLength={4}
                 placeholder="14"
@@ -401,24 +395,15 @@ function FilmFestivalPage() {
 
           <Field
             label="About the film"
-            required
-            hint="Synopsis, how it was made, festival history, or anything else worth knowing."
+            hint="Optional. Synopsis, how it was made, festival history, or anything else worth knowing."
           >
             <Textarea
               id="film-synopsis"
               value={synopsis}
               onChange={(e) => setSynopsis(e.target.value)}
-              required
               rows={5}
               maxLength={SYNOPSIS_MAX}
-              aria-invalid={synopsisTooShort || undefined}
             />
-            {synopsisTooShort && (
-              <span className="mt-1 block text-xs text-ink-muted">
-                {SYNOPSIS_MIN - synopsisLength} more character
-                {SYNOPSIS_MIN - synopsisLength === 1 ? "" : "s"} to go.
-              </span>
-            )}
           </Field>
 
           <Field label="Credits" hint="Director, writer, cast, crew — however you'd like it listed.">
