@@ -17,6 +17,12 @@
  * invented policy, capacity, or source URL.
  */
 
+import {
+  DEFAULT_COWORKING_ACTIVITIES,
+  type CoworkingActivity,
+  type Daypart,
+} from "@/lib/events/coworking";
+
 export type WorkshopVenue = {
   /** Stable internal key persisted on `group_events.workshop_venue_key`. */
   key: string;
@@ -486,4 +492,89 @@ export function evaluateVenuePolicy(input: {
   }
 
   return { status: "eligible", requiresReview: false, reason: null, maxRsvps: max };
+}
+
+// -------------------------------------------------------------- co-working --
+
+/**
+ * Co-working suitability, keyed by venue. Kept beside the policy registry so
+ * a session can never be scheduled into a room that was never reviewed for
+ * quiet daytime work. Unknown power/Wi-Fi stays unknown — the flyer says
+ * "come charged" rather than inventing a promise.
+ */
+export type CoworkingVenueMeta = {
+  eligible: boolean;
+  dayparts: Daypart[];
+  power: "likely" | "limited" | "unavailable" | null;
+  activities: CoworkingActivity[];
+  /** Venue-published minimum age for the whole room, when one exists. */
+  min_age: number | null;
+  capacity: number;
+  overflow: number;
+};
+
+const DEFAULT_ACTIVITIES = DEFAULT_COWORKING_ACTIVITIES;
+
+const COWORKING_META: Record<string, CoworkingVenueMeta> = {
+  chi_begyle_brewing: {
+    eligible: true, dayparts: ["morning", "afternoon"], power: "likely",
+    activities: [...DEFAULT_ACTIVITIES, "handwork", "contained_art"], min_age: null,
+    capacity: 8, overflow: 4,
+  },
+  chi_long_room: {
+    eligible: true, dayparts: ["morning", "afternoon"], power: "likely",
+    activities: [...DEFAULT_ACTIVITIES, "handwork"], min_age: null, capacity: 6, overflow: 3,
+  },
+  chi_off_color_mousetrap: {
+    eligible: true, dayparts: ["afternoon", "evening"], power: "likely",
+    activities: [...DEFAULT_ACTIVITIES, "handwork"], min_age: null, capacity: 6, overflow: 3,
+  },
+  chi_goose_island_fulton: {
+    eligible: true, dayparts: ["afternoon", "evening"], power: null,
+    activities: [...DEFAULT_ACTIVITIES], min_age: null, capacity: 6, overflow: 3,
+  },
+  chi_district_brew_yards_west_loop: {
+    eligible: true, dayparts: ["evening"], power: "likely",
+    activities: [...DEFAULT_ACTIVITIES], min_age: 21, capacity: 8, overflow: 2,
+  },
+  chi_half_acre_balmoral: {
+    eligible: true, dayparts: ["afternoon", "evening"], power: "limited",
+    activities: [...DEFAULT_ACTIVITIES], min_age: null, capacity: 6, overflow: 3,
+  },
+  chi_marz_mothership: {
+    eligible: true, dayparts: ["afternoon"], power: "limited",
+    activities: [...DEFAULT_ACTIVITIES], min_age: null, capacity: 6, overflow: 3,
+  },
+  chi_life_on_marz: {
+    eligible: true, dayparts: ["afternoon", "evening"], power: "limited",
+    activities: [...DEFAULT_ACTIVITIES], min_age: 21, capacity: 6, overflow: 2,
+  },
+  chi_solemn_oath_still_life: {
+    eligible: true, dayparts: ["evening"], power: null,
+    activities: [...DEFAULT_ACTIVITIES], min_age: null, capacity: 6, overflow: 2,
+  },
+  chi_waterfront_cafe: {
+    eligible: true, dayparts: ["morning", "afternoon"], power: "unavailable",
+    activities: ["writing", "reading", "research", "study", "sketching", "handwork"],
+    min_age: null, capacity: 6, overflow: 3,
+  },
+};
+
+export function coworkingVenueMeta(key: string | null | undefined): CoworkingVenueMeta | null {
+  if (!key) return null;
+  const meta = COWORKING_META[key];
+  if (!meta || !meta.eligible) return null;
+  const venue = getWorkshopVenue(key);
+  if (!venue || !venue.active) return null;
+  return meta;
+}
+
+/** Venues reviewed for Co-working, optionally narrowed to one daypart. */
+export function listCoworkingVenues(
+  daypart?: Daypart,
+): { venue: WorkshopVenue; meta: CoworkingVenueMeta }[] {
+  return listWorkshopVenues()
+    .map((venue) => ({ venue, meta: coworkingVenueMeta(venue.key) }))
+    .filter((x): x is { venue: WorkshopVenue; meta: CoworkingVenueMeta } => x.meta !== null)
+    .filter((x) => !daypart || x.meta.dayparts.includes(daypart));
 }
