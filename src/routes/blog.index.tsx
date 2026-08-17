@@ -22,7 +22,7 @@ const DESC =
   "Ideas, guides, and stories about finding collaborators, making independent creative work, and building a portfolio that shows how the work happened.";
 
 type BlogSearch = {
-  tab: BlogFeedTab;
+  tab?: BlogFeedTab;
   topic?: string;
   medium?: string;
   type?: string;
@@ -32,12 +32,13 @@ function parseSearch(search: Record<string, unknown>): BlogSearch {
   const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : undefined);
   const tab = str(search.tab);
   return {
-    tab: isBlogFeedTab(tab) ? tab : "latest",
+    tab: isBlogFeedTab(tab) ? tab : undefined,
     topic: str(search.topic),
     medium: str(search.medium),
     type: str(search.type),
   };
 }
+
 
 export const Route = createFileRoute("/blog/")({
   validateSearch: parseSearch,
