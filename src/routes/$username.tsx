@@ -1,4 +1,4 @@
-import { NON_PUBLIC_STATUSES } from "@/lib/collab/query";
+import { NON_PUBLIC_STATUSES, publicCollabs } from "@/lib/collab/query";
 import { shareImageMeta } from "@/lib/og-image";
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
