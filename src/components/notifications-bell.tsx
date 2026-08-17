@@ -233,6 +233,20 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
         href: "/admin/open-house",
       };
     }
+    case "film_festival_submission_new": {
+      const who = (n.payload?.name as string) || "A film";
+      const bits = [
+        filmFormatLabel((n.payload?.film_format as string) || ""),
+        n.payload?.city as string | undefined,
+      ]
+        .filter(Boolean)
+        .join(" · ");
+      return {
+        title: `New film submission — ${who}`,
+        subtitle: bits || "Tap to review.",
+        href: "/admin/film-festival",
+      };
+    }
     case "admin_new_member": {
       const who = (n.payload?.name as string) || "A new member";
       const uname = (n.payload?.username as string) || "";
