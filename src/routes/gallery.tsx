@@ -12,9 +12,18 @@ import { FIELD_FILTER_OPTIONS, canonicalFilterValues, normalizeCategory } from "
 import { categoriesForField } from "@/lib/work-categories";
 import { WORK_CARD_SELECT, toWorkCard, type WorkCardRow } from "@/lib/work-card-query";
 import { SUBJECT_SUGGESTIONS } from "@/lib/work-tags";
-import { CategoryScroller } from "@/components/category-scroller";
-import { GalleryCityFilter, type CityOption } from "@/components/gallery-city-filter";
-import { FilterClear, FilterHeader, FilterToggleGroup } from "@/components/filter-header";
+import type { CityOption } from "@/components/gallery-city-filter";
+import {
+  FilterClear,
+  FilterControls,
+  FilterHeader,
+  FilterSearch,
+  FilterSelect,
+  FilterToggleGroup,
+} from "@/components/filter-header";
+import { FilterCityPicker } from "@/components/filter-header/filter-city-picker";
+import { FilterMore, FilterMoreSection } from "@/components/filter-header/filter-more";
+
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
