@@ -70,7 +70,7 @@ async function resolveTags(rows: Row[], opts: { publicOnly: boolean }): Promise<
     collabIds.length
       ? supabaseAdmin
           .from("collab_posts")
-          .select("id,slug,title,description,status,archived_at,resulting_work_id")
+          .select("id,slug,title,description,status,archived_at,resulting_work_id,applications_open")
           .in("id", collabIds)
       : Promise.resolve({
           data: [] as Array<{
@@ -81,6 +81,7 @@ async function resolveTags(rows: Row[], opts: { publicOnly: boolean }): Promise<
             status: string;
             archived_at: string | null;
             resulting_work_id: string | null;
+            applications_open: boolean;
           }>,
         }),
     groupIds.length
