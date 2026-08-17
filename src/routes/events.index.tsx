@@ -255,6 +255,22 @@ function EventsIndexPage() {
 
   const cityValue: CityValue | null = cityId && cityName ? { id: cityId, name: cityName } : null;
 
+  const filtersActive =
+    when !== "upcoming" || format !== "all" || !!cityId || mine || kind !== "all" || daypart !== "all";
+
+  const clearFilters = () =>
+    navigate({
+      search: () => ({
+        when: "upcoming" as const,
+        format: "all" as const,
+        mine: false,
+        kind: "all" as const,
+        daypart: "all" as const,
+      }),
+      replace: true,
+    });
+
+
   const defaultCityQuery = useDefaultCity();
   const defaultCity = defaultCityQuery.data?.city ?? null;
   useApplyDefaultCity({
