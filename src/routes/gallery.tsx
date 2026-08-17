@@ -656,8 +656,8 @@ function GalleryPage() {
             onApply={(city) => setSearch({ city: city.slug })}
             onWorldwide={() => setSearch({ city: "all" })}
           />
-        </div>
-      </div>
+      </FilterHeader>
+
 
       {/* Editorial lead-in — only on the default, unfiltered view */}
       {showFeatured && (
