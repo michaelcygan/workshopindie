@@ -61,7 +61,7 @@ function EditWork() {
   const goBack = useSmartBack({ to: "/works/$slug", params: { slug } });
   const queryClient = useQueryClient();
 
-  const { data: work, isLoading } = useQuery({
+  const { data: work, isLoading, error: loadError, refetch } = useQuery({
     queryKey: ["work-edit", slug],
     enabled: !!slug,
     queryFn: async () => {
