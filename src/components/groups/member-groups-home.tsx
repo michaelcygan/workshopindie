@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useMemo } from "react";
-import { ArrowRight, Compass, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import type { GroupCardData } from "@/components/group-card";
 import { GroupFeaturedCard } from "@/components/group-featured-card";
 import { useGroupMemberAvatars } from "@/hooks/use-group-member-avatars";
@@ -13,6 +13,10 @@ import {
   type DirectoryState,
 } from "@/components/groups/groups-directory";
 import { JoinedGroupsRail } from "@/components/groups/joined-groups-rail";
+import {
+  GroupsControlRow,
+  isDirectoryFiltered,
+} from "@/components/groups/groups-control-row";
 
 
 type Props = {
@@ -46,29 +50,27 @@ export function MemberGroupsHome({ state, onChange, onReset, myIds }: Props) {
   const avatarIds = useMemo(() => featured.map((g) => g.id), [featured]);
 
   const { data: avatarMap } = useGroupMemberAvatars(avatarIds);
+  const filtered = isDirectoryFiltered(state);
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
-      <header className="flex flex-col border-b border-border pb-5 md:pb-6">
+    <main className="pb-24 md:pb-16">
+      <header className="mx-auto flex max-w-7xl flex-col border-b border-border px-4 py-4 md:px-6 md:py-5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
           Groups
         </p>
-        <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
-          <h1 className="min-w-0 font-display text-[30px] leading-tight text-ink md:text-[44px]">
-            Your scenes
-          </h1>
-          <Link
-            to="/groups"
-            search={{ t: "all", q: "", c: "all", s: "members" }}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-[13px] font-medium text-ink-soft transition hover:bg-muted hover:text-ink"
-          >
-            <Compass className="h-3.5 w-3.5" /> Explore
-          </Link>
-        </div>
-        <p className="mt-2 max-w-xl text-sm text-ink-muted md:text-base">
+        <h1 className="mt-1 min-w-0 font-display text-[28px] leading-tight text-ink md:text-[42px]">
+          Your scenes
+        </h1>
+        <p className="mt-1 max-w-xl text-sm text-ink-muted md:text-[15px]">
           The cities, mediums, and movements your work belongs with.
         </p>
       </header>
+
+      <GroupsControlRow state={state} onChange={onChange} onReset={onReset} />
+
+      <div className="mx-auto max-w-7xl px-4 md:px-6">
+      {filtered ? null : (
+      <>
 
 
       {/* Your groups */}
@@ -131,16 +133,18 @@ export function MemberGroupsHome({ state, onChange, onReset, myIds }: Props) {
         </section>
       )}
 
-      <div className="mt-12">
+      </>
+      )}
+
+      <div className={filtered ? "pt-6" : "mt-12 border-t border-border pt-8"}>
         <GroupsDirectory
           state={state}
           onChange={onChange}
           onReset={onReset}
           authenticated
           myIds={myIds}
-          eyebrow="Directory"
-          heading="Every Group on Workshop"
         />
+      </div>
       </div>
     </main>
   );
