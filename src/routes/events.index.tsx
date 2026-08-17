@@ -533,8 +533,9 @@ function EventsIndexPage() {
                   ? when === "past"
                     ? "Events you attend will show up here."
                     : "RSVP to an event and it'll appear here for quick access."
-                  : cityValue
-                    ? `No ${when} events in ${cityValue.name} yet. Try Worldwide or a different city.`
+                  : cityName
+                    ? `No ${when} events in ${cityName} yet. Try Worldwide or a different city.`
+
                     : "Events hosted by the Groups you join will list here."
               }
               action={
