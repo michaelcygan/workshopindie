@@ -75,18 +75,8 @@ export function BlogLatestStories({ posts }: { posts: PublicBlogCard[] }) {
   const [lead, ...rest] = posts;
 
   return (
-    <section
-      aria-labelledby="blog-latest"
-      className="mx-auto max-w-7xl border-b border-border px-4 py-8 md:px-6 md:py-10"
-    >
-      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
-        The Blog
-      </p>
-      <h2 id="blog-latest" className="mt-1 font-display text-[26px] text-ink md:text-[34px]">
-        Latest stories
-      </h2>
-
-      <div className="mt-8 grid gap-8 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] md:gap-10">
+    <section className="mx-auto max-w-7xl border-b border-border px-4 py-6 md:px-6 md:py-8">
+      <div className="grid gap-8 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] md:gap-10">
         {lead ? (
           <article className="group">
             <Link to="/blog/$slug" params={{ slug: lead.slug }} className="block">
