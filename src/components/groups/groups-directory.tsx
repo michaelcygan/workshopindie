@@ -122,27 +122,14 @@ type Props = {
   onReset: () => void;
   authenticated: boolean;
   myIds: Set<string>;
-  /** Section eyebrow + heading, rendered above the controls. */
-  eyebrow?: string;
-  heading?: string;
-  intro?: string;
 };
 
 /**
- * The full Groups directory: search, kind switcher, category + sort, card
- * grid and progressive Show More. Shared by the member and public surfaces;
- * all state is URL-backed and owned by the route.
+ * The Groups results grid: kind tabs, result count, cards and progressive
+ * Show More. Search / field / sort live in the sticky control row above.
  */
-export function GroupsDirectory({
-  state,
-  onChange,
-  onReset,
-  authenticated,
-  myIds,
-  eyebrow = "Explore",
-  heading = "All Groups",
-  intro,
-}: Props) {
+export function GroupsDirectory({ state, onChange, onReset, authenticated, myIds }: Props) {
+
   const { tab, query, sort } = state;
   const category = state.category === "all" ? "all" : normalizeCategory(state.category);
   const { data: allGroups = [], isLoading } = useAllPublicGroups();
