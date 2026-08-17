@@ -30,7 +30,8 @@ import { cn } from "@/lib/utils";
 import { LANGUAGES, canonicalLanguageLabels, normalizeLanguage } from "@/lib/languages";
 
 import { toast } from "sonner";
-import { Plus, X, User, Sparkles, MapPin, Link2, Pin, Copy, Check, Library } from "lucide-react";
+import { Plus, X, User, Sparkles, MapPin, Link2, Pin, Copy, Check, Library, Wrench } from "lucide-react";
+import { SkillsEditor } from "@/components/skills/skills-editor";
 import { sanitizeInstagramHandle } from "@/lib/display-name";
 import { RequireAuth } from "@/components/require-auth";
 import { PinnedWorksPicker, type PinnableWork } from "@/components/pinned-works-picker";
