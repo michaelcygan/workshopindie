@@ -2,7 +2,7 @@ import { NON_PUBLIC_STATUSES, RECRUITING_DEADLINE_OR } from "@/lib/collab/query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Megaphone, Briefcase, Radio } from "lucide-react";
+import { Megaphone, Briefcase } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
