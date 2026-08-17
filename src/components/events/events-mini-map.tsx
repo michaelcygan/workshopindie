@@ -184,11 +184,12 @@ export function EventsMiniMap({
   }, [sig]);
 
   return (
-    <div className={className}>
+    <div className={cn("relative isolate z-0", className)}>
       <div
         ref={ref}
         style={{ height }}
         className="w-full overflow-hidden rounded-2xl border border-border bg-muted [&_.leaflet-container]:bg-muted [&_.leaflet-container]:font-sans"
+
         aria-label="Map of where events are happening"
       />
     </div>
