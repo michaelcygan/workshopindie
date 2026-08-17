@@ -80,6 +80,7 @@ import { Route as MeEditRouteImport } from './routes/me.edit'
 import { Route as MeFriendsRouteImport } from './routes/me.friends'
 import { Route as MeNetworkRouteImport } from './routes/me.network'
 import { Route as MeTicketsRouteImport } from './routes/me.tickets'
+import { Route as MediumsIndexRouteImport } from './routes/mediums.index'
 import { Route as RedeemCodeRouteImport } from './routes/redeem.$code'
 import { Route as TopicsIndexRouteImport } from './routes/topics.index'
 import { Route as TopicsSlugRouteImport } from './routes/topics.$slug'
@@ -483,6 +484,11 @@ const MeTicketsRoute = MeTicketsRouteImport.update({
   path: '/me/tickets',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MediumsIndexRoute = MediumsIndexRouteImport.update({
+  id: '/mediums/',
+  path: '/mediums/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RedeemCodeRoute = RedeemCodeRouteImport.update({
   id: '/redeem/$code',
   path: '/redeem/$code',
@@ -794,6 +800,7 @@ export interface FileRoutesByFullPath {
   '/groups/': typeof GroupsIndexRoute
   '/lounge/': typeof LoungeIndexRoute
   '/me/': typeof MeIndexRoute
+  '/mediums/': typeof MediumsIndexRoute
   '/topics/': typeof TopicsIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -906,6 +913,7 @@ export interface FileRoutesByTo {
   '/groups': typeof GroupsIndexRoute
   '/lounge': typeof LoungeIndexRoute
   '/me': typeof MeIndexRoute
+  '/mediums': typeof MediumsIndexRoute
   '/topics': typeof TopicsIndexRoute
   '/workshops': typeof WorkshopsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -1025,6 +1033,7 @@ export interface FileRoutesById {
   '/groups/': typeof GroupsIndexRoute
   '/lounge/': typeof LoungeIndexRoute
   '/me/': typeof MeIndexRoute
+  '/mediums/': typeof MediumsIndexRoute
   '/topics/': typeof TopicsIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -1145,6 +1154,7 @@ export interface FileRouteTypes {
     | '/groups/'
     | '/lounge/'
     | '/me/'
+    | '/mediums/'
     | '/topics/'
     | '/workshops/'
     | '/.lovable/oauth/consent'
@@ -1257,6 +1267,7 @@ export interface FileRouteTypes {
     | '/groups'
     | '/lounge'
     | '/me'
+    | '/mediums'
     | '/topics'
     | '/workshops'
     | '/.lovable/oauth/consent'
@@ -1375,6 +1386,7 @@ export interface FileRouteTypes {
     | '/groups/'
     | '/lounge/'
     | '/me/'
+    | '/mediums/'
     | '/topics/'
     | '/workshops/'
     | '/.lovable/oauth/consent'
@@ -1464,6 +1476,7 @@ export interface RootRouteChildren {
   DmsIndexRoute: typeof DmsIndexRoute
   EventsIndexRoute: typeof EventsIndexRoute
   MeIndexRoute: typeof MeIndexRoute
+  MediumsIndexRoute: typeof MediumsIndexRoute
   TopicsIndexRoute: typeof TopicsIndexRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -1985,6 +1998,13 @@ declare module '@tanstack/react-router' {
       path: '/me/tickets'
       fullPath: '/me/tickets'
       preLoaderRoute: typeof MeTicketsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mediums/': {
+      id: '/mediums/'
+      path: '/mediums'
+      fullPath: '/mediums/'
+      preLoaderRoute: typeof MediumsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/redeem/$code': {
@@ -2536,6 +2556,7 @@ const rootRouteChildren: RootRouteChildren = {
   DmsIndexRoute: DmsIndexRoute,
   EventsIndexRoute: EventsIndexRoute,
   MeIndexRoute: MeIndexRoute,
+  MediumsIndexRoute: MediumsIndexRoute,
   TopicsIndexRoute: TopicsIndexRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
