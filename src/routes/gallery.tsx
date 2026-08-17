@@ -176,11 +176,16 @@ async function fetchForYouPage(params: {
   subject: string;
   citySlug: string;
   cityIdMap: Map<string, string>;
+  cityAuthorIds: string[];
+  topicWorkIds: string[] | null;
   sort: "recent" | "trending";
   q: string;
   cursor: string | null;
   blockedIds: string[];
 }): Promise<{ works: WorkCardData[]; nextCursor: string | null }> {
+  if (params.topicWorkIds && params.topicWorkIds.length === 0)
+    return { works: [], nextCursor: null };
+
   let qb = supabase
     .from("works")
     .select(`${WORK_CARD_SELECT},popularity_score`)
@@ -188,6 +193,7 @@ async function fetchForYouPage(params: {
     .in("visibility", ["public", "unlisted"])
     .limit(PAGE_SIZE);
 
+  if (params.topicWorkIds) qb = qb.in("id", params.topicWorkIds);
   if (params.category !== "all")
     qb = qb.overlaps("categories_canonical", canonicalFilterValues(params.category));
   if (params.kind !== "all") qb = qb.eq("category_id", params.kind);
@@ -195,8 +201,11 @@ async function fetchForYouPage(params: {
   if (params.citySlug !== "all") {
     const cid = params.cityIdMap.get(params.citySlug);
     if (!cid) return { works: [], nextCursor: null };
-    qb = qb.eq("city_id", cid);
+    qb = params.cityAuthorIds.length
+      ? qb.or(`city_id.eq.${cid},created_by.in.(${params.cityAuthorIds.join(",")})`)
+      : qb.eq("city_id", cid);
   }
+
   if (params.q.trim()) {
     const s = params.q.trim().replace(/[%,]/g, " ");
     qb = qb.or(`title.ilike.%${s}%,excerpt.ilike.%${s}%`);
