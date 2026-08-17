@@ -13,6 +13,13 @@ import { COLLAB_CARD_SELECT } from "@/lib/collab/card-select";
 
 import { CategoryScroller } from "@/components/category-scroller";
 import { CityCombobox } from "@/components/city-combobox";
+import {
+  FILTER_ROW_SCROLL,
+  FilterClear,
+  FilterHeader,
+  FilterPillToggle,
+} from "@/components/filter-header";
+
 
 import { FIELD_FILTER_OPTIONS, canonicalFilterValues, normalizeCategory } from "@/lib/taxonomy";
 
@@ -226,52 +233,74 @@ function CollabPage() {
         )}
       </div>
 
-      {/* Unified filter cluster — medium + location on one line */}
-      <div className="mx-auto mt-5 max-w-5xl space-y-2.5">
-        <div className="min-w-0">
-          <CategoryScroller tabs={tabs} value={filters.cat} onChange={setCat} className="w-full" />
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex min-w-[16rem] flex-1 items-center gap-2">
-
+      {/* Sticky filter header */}
+      <FilterHeader inset stack className="mt-4">
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <CategoryScroller tabs={tabs} value={filters.cat} onChange={setCat} className="w-full" />
+          </div>
+          <div className="hidden min-w-[15rem] shrink-0 md:block">
             <CityCombobox
               value={
-                filters.city
-                  ? { id: filters.city, name: search.cityName ?? "Selected city" }
-                  : null
+                filters.city ? { id: filters.city, name: search.cityName ?? "Selected city" } : null
               }
               onChange={(next) => setCity({ id: next?.id, name: next?.name })}
               disabled={filters.online}
             />
-
-            <button
-              type="button"
-              onClick={toggleOnline}
-              className={cn(
-                "h-11 shrink-0 rounded-full border px-4 text-sm font-medium transition shadow-soft",
-                filters.online
-                  ? "border-transparent bg-ink text-background"
-                  : "border-border bg-surface text-ink-soft hover:bg-muted",
-              )}
-              aria-pressed={filters.online}
-              aria-label="Toggle online-only Collabs"
-            >
-              Online only
-            </button>
-            {filters.city && !filters.online && (
-              <button
-                type="button"
-                onClick={() => setCity({ id: undefined, name: undefined })}
-                className="h-11 shrink-0 rounded-full border border-border bg-surface px-4 text-sm font-medium text-ink-soft shadow-soft transition hover:bg-muted"
-              >
-                Worldwide
-              </button>
-            )}
           </div>
+          <FilterPillToggle
+            active={filters.online}
+            onClick={toggleOnline}
+            label="Toggle online-only Collabs"
+            className="hidden sm:inline-flex"
+          >
+            Online only
+          </FilterPillToggle>
+          {(filters.online || filters.city || filters.cat !== "all") && (
+            <FilterClear
+              onClick={() =>
+                navigate({
+                  search: () => ({ cat: "all", online: false }),
+                  replace: true,
+                })
+              }
+            />
+          )}
         </div>
 
+        <div className={cn(FILTER_ROW_SCROLL, "mt-2 md:hidden")}>
+          <div className="min-w-[14rem] flex-1">
+            <CityCombobox
+              value={
+                filters.city ? { id: filters.city, name: search.cityName ?? "Selected city" } : null
+              }
+              onChange={(next) => setCity({ id: next?.id, name: next?.name })}
+              disabled={filters.online}
+            />
+          </div>
+          <FilterPillToggle
+            active={filters.online}
+            onClick={toggleOnline}
+            label="Toggle online-only Collabs"
+            className="sm:hidden"
+          >
+            Online only
+          </FilterPillToggle>
+        </div>
+      </FilterHeader>
+
+      <div className="mt-3 space-y-1">
         {defaultCity && filters.city === defaultCity.id && defaultCity.source === "ip" && (
-          <p className="px-1 text-xs text-ink-muted">Based on your location · <button type="button" onClick={() => setCity({ id: undefined, name: undefined })} className="underline underline-offset-2 hover:text-ink">see worldwide</button></p>
+          <p className="px-1 text-xs text-ink-muted">
+            Based on your location ·{" "}
+            <button
+              type="button"
+              onClick={() => setCity({ id: undefined, name: undefined })}
+              className="underline underline-offset-2 hover:text-ink"
+            >
+              see worldwide
+            </button>
+          </p>
         )}
         {!filters.city && !filters.online && defaultCity && (
           <p className="px-1 text-xs text-ink-muted">
@@ -286,6 +315,7 @@ function CollabPage() {
           </p>
         )}
       </div>
+
 
       {/* Live Collabs strip */}
       {livePosts.length > 0 && (
