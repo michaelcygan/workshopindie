@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { markAllNotificationsRead } from "@/lib/notifications.functions";
 import { formatRoomTitle } from "@/lib/instant";
 import { workshopEntityUrl } from "@/lib/entities/kinds";
+import { programTypeLabel } from "@/lib/open-house";
 
 type Row = {
   id: string;
