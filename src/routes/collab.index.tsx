@@ -103,7 +103,7 @@ type Filters = {
   format: Format;
 };
 
-async function fetchPosts({ cat, city, format, blockedIds }: Filters & { blockedIds: string[] }) {
+async function fetchPosts({ cat, format, blockedIds }: Filters & { blockedIds: string[] }) {
   let q = supabase
     .from("collab_posts")
     .select(COLLAB_CARD_SELECT)
