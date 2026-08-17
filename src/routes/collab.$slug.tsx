@@ -277,7 +277,11 @@ function CollabDetail() {
   const applicationsMut = useMutation({
     mutationFn: (open: boolean) => setApplicationsOpenFn({ data: { collabPostId: post!.id, open } }),
     onSuccess: (_d, open) => {
-      toast.success(open ? "Accepting collaborators again" : "Submissions paused");
+      toast.success(
+        open
+          ? "Submissions resumed — this Collab is public again."
+          : "Submissions paused — this Collab is now private to members.",
+      );
       qc.invalidateQueries({ queryKey: ["collab", slug] });
     },
     onError: (e: Error) => toast.error(e.message),
