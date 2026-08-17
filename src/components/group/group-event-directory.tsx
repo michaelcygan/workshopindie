@@ -11,6 +11,8 @@
  * public address.
  */
 import { Link } from "@tanstack/react-router";
+import { Plus } from "lucide-react";
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DISCOVERABLE_STATUSES, collapseSeries, effectiveEndMs } from "@/lib/events/filters";
