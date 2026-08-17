@@ -130,7 +130,7 @@ export async function insertSkill(db: Db, userId: string, input: AddSkillInput) 
 }
 
 export async function patchSkill(db: Db, userId: string, input: UpdateSkillInput) {
-  const patch: Record<string, unknown> = {};
+  const patch: { label?: string; normalized_label?: string; work_id?: string } = {};
   if (input.label !== undefined) {
     const label = cleanSkillLabel(input.label);
     patch.label = label;
