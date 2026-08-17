@@ -406,6 +406,32 @@ function EditWork() {
             </Button>
           </Link>
         </div>
+
+        <div className="rounded-xl border border-border p-4">
+          <p className="text-sm font-medium text-ink">Delete this Work</p>
+          <p className="mt-1 text-sm text-ink-muted">
+            Removes the page, its assets and its credits for good. If you only want it out of the
+            Gallery, set visibility to Unlisted instead.
+          </p>
+          <Button
+            variant="outline"
+            disabled={deleting}
+            className="mt-3 rounded-md text-destructive hover:text-destructive"
+            onClick={async () => {
+              if (typeof window !== "undefined" && !window.confirm(`Delete "${title}"? This can't be undone.`)) return;
+              setDeleting(true);
+              const { error } = await supabase.from("works").delete().eq("id", work.id);
+              setDeleting(false);
+              if (error) return toast.error(error.message);
+              toast.success("Work deleted");
+              await queryClient.invalidateQueries({ queryKey: ["member-home"] });
+              navigate({ to: "/gallery" });
+            }}
+          >
+            {deleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Delete Work
+          </Button>
+        </div>
       </div>
     </main>
   );
