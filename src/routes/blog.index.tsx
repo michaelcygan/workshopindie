@@ -8,7 +8,7 @@ import {
   FilterHeader,
   FilterSelect,
 } from "@/components/filter-header";
-import { PublicFeaturedStories } from "@/components/home/public-featured-stories";
+import { BlogFeatureShowcase } from "@/components/blog/blog-feature-showcase";
 
 import {
   BlogArchive,
@@ -188,8 +188,8 @@ function BlogIndexPage() {
   const featuredIds = new Set(usesFeatured ? featuredCards.map((p) => p.id) : []);
   const rest = cards.filter((c) => !featuredIds.has(c.id));
 
-  const latest = usesFeatured ? rest.slice(0, 6) : [];
-  const more = rest.slice(usesFeatured ? 6 : 0, usesFeatured ? 18 : 18);
+  const latest = filtered || usesFeatured ? rest.slice(0, 6) : [];
+  const more = rest.slice(latest.length ? 6 : 0, 18);
   const archive = rest.slice(18);
 
   return (
