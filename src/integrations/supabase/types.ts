@@ -5982,6 +5982,75 @@ export type Database = {
           },
         ]
       }
+      profile_skills: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          normalized_label: string
+          position: number
+          profile_id: string
+          updated_at: string
+          work_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          normalized_label: string
+          position?: number
+          profile_id: string
+          updated_at?: string
+          work_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          normalized_label?: string
+          position?: number
+          profile_id?: string
+          updated_at?: string
+          work_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_skills_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_skills_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_skills_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_skills_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "profile_skills_work_id_fkey"
+            columns: ["work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           age_filter_min: number | null
@@ -10923,6 +10992,7 @@ export type Database = {
         Args: { _event: string; _user: string }
         Returns: boolean
       }
+      work_is_public_evidence: { Args: { _work_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
