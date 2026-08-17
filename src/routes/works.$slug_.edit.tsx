@@ -221,7 +221,28 @@ function EditWork() {
     navigate({ to: "/works/$slug", params: { slug } });
   }
 
-  if (isLoading || !hydrated) {
+  if (loadError) {
+    return (
+      <main className="mx-auto max-w-3xl px-4 py-20 text-center">
+        <h1 className="font-display text-3xl text-ink">Couldn't open the editor</h1>
+        <p className="mt-2 text-sm text-ink-muted">
+          {loadError instanceof Error ? loadError.message : "Something went wrong loading this Work."}
+        </p>
+        <div className="mt-6 flex justify-center gap-2">
+          <Button className="rounded-md" onClick={() => void refetch()}>
+            Try again
+          </Button>
+          <Link to="/works/$slug" params={{ slug }}>
+            <Button variant="outline" className="rounded-md">
+              Back to the Work
+            </Button>
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  if (isLoading || (work && !hydrated)) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-20 text-center text-ink-muted">
         <Loader2 className="mx-auto h-6 w-6 animate-spin" />
