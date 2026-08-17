@@ -150,7 +150,10 @@ export async function listDiscoveryEvents(
     groupIds = null,
     kind = null,
     daypart = null,
+    q: text = null,
+    medium = null,
     format = "all",
+
     featuredOnly = false,
     after = null,
     before = null,
