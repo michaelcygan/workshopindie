@@ -231,6 +231,13 @@ export async function listDiscoveryEvents(
   if (kind) q = q.eq("kind", kind);
   if (daypart) q = q.eq("daypart", daypart);
   if (featuredOnly) q = q.not("featured_at", "is", null);
+  if (mediumEventIds) q = q.in("id", mediumEventIds);
+  if (text && text.trim()) {
+    // Escape PostgREST's or() separators so a stray comma can't inject filters.
+    const safe = text.trim().slice(0, 80).replace(/[,()]/g, " ");
+    q = q.or(`title.ilike.*${safe}*,tagline.ilike.*${safe}*,venue_name.ilike.*${safe}*`);
+  }
+
 
   const { data, error } = await q.limit(limit);
   if (error) {
