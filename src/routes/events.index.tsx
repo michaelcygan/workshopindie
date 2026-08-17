@@ -160,21 +160,47 @@ type SearchShape = z.infer<typeof searchSchema>;
 function EventsIndexPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/events/" });
-  const { when, format, city: cityId, cityName, mine, kind, daypart } = search;
+  const { when, format, city: cityId, cityName, mine, kind, daypart, q, medium } = search;
   const { user } = useAuth();
 
   const mineUpcomingFn = useServerFn(listMyUpcomingRsvps);
   const minePastFn = useServerFn(listMyPastRsvps);
   const publicEventsFn = useServerFn(listPublicEvents);
+  const eventCitiesFn = useServerFn(listEventCities);
+  const eventMediumsFn = useServerFn(listEventMediums);
 
   const mineActive = mine && !!user;
 
   const { data: publicData, isLoading: publicLoading } = useQuery({
-    queryKey: ["public-events", when, format, cityId ?? null, kind, daypart],
-    queryFn: () => fetchPublicEvents(publicEventsFn, when, format, cityId, kind, daypart),
+    queryKey: ["public-events", when, format, cityId ?? null, kind, daypart, medium, q],
+    queryFn: () =>
+      fetchPublicEvents(publicEventsFn, when, format, cityId, kind, daypart, medium, q),
     staleTime: 60_000,
     enabled: !mineActive,
   });
+
+  // City + medium option lists come from events that actually exist.
+  const { data: cityRows } = useQuery({
+    queryKey: ["events", "filter-cities", when],
+    queryFn: () => eventCitiesFn({ data: { when } }),
+    staleTime: 5 * 60_000,
+  });
+  const { data: mediumRows } = useQuery({
+    queryKey: ["events", "filter-mediums"],
+    queryFn: () => eventMediumsFn(),
+    staleTime: 10 * 60_000,
+  });
+  const cityOptions: FilterCityOption[] = useMemo(
+    () =>
+      ((cityRows ?? []) as { id: string; name: string; count: number }[]).map((c) => ({
+        value: c.id,
+        label: c.name,
+        count: c.count,
+      })),
+    [cityRows],
+  );
+  const mediumOptions = (mediumRows ?? []) as { slug: string; name: string; count: number }[];
+
 
   const { data: mineData, isLoading: mineLoading } = useQuery({
     queryKey: ["my-rsvps-feed", when, user?.id],
