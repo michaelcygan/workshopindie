@@ -1,4 +1,5 @@
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { Check, ChevronDown, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FILTER_PILL } from "./index";
@@ -41,13 +42,17 @@ export function FilterCityPicker({
 }) {
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
+  const [rect, setRect] = React.useState<{ top: number; left: number } | null>(null);
+  const btnRef = React.useRef<HTMLButtonElement | null>(null);
   const wrapRef = React.useRef<HTMLDivElement | null>(null);
   const listRef = React.useRef<HTMLDivElement | null>(null);
+  const popRef = React.useRef<HTMLDivElement | null>(null);
 
   React.useEffect(() => {
     if (!open) return;
     function onDoc(e: MouseEvent) {
-      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (!wrapRef.current?.contains(t) && !popRef.current?.contains(t)) setOpen(false);
     }
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
@@ -61,7 +66,26 @@ export function FilterCityPicker({
   }, [open]);
 
   React.useEffect(() => {
-    if (!open) setQuery("");
+    if (!open) {
+      setQuery("");
+      return;
+    }
+    const place = () => {
+      const r = btnRef.current?.getBoundingClientRect();
+      if (!r) return;
+      const width = 304;
+      setRect({
+        top: r.bottom + 8,
+        left: Math.min(Math.max(8, r.left), window.innerWidth - width - 8),
+      });
+    };
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
   }, [open]);
 
   const matches = React.useMemo(() => {
@@ -99,6 +123,7 @@ export function FilterCityPicker({
   return (
     <div ref={wrapRef} className={cn("relative shrink-0", className)}>
       <button
+        ref={btnRef}
         type="button"
         aria-label={label}
         aria-expanded={open}
@@ -116,8 +141,12 @@ export function FilterCityPicker({
         <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-60" />
       </button>
 
-      {open ? (
-        <div className="absolute left-0 z-50 mt-2 w-[19rem] overflow-hidden rounded-2xl border border-border bg-surface shadow-lift">
+      {open && rect
+        ? createPortal(
+        <div
+          ref={popRef}
+          style={{ top: rect.top, left: rect.left, width: 304 }}
+          className="fixed z-[60] overflow-hidden rounded-2xl border border-border bg-surface shadow-lift">
           <div className="border-b border-border p-2">
             <input
               autoFocus
@@ -186,8 +215,10 @@ export function FilterCityPicker({
               })}
             </div>
           </div>
-        </div>
-      ) : null}
+        </div>,
+        document.body,
+      )
+        : null}
     </div>
   );
 }
