@@ -308,7 +308,7 @@ function CollabPage() {
   }
 
   const moreCount =
-    (search.live ? 1 : 0) + (search.sug ? 1 : 0) + (comp !== "any" ? 1 : 0) + (search.topic ? 1 : 0);
+    (search.sug ? 1 : 0) + (comp !== "any" ? 1 : 0) + (search.topic ? 1 : 0);
   const anyActive =
     moreCount > 0 || format !== "any" || !!filters.city || filters.cat !== "all" || !!query.trim();
 
