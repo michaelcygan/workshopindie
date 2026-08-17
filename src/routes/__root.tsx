@@ -243,6 +243,7 @@ function RootComponent() {
               <SignOutCacheReset />
 
               <TitleBadge />
+              {!chromeFree && <JoinWorkshopPrompt />}
               <AccountLifecycleGate />
               <PostAuthRunner />
             </div>
