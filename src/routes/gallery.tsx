@@ -444,29 +444,25 @@ function GalleryPage() {
 
       {/* Sticky one-row toolbar */}
       <FilterHeader stack>
-
           <div className="relative flex items-center gap-2">
             {/* Tabs (desktop) — the primary lens sits first */}
-            <div className="hidden shrink-0 gap-1 rounded-full border border-border bg-surface p-1 shadow-soft lg:flex">
-              {(["for-you", "following", "favorites"] as const).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => {
-                    if (t !== "for-you" && !user) {
-                      navigate({ to: "/login" });
-                      return;
-                    }
-                    setSearch({ tab: t });
-                  }}
-                  className={cn(
-                    "rounded-full px-3 py-1 text-xs transition",
-                    tab === t ? "bg-ink text-background" : "text-ink-soft hover:bg-muted",
-                  )}
-                >
-                  {t === "for-you" ? "For you" : t === "following" ? "Following" : "Favorites"}
-                </button>
-              ))}
-            </div>
+            <FilterToggleGroup
+              className="hidden h-9 lg:flex"
+              value={tab}
+              onChange={(t) => {
+                if (t !== "for-you" && !user) {
+                  navigate({ to: "/login" });
+                  return;
+                }
+                setSearch({ tab: t });
+              }}
+              options={[
+                { value: "for-you" as const, label: "For you" },
+                { value: "following" as const, label: "Following" },
+                { value: "favorites" as const, label: "Favorites" },
+              ]}
+            />
+
 
             {/* Field chips — single scrolling line + overflow menu */}
             <div className="min-w-0 flex-1">
@@ -478,20 +474,16 @@ function GalleryPage() {
             </div>
 
             {/* Sort */}
-            <div className="hidden shrink-0 gap-1 rounded-full border border-border bg-surface p-1 shadow-soft sm:flex">
-              {(["recent", "trending"] as const).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setSearch({ sort: s })}
-                  className={cn(
-                    "rounded-full px-3 py-1 text-xs capitalize transition",
-                    sort === s ? "bg-ink text-background" : "text-ink-soft hover:bg-muted",
-                  )}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
+            <FilterToggleGroup
+              className="hidden h-9 sm:flex"
+              value={sort}
+              onChange={(s) => setSearch({ sort: s })}
+              options={[
+                { value: "recent" as const, label: "Recent" },
+                { value: "trending" as const, label: "Trending" },
+              ]}
+            />
+
 
             {/* City filter */}
             <div className="hidden shrink-0 md:block">
@@ -515,13 +507,9 @@ function GalleryPage() {
             </button>
 
             {filtersActive && (
-              <button
-                onClick={clearAll}
-                className="hidden shrink-0 rounded-full px-2.5 py-1 text-xs text-ink-muted hover:text-ink md:inline"
-              >
-                Clear
-              </button>
+              <FilterClear onClick={clearAll} className="hidden h-8 w-8 md:grid" />
             )}
+
           </div>
 
           {/* Category (scoped to the Field) + Subject — the secondary lenses */}
