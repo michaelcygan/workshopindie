@@ -76,19 +76,17 @@ export const Route = createFileRoute("/api/public/group-news/$slug")({
           return json(cachedItems, "ok", 200, SUCCESS);
         }
 
-        // Stale-but-usable snapshot: answer instantly and refresh in the
-        // background so a slow RSS host never delays the ticker.
+        // Stale-but-usable snapshot: try to repair the cache within a short
+        // budget (background work is killed once the response returns), and
+        // fall back to the stale snapshot if the feed is slow.
         if (cachedItems.length > 0) {
-          void (async () => {
-            try {
-              const bg = await fetchFeedItems(feedUrl, slug, 12);
-              if (bg.reason === "ok") await writeNewsCache(slug, bg.items);
-            } catch {
-              /* best effort */
-            }
-          })();
-          return json(cachedItems, "ok", 200, SHORT);
+          const fresh = await withBudget(refreshFeed(slug, feedUrl, 12), REFRESH_BUDGET_MS);
+          if (fresh && fresh.reason === "ok") {
+            return json(fresh.items, "ok", 200, SUCCESS, 0);
+          }
+          return json(cachedItems, "ok", 200, SHORT, cachedAgeMs);
         }
+
 
         const { items, reason } = await fetchFeedItems(feedUrl, slug, 12);
 
