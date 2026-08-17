@@ -44,7 +44,7 @@ export function useAllPublicGroups() {
       const { data } = await supabase
         .from("groups")
         .select(
-          "id,slug,name,tagline,kind,cover_url,avatar_url,accent_color,member_count,workshop_count,collab_count,work_count,is_official,featured_at,category",
+          "id,slug,name,tagline,kind,cover_url,avatar_url,accent_color,member_count,workshop_count,collab_count,work_count,is_official,featured_at,category,city_id",
         )
         .is("deleted_at", null)
         .eq("visibility", "public")
