@@ -119,5 +119,5 @@ export const getCollabPage = createServerFn({ method: "GET" })
     const member = await isCollabMember(record.id, record.user_id, viewerId);
     if (!member && !isPubliclyVisible(record)) return { access: "unavailable" };
 
-    return { access: "ok", post: row as unknown as Record<string, unknown>, viewerIsMember: member };
+    return { access: "ok", post: row as unknown as CollabDetailRow, viewerIsMember: member };
   });
