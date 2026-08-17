@@ -49,15 +49,38 @@ const searchSchema = z.object({
     .catch(undefined as unknown as string)
     .optional(),
   mine: fallback(z.boolean(), false).default(false),
+  kind: fallback(z.enum(["all", "coworking"]), "all").default("all"),
+  daypart: fallback(z.enum(["all", "morning", "afternoon", "evening"]), "all").default("all"),
 });
 
 async function fetchPublicEvents(
-  fn: (opts: { data: { when: When; format: Format; cityId?: string | null } }) => Promise<unknown>,
+  fn: (opts: {
+    data: {
+      when: When;
+      format: Format;
+      cityId?: string | null;
+      kind?: string | null;
+      daypart?: "morning" | "afternoon" | "evening" | null;
+    };
+  }) => Promise<unknown>,
   when: When,
   format: Format,
   cityId?: string,
+  kind?: string,
+  daypart?: string,
 ) {
-  const rows = await fn({ data: { when, format, cityId: cityId ?? null } });
+  const rows = await fn({
+    data: {
+      when,
+      format,
+      cityId: cityId ?? null,
+      kind: kind && kind !== "all" ? kind : null,
+      daypart:
+        daypart && daypart !== "all"
+          ? (daypart as "morning" | "afternoon" | "evening")
+          : null,
+    },
+  });
   return rows as unknown as EventCardData[];
 }
 
@@ -118,7 +141,7 @@ type SearchShape = z.infer<typeof searchSchema>;
 function EventsIndexPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/events/" });
-  const { when, format, city: cityId, cityName, mine } = search;
+  const { when, format, city: cityId, cityName, mine, kind, daypart } = search;
   const { user } = useAuth();
 
   const mineUpcomingFn = useServerFn(listMyUpcomingRsvps);
@@ -128,8 +151,8 @@ function EventsIndexPage() {
   const mineActive = mine && !!user;
 
   const { data: publicData, isLoading: publicLoading } = useQuery({
-    queryKey: ["public-events", when, format, cityId ?? null],
-    queryFn: () => fetchPublicEvents(publicEventsFn, when, format, cityId),
+    queryKey: ["public-events", when, format, cityId ?? null, kind, daypart],
+    queryFn: () => fetchPublicEvents(publicEventsFn, when, format, cityId, kind, daypart),
     staleTime: 60_000,
     enabled: !mineActive,
   });
@@ -302,6 +325,27 @@ function EventsIndexPage() {
                     { value: "online", label: "Online", icon: Radio },
                   ]}
                 />
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate({
+                      search: (prev: SearchShape): SearchShape => ({
+                        ...prev,
+                        kind: prev.kind === "coworking" ? "all" : "coworking",
+                        daypart: "all",
+                      }),
+                    })
+                  }
+                  aria-pressed={kind === "coworking"}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium shadow-soft transition",
+                    kind === "coworking"
+                      ? "border-ink bg-ink text-surface"
+                      : "border-border bg-surface text-ink-soft hover:text-ink",
+                  )}
+                >
+                  Co-working
+                </button>
                 <div className="flex min-w-[16rem] flex-1 items-center gap-2">
                   <CityCombobox
                     value={cityValue}
@@ -322,6 +366,31 @@ function EventsIndexPage() {
               </>
             )}
           </div>
+
+          {!mineActive && kind === "coworking" && (
+            <div className="flex flex-wrap items-center gap-1.5 px-1">
+              {(["all", "morning", "afternoon", "evening"] as const).map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() =>
+                    navigate({
+                      search: (prev: SearchShape): SearchShape => ({ ...prev, daypart: d }),
+                    })
+                  }
+                  aria-pressed={daypart === d}
+                  className={cn(
+                    "rounded-full border px-2.5 py-1 text-[11px] font-medium transition",
+                    daypart === d
+                      ? "border-ink bg-ink text-surface"
+                      : "border-border bg-surface text-ink-soft hover:text-ink",
+                  )}
+                >
+                  {d === "all" ? "Any time of day" : d.charAt(0).toUpperCase() + d.slice(1)}
+                </button>
+              ))}
+            </div>
+          )}
 
           {!mineActive &&
             defaultCity &&
