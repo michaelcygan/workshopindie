@@ -2,6 +2,11 @@ import { MapPin, Radio, Lock, ExternalLink, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+import {
+  publicVenueDetails,
+  VENUE_PUBLIC_DISCLAIMER,
+  HOSTLESS_OPEN_HOUSE_NOTE,
+} from "@/lib/events/workshop-venues";
 
 export function EventLocationCard({
   format,
@@ -13,6 +18,8 @@ export function EventLocationCard({
   city,
   variant = "card",
   publicAddress = false,
+  workshopVenueKey = null,
+  hostless = false,
 }: {
   format: "in_person" | "online" | "hybrid";
   venueName: string | null;
@@ -24,10 +31,17 @@ export function EventLocationCard({
   variant?: "card" | "embedded";
   /** Third-party listings publish their address openly — never gate it behind RSVP. */
   publicAddress?: boolean;
+  /** Canonical Workshop venue reference. Only the approved public subset renders. */
+  workshopVenueKey?: string | null;
+  /** Hostless Open House — adds the "find the group" coordination note. */
+  hostless?: boolean;
 }) {
   const { user } = useAuth();
   const canSeeAddress = !!user || publicAddress;
   const showInPerson = format === "in_person" || format === "hybrid";
+  // Internal classification, verification state, group triggers, automation
+  // eligibility and confirmation state are never projected here.
+  const venue = publicVenueDetails(workshopVenueKey);
   const showOnline = format === "online" || format === "hybrid";
 
   const rowCls =
@@ -107,6 +121,35 @@ export function EventLocationCard({
               </>
             )}
           </div>
+        </div>
+      )}
+      {showInPerson && venue && (
+        <div className={variant === "embedded" ? "space-y-2" : "rounded-2xl border border-border bg-surface p-4 shadow-soft space-y-2"}>
+          <div className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+            About this place
+          </div>
+          <div className="text-sm text-ink-soft">
+            {venue.neighborhood} · {venue.venue_type}
+          </div>
+          <ul className="space-y-1 text-sm text-ink-soft">
+            {venue.seating_note && <li>{venue.seating_note}</li>}
+            {venue.indoor_outdoor && <li>{venue.indoor_outdoor}</li>}
+            {venue.age_policy && <li>{venue.age_policy}</li>}
+            {venue.food_note && <li>{venue.food_note}</li>}
+            {venue.wifi === true && <li>Wi-Fi available</li>}
+          </ul>
+          {venue.website && (
+            <a
+              href={venue.website}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+            >
+              Venue website <ExternalLink className="h-3 w-3" />
+            </a>
+          )}
+          <p className="text-xs leading-snug text-ink-muted">{VENUE_PUBLIC_DISCLAIMER}</p>
+          {hostless && <p className="text-xs leading-snug text-ink-muted">{HOSTLESS_OPEN_HOUSE_NOTE}</p>}
         </div>
       )}
       {showOnline && (
