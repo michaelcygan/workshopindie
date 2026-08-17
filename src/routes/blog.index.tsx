@@ -179,12 +179,17 @@ function BlogIndexPage() {
 
   const filtered = !!(search.topic || search.medium);
   const cards = (feed.posts as unknown as BlogListItem[]).map(toBlogCard);
-  const showHero = !filtered && featured.length > 0;
-  const featuredIds = new Set(showHero ? featured.map((p) => p.id) : []);
+  const featuredCards = (featured as unknown as BlogListItem[]).map(toBlogCard);
+
+  // Featured picks drive the showcase and are contained there; otherwise the
+  // showcase rotates the latest posts, which still continue down the page.
+  const usesFeatured = !filtered && featuredCards.length > 0;
+  const showcase = filtered ? [] : usesFeatured ? featuredCards : cards.slice(0, 6);
+  const featuredIds = new Set(usesFeatured ? featuredCards.map((p) => p.id) : []);
   const rest = cards.filter((c) => !featuredIds.has(c.id));
 
-  const latest = rest.slice(0, 6);
-  const more = rest.slice(6, 18);
+  const latest = usesFeatured ? rest.slice(0, 6) : [];
+  const more = rest.slice(usesFeatured ? 6 : 0, usesFeatured ? 18 : 18);
   const archive = rest.slice(18);
 
   return (
@@ -197,9 +202,8 @@ function BlogIndexPage() {
         onChange={(next) => navigate({ search: { ...search, ...next }, replace: true })}
       />
 
-      {showHero ? (
-        <PublicFeaturedStories posts={(featured as unknown as BlogListItem[]).map(toBlogCard)} />
-      ) : null}
+      {showcase.length > 0 ? <BlogFeatureShowcase posts={showcase} /> : null}
+
 
       {cards.length === 0 ? (
         <div className="mx-auto max-w-3xl px-4 py-20 text-center md:px-6">
