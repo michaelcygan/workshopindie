@@ -862,6 +862,18 @@ function EditProfile() {
             </div>
           </Section>
 
+          {/* SKILLS */}
+          <Section
+            id="skills"
+            title="Skills"
+            subtitle="Show what you can do through work you've posted to Workshop."
+            refMap={sectionRefs}
+          >
+            <SkillsEditor profileId={user?.id} suggestions={form.specialties} />
+          </Section>
+
+
+
           {/* LOCATION & LANGUAGES */}
           <Section
             id="location"
