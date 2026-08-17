@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useMemo } from "react";
-import { ArrowRight, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { GroupFeaturedCard } from "@/components/group-featured-card";
 import { GroupCompactCard } from "@/components/groups/group-compact-card";
 import { useGroupMemberAvatars } from "@/hooks/use-group-member-avatars";
@@ -11,6 +11,10 @@ import {
   useAllPublicGroups,
   type DirectoryState,
 } from "@/components/groups/groups-directory";
+import {
+  GroupsControlRow,
+  isDirectoryFiltered,
+} from "@/components/groups/groups-control-row";
 import { categoryLabel } from "@/lib/taxonomy";
 
 type Props = {
@@ -60,12 +64,13 @@ export function PublicGroupsHome({ state, onChange, onReset }: Props) {
   );
 
   const empty = new Set<string>();
+  const filtered = isDirectoryFiltered(state);
 
   return (
     <main className="pb-24 md:pb-16">
       {/* Compact editorial masthead — same proportions as /blog */}
       <header className="border-b border-border">
-        <div className="mx-auto max-w-7xl px-4 py-5 md:px-6 md:py-8">
+        <div className="mx-auto max-w-7xl px-4 py-4 md:px-6 md:py-5">
           <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
             Workshop Groups
           </p>
@@ -77,25 +82,22 @@ export function PublicGroupsHome({ state, onChange, onReset }: Props) {
             work belongs with.
           </p>
 
-          <div className="mt-3.5 flex flex-wrap items-center gap-2">
-            {allGroups.length > 0 && (
+          {allGroups.length > 0 && (
+            <div className="mt-2.5">
               <span className="rounded-full border border-border bg-surface px-2.5 py-0.5 text-[11px] font-medium text-ink-soft">
                 {allGroups.length.toLocaleString()} scenes
                 {cities.length > 0 && ` · ${cities.length} cities`}
               </span>
-            )}
-            <Link
-              to="/groups"
-              search={{ t: "all", q: "", c: "all", s: "members" }}
-              className="ml-auto inline-flex items-center gap-1 text-sm text-ink-soft underline-offset-4 hover:text-ink hover:underline"
-            >
-              Browse all <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
+            </div>
+          )}
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-10">
+      <GroupsControlRow state={state} onChange={onChange} onReset={onReset} />
+
+      <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
+        {filtered ? null : (
+        <>
         {/* Lead scene */}
         <section>
           <h2 className="mb-3 font-display text-lg text-ink md:text-2xl">Scenes to know</h2>
@@ -199,16 +201,16 @@ export function PublicGroupsHome({ state, onChange, onReset }: Props) {
             Create your account
           </Link>
         </section>
+        </>
+        )}
 
-        <div className="mt-10">
+        <div className={filtered ? "" : "mt-10 border-t border-border pt-8"}>
           <GroupsDirectory
             state={state}
             onChange={onChange}
             onReset={onReset}
             authenticated={false}
             myIds={empty}
-            eyebrow="Directory"
-            heading="Every Group on Workshop"
           />
         </div>
       </div>
