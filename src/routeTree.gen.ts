@@ -81,6 +81,7 @@ import { Route as MeFriendsRouteImport } from './routes/me.friends'
 import { Route as MeNetworkRouteImport } from './routes/me.network'
 import { Route as MeTicketsRouteImport } from './routes/me.tickets'
 import { Route as MediumsIndexRouteImport } from './routes/mediums.index'
+import { Route as MediumsSlugRouteImport } from './routes/mediums.$slug'
 import { Route as RedeemCodeRouteImport } from './routes/redeem.$code'
 import { Route as TopicsIndexRouteImport } from './routes/topics.index'
 import { Route as TopicsSlugRouteImport } from './routes/topics.$slug'
@@ -489,6 +490,11 @@ const MediumsIndexRoute = MediumsIndexRouteImport.update({
   path: '/mediums/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MediumsSlugRoute = MediumsSlugRouteImport.update({
+  id: '/mediums/$slug',
+  path: '/mediums/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RedeemCodeRoute = RedeemCodeRouteImport.update({
   id: '/redeem/$code',
   path: '/redeem/$code',
@@ -783,6 +789,7 @@ export interface FileRoutesByFullPath {
   '/me/friends': typeof MeFriendsRoute
   '/me/network': typeof MeNetworkRoute
   '/me/tickets': typeof MeTicketsRoute
+  '/mediums/$slug': typeof MediumsSlugRoute
   '/redeem/$code': typeof RedeemCodeRoute
   '/topics/$slug': typeof TopicsSlugRoute
   '/u/$username': typeof UUsernameRoute
@@ -896,6 +903,7 @@ export interface FileRoutesByTo {
   '/me/friends': typeof MeFriendsRoute
   '/me/network': typeof MeNetworkRoute
   '/me/tickets': typeof MeTicketsRoute
+  '/mediums/$slug': typeof MediumsSlugRoute
   '/redeem/$code': typeof RedeemCodeRoute
   '/topics/$slug': typeof TopicsSlugRoute
   '/u/$username': typeof UUsernameRoute
@@ -1016,6 +1024,7 @@ export interface FileRoutesById {
   '/me/friends': typeof MeFriendsRoute
   '/me/network': typeof MeNetworkRoute
   '/me/tickets': typeof MeTicketsRoute
+  '/mediums/$slug': typeof MediumsSlugRoute
   '/redeem/$code': typeof RedeemCodeRoute
   '/topics/$slug': typeof TopicsSlugRoute
   '/u/$username': typeof UUsernameRoute
@@ -1137,6 +1146,7 @@ export interface FileRouteTypes {
     | '/me/friends'
     | '/me/network'
     | '/me/tickets'
+    | '/mediums/$slug'
     | '/redeem/$code'
     | '/topics/$slug'
     | '/u/$username'
@@ -1250,6 +1260,7 @@ export interface FileRouteTypes {
     | '/me/friends'
     | '/me/network'
     | '/me/tickets'
+    | '/mediums/$slug'
     | '/redeem/$code'
     | '/topics/$slug'
     | '/u/$username'
@@ -1369,6 +1380,7 @@ export interface FileRouteTypes {
     | '/me/friends'
     | '/me/network'
     | '/me/tickets'
+    | '/mediums/$slug'
     | '/redeem/$code'
     | '/topics/$slug'
     | '/u/$username'
@@ -1466,6 +1478,7 @@ export interface RootRouteChildren {
   MeFriendsRoute: typeof MeFriendsRoute
   MeNetworkRoute: typeof MeNetworkRoute
   MeTicketsRoute: typeof MeTicketsRoute
+  MediumsSlugRoute: typeof MediumsSlugRoute
   RedeemCodeRoute: typeof RedeemCodeRoute
   TopicsSlugRoute: typeof TopicsSlugRoute
   UUsernameRoute: typeof UUsernameRoute
@@ -2007,6 +2020,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MediumsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mediums/$slug': {
+      id: '/mediums/$slug'
+      path: '/mediums/$slug'
+      fullPath: '/mediums/$slug'
+      preLoaderRoute: typeof MediumsSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/redeem/$code': {
       id: '/redeem/$code'
       path: '/redeem/$code'
@@ -2546,6 +2566,7 @@ const rootRouteChildren: RootRouteChildren = {
   MeFriendsRoute: MeFriendsRoute,
   MeNetworkRoute: MeNetworkRoute,
   MeTicketsRoute: MeTicketsRoute,
+  MediumsSlugRoute: MediumsSlugRoute,
   RedeemCodeRoute: RedeemCodeRoute,
   TopicsSlugRoute: TopicsSlugRoute,
   UUsernameRoute: UUsernameRoute,
