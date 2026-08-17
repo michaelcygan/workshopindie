@@ -37,6 +37,7 @@ import { coworkingVenueMeta, evaluateVenuePolicy, getWorkshopVenue } from "@/lib
 import {
   ACTIVITY_OPTIONS,
   COWORKING_DEFAULTS,
+  DEFAULT_COWORKING_ACTIVITIES,
   DAYPARTS,
   daypartLabel,
   type Daypart,
@@ -424,7 +425,7 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
                           allowed_activities:
                             prev.allowed_activities.length > 0
                               ? prev.allowed_activities
-                              : [...COWORKING_DEFAULTS_ACTIVITIES],
+                              : [...DEFAULT_COWORKING_ACTIVITIES],
                         }
                       : { ...prev, kind },
                   );
@@ -593,6 +594,101 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
               </p>
             </div>
           </div>
+          {form.kind === "coworking" && (
+            <div className="space-y-3 rounded-2xl border border-border bg-muted/30 p-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">
+                Co-working session
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <Label>Part of day</Label>
+                  <Select
+                    value={form.daypart || "none"}
+                    onValueChange={(v) =>
+                      setForm({ ...form, daypart: v === "none" ? "" : (v as Daypart) })
+                    }
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Unset</SelectItem>
+                      {DAYPARTS.map((d) => (
+                        <SelectItem key={d} value={d}>{daypartLabel(d)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Minimum age (optional)</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={99}
+                    value={form.min_age}
+                    onChange={(e) => setForm({ ...form, min_age: e.target.value })}
+                    placeholder="21"
+                  />
+                  <p className="mt-1 text-[11px] text-ink-muted">
+                    Checked against the member's birthdate when they RSVP.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-4 text-sm">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={form.facilitation === "hostless"}
+                    onChange={(e) =>
+                      setForm({ ...form, facilitation: e.target.checked ? "hostless" : "hosted" })
+                    }
+                  />
+                  No host (ordinary public seating)
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={form.drop_in_allowed}
+                    onChange={(e) => setForm({ ...form, drop_in_allowed: e.target.checked })}
+                  />
+                  Drop in any time
+                </label>
+              </div>
+              <div>
+                <Label>Good for</Label>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {ACTIVITY_OPTIONS.map((a) => {
+                    const on = form.allowed_activities.includes(a.value);
+                    return (
+                      <button
+                        key={a.value}
+                        type="button"
+                        onClick={() =>
+                          setForm((prev) => ({
+                            ...prev,
+                            allowed_activities: on
+                              ? prev.allowed_activities.filter((x) => x !== a.value)
+                              : [...prev.allowed_activities, a.value],
+                          }))
+                        }
+                        className={`rounded-full border px-2.5 py-1 text-xs ${on ? "border-ink bg-ink text-background" : "border-border bg-background text-ink-soft"}`}
+                      >
+                        {a.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <Label>Arrival note (public)</Label>
+                <Textarea
+                  rows={2}
+                  maxLength={400}
+                  value={form.arrival_note_public}
+                  onChange={(e) => setForm({ ...form, arrival_note_public: e.target.value })}
+                  placeholder="Look for the long table near the back windows…"
+                />
+              </div>
+            </div>
+          )}
           <VenuePolicyStrip form={form} setForm={(u) => setForm((prev) => u(prev))} />
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} />
