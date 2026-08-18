@@ -94,7 +94,7 @@ export const getTopicHub = createServerFn({ method: "GET" })
         canonicalSlug: null,
         posts: [],
         nextCursor: null,
-        entities: { works: [], collabs: [], events: [], groups: [] },
+        entities: { works: [], collabs: [], events: [], groups: [], resources: [] },
       };
     }
 
