@@ -353,3 +353,36 @@ export async function syncPostTopicsAdminServer(
     createdBy,
   );
 }
+
+/**
+ * Replace an entity's Topic connections with canonical Topic ids, in order.
+ * Ids are the authoritative write path; `setEntityTopicsServer` (names) stays
+ * for legacy callers that only have free-text labels.
+ */
+export async function setEntityTopicIdsServer(
+  client: SupabaseClient<Database>,
+  kind: TopicEntityKind,
+  entityId: string,
+  topicIds: string[],
+  max = 5,
+): Promise<string[]> {
+  const { table, column } = JOIN[kind];
+  const unique = Array.from(new Set(topicIds.filter(Boolean))).slice(0, max);
+
+  const del = await client
+    .from(table as "blog_post_topics")
+    .delete()
+    .eq(column, entityId);
+  if (del.error) throw new Error(del.error.message);
+
+  if (unique.length > 0) {
+    const rows = unique.map((topicId, index) => ({
+      [column]: entityId,
+      topic_id: topicId,
+      sort_order: index,
+    }));
+    const ins = await client.from(table as "blog_post_topics").insert(rows as never);
+    if (ins.error) throw new Error(ins.error.message);
+  }
+  return unique;
+}
