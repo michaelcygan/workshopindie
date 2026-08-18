@@ -58,6 +58,7 @@ import { Route as AdminResourcesRouteImport } from './routes/admin.resources'
 import { Route as AdminRevenueRouteImport } from './routes/admin.revenue'
 import { Route as AdminTrafficRouteImport } from './routes/admin.traffic'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as AdminWorkshopEventsRouteImport } from './routes/admin.workshop-events'
 import { Route as AuthCompleteRouteImport } from './routes/auth.complete'
 import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
@@ -377,6 +378,11 @@ const AdminTrafficRoute = AdminTrafficRouteImport.update({
 const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminWorkshopEventsRoute = AdminWorkshopEventsRouteImport.update({
+  id: '/workshop-events',
+  path: '/workshop-events',
   getParentRoute: () => AdminRoute,
 } as any)
 const AuthCompleteRoute = AuthCompleteRouteImport.update({
@@ -799,6 +805,7 @@ export interface FileRoutesByFullPath {
   '/admin/revenue': typeof AdminRevenueRoute
   '/admin/traffic': typeof AdminTrafficRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
+  '/admin/workshop-events': typeof AdminWorkshopEventsRoute
   '/auth/complete': typeof AuthCompleteRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/rss.xml': typeof BlogRssDotxmlRoute
@@ -917,6 +924,7 @@ export interface FileRoutesByTo {
   '/admin/revenue': typeof AdminRevenueRoute
   '/admin/traffic': typeof AdminTrafficRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
+  '/admin/workshop-events': typeof AdminWorkshopEventsRoute
   '/auth/complete': typeof AuthCompleteRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/rss.xml': typeof BlogRssDotxmlRoute
@@ -1042,6 +1050,7 @@ export interface FileRoutesById {
   '/admin/revenue': typeof AdminRevenueRoute
   '/admin/traffic': typeof AdminTrafficRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
+  '/admin/workshop-events': typeof AdminWorkshopEventsRoute
   '/auth/complete': typeof AuthCompleteRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/rss.xml': typeof BlogRssDotxmlRoute
@@ -1168,6 +1177,7 @@ export interface FileRouteTypes {
     | '/admin/revenue'
     | '/admin/traffic'
     | '/admin/users'
+    | '/admin/workshop-events'
     | '/auth/complete'
     | '/blog/$slug'
     | '/blog/rss.xml'
@@ -1286,6 +1296,7 @@ export interface FileRouteTypes {
     | '/admin/revenue'
     | '/admin/traffic'
     | '/admin/users'
+    | '/admin/workshop-events'
     | '/auth/complete'
     | '/blog/$slug'
     | '/blog/rss.xml'
@@ -1410,6 +1421,7 @@ export interface FileRouteTypes {
     | '/admin/revenue'
     | '/admin/traffic'
     | '/admin/users'
+    | '/admin/workshop-events'
     | '/auth/complete'
     | '/blog/$slug'
     | '/blog/rss.xml'
@@ -1907,6 +1919,13 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/admin/users'
       preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/workshop-events': {
+      id: '/admin/workshop-events'
+      path: '/workshop-events'
+      fullPath: '/admin/workshop-events'
+      preLoaderRoute: typeof AdminWorkshopEventsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/auth/complete': {
@@ -2457,6 +2476,7 @@ interface AdminRouteChildren {
   AdminRevenueRoute: typeof AdminRevenueRoute
   AdminTrafficRoute: typeof AdminTrafficRoute
   AdminUsersRoute: typeof AdminUsersRouteWithChildren
+  AdminWorkshopEventsRoute: typeof AdminWorkshopEventsRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminBlogIdRoute: typeof AdminBlogIdRoute
   AdminBlogNewRoute: typeof AdminBlogNewRoute
@@ -2486,6 +2506,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminRevenueRoute: AdminRevenueRoute,
   AdminTrafficRoute: AdminTrafficRoute,
   AdminUsersRoute: AdminUsersRouteWithChildren,
+  AdminWorkshopEventsRoute: AdminWorkshopEventsRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminBlogIdRoute: AdminBlogIdRoute,
   AdminBlogNewRoute: AdminBlogNewRoute,
