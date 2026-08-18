@@ -90,16 +90,17 @@ export async function topicHubEntities(
   const client = topicsPublicClient();
   const cap = Math.min(Math.max(perKind, 1), 24);
 
-  const [workIds, collabIds, eventIds, groupIds] = await Promise.all([
+  const [workIds, collabIds, eventIds, groupIds, resourceIds] = await Promise.all([
     joinIds("work_topics", "work_id", topicId, 200),
     joinIds("collab_post_topics", "collab_post_id", topicId, 200),
     joinIds("group_event_topics", "event_id", topicId, 200),
     joinIds("group_topics", "group_id", topicId, 200),
+    joinIds("resource_topics", "resource_id", topicId, 200),
   ]);
 
   const nowIso = new Date().toISOString();
 
-  const [works, collabs, events, groups] = await Promise.all([
+  const [works, collabs, events, groups, resources] = await Promise.all([
     workIds.length
       ? client
           .from("works")
@@ -139,6 +140,15 @@ export async function topicHubEntities(
           .order("name", { ascending: true })
           .limit(cap)
       : Promise.resolve({ data: [] }),
+    resourceIds.length
+      ? client
+          .from("resources")
+          .select("id,name,website_url,category,short_description")
+          .in("id", resourceIds)
+          .eq("is_published", true)
+          .order("name", { ascending: true })
+          .limit(cap)
+      : Promise.resolve({ data: [] }),
   ]);
 
   return {
@@ -147,5 +157,6 @@ export async function topicHubEntities(
     collabs: ((collabs.data ?? []) as unknown as TopicHubCollab[]),
     events: ((events.data ?? []) as unknown as TopicHubEvent[]),
     groups: ((groups.data ?? []) as unknown as TopicHubGroup[]),
+    resources: ((resources.data ?? []) as unknown as TopicHubResource[]),
   };
 }
