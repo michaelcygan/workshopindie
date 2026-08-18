@@ -17,7 +17,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { zonedPartsToUtc } from "@/lib/event-series.server";
-import { getWorkshopVenue } from "@/lib/events/workshop-venues";
+import { getWorkshopVenue, venueImageUrl } from "@/lib/events/workshop-venues";
 import { reconcileVenue } from "@/lib/events/venue-reconcile";
 import {
   occurrenceMinAge,
@@ -215,6 +215,7 @@ async function insertOccurrence(
     venue_lat: venue.lat ?? null,
     venue_lng: venue.lng ?? null,
     workshop_venue_key: key,
+    cover_url: (base as { cover_url?: string | null }).cover_url ?? venueImageUrl(key),
     capacity,
     overflow,
     min_age: occurrenceMinAge(occ.venueKey, cfg, occ.hour),
