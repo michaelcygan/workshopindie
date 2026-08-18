@@ -680,29 +680,26 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
               </div>
               <div>
                 <Label>Good for</Label>
+                {/* Co-working is writing-only. Legacy events keep their own
+                    activity values; new ones are always writing. */}
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
-                  {ACTIVITY_OPTIONS.map((a) => {
-                    const on = form.allowed_activities.includes(a.value);
-                    return (
-                      <button
-                        key={a.value}
-                        type="button"
-                        onClick={() =>
-                          setForm((prev) => ({
-                            ...prev,
-                            allowed_activities: on
-                              ? prev.allowed_activities.filter((x) => x !== a.value)
-                              : [...prev.allowed_activities, a.value],
-                          }))
-                        }
-                        className={`rounded-full border px-2.5 py-1 text-xs ${on ? "border-ink bg-ink text-background" : "border-border bg-background text-ink-soft"}`}
-                      >
-                        {a.label}
-                      </button>
-                    );
-                  })}
+                  {(form.allowed_activities.length > 0
+                    ? form.allowed_activities
+                    : WRITING_ONLY_ACTIVITIES
+                  ).map((a) => (
+                    <span
+                      key={a}
+                      className="rounded-full border border-ink bg-ink px-2.5 py-1 text-xs text-background"
+                    >
+                      {activityLabel(a)}
+                    </span>
+                  ))}
                 </div>
+                <p className="mt-1 text-[11px] text-ink-muted">
+                  Writing sessions only. A notebook or laptop is a tool, not a separate medium.
+                </p>
               </div>
+
               <div>
                 <Label>Arrival note (public)</Label>
                 <Textarea
