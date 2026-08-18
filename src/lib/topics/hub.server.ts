@@ -42,14 +42,29 @@ export type TopicHubGroup = {
   kind: string;
 };
 
+export type TopicHubResource = {
+  id: string;
+  title: string;
+  url: string | null;
+  kind: string | null;
+  summary: string | null;
+};
+
 export type TopicHubEntities = {
   works: TopicHubWork[];
   collabs: TopicHubCollab[];
   events: TopicHubEvent[];
   groups: TopicHubGroup[];
+  resources: TopicHubResource[];
 };
 
-const EMPTY: TopicHubEntities = { works: [], collabs: [], events: [], groups: [] };
+const EMPTY: TopicHubEntities = {
+  works: [],
+  collabs: [],
+  events: [],
+  groups: [],
+  resources: [],
+};
 
 async function joinIds(
   table: string,
