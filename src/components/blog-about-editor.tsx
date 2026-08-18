@@ -24,7 +24,6 @@ import { FieldPicker } from "@/components/field-picker";
 import { fieldClass, fieldLabel, subcategoryLabel, type FieldId } from "@/lib/taxonomy";
 import {
   BLOG_STORY_TYPES,
-  BLOG_SUBJECT_SUGGESTIONS,
   MAX_BLOG_SUBJECTS,
   blogSectionForStoryType,
   type BlogStoryType,
