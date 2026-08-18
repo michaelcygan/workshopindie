@@ -341,3 +341,104 @@ export function occurrenceMinAge(
 export function windowKindLabel(kind: ScheduleWindowKind): string {
   return kind === "evening" ? "Evening" : "Weekend afternoon";
 }
+
+// ----------------------------------------------- daypart-rotation planner --
+
+/** The global slot ordinal used to drive the daypart cycle. */
+export function occurrenceOrdinal(
+  year: number,
+  month: number,
+  slot: number,
+  perMonth: number,
+): number {
+  return (monthIndex(year, month) - DAYPART_ROTATION_ANCHOR_MONTH_INDEX) * perMonth + slot;
+}
+
+/** Morning → Afternoon → Evening, from a stable ordinal. */
+export function daypartForOrdinal(ordinal: number): Daypart {
+  const n = DAYPART_CYCLE.length;
+  return DAYPART_CYCLE[(((ordinal % n) + n) % n)]!;
+}
+
+/**
+ * Venues this program may auto-publish to for a given daypart: eligible under
+ * the shared program rules AND reviewed for Co-working at that time of day.
+ */
+export function daypartVenues(program: ProgramRow, daypart: Daypart): string[] {
+  const { keys } = eligibleVenues(program);
+  return keys.filter((key) => coworkingVenueMeta(key)?.dayparts.includes(daypart));
+}
+
+/**
+ * Deterministic plan for a daypart-rotating program (Workshop Writing
+ * Co-working). Slots cycle Morning → Afternoon → Evening from a fixed anchor;
+ * each slot draws from the venues reviewed for that daypart, avoiding the
+ * previous occurrence's venue whenever another safe option exists. A slot with
+ * no safe venue is skipped and reported — never filled with an unverified one.
+ */
+export function planDaypartRotationMonth(
+  program: ProgramRow,
+  year: number,
+  month: number,
+): { occurrences: PlannedOccurrence[]; skipped: VenueSkip[] } {
+  const { skipped } = eligibleVenues(program);
+  const count = Math.max(1, program.events_per_month || 4);
+  const r = rng(seedFrom(program.key, year, month));
+  const dim = daysInMonth(year, month);
+
+  const occurrences: PlannedOccurrence[] = [];
+  const chosenDays: number[] = [];
+  let previousVenue: string | null = null;
+
+  for (let slot = 0; slot < count; slot++) {
+    const ordinal = occurrenceOrdinal(year, month, slot, count);
+    const daypart = daypartForOrdinal(ordinal);
+    const pool = daypartVenues(program, daypart);
+    if (pool.length === 0) {
+      const reason = `No reviewed Co-working venue is available for a ${daypart} session.`;
+      if (!skipped.some((s) => s.reason === reason)) skipped.push({ venueKey: "—", reason });
+      continue;
+    }
+
+    // Rotate by ordinal so reruns land on the same venue; step forward only
+    // to avoid an immediate repeat.
+    let venueKey = pool[((ordinal % pool.length) + pool.length) % pool.length]!;
+    if (venueKey === previousVenue && pool.length > 1) {
+      venueKey = pool[((ordinal + 1) % pool.length + pool.length) % pool.length]!;
+    }
+
+    const cfg = program.venue_config[venueKey];
+    const venueDays = cfg?.weekdays?.length ? cfg.weekdays : [0, 1, 2, 3, 4, 5, 6];
+    const from = Math.floor((slot * dim) / count) + 1;
+    const to = Math.floor(((slot + 1) * dim) / count);
+
+    const candidates: number[] = [];
+    for (let day = from; day <= to; day++) {
+      if (!venueDays.includes(civilWeekday(year, month, day))) continue;
+      if (chosenDays.some((d) => Math.abs(d - day) < 4)) continue;
+      candidates.push(day);
+    }
+    const day = candidates.length > 0 ? candidates[Math.floor(r() * candidates.length)]! : null;
+    if (day == null) continue;
+
+    const win = DAYPART_WINDOWS[daypart];
+    chosenDays.push(day);
+    previousVenue = venueKey;
+    occurrences.push({
+      slot: slot + 1,
+      occurrenceKey: occurrenceKeyFor(program.key, year, month, slot + 1),
+      venueKey,
+      year,
+      month,
+      day,
+      hour: win.startHour,
+      minute: 0,
+      windowKind: daypart === "evening" ? "evening" : "weekend_afternoon",
+      daypart,
+    });
+  }
+
+  occurrences.sort((a, b) => a.day - b.day);
+  return { occurrences, skipped };
+}
+
