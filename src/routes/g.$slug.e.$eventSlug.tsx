@@ -26,6 +26,10 @@ import { CoworkingBlock } from "@/components/events/coworking-block";
 import {
   COWORKING_NOTE_PLACEHOLDER,
   COWORKING_NOTE_PROMPT,
+  WRITING_NOTE_PLACEHOLDER,
+  WRITING_NOTE_PROMPT,
+  WRITING_WALL_SUGGESTION,
+  isWritingSession,
   daypartLabel,
 } from "@/lib/events/coworking";
 import { eventKindLabel } from "@/lib/events/kinds";
@@ -230,6 +234,7 @@ function EventPage() {
     ev.capacity !== null && ev.going_count >= ev.capacity + Math.max(0, ev.overflow ?? 0);
   const host = resolveEventHost(ev);
   const isCoworking = ev.kind === "coworking";
+  const isWriting = isCoworking && isWritingSession(ev.allowed_activities);
 
 
   const canonicalUrl = typeof window !== "undefined"
@@ -447,8 +452,10 @@ function EventPage() {
             startsAt={ev.starts_at}
             timezone={ev.timezone}
             isRecurring={Boolean(ev.series_key)}
-            notePrompt={isCoworking ? COWORKING_NOTE_PROMPT : null}
-            notePlaceholder={isCoworking ? COWORKING_NOTE_PLACEHOLDER : null}
+            notePrompt={isCoworking ? (isWriting ? WRITING_NOTE_PROMPT : COWORKING_NOTE_PROMPT) : null}
+            notePlaceholder={
+              isCoworking ? (isWriting ? WRITING_NOTE_PLACEHOLDER : COWORKING_NOTE_PLACEHOLDER) : null
+            }
             footerSlot={
               !user ? (
                 <p className="text-sm text-ink-muted">
@@ -572,7 +579,7 @@ function EventPage() {
                   isCoworking
                     ? [
                         "I'm here — sitting",
-                        "Working on",
+                        isWriting ? WRITING_WALL_SUGGESTION : "Working on",
                         "Heading out — good session",
                       ]
                     : ev.workshop_venue_key
