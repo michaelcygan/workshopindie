@@ -6799,6 +6799,38 @@ export type Database = {
         }
         Relationships: []
       }
+      topic_aliases: {
+        Row: {
+          alias: string
+          created_at: string
+          id: string
+          normalized_alias: string | null
+          topic_id: string
+        }
+        Insert: {
+          alias: string
+          created_at?: string
+          id?: string
+          normalized_alias?: string | null
+          topic_id: string
+        }
+        Update: {
+          alias?: string
+          created_at?: string
+          id?: string
+          normalized_alias?: string | null
+          topic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topic_aliases_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       topic_follows: {
         Row: {
           created_at: string
@@ -6853,16 +6885,48 @@ export type Database = {
           },
         ]
       }
+      topic_slug_redirects: {
+        Row: {
+          created_at: string
+          old_slug: string
+          topic_id: string
+        }
+        Insert: {
+          created_at?: string
+          old_slug: string
+          topic_id: string
+        }
+        Update: {
+          created_at?: string
+          old_slug?: string
+          topic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topic_slug_redirects_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       topics: {
         Row: {
           about_markdown: string | null
           aliases: string[]
+          broader_topic_id: string | null
           created_at: string
           created_by: string | null
+          editorial_order: number
+          family: string | null
           featured: boolean
           id: string
           merged_into_topic_id: string | null
           name: string
+          normalized_key: string | null
+          related_topic_ids: string[]
+          review_state: string
           short_description: string | null
           slug: string
           status: string
@@ -6871,12 +6935,18 @@ export type Database = {
         Insert: {
           about_markdown?: string | null
           aliases?: string[]
+          broader_topic_id?: string | null
           created_at?: string
           created_by?: string | null
+          editorial_order?: number
+          family?: string | null
           featured?: boolean
           id?: string
           merged_into_topic_id?: string | null
           name: string
+          normalized_key?: string | null
+          related_topic_ids?: string[]
+          review_state?: string
           short_description?: string | null
           slug: string
           status?: string
@@ -6885,18 +6955,31 @@ export type Database = {
         Update: {
           about_markdown?: string | null
           aliases?: string[]
+          broader_topic_id?: string | null
           created_at?: string
           created_by?: string | null
+          editorial_order?: number
+          family?: string | null
           featured?: boolean
           id?: string
           merged_into_topic_id?: string | null
           name?: string
+          normalized_key?: string | null
+          related_topic_ids?: string[]
+          review_state?: string
           short_description?: string | null
           slug?: string
           status?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "topics_broader_topic_id_fkey"
+            columns: ["broader_topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "topics_created_by_fkey"
             columns: ["created_by"]
@@ -10844,6 +10927,7 @@ export type Database = {
           saved: boolean
         }[]
       }
+      topic_normalize: { Args: { _text: string }; Returns: string }
       topic_slugify: { Args: { _name: string }; Returns: string }
       touch_presence: {
         Args: never
