@@ -597,7 +597,7 @@ export const adminListAllEvents = createServerFn({ method: "POST" })
     const { data, error } = await supabase
       .from("group_events")
       .select(
-        "id,slug,title,kind,format,starts_at,ends_at,status,featured_at,going_count,capacity,group:groups!inner(id,slug,name)",
+        "id,slug,title,kind,format,starts_at,ends_at,status,featured_at,going_count,capacity,workshop_event_program_id,group:groups!inner(id,slug,name)",
       )
       .is("deleted_at", null)
       .order("starts_at", { ascending: false })

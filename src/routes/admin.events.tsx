@@ -95,7 +95,7 @@ function AdminEventsPage() {
           </thead>
           <tbody>
             {(events ?? []).map((e) => {
-              type R = { id: string; slug: string; title: string; kind: string; starts_at: string; ends_at?: string | null; status: string; featured_at: string | null; going_count: number; capacity: number | null; group: { slug: string; name: string } };
+              type R = { id: string; slug: string; title: string; kind: string; starts_at: string; ends_at?: string | null; status: string; featured_at: string | null; going_count: number; capacity: number | null; workshop_event_program_id?: string | null; group: { slug: string; name: string } };
               const ev = e as unknown as R;
               return (
                 <tr key={ev.id} className="border-t border-border">
@@ -103,6 +103,11 @@ function AdminEventsPage() {
                     <a href={workshopEntityUrl({ kind: "event", groupSlug: ev.group.slug, slug: ev.slug })} className="font-medium text-ink hover:underline" target="_blank" rel="noreferrer">
                       {ev.title}
                     </a>
+                    {ev.workshop_event_program_id ? (
+                      <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-[10px] uppercase tracking-wide text-ink-muted">
+                        Workshop auto
+                      </span>
+                    ) : null}
                   </td>
                   <td className="px-3 py-2 text-ink-soft">{ev.group.name}</td>
                   <td className="px-3 py-2 text-ink-soft">{new Date(ev.starts_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</td>
