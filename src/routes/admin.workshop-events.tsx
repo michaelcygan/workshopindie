@@ -112,7 +112,7 @@ function ProgramCard({ summary, onDone }: { summary: ProgramSummary; onDone: () 
   const cancelFuture = useMutation({
     mutationFn: () => cancelFutureFn({ data: { id: program.id } }),
     onSuccess: (r) => {
-      toast.success(`Canceled ${r.canceled} upcoming events`);
+      toast.success(`Canceled ${r.canceled} upcoming ${program.name} events`);
       onDone();
     },
     onError: (e: Error) => toast.error(e.message),
