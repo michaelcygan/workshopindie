@@ -173,6 +173,7 @@ export function CollabComposer({
 
   const tagGroup = useServerFn(tagCollabInGroup);
   const pinToRoom = useServerFn(pinCollab);
+  const saveTopics = useServerFn(setEntityTopics);
   const preselect = usePreselectGroup(groupPreselectId ?? undefined);
 
   const [selectedGroups, setSelectedGroups] = useState<PickerGroup[]>(initialDraft?.groups ?? []);
