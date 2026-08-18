@@ -372,7 +372,7 @@ function NewWork() {
       setCoverUrl(null); setPrimaryUrl(""); setEmbedUrl(null);
       setProvider(null); setOwnsRights(false);
       setFields([]); setCategoryId(""); setCustomCategory("");
-      setSubjects([]); setMaterials([]); setPublicationDate(""); setDetails({});
+      setTopics([]); setMaterials([]); setPublicationDate(""); setDetails({});
       setCoCreators([]); setDetailsOpen(false);
       setCoverAspect("portrait"); setCoverFocal({ x: 50, y: 50 });
 
