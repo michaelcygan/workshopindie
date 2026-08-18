@@ -29,7 +29,7 @@ import {
   blogSectionForStoryType,
   type BlogStoryType,
 } from "@/lib/blog-story-types";
-import { TagField } from "@/components/entity/tag-field";
+import { TopicPicker, type PickerTopic } from "@/components/topics/topic-picker";
 
 const KIND_ICONS: Record<BlogEntityKind, typeof Briefcase> = {
   work: Briefcase,
@@ -70,7 +70,8 @@ export function BlogAboutEditor({
   postType,
   onChangePostType,
   subjects,
-  onChangeSubjects,
+  topics,
+  onChangeTopics,
   tags,
   readOnly,
   onChangeFields,
@@ -91,7 +92,9 @@ export function BlogAboutEditor({
   onChangePostType: (next: BlogStoryType | null) => void;
   /** What the post is directly about. Optional, up to `MAX_BLOG_SUBJECTS`. */
   subjects: string[];
-  onChangeSubjects: (next: string[]) => void;
+  /** Canonical Topics attached to this post (shared with Works, Collabs, etc.). */
+  topics: PickerTopic[];
+  onChangeTopics: (next: PickerTopic[]) => void;
   tags: BlogEntityTag[];
   readOnly?: boolean;
   onChangeFields: (next: FieldId[]) => void;
@@ -312,20 +315,22 @@ export function BlogAboutEditor({
           )}
         </Row>
 
-        <Row label={subjects.length === 1 ? "Subject" : "Subjects"}>
+        <Row label={topics.length === 1 ? "Topic" : "Topics"}>
           {readOnly ? (
             <div className="text-sm text-ink-soft">
-              {subjects.length > 0 ? subjects.join(" · ") : "—"}
+              {topics.length > 0
+                ? topics.map((t) => t.name).join(" · ")
+                : subjects.length > 0
+                  ? subjects.join(" · ")
+                  : "—"}
             </div>
           ) : (
-            <TagField
+            <TopicPicker
               label=""
-              help={`What this post is directly about. Optional, up to ${MAX_BLOG_SUBJECTS}. The first one leads.`}
-              values={subjects}
-              onChange={onChangeSubjects}
-              suggestions={BLOG_SUBJECT_SUGGESTIONS}
+              value={topics}
+              onChange={onChangeTopics}
               max={MAX_BLOG_SUBJECTS}
-              placeholder="e.g. Mental health"
+              helper={`What is this post about? Optional, up to ${MAX_BLOG_SUBJECTS}. The first one leads.`}
             />
           )}
         </Row>
