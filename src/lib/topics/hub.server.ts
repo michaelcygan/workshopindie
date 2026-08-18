@@ -44,10 +44,10 @@ export type TopicHubGroup = {
 
 export type TopicHubResource = {
   id: string;
-  title: string;
-  url: string | null;
-  kind: string | null;
-  summary: string | null;
+  name: string;
+  website_url: string | null;
+  category: string | null;
+  short_description: string | null;
 };
 
 export type TopicHubEntities = {
