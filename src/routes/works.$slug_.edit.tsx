@@ -20,8 +20,9 @@ import {
   FieldCategoryPicker,
   MaterialField,
   PublicationDateField,
-  SubjectField,
 } from "@/components/work/work-form-fields";
+import { TopicPicker, type PickerTopic } from "@/components/topics/topic-picker";
+import { setEntityTopics, topicsByIdList } from "@/lib/topics.functions";
 import {
   BookDetailsSection,
   emptyBookDetails,
@@ -84,7 +85,8 @@ function EditWork() {
   const [fields, setFields] = useState<FieldId[]>([]);
   const [categoryId, setCategoryId] = useState("");
   const [customCategory, setCustomCategory] = useState("");
-  const [subjects, setSubjects] = useState<string[]>([]);
+  const [topics, setTopics] = useState<PickerTopic[]>([]);
+  const [topicsHydrated, setTopicsHydrated] = useState(false);
   const [materials, setMaterials] = useState<string[]>([]);
   const [publicationDate, setPublicationDate] = useState("");
   const [details, setDetails] = useState<WorkDetails>({});
@@ -111,7 +113,6 @@ function EditWork() {
     setCustomCategory(
       form.customCategory || (!form.categoryId && work.category === "writing_book" ? "Book" : ""),
     );
-    setSubjects(form.subjects);
     setMaterials(form.materials);
     setPublicationDate(form.publicationDate);
     setDetails(form.details);
@@ -197,7 +198,7 @@ function EditWork() {
       excerpt,
       description,
       publicationDate,
-      subjects,
+      subjects: topics.map((t) => t.name),
       materials,
       details,
       primaryUrl,
@@ -323,7 +324,12 @@ function EditWork() {
           onCustomCategoryChange={setCustomCategory}
         />
 
-        <SubjectField values={subjects} onChange={setSubjects} />
+        <TopicPicker
+          value={topics}
+          onChange={setTopics}
+          max={5}
+          helper="What is this Work about? Topics connect it to everything else on Workshop."
+        />
         <MaterialField categoryId={categoryId} values={materials} onChange={setMaterials} />
         <PublicationDateField value={publicationDate} onChange={setPublicationDate} />
         <CategoryDetailFields categoryId={categoryId} value={details} onChange={setDetails} />
