@@ -139,6 +139,32 @@ function EditWork() {
     setHydrated(true);
   }, [work, hydrated]);
 
+  // Hydrate canonical Topics attached to this Work.
+  useEffect(() => {
+    if (!work?.id || topicsHydrated) return;
+    let cancelled = false;
+    (async () => {
+      const { data: rows } = await supabase
+        .from("work_topics")
+        .select("topic_id")
+        .eq("work_id", work.id);
+      const ids = (rows ?? []).map((r) => r.topic_id as string);
+      if (ids.length === 0) {
+        if (!cancelled) setTopicsHydrated(true);
+        return;
+      }
+      try {
+        const list = await topicsByIdList({ data: { ids } });
+        if (!cancelled) setTopics(list as PickerTopic[]);
+      } finally {
+        if (!cancelled) setTopicsHydrated(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [work?.id, topicsHydrated]);
+
   useEffect(() => {
     if (!authLoading && !user) {
       navigate({ to: "/login", search: { redirect: `${workshopEntityUrl({ kind: "work", slug })}/edit` } });
@@ -221,8 +247,20 @@ function EditWork() {
       })
       .eq("id", work.id);
 
+    if (error) {
+      setSubmitting(false);
+      return toast.error(error.message);
+    }
+
+    try {
+      await setEntityTopics({
+        data: { kind: "work", entityId: work.id, topicIds: topics.map((t) => t.id) },
+      });
+    } catch {
+      // Topics are additive context — never block saving on them.
+    }
+
     setSubmitting(false);
-    if (error) return toast.error(error.message);
     toast.success("Changes saved");
     await queryClient.invalidateQueries({ queryKey: ["work", slug] });
     navigate({ to: "/works/$slug", params: { slug } });
