@@ -17,6 +17,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { zonedPartsToUtc } from "@/lib/event-series.server";
+import { writingCoworkingTitle } from "@/lib/events/coworking";
 import { getWorkshopVenue, venueImageUrl } from "@/lib/events/workshop-venues";
 import { reconcileVenue } from "@/lib/events/venue-reconcile";
 import {
@@ -201,8 +202,16 @@ async function insertOccurrence(
   const endsAt = new Date(startsAt.getTime() + (program.duration_minutes || 150) * 60 * 1000);
   const nowIso = new Date().toISOString();
 
+  const daypart = occ.daypart ?? (occ.windowKind === "evening" ? "evening" : "afternoon");
+  // Daypart-rotating programs name each occurrence after its venue and time
+  // of day; fixed programs (Open House) keep the template title.
+  const title = occ.daypart
+    ? writingCoworkingTitle(venue.venue_name, occ.daypart)
+    : ((base.title as string) ?? "Workshop event");
+
   const row = {
     ...base,
+    title,
     group_id: program.group_id,
     slug: "",
     starts_at: startsAt.toISOString(),
@@ -219,7 +228,8 @@ async function insertOccurrence(
     capacity,
     overflow,
     min_age: occurrenceMinAge(occ.venueKey, cfg, occ.hour),
-    daypart: occ.windowKind === "evening" ? "evening" : "afternoon",
+    daypart,
+
     status: "scheduled",
     published_at: nowIso,
     archived_at: null,

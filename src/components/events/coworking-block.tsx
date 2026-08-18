@@ -5,7 +5,11 @@ import {
   COWORKING_FIRST_COME_NOTE,
   COWORKING_HOSTLESS_NOTE,
   COWORKING_SESSION_NOTE,
+  WRITING_BRING_NOTE,
+  WRITING_SESSION_HEADING,
+  WRITING_SESSION_NOTE,
   activityLabel,
+  isWritingSession,
   daypartLabel,
   powerNote,
   wifiNote,
@@ -48,6 +52,7 @@ export function CoworkingBlock({
   const meta = coworkingVenueMeta(workshopVenueKey);
   const hostless = facilitation !== "hosted";
   const activities = (allowedActivities ?? []).filter(Boolean);
+  const writing = isWritingSession(activities);
   const power = powerNote(meta?.power ?? null);
   const wifi = wifiNote(venue?.wifi ?? null);
 
@@ -88,8 +93,12 @@ export function CoworkingBlock({
         )}
       </div>
 
-      <h3 className="mt-3 font-display text-lg text-ink">A quiet working session</h3>
-      <p className="mt-1 text-sm text-ink-soft">{COWORKING_SESSION_NOTE}</p>
+      <h3 className="mt-3 font-display text-lg text-ink">
+        {writing ? WRITING_SESSION_HEADING : "A quiet working session"}
+      </h3>
+      <p className="mt-1 text-sm text-ink-soft">
+        {writing ? WRITING_SESSION_NOTE : COWORKING_SESSION_NOTE}
+      </p>
 
       <dl className="mt-4 grid gap-3 sm:grid-cols-2">
         {window && (
@@ -107,7 +116,7 @@ export function CoworkingBlock({
           {[power, wifi].filter(Boolean).join(" ") || "Come charged — outlets aren't guaranteed."}
         </Row>
         <Row icon={<Coffee className="h-4 w-4" />} title="What to bring">
-          {COWORKING_BRING_NOTE}
+          {writing ? WRITING_BRING_NOTE : COWORKING_BRING_NOTE}
         </Row>
         {capacity != null && (
           <Row icon={<Users2 className="h-4 w-4" />} title="Group size">

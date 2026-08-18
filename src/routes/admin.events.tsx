@@ -37,13 +37,14 @@ import { WorkshopVenuePicker } from "@/components/event/workshop-venue-picker";
 import { HackathonControlRoom } from "@/components/event/hackathon-control-room";
 import { coworkingVenueMeta, evaluateVenuePolicy, getWorkshopVenue } from "@/lib/events/workshop-venues";
 import {
-  ACTIVITY_OPTIONS,
   COWORKING_DEFAULTS,
-  DEFAULT_COWORKING_ACTIVITIES,
+  WRITING_ONLY_ACTIVITIES,
+  activityLabel,
   DAYPARTS,
   daypartLabel,
   type Daypart,
 } from "@/lib/events/coworking";
+
 import { CoworkingRotationBuilder } from "@/components/admin/coworking-rotation-builder";
 import { CoverImagePicker } from "@/components/event/cover-image-picker";
 import { SeedChicagoButton } from "@/components/admin/seed-chicago-button";
@@ -438,12 +439,13 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
                           capacity: prev.capacity || String(COWORKING_DEFAULTS.capacity),
                           overflow: prev.overflow || String(COWORKING_DEFAULTS.overflow),
                           tagline: prev.tagline || COWORKING_DEFAULTS.tagline,
-                          allowed_activities:
-                            prev.allowed_activities.length > 0
-                              ? prev.allowed_activities
-                              : [...DEFAULT_COWORKING_ACTIVITIES],
+                          description: prev.description || COWORKING_DEFAULTS.description,
+                          creative_category: prev.creative_category || ("writing" as FieldId),
+                          // New Co-working sessions are writing sessions.
+                          allowed_activities: [...WRITING_ONLY_ACTIVITIES],
                         }
                       : { ...prev, kind },
+
                   );
                 }}
               >
@@ -550,10 +552,13 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
                   ...prev,
                   ...(meta
                     ? {
-                        capacity: String(meta.capacity),
-                        overflow: String(meta.overflow),
+                        capacity: String(COWORKING_DEFAULTS.capacity),
+                        overflow: String(COWORKING_DEFAULTS.overflow),
                         min_age: meta.min_age ? String(meta.min_age) : "",
-                        allowed_activities: [...meta.activities],
+                        // Writing-only: the venue's broad activity list never
+                        // overwrites the session's medium.
+                        allowed_activities: [...WRITING_ONLY_ACTIVITIES],
+
                         daypart: (meta.dayparts[0] ?? prev.daypart) as "" | Daypart,
                       }
                     : {}),
@@ -678,29 +683,26 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
               </div>
               <div>
                 <Label>Good for</Label>
+                {/* Co-working is writing-only. Legacy events keep their own
+                    activity values; new ones are always writing. */}
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
-                  {ACTIVITY_OPTIONS.map((a) => {
-                    const on = form.allowed_activities.includes(a.value);
-                    return (
-                      <button
-                        key={a.value}
-                        type="button"
-                        onClick={() =>
-                          setForm((prev) => ({
-                            ...prev,
-                            allowed_activities: on
-                              ? prev.allowed_activities.filter((x) => x !== a.value)
-                              : [...prev.allowed_activities, a.value],
-                          }))
-                        }
-                        className={`rounded-full border px-2.5 py-1 text-xs ${on ? "border-ink bg-ink text-background" : "border-border bg-background text-ink-soft"}`}
-                      >
-                        {a.label}
-                      </button>
-                    );
-                  })}
+                  {(form.allowed_activities.length > 0
+                    ? form.allowed_activities
+                    : WRITING_ONLY_ACTIVITIES
+                  ).map((a) => (
+                    <span
+                      key={a}
+                      className="rounded-full border border-ink bg-ink px-2.5 py-1 text-xs text-background"
+                    >
+                      {activityLabel(a)}
+                    </span>
+                  ))}
                 </div>
+                <p className="mt-1 text-[11px] text-ink-muted">
+                  Writing sessions only. A notebook or laptop is a tool, not a separate medium.
+                </p>
               </div>
+
               <div>
                 <Label>Arrival note (public)</Label>
                 <Textarea

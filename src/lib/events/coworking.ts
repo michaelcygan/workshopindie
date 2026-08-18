@@ -118,21 +118,67 @@ export const COWORKING_ATTRITION_NOTE =
 export const COWORKING_NOTE_PROMPT = "What are you working on?";
 export const COWORKING_NOTE_PLACEHOLDER = "A short line — 'finishing a grant draft', 'storyboarding'…";
 
+// ------------------------------------------------------- writing sessions --
+
+/**
+ * Workshop Writing Co-working. Writing is the only medium: a notebook or a
+ * laptop is a tool, not a separate activity. Everything here is the copy the
+ * program materializer, the composer defaults and the public panel share, so
+ * a writing session never describes itself as general co-working.
+ */
+export const WRITING_COWORKING_PROGRAM_KEY = "writing_coworking";
+export const WRITING_COWORKING_NAME = "Workshop Writing Co-working";
+
+export const WRITING_COWORKING_TAGLINE =
+  "Bring something to write. Work quietly alongside other writers.";
+
+export const WRITING_COWORKING_DESCRIPTION =
+  "A quiet, small-group writing session. Bring a notebook, laptop, draft, research notes, or an unfinished idea. Write independently alongside other writers. There is no critique, reading, presentation, or required conversation. Drop in, find the group, buy something from the venue, and work for as long as you like.";
+
+export const WRITING_SESSION_HEADING = "A quiet writing session";
+
+export const WRITING_SESSION_NOTE =
+  "People write independently, side by side. There is no critique round, presentation, or agenda.";
+
+export const WRITING_BRING_NOTE =
+  "Bring a notebook or laptop, your draft or notes, and whatever power you need. Plan to buy something from the venue.";
+
+export const WRITING_NOTE_PROMPT = "What are you writing?";
+export const WRITING_NOTE_PLACEHOLDER = "Revising chapter three…";
+
+export const WRITING_WALL_SUGGESTION = "Writing today";
+
+/** New Co-working sessions are writing sessions. */
+export const WRITING_ONLY_ACTIVITIES: CoworkingActivity[] = ["writing"];
+
+/** True when an occurrence is a writing-only session. */
+export function isWritingSession(activities: string[] | null | undefined): boolean {
+  const list = (activities ?? []).filter(Boolean);
+  return list.length === 1 && list[0] === "writing";
+}
+
 /** Defaults the composer applies the moment Co-working is chosen. */
 export const COWORKING_DEFAULTS = {
   format: "in_person" as const,
   capacity: 6,
-  overflow: 3,
+  overflow: 2,
   facilitation: "hostless" as const,
   drop_in_allowed: true,
   waitlist_enabled: true,
   duration_hours: 3,
-  tagline: "A quiet working session — bring what you're making.",
+  tagline: WRITING_COWORKING_TAGLINE,
+  description: WRITING_COWORKING_DESCRIPTION,
 };
 
 export function coworkingTitle(venueName: string, daypart: Daypart): string {
   return `${COWORKING_PROGRAM_NAME} · ${DAYPART_LABELS[daypart]} at ${venueName}`;
 }
+
+/** Title for a Writing Co-working occurrence. */
+export function writingCoworkingTitle(venueName: string, daypart: Daypart): string {
+  return `${WRITING_COWORKING_NAME} · ${DAYPART_LABELS[daypart]} at ${venueName}`;
+}
+
 
 /** The public power line. Unknown never becomes a promise. */
 export function powerNote(power: "likely" | "limited" | "unavailable" | null): string | null {

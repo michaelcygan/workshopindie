@@ -112,7 +112,7 @@ function ProgramCard({ summary, onDone }: { summary: ProgramSummary; onDone: () 
   const cancelFuture = useMutation({
     mutationFn: () => cancelFutureFn({ data: { id: program.id } }),
     onSuccess: (r) => {
-      toast.success(`Canceled ${r.canceled} upcoming events`);
+      toast.success(`Canceled ${r.canceled} upcoming ${program.name} events`);
       onDone();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -320,13 +320,18 @@ function ProgramCard({ summary, onDone }: { summary: ProgramSummary; onDone: () 
           size="sm"
           variant="destructive"
           onClick={() => {
-            if (confirm("Cancel every upcoming occurrence of this program and pause automation?"))
+            if (
+              confirm(
+                `Cancel every upcoming ${program.name} occurrence and pause this program? Other programs are unaffected.`,
+              )
+            )
               cancelFuture.mutate();
           }}
           disabled={cancelFuture.isPending}
         >
-          Cancel future Open House events
+          Cancel future {program.name} events
         </Button>
+
       </div>
     </section>
   );
