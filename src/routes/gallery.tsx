@@ -31,7 +31,6 @@ import { listFollowingWorks } from "@/lib/gallery.functions";
 import { useDefaultCity, useApplyDefaultCity } from "@/hooks/use-default-city";
 import { useBlockedIds } from "@/hooks/use-blocked-ids";
 import { GeoDefaultBanner } from "@/components/geo-default-banner";
-import { FreshWorksStrip } from "@/components/fresh-works-strip";
 // BoostedWorksStrip retired in v1 distillation pass.
 import { GallerySpotlight } from "@/components/gallery/gallery-spotlight";
 import { GalleryLoggedOutHero } from "@/components/gallery-logged-out-hero";
