@@ -214,7 +214,11 @@ export function BlogFeatureShowcase({ posts }: { posts: PublicBlogCard[] }) {
           </Link>
         </article>
 
-        <div className="divide-y divide-border/70 border-border/70 md:border-l md:pl-8">
+        <div
+          className="h-full min-h-0 divide-y divide-border/70 overflow-y-auto border-border/70 md:border-l md:pl-8"
+          aria-label="Featured stories"
+          tabIndex={0}
+        >
           {items.map((p, i) => (
             <article
               key={p.id}
