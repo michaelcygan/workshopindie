@@ -158,6 +158,8 @@ export type PlannedOccurrence = {
   hour: number;
   minute: number;
   windowKind: ScheduleWindowKind;
+  /** Set by daypart-rotation programs; Open House derives it from the window. */
+  daypart?: Daypart;
 };
 
 function daysInMonth(year: number, month: number): number {
@@ -174,6 +176,21 @@ function monthIndex(year: number, month: number): number {
 }
 
 /**
+ * Plan one calendar month for a program, dispatched on `program_type`.
+ * Open House keeps its original planner untouched.
+ */
+export function planMonth(
+  program: ProgramRow,
+  year: number,
+  month: number,
+): { occurrences: PlannedOccurrence[]; skipped: VenueSkip[] } {
+  if (program.program_type === WRITING_COWORKING_PROGRAM_TYPE) {
+    return planDaypartRotationMonth(program, year, month);
+  }
+  return planOpenHouseMonth(program, year, month);
+}
+
+/**
  * Deterministic plan for one calendar month.
  *
  * Rhythm: one home-base occurrence plus (events_per_month - 1) rotating ones,
@@ -181,11 +198,12 @@ function monthIndex(year: number, month: number): number {
  * afternoon by default. The rotation offset advances by month so the pool
  * cycles before a venue repeats.
  */
-export function planMonth(
+export function planOpenHouseMonth(
   program: ProgramRow,
   year: number,
   month: number,
 ): { occurrences: PlannedOccurrence[]; skipped: VenueSkip[] } {
+
   const { keys: eligible, skipped } = eligibleVenues(program);
   if (eligible.length === 0) return { occurrences: [], skipped };
 
