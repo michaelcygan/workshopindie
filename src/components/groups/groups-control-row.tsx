@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import {
   useAllPublicGroups,
+  useGroupTopicMap,
   type DirectoryState,
   type GroupsSort,
   type GroupsTab,
@@ -30,6 +31,7 @@ export function isDirectoryFiltered(state: DirectoryState): boolean {
     state.tab !== "all" ||
     (state.category !== "all" && !!state.category) ||
     state.sort !== "featured" ||
+    !!state.topic ||
     !!state.city.trim() ||
     !!state.query.trim()
   );
@@ -50,6 +52,14 @@ type Props = {
  */
 export function GroupsControlRow({ state, onChange, onReset, authenticated }: Props) {
   const { data: allGroups = [] } = useAllPublicGroups();
+  const { data: topicMap } = useGroupTopicMap();
+  const topicOptions = useMemo(
+    () =>
+      Array.from(topicMap?.names.entries() ?? [])
+        .map(([slug, name]) => ({ slug, name }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [topicMap],
+  );
   const active = isDirectoryFiltered(state);
 
   const cities = useMemo(
@@ -122,6 +132,22 @@ export function GroupsControlRow({ state, onChange, onReset, authenticated }: Pr
             </option>
           ))}
         </FilterSelect>
+
+        {topicOptions.length > 0 ? (
+          <FilterSelect
+            label="Filter by topic"
+            width="min-w-[11rem]"
+            value={state.topic ?? ""}
+            onChange={(v) => onChange({ topic: v })}
+          >
+            <option value="">All topics</option>
+            {topicOptions.map((t) => (
+              <option key={t.slug} value={t.slug}>
+                {t.name}
+              </option>
+            ))}
+          </FilterSelect>
+        ) : null}
 
         <FilterSelect
           label="Sort groups"
