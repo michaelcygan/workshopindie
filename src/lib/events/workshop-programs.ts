@@ -15,9 +15,28 @@
  * materializer can never reshuffle an already-materialized occurrence.
  */
 
-import { evaluateVenuePolicy, getWorkshopVenue } from "@/lib/events/workshop-venues";
+import {
+  DAYPART_WINDOWS,
+  WRITING_COWORKING_PROGRAM_KEY,
+  type Daypart,
+} from "@/lib/events/coworking";
+import {
+  coworkingVenueMeta,
+  evaluateVenuePolicy,
+  getWorkshopVenue,
+} from "@/lib/events/workshop-venues";
 
 export const OPEN_HOUSE_PROGRAM_KEY = "open_house_chicago";
+export const WRITING_COWORKING_PROGRAM_TYPE = WRITING_COWORKING_PROGRAM_KEY;
+
+/**
+ * Fixed anchor for the Morning → Afternoon → Evening cycle. The rotation is a
+ * pure function of (anchor, month, slot), never of how many times the
+ * materializer has run.
+ */
+export const DAYPART_ROTATION_ANCHOR_MONTH_INDEX = 2026 * 12 + 0; // January 2026
+export const DAYPART_CYCLE: Daypart[] = ["morning", "afternoon", "evening"];
+
 
 export type ProgramVenueConfig = {
   enabled: boolean;
