@@ -34,9 +34,11 @@ describe("venue registry", () => {
     expect(first.is_open_house_home_base).toBe(true);
   });
 
-  it("has exactly the eight canonical Chicago venues", () => {
-    expect(listWorkshopVenues()).toHaveLength(8);
+  it("carries the reviewed Chicago venue pool", () => {
+    // Grew from the original eight when co-working added daypart venues.
+    expect(listWorkshopVenues()).toHaveLength(11);
   });
+
 
   it("never invents a group trigger for Off Color", () => {
     expect(getWorkshopVenue("chi_off_color_mousetrap")!.group_policy_trigger).toBeNull();
