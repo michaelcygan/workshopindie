@@ -60,7 +60,7 @@ function Cover({
  * Desktop: lead + right-hand list. Mobile: swipeable snap carousel.
  */
 export function BlogFeatureShowcase({ posts }: { posts: PublicBlogCard[] }) {
-  const items = posts.slice(0, 24);
+  const items = posts.slice(0, 10);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [visible, setVisible] = useState(true);
@@ -173,8 +173,8 @@ export function BlogFeatureShowcase({ posts }: { posts: PublicBlogCard[] }) {
         ) : null}
       </div>
 
-      {/* Desktop: rotating lead + list */}
-      <div className="hidden gap-8 md:grid md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] md:gap-10">
+      {/* Desktop: rotating lead + scrollable list */}
+      <div className="hidden md:grid md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)] md:gap-10">
         <article className="group">
           <Link to="/blog/$slug" params={{ slug: lead.slug }} className="block">
             <div className="relative aspect-[16/10] w-full overflow-hidden rounded-lg bg-muted">
@@ -214,7 +214,11 @@ export function BlogFeatureShowcase({ posts }: { posts: PublicBlogCard[] }) {
           </Link>
         </article>
 
-        <div className="divide-y divide-border/70 border-border/70 md:border-l md:pl-8">
+        <div
+          className="h-full min-h-0 divide-y divide-border/70 overflow-y-auto border-border/70 md:border-l md:pl-8"
+          aria-label="Featured stories"
+          tabIndex={0}
+        >
           {items.map((p, i) => (
             <article
               key={p.id}
