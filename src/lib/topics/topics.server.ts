@@ -160,6 +160,36 @@ export async function entityIdsForTopicServer(
   return ((data ?? []) as unknown as Array<Record<string, string>>).map((r) => r[column]!);
 }
 
+/**
+ * Canonical Topics actually in use for one entity kind, with counts.
+ * Filters read this instead of scraping slugs off the current page, so the
+ * option list stays stable as a feed paginates.
+ */
+export async function topicsInUseServer(
+  kind: TopicEntityKind,
+  limit = 40,
+): Promise<Array<Topic & { count: number }>> {
+  const { table, column } = JOIN[kind];
+  const client = topicsPublicClient();
+  const { data, error } = await client
+    .from(table as "blog_post_topics")
+    .select(`topic:topics(${TOPIC_COLUMNS})`)
+    .limit(4000);
+  if (error) throw new Error(error.message);
+  void column;
+
+  const counts = new Map<string, Topic & { count: number }>();
+  for (const row of (data ?? []) as unknown as Array<{ topic: Topic | null }>) {
+    if (!row.topic) continue;
+    const existing = counts.get(row.topic.id);
+    if (existing) existing.count += 1;
+    else counts.set(row.topic.id, { ...row.topic, count: 1 });
+  }
+  return Array.from(counts.values())
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+    .slice(0, limit);
+}
+
 export async function topicPostCountsServer(topicIds: string[]): Promise<Map<string, number>> {
   const counts = new Map<string, number>();
   const unique = Array.from(new Set(topicIds.filter(Boolean)));
