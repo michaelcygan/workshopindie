@@ -15,6 +15,8 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { updateCollab } from "@/lib/collab.functions";
 import { AlertTriangle } from "lucide-react";
+import { TopicPicker, type PickerTopic } from "@/components/topics/topic-picker";
+import { entityTopics, setEntityTopics } from "@/lib/topics.functions";
 
 export const Route = createFileRoute("/collab/$slug_/edit")({
   component: EditCollab,
@@ -44,6 +46,8 @@ function EditCollab() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const updateFn = useServerFn(updateCollab);
+  const saveTopics = useServerFn(setEntityTopics);
+  const loadTopics = useServerFn(entityTopics);
 
   const { data: post, isLoading } = useQuery({
     queryKey: ["collab-edit", slug],
@@ -74,6 +78,21 @@ function EditCollab() {
   const [compensationType, setCompensationType] = useState<CompType>("unspecified");
   const [rights, setRights] = useState<Rights>("decide_later");
   const [acceptsSuggestions, setAcceptsSuggestions] = useState(true);
+  const [topics, setTopics] = useState<PickerTopic[]>([]);
+
+  useEffect(() => {
+    if (!post?.id) return;
+    let alive = true;
+    loadTopics({ data: { kind: "collab", ids: [post.id] } })
+      .then((map) => {
+        if (alive) setTopics(((map as Record<string, PickerTopic[]>)[post.id] ?? []));
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [post?.id]);
 
   useEffect(() => {
     if (!post) return;
@@ -94,6 +113,9 @@ function EditCollab() {
   const save = useMutation({
     mutationFn: async () => {
       if (!post) throw new Error("Not loaded");
+      await saveTopics({
+        data: { kind: "collab", entityId: post.id, topicIds: topics.map((t) => t.id) },
+      }).catch(() => toast.error("Topics didn't save."));
       return updateFn({
         data: {
           collabPostId: post.id,
@@ -154,6 +176,13 @@ function EditCollab() {
           <Label>What's the idea</Label>
           <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={5} maxLength={3000} placeholder="Even a sentence helps." />
         </section>
+
+        <TopicPicker
+          value={topics}
+          onChange={setTopics}
+          max={3}
+          helper="What is this Collab about? Topics connect it to everything else on Workshop."
+        />
 
         <section className="space-y-2">
           <Label>Timeline</Label>

@@ -6556,6 +6556,42 @@ export type Database = {
           },
         ]
       }
+      resource_topics: {
+        Row: {
+          created_at: string
+          resource_id: string
+          sort_order: number
+          topic_id: string
+        }
+        Insert: {
+          created_at?: string
+          resource_id: string
+          sort_order?: number
+          topic_id: string
+        }
+        Update: {
+          created_at?: string
+          resource_id?: string
+          sort_order?: number
+          topic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resource_topics_resource_id_fkey"
+            columns: ["resource_id"]
+            isOneToOne: false
+            referencedRelation: "resources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resource_topics_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       resources: {
         Row: {
           address: string | null

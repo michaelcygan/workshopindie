@@ -55,6 +55,34 @@ export function useAllPublicGroups() {
   });
 }
 
+/** Topic slugs per public Group plus a slug→name map, for the Topic filter. */
+export function useGroupTopicMap() {
+  return useQuery({
+    queryKey: ["groups", "topics-map"],
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("group_topics")
+        .select("group_id,topic:topics(slug,name)")
+        .limit(2000);
+      if (error) throw error;
+      const byGroup = new Map<string, string[]>();
+      const names = new Map<string, string>();
+      for (const row of (data ?? []) as unknown as {
+        group_id: string;
+        topic: { slug: string; name: string } | null;
+      }[]) {
+        if (!row.topic) continue;
+        names.set(row.topic.slug, row.topic.name);
+        const cur = byGroup.get(row.group_id);
+        if (cur) cur.push(row.topic.slug);
+        else byGroup.set(row.group_id, [row.topic.slug]);
+      }
+      return { byGroup, names };
+    },
+  });
+}
+
 export function matchesGroupSearch(group: GroupCardData, needle: string): boolean {
   if (!needle) return true;
   const label = group.category ? categoryLabel(group.category) : "";
@@ -98,6 +126,8 @@ export type DirectoryState = {
   /** City group name, e.g. "Chicago". Independent of `query`. */
   city: string;
   category: string;
+  /** Canonical Topic slug, or "" for all. */
+  topic: string;
   sort: GroupsSort;
 };
 
@@ -133,6 +163,8 @@ type Props = {
 export function GroupsDirectory({ state, onChange, onReset, authenticated, myIds }: Props) {
 
   const { tab, query, sort, city } = state;
+  const topic = state.topic ?? "";
+  const { data: topicMap } = useGroupTopicMap();
   const category = state.category === "all" ? "all" : normalizeCategory(state.category);
   const { data: allGroups = [], isLoading } = useAllPublicGroups();
 
@@ -154,14 +186,17 @@ export function GroupsDirectory({ state, onChange, onReset, authenticated, myIds
     if (category !== "all") {
       rows = rows.filter((g) => !!g.category && normalizeCategory(g.category) === category);
     }
+    if (topic) {
+      rows = rows.filter((g) => (topicMap?.byGroup.get(g.id) ?? []).includes(topic));
+    }
     if (q) rows = rows.filter((g) => matchesGroupSearch(g, q));
     return sortGroups(rows, sort);
-  }, [allGroups, tab, query, city, category, sort, myIds]);
+  }, [allGroups, tab, query, city, category, topic, topicMap, sort, myIds]);
 
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [tab, query, city, category, sort]);
+  }, [tab, query, city, category, topic, sort]);
   const visibleRows = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
 
   const avatarIds = useMemo(() => visibleRows.slice(0, 32).map((g) => g.id), [visibleRows]);

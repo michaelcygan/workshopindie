@@ -10,7 +10,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { mediumLabel, mediumSlugForField, normalizeTopicNames, topicSlug, type Medium, type Topic } from "@/lib/topics/topics";
 import type { FieldId } from "@/lib/taxonomy";
 
-export type TopicEntityKind = "post" | "work" | "group" | "collab" | "event";
+export type TopicEntityKind = "post" | "work" | "group" | "collab" | "event" | "resource";
 
 const JOIN: Record<TopicEntityKind, { table: string; column: string }> = {
   post: { table: "blog_post_topics", column: "post_id" },
@@ -18,6 +18,7 @@ const JOIN: Record<TopicEntityKind, { table: string; column: string }> = {
   group: { table: "group_topics", column: "group_id" },
   collab: { table: "collab_post_topics", column: "collab_post_id" },
   event: { table: "group_event_topics", column: "event_id" },
+  resource: { table: "resource_topics", column: "resource_id" },
 };
 
 export function topicsPublicClient(): SupabaseClient<Database> {
@@ -157,6 +158,36 @@ export async function entityIdsForTopicServer(
     .limit(limit);
   if (error) throw new Error(error.message);
   return ((data ?? []) as unknown as Array<Record<string, string>>).map((r) => r[column]!);
+}
+
+/**
+ * Canonical Topics actually in use for one entity kind, with counts.
+ * Filters read this instead of scraping slugs off the current page, so the
+ * option list stays stable as a feed paginates.
+ */
+export async function topicsInUseServer(
+  kind: TopicEntityKind,
+  limit = 40,
+): Promise<Array<Topic & { count: number }>> {
+  const { table } = JOIN[kind];
+  const client = topicsPublicClient();
+  const { data, error } = await client
+    .from(table as "blog_post_topics")
+    .select(`topic:topics(${TOPIC_COLUMNS})`)
+    .limit(4000);
+  if (error) throw new Error(error.message);
+
+
+  const counts = new Map<string, Topic & { count: number }>();
+  for (const row of (data ?? []) as unknown as Array<{ topic: Topic | null }>) {
+    if (!row.topic) continue;
+    const existing = counts.get(row.topic.id);
+    if (existing) existing.count += 1;
+    else counts.set(row.topic.id, { ...row.topic, count: 1 });
+  }
+  return Array.from(counts.values())
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+    .slice(0, limit);
 }
 
 export async function topicPostCountsServer(topicIds: string[]): Promise<Map<string, number>> {

@@ -94,7 +94,7 @@ export const getTopicHub = createServerFn({ method: "GET" })
         canonicalSlug: null,
         posts: [],
         nextCursor: null,
-        entities: { works: [], collabs: [], events: [], groups: [] },
+        entities: { works: [], collabs: [], events: [], groups: [], resources: [] },
       };
     }
 
@@ -227,13 +227,15 @@ export const createTopic = createServerFn({ method: "POST" })
     return createCanonicalTopic(context.supabase, data.label, context.userId);
   });
 
+const ENTITY_KIND = z.enum(["post", "work", "group", "collab", "event", "resource"]);
+
 /** Replace the Topics attached to any entity the caller can edit (RLS decides). */
 export const setEntityTopics = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
     z
       .object({
-        kind: z.enum(["post", "work", "group", "collab", "event"]),
+        kind: ENTITY_KIND,
         entityId: z.string().uuid(),
         topicIds: z.array(z.string().uuid()).max(10),
       })
@@ -243,4 +245,40 @@ export const setEntityTopics = createServerFn({ method: "POST" })
     const { setEntityTopicIdsServer } = await import("./topics/topics.server");
     const max = data.kind === "collab" || data.kind === "event" ? 3 : 5;
     return setEntityTopicIdsServer(context.supabase, data.kind, data.entityId, data.topicIds, max);
+  });
+
+/** Topics attached to a batch of entities of one kind, keyed by entity id. */
+export const entityTopics = createServerFn({ method: "GET" })
+  .inputValidator((d: unknown) =>
+    z.object({ kind: ENTITY_KIND, ids: z.array(z.string().uuid()).max(200) }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { topicsForEntitiesServer } = await import("./topics/topics.server");
+    setResponseHeader("cache-control", PUBLIC_CACHE);
+    const map = await topicsForEntitiesServer(data.kind, data.ids);
+    return Object.fromEntries(map);
+  });
+
+/** Canonical Topics currently in use for one entity kind — filter options. */
+export const listTopicsInUse = createServerFn({ method: "GET" })
+  .inputValidator((d: unknown) =>
+    z.object({ kind: ENTITY_KIND, limit: z.number().int().min(1).max(60).optional() }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { topicsInUseServer } = await import("./topics/topics.server");
+    setResponseHeader("cache-control", PUBLIC_CACHE);
+    return topicsInUseServer(data.kind, data.limit ?? 40);
+  });
+
+/** Entity ids of one kind carrying a Topic slug — used to narrow filtered feeds. */
+export const topicEntityIds = createServerFn({ method: "GET" })
+  .inputValidator((d: unknown) =>
+    z.object({ kind: ENTITY_KIND, slug: z.string().min(1).max(80) }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { getTopicBySlugServer, entityIdsForTopicServer } = await import("./topics/topics.server");
+    setResponseHeader("cache-control", PUBLIC_CACHE);
+    const topic = await getTopicBySlugServer(data.slug);
+    if (!topic) return { topicId: null as string | null, ids: [] as string[] };
+    return { topicId: topic.id, ids: await entityIdsForTopicServer(data.kind, topic.id, 500) };
   });

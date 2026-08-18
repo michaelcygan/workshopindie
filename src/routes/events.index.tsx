@@ -65,6 +65,7 @@ const searchSchema = z.object({
     .optional(),
   q: fallback(z.string(), "").default(""),
   medium: fallback(z.string(), "").default(""),
+  topic: fallback(z.string(), "").default(""),
   mine: fallback(z.boolean(), false).default(false),
   kind: fallback(z.enum(["all", "coworking"]), "all").default("all"),
   daypart: fallback(z.enum(["all", "morning", "afternoon", "evening"]), "all").default("all"),
@@ -164,6 +165,7 @@ function EventsIndexPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/events/" });
   const { when, format, city: cityId, cityName, mine, kind, daypart, q, medium } = search;
+  const topic = search.topic;
   const { user } = useAuth();
 
   const mineUpcomingFn = useServerFn(listMyUpcomingRsvps);
@@ -218,7 +220,45 @@ function EventsIndexPage() {
 
   const events = mineActive ? mineData : publicData;
   const isLoading = mineActive ? mineLoading : publicLoading;
-  const list = events ?? [];
+  const rawList = events ?? [];
+  const eventIds = useMemo(() => rawList.map((e) => e.id).sort(), [rawList]);
+  const { data: eventTopicData } = useQuery({
+    queryKey: ["events-topics", eventIds.join(",")],
+    enabled: eventIds.length > 0,
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("group_event_topics")
+        .select("event_id,topic:topics(slug,name)")
+        .in("event_id", eventIds);
+      if (error) throw error;
+      const byEvent = new Map<string, string[]>();
+      const names = new Map<string, string>();
+      for (const row of (data ?? []) as unknown as {
+        event_id: string;
+        topic: { slug: string; name: string } | null;
+      }[]) {
+        if (!row.topic) continue;
+        names.set(row.topic.slug, row.topic.name);
+        const cur = byEvent.get(row.event_id);
+        if (cur) cur.push(row.topic.slug);
+        else byEvent.set(row.event_id, [row.topic.slug]);
+      }
+      return { byEvent, names };
+    },
+  });
+  const topicOptions = useMemo(
+    () =>
+      Array.from(eventTopicData?.names.entries() ?? [])
+        .map(([slug, name]) => ({ slug, name }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [eventTopicData],
+  );
+  const list = useMemo(() => {
+    if (!topic) return rawList;
+    return rawList.filter((e) => (eventTopicData?.byEvent.get(e.id) ?? []).includes(topic));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawList, topic, eventTopicData]);
 
   const happeningCount = useMemo(() => {
     const now = Date.now();
@@ -305,9 +345,10 @@ function EventsIndexPage() {
     kind !== "all" ||
     daypart !== "all" ||
     !!medium ||
+    !!topic ||
     !!q;
 
-  const moreCount = (daypart !== "all" ? 1 : 0) + (mine ? 1 : 0);
+  const moreCount = (daypart !== "all" ? 1 : 0) + (mine ? 1 : 0) + (topic ? 1 : 0);
 
   const clearFilters = () =>
     navigate({
@@ -319,6 +360,7 @@ function EventsIndexPage() {
         daypart: "all" as const,
         q: "",
         medium: "",
+        topic: "",
       }),
       replace: true,
     });
@@ -426,6 +468,23 @@ function EventsIndexPage() {
 
             <FilterMore activeCount={moreCount}>
               <div className="space-y-3">
+                {topicOptions.length > 0 && (
+                  <FilterMoreSection title="Topic">
+                    <FilterSelect
+                      label="Filter by topic"
+                      width="w-full"
+                      value={topic}
+                      onChange={(next) => patch({ topic: next })}
+                    >
+                      <option value="">All topics</option>
+                      {topicOptions.map((t) => (
+                        <option key={t.slug} value={t.slug}>
+                          {t.name}
+                        </option>
+                      ))}
+                    </FilterSelect>
+                  </FilterMoreSection>
+                )}
                 {user && (
                   <FilterMoreSection title="Yours">
                     <FilterMoreToggle active={mine} onClick={() => setMine(!mine)}>

@@ -34,6 +34,8 @@ import { COLLAB_PROMPT_IDS, COLLAB_PROMPTS, type CollabPromptId } from "@/lib/co
 import { workshopEntityUrl } from "@/lib/entities/kinds";
 import { CollabComposerWalkthrough } from "@/components/nudges/collab-composer-walkthrough";
 import type { CollabDraft } from "@/lib/collab-draft";
+import { TopicPicker, type PickerTopic } from "@/components/topics/topic-picker";
+import { setEntityTopics } from "@/lib/topics.functions";
 
 
 
@@ -171,9 +173,11 @@ export function CollabComposer({
 
   const tagGroup = useServerFn(tagCollabInGroup);
   const pinToRoom = useServerFn(pinCollab);
+  const saveTopics = useServerFn(setEntityTopics);
   const preselect = usePreselectGroup(groupPreselectId ?? undefined);
 
   const [selectedGroups, setSelectedGroups] = useState<PickerGroup[]>(initialDraft?.groups ?? []);
+  const [topics, setTopics] = useState<PickerTopic[]>([]);
   useEffect(() => {
     if (preselect.data && preselect.data.length > 0 && selectedGroups.length === 0) {
       setSelectedGroups(preselect.data);
@@ -365,6 +369,16 @@ export function CollabComposer({
       return toast.error(error?.message ?? "Couldn't post");
     }
 
+    if (topics.length > 0) {
+      try {
+        await saveTopics({
+          data: { kind: "collab", entityId: post.id, topicIds: topics.map((t) => t.id) },
+        });
+      } catch {
+        toast.error("Posted, but topics didn't save. Add them from Edit.");
+      }
+    }
+
     if (cleanRoles.length > 0) {
       const { error: rolesErr } = await supabase.from("collab_roles").insert(
         cleanRoles.map((r, i) => ({
@@ -514,6 +528,13 @@ export function CollabComposer({
           />
 
           <SubcategoryPicker field={category} value={subcategory} onChange={setSubcategory} />
+
+          <TopicPicker
+            value={topics}
+            onChange={setTopics}
+            max={3}
+            helper="What is this Collab about? Topics connect it to everything else on Workshop."
+          />
 
           <section className="space-y-1.5">
             <Label htmlFor="desc">What's the idea (optional)</Label>

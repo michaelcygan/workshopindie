@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FIELD_OPTIONS, fieldClass, normalizeField, type FieldId } from "@/lib/taxonomy";
 import { Pencil, Star, Trash2, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +15,8 @@ import {
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from "@/components/ui/select";
+import { TopicPicker, type PickerTopic } from "@/components/topics/topic-picker";
+import { entityTopics, setEntityTopics } from "@/lib/topics.functions";
 import { createGroup, updateGroup, deleteGroup, seedGroupMembers, setGroupParent } from "@/lib/group-admin.functions";
 import { toast } from "sonner";
 
@@ -312,6 +314,23 @@ function EditGroupDialog({ group, allGroups }: { group: GroupRow; allGroups: Gro
   const qc = useQueryClient();
   const updateFn = useServerFn(updateGroup);
   const setParentFn = useServerFn(setGroupParent);
+  const saveTopics = useServerFn(setEntityTopics);
+  const loadTopics = useServerFn(entityTopics);
+  const [topics, setTopics] = useState<PickerTopic[]>([]);
+
+  useEffect(() => {
+    if (!open) return;
+    let alive = true;
+    loadTopics({ data: { kind: "group", ids: [group.id] } })
+      .then((map) => {
+        if (alive) setTopics((map as Record<string, PickerTopic[]>)[group.id] ?? []);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, group.id]);
 
   // Eligible parents: not self, not already a child of another, and this
   // group has no children of its own (one-level nesting).
@@ -341,6 +360,9 @@ function EditGroupDialog({ group, allGroups }: { group: GroupRow; allGroups: Gro
           fields,
         },
       });
+      await saveTopics({
+        data: { kind: "group", entityId: group.id, topicIds: topics.map((t) => t.id) },
+      }).catch(() => toast.error("Topics didn't save."));
       const nextParent = parentId === "__none__" ? null : parentId;
       if (nextParent !== (group.parent_group_id ?? null)) {
         await setParentFn({ data: { group_id: group.id, parent_group_id: nextParent } });
@@ -368,6 +390,12 @@ function EditGroupDialog({ group, allGroups }: { group: GroupRow; allGroups: Gro
           <div><Label>Description</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} /></div>
           <div><Label>Cover image URL</Label><Input value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} /></div>
           <FieldChips value={fields} onChange={setFields} />
+          <TopicPicker
+            value={topics}
+            onChange={setTopics}
+            max={5}
+            helper="What is this Group about? Topics connect it across Workshop."
+          />
           <div>
             <Label>News RSS / Atom feed URL</Label>
             <Input

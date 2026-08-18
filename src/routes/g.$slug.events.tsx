@@ -30,6 +30,7 @@ const searchSchema = z.object({
   category: fallback(z.string(), "").default(""),
   kind: fallback(z.string(), "").default(""),
   format: fallback(z.string(), "all").default("all"),
+  topic: fallback(z.string(), "").default(""),
   q: fallback(z.string(), "").default(""),
 });
 
@@ -109,6 +110,7 @@ function GroupEventsPage() {
     format: (search.format === "all" || isAttendance(search.format)
       ? search.format
       : "all") as AttendanceFilter,
+    topic: typeof search.topic === "string" && search.topic ? search.topic : null,
     q: search.q,
   };
 
@@ -120,6 +122,7 @@ function GroupEventsPage() {
         ...(next.category !== undefined ? { category: next.category ?? "" } : {}),
         ...(next.kind !== undefined ? { kind: next.kind ?? "" } : {}),
         ...(next.format !== undefined ? { format: next.format } : {}),
+        ...(next.topic !== undefined ? { topic: next.topic ?? "" } : {}),
         ...(next.q !== undefined ? { q: next.q } : {}),
       }),
     });

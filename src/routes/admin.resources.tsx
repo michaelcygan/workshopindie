@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { TopicPicker, type PickerTopic } from "@/components/topics/topic-picker";
+import { entityTopics, setEntityTopics } from "@/lib/topics.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus, Trash2, X, ArrowUp, ArrowDown } from "lucide-react";
@@ -263,6 +265,23 @@ function ResourceRowItem({
   });
   const [saving, setSaving] = useState(false);
   const [groupQuery, setGroupQuery] = useState("");
+  const [topics, setTopics] = useState<PickerTopic[]>([]);
+  const saveTopics = useServerFn(setEntityTopics);
+  const loadTopics = useServerFn(entityTopics);
+
+  useEffect(() => {
+    if (!open) return;
+    let alive = true;
+    loadTopics({ data: { kind: "resource", ids: [resource.id] } })
+      .then((map) => {
+        if (alive) setTopics((map as Record<string, PickerTopic[]>)[resource.id] ?? []);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, resource.id]);
 
   const { data: groupResults = [] } = useQuery({
     queryKey: ["admin", "resources", "group-search", groupQuery],
@@ -399,6 +418,24 @@ function ResourceRowItem({
           >
             {saving && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}Save
           </Button>
+
+          <div className="border-t border-border pt-4">
+            <TopicPicker
+              value={topics}
+              onChange={(next) => {
+                setTopics(next);
+                void saveTopics({
+                  data: {
+                    kind: "resource",
+                    entityId: resource.id,
+                    topicIds: next.map((t) => t.id),
+                  },
+                }).catch(() => toast.error("Topics didn't save."));
+              }}
+              max={5}
+              helper="What is this resource about? Topics connect it across Workshop."
+            />
+          </div>
 
           <div className="space-y-3 border-t border-border pt-4">
             <Label>Groups</Label>
