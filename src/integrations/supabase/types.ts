@@ -3059,6 +3059,7 @@ export type Database = {
           photo_credit_name: string | null
           photo_credit_url: string | null
           pinned_at: string | null
+          program_occurrence_key: string | null
           promo_pass_months: number
           published_at: string | null
           recurrence_label: string | null
@@ -3086,6 +3087,7 @@ export type Database = {
           visibility: Database["public"]["Enums"]["group_event_visibility"]
           waitlist_count: number
           waitlist_enabled: boolean
+          workshop_event_program_id: string | null
           workshop_venue_key: string | null
         }
         Insert: {
@@ -3127,6 +3129,7 @@ export type Database = {
           photo_credit_name?: string | null
           photo_credit_url?: string | null
           pinned_at?: string | null
+          program_occurrence_key?: string | null
           promo_pass_months?: number
           published_at?: string | null
           recurrence_label?: string | null
@@ -3154,6 +3157,7 @@ export type Database = {
           visibility?: Database["public"]["Enums"]["group_event_visibility"]
           waitlist_count?: number
           waitlist_enabled?: boolean
+          workshop_event_program_id?: string | null
           workshop_venue_key?: string | null
         }
         Update: {
@@ -3195,6 +3199,7 @@ export type Database = {
           photo_credit_name?: string | null
           photo_credit_url?: string | null
           pinned_at?: string | null
+          program_occurrence_key?: string | null
           promo_pass_months?: number
           published_at?: string | null
           recurrence_label?: string | null
@@ -3222,6 +3227,7 @@ export type Database = {
           visibility?: Database["public"]["Enums"]["group_event_visibility"]
           waitlist_count?: number
           waitlist_enabled?: boolean
+          workshop_event_program_id?: string | null
           workshop_venue_key?: string | null
         }
         Relationships: [
@@ -3258,6 +3264,13 @@ export type Database = {
             columns: ["venue_id"]
             isOneToOne: false
             referencedRelation: "event_venues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_events_workshop_event_program_id_fkey"
+            columns: ["workshop_event_program_id"]
+            isOneToOne: false
+            referencedRelation: "workshop_event_programs"
             referencedColumns: ["id"]
           },
         ]
@@ -8657,6 +8670,83 @@ export type Database = {
             columns: ["workshop_id"]
             isOneToOne: false
             referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workshop_event_programs: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          duration_minutes: number
+          events_per_month: number
+          group_id: string
+          home_base_venue_key: string | null
+          id: string
+          key: string
+          last_error: string | null
+          last_materialized_at: string | null
+          min_lead_days: number
+          name: string
+          program_type: string
+          schedule_windows: Json
+          target_future_occurrences: number
+          template: Json
+          timezone: string
+          updated_at: string
+          venue_config: Json
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          duration_minutes?: number
+          events_per_month?: number
+          group_id: string
+          home_base_venue_key?: string | null
+          id?: string
+          key: string
+          last_error?: string | null
+          last_materialized_at?: string | null
+          min_lead_days?: number
+          name: string
+          program_type?: string
+          schedule_windows?: Json
+          target_future_occurrences?: number
+          template?: Json
+          timezone?: string
+          updated_at?: string
+          venue_config?: Json
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          duration_minutes?: number
+          events_per_month?: number
+          group_id?: string
+          home_base_venue_key?: string | null
+          id?: string
+          key?: string
+          last_error?: string | null
+          last_materialized_at?: string | null
+          min_lead_days?: number
+          name?: string
+          program_type?: string
+          schedule_windows?: Json
+          target_future_occurrences?: number
+          template?: Json
+          timezone?: string
+          updated_at?: string
+          venue_config?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workshop_event_programs_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
             referencedColumns: ["id"]
           },
         ]
