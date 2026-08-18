@@ -23,6 +23,7 @@ const searchSchema = z.object({
   city: fallback(z.string(), "").default(""),
   // Free string so any group_category value (and legacy aliases) resolves.
   c: fallback(z.string(), "all").default("all"),
+  topic: fallback(z.string(), "").default(""),
   s: fallback(z.enum(SORT_VALUES), "featured").default("featured"),
 });
 
@@ -65,9 +66,10 @@ function GroupsIndex() {
       query: search.q,
       city: search.city,
       category: search.c,
+      topic: search.topic,
       sort: search.s as GroupsSort,
     }),
-    [search.t, search.q, search.city, search.c, search.s],
+    [search.t, search.q, search.city, search.c, search.topic, search.s],
   );
 
   const onChange = (patch: Partial<DirectoryState>) =>
@@ -78,6 +80,7 @@ function GroupsIndex() {
         ...(patch.query !== undefined ? { q: patch.query } : {}),
         ...(patch.city !== undefined ? { city: patch.city } : {}),
         ...(patch.category !== undefined ? { c: patch.category } : {}),
+        ...(patch.topic !== undefined ? { topic: patch.topic } : {}),
         ...(patch.sort !== undefined ? { s: patch.sort } : {}),
       }),
       replace: true,
@@ -85,7 +88,7 @@ function GroupsIndex() {
 
   const onReset = () =>
     navigate({
-      search: () => ({ t: "all", q: "", city: "", c: "all", s: "featured" }),
+      search: () => ({ t: "all", q: "", city: "", c: "all", topic: "", s: "featured" }),
       replace: true,
     });
 
