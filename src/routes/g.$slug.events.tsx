@@ -30,6 +30,7 @@ const searchSchema = z.object({
   category: fallback(z.string(), "").default(""),
   kind: fallback(z.string(), "").default(""),
   format: fallback(z.string(), "all").default("all"),
+  topic: fallback(z.string(), "").default(""),
   q: fallback(z.string(), "").default(""),
 });
 
