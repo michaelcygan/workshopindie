@@ -694,12 +694,7 @@ function GalleryPage() {
 
 
       {/* Editorial lead-in — only on the default, unfiltered view */}
-      {showFeatured && (
-        <>
-          <GallerySpotlight />
-          <FreshWorksStrip className="mt-5 border-y" />
-        </>
-      )}
+      {showFeatured && <GallerySpotlight />}
 
       {/* Grid */}
       <section className="mx-auto max-w-7xl px-4 py-5 md:px-6 md:py-6">
