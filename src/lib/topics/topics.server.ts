@@ -169,14 +169,14 @@ export async function topicsInUseServer(
   kind: TopicEntityKind,
   limit = 40,
 ): Promise<Array<Topic & { count: number }>> {
-  const { table, column } = JOIN[kind];
+  const { table } = JOIN[kind];
   const client = topicsPublicClient();
   const { data, error } = await client
     .from(table as "blog_post_topics")
     .select(`topic:topics(${TOPIC_COLUMNS})`)
     .limit(4000);
   if (error) throw new Error(error.message);
-  void column;
+
 
   const counts = new Map<string, Topic & { count: number }>();
   for (const row of (data ?? []) as unknown as Array<{ topic: Topic | null }>) {
