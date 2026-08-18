@@ -552,10 +552,13 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
                   ...prev,
                   ...(meta
                     ? {
-                        capacity: String(meta.capacity),
-                        overflow: String(meta.overflow),
+                        capacity: String(COWORKING_DEFAULTS.capacity),
+                        overflow: String(COWORKING_DEFAULTS.overflow),
                         min_age: meta.min_age ? String(meta.min_age) : "",
-                        allowed_activities: [...meta.activities],
+                        // Writing-only: the venue's broad activity list never
+                        // overwrites the session's medium.
+                        allowed_activities: [...WRITING_ONLY_ACTIVITIES],
+
                         daypart: (meta.dayparts[0] ?? prev.daypart) as "" | Daypart,
                       }
                     : {}),
