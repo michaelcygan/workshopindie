@@ -60,7 +60,7 @@ function Cover({
  * Desktop: lead + right-hand list. Mobile: swipeable snap carousel.
  */
 export function BlogFeatureShowcase({ posts }: { posts: PublicBlogCard[] }) {
-  const items = posts.slice(0, 24);
+  const items = posts.slice(0, 10);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [visible, setVisible] = useState(true);
