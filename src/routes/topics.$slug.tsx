@@ -165,6 +165,39 @@ function TopicHubPage() {
           </HubSection>
         ) : null}
 
+        {entities.resources.length > 0 ? (
+          <section className="mb-8">
+            <h2 className="mb-2 text-[11px] uppercase tracking-[0.14em] text-ink-muted">
+              Resources
+            </h2>
+            <ul className="divide-y divide-border rounded-2xl border border-border bg-surface">
+              {entities.resources.map((r) => (
+                <li key={r.id} className="px-4 py-3">
+                  {r.website_url ? (
+                    <a
+                      href={r.website_url}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="text-sm font-medium text-ink hover:underline"
+                    >
+                      {r.name}
+                    </a>
+                  ) : (
+                    <span className="text-sm font-medium text-ink">{r.name}</span>
+                  )}
+                  {r.short_description ? (
+                    <p className="mt-0.5 line-clamp-2 text-xs text-ink-muted">
+                      {r.short_description}
+                    </p>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+
+
         <h2 className="mb-2 text-[11px] uppercase tracking-[0.14em] text-ink-muted">Stories</h2>
         <BlogFeedList
           posts={posts}
