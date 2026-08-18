@@ -438,12 +438,13 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
                           capacity: prev.capacity || String(COWORKING_DEFAULTS.capacity),
                           overflow: prev.overflow || String(COWORKING_DEFAULTS.overflow),
                           tagline: prev.tagline || COWORKING_DEFAULTS.tagline,
-                          allowed_activities:
-                            prev.allowed_activities.length > 0
-                              ? prev.allowed_activities
-                              : [...DEFAULT_COWORKING_ACTIVITIES],
+                          description: prev.description || COWORKING_DEFAULTS.description,
+                          creative_category: prev.creative_category || ("writing" as FieldId),
+                          // New Co-working sessions are writing sessions.
+                          allowed_activities: [...WRITING_ONLY_ACTIVITIES],
                         }
                       : { ...prev, kind },
+
                   );
                 }}
               >
