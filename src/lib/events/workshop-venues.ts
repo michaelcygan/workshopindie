@@ -578,3 +578,30 @@ export function listCoworkingVenues(
     .filter((x): x is { venue: WorkshopVenue; meta: CoworkingVenueMeta } => x.meta !== null)
     .filter((x) => !daypart || x.meta.dayparts.includes(daypart));
 }
+
+/**
+ * Illustrative venue photography used as the default cover for Workshop
+ * events at these venues. Stored in our own public `covers` bucket.
+ */
+const VENUE_IMAGES: Record<string, string> = {
+  chi_off_color_mousetrap:
+    "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/venues%2Foff-color-mousetrap.jpg",
+  chi_goose_island_fulton:
+    "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/venues%2Fgoose-island-fulton.jpg",
+  chi_cara_cara_club:
+    "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/venues%2Fcara-cara-club.jpg",
+  chi_half_acre_balmoral:
+    "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/venues%2Fhalf-acre-balmoral.jpg",
+  chi_begyle_brewing:
+    "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/venues%2Fbegyle-brewing.jpg",
+  chi_district_brew_yards_west_loop:
+    "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/venues%2Fdistrict-brew-yards.jpg",
+  chi_marz_mothership:
+    "https://avxpquzarafxhxuojmjs.supabase.co/storage/v1/object/public/covers/venues%2Fmarz-mothership.jpg",
+};
+
+/** Default cover image for a venue, or null when we have none. */
+export function venueImageUrl(key: string | null | undefined): string | null {
+  if (!key) return null;
+  return VENUE_IMAGES[key] ?? null;
+}
