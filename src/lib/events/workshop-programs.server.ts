@@ -215,6 +215,7 @@ async function insertOccurrence(
     venue_lat: venue.lat ?? null,
     venue_lng: venue.lng ?? null,
     workshop_venue_key: key,
+    cover_url: (base as { cover_url?: string | null }).cover_url ?? venueImageUrl(key),
     capacity,
     overflow,
     min_age: occurrenceMinAge(occ.venueKey, cfg, occ.hour),
