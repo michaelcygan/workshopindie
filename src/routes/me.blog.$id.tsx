@@ -10,6 +10,9 @@ import { ImageUpload } from "@/components/image-upload";
 import { BlogPostBody } from "@/components/blog-post-body";
 import { BlogBodyEditor } from "@/components/blog-body-editor";
 import { BlogAboutEditor } from "@/components/blog-about-editor";
+import { type PickerTopic } from "@/components/topics/topic-picker";
+import { setEntityTopics, topicsByIdList } from "@/lib/topics.functions";
+import { supabase } from "@/integrations/supabase/client";
 import { BlogPostContext } from "@/components/blog-post-context";
 import { deriveBlogPostContext } from "@/lib/blog-post-context";
 import { BlogEntityTagPicker } from "@/components/blog-entity-tag-picker";
@@ -130,6 +133,8 @@ function MemberBlogEditorPage() {
   const [fields, setFields] = useState<FieldId[]>(["other"]);
   const [postType, setPostType] = useState<BlogStoryType | null>(null);
   const [subjects, setSubjects] = useState<string[]>([]);
+  const [topics, setTopics] = useState<PickerTopic[]>([]);
+  const [topicsLoadedForId, setTopicsLoadedForId] = useState<string | null>(null);
   /** Hydration snapshot: legacy values and the Post type the row loaded with. */
   const legacy = useRef<BlogTaxonomyState>(hydrateBlogTaxonomy(null));
   const [dirty, setDirty] = useState(false);
@@ -178,6 +183,35 @@ function MemberBlogEditorPage() {
     setLoadedForId(p.id);
   }, [post, loadedForId]);
 
+  // Hydrate canonical Topics for this post.
+  useEffect(() => {
+    const postId = post?.post.id;
+    if (!postId || topicsLoadedForId === postId) return;
+    let cancelled = false;
+    (async () => {
+      const { data: rows } = await supabase
+        .from("blog_post_topics")
+        .select("topic_id")
+        .eq("post_id", postId);
+      const ids = (rows ?? []).map((r) => r.topic_id as string);
+      if (ids.length > 0) {
+        try {
+          const list = await topicsByIdList({ data: { ids } });
+          if (!cancelled) {
+            setTopics(list as PickerTopic[]);
+            setSubjects((list as PickerTopic[]).map((t) => t.name));
+          }
+        } catch {
+          /* keep legacy subjects */
+        }
+      }
+      if (!cancelled) setTopicsLoadedForId(postId);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [post?.post.id, topicsLoadedForId]);
+
   // Keep the concurrency token fresh when the query refetches on its own.
   useEffect(() => {
     if (post && loadedForId === post.post.id && !saveMut.isPending && !dirty) {
@@ -220,6 +254,14 @@ function MemberBlogEditorPage() {
           expected_updated_at: expectedUpdatedAt.current,
         },
       });
+      try {
+        await setEntityTopics({
+          data: { kind: "post", entityId: id, topicIds: topics.map((t) => t.id) },
+        });
+      } catch {
+        // Topics never block a save.
+      }
+
       return {
         silent: opts?.silent ?? false,
         auto: opts?.auto ?? false,
@@ -311,7 +353,7 @@ function MemberBlogEditorPage() {
       saveRef.current.mutate({ silent: true, auto: true });
     }, 2500);
     return () => clearTimeout(t);
-  }, [autosaveReady, title, excerpt, body, cover, coverAlt, seoTitle, seoDesc, listInBlog, fields, postType, subjects, entityTags]);
+  }, [autosaveReady, title, excerpt, body, cover, coverAlt, seoTitle, seoDesc, listInBlog, fields, postType, subjects, topics, entityTags]);
 
   // Flush pending edits when the tab is hidden or the window loses focus.
   useEffect(() => {
@@ -538,7 +580,12 @@ function MemberBlogEditorPage() {
             postType={postType}
             onChangePostType={(next) => { setPostType(next); setDirty(true); }}
             subjects={subjects}
-            onChangeSubjects={(next) => { setSubjects(next); setDirty(true); }}
+            topics={topics}
+            onChangeTopics={(next) => {
+              setTopics(next);
+              setSubjects(next.map((t) => t.name));
+              setDirty(true);
+            }}
             tags={entityTags}
             readOnly={readOnly}
             onChangeFields={(next) => { setFields(next.length ? next : ["other"]); setDirty(true); }}

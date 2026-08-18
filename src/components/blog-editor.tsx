@@ -16,6 +16,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ChevronUp, ChevronDown, X } from "lucide-react";
 import { BlogBodyEditor } from "@/components/blog-body-editor";
 import { BlogAboutEditor } from "@/components/blog-about-editor";
+import { type PickerTopic } from "@/components/topics/topic-picker";
+import { setEntityTopics, topicsByIdList } from "@/lib/topics.functions";
+import { supabase } from "@/integrations/supabase/client";
 import { BlogEntityTagPicker } from "@/components/blog-entity-tag-picker";
 import {
   entityMarkdown,
@@ -85,6 +88,8 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
   );
   const [postType, setPostType] = useState<BlogStoryType | null>(hydrated.postType);
   const [subjects, setSubjects] = useState<string[]>(hydrated.subjects);
+  const [topics, setTopics] = useState<PickerTopic[]>([]);
+  const [topicsLoadedForId, setTopicsLoadedForId] = useState<string | null>(null);
   const categorySlug: BlogCategorySlug = blogCategorySlugForField(fields[0]);
   const [authorProfileUsername, setAuthorProfileUsername] = useState(initial?.author_profile?.username ?? "");
   const [saving, setSaving] = useState(false);
@@ -178,6 +183,42 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
     invalidateEntityTagCaches(qc, entityTags, initial?.entity_tags ?? []);
   }
 
+  useEffect(() => {
+    const postId = initial?.id;
+    if (!postId || topicsLoadedForId === postId) return;
+    let cancelled = false;
+    (async () => {
+      const { data: rows } = await supabase
+        .from("blog_post_topics")
+        .select("topic_id")
+        .eq("post_id", postId);
+      const ids = (rows ?? []).map((r) => r.topic_id as string);
+      if (ids.length > 0) {
+        try {
+          const list = await topicsByIdList({ data: { ids } });
+          if (!cancelled) setTopics(list as PickerTopic[]);
+        } catch {
+          /* keep legacy subjects */
+        }
+      }
+      if (!cancelled) setTopicsLoadedForId(postId);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [initial?.id, topicsLoadedForId]);
+
+  /** Canonical Topics are additive context — a failure never blocks the save. */
+  async function flushTopics(postId: string) {
+    try {
+      await setEntityTopics({
+        data: { kind: "post", entityId: postId, topicIds: topics.map((t) => t.id) },
+      });
+    } catch {
+      /* ignore */
+    }
+  }
+
   /** Throws on any failure. Only clears dirty state when every step succeeded. */
   async function runSave(): Promise<{ id: string }> {
     if (!title.trim()) throw new Error("Title is required.");
@@ -187,6 +228,7 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
         const res = await create({ data: buildPayload() });
         await flushAuthors(res.id);
         await flushEntityTags(res.id);
+        await flushTopics(res.id);
         setDirty(false);
         return { id: res.id };
       }
@@ -194,6 +236,7 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
       await update({ data: { id, ...buildPayload(), slug: everPublished ? undefined : slug } });
       await flushAuthors(id);
       await flushEntityTags(id);
+      await flushTopics(id);
       setDirty(false);
       return { id };
     } finally {
@@ -515,7 +558,12 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
             postType={postType}
             onChangePostType={(next) => { setPostType(next); setDirty(true); }}
             subjects={subjects}
-            onChangeSubjects={(next) => { setSubjects(next); setDirty(true); }}
+            topics={topics}
+            onChangeTopics={(next) => {
+              setTopics(next);
+              setSubjects(next.map((t) => t.name));
+              setDirty(true);
+            }}
             tags={entityTags}
             onChangeFields={(next) => {
               const nextFields = next.length ? next : (["other"] as FieldId[]);

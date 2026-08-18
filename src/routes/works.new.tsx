@@ -33,8 +33,9 @@ import {
   FieldCategoryPicker,
   MaterialField,
   PublicationDateField,
-  SubjectField,
 } from "@/components/work/work-form-fields";
+import { TopicPicker, type PickerTopic } from "@/components/topics/topic-picker";
+import { setEntityTopics } from "@/lib/topics.functions";
 import { normalizeUrl, normalizeUrlOrKeep } from "@/lib/url-normalize";
 import { WorkComposerWalkthrough } from "@/components/nudges/work-composer-walkthrough";
 import { RichBodyEditor } from "@/components/rich-body-editor";
@@ -94,7 +95,7 @@ function NewWork() {
   const [fields, setFields] = useState<FieldId[]>([]);
   const [categoryId, setCategoryId] = useState("");
   const [customCategory, setCustomCategory] = useState("");
-  const [subjects, setSubjects] = useState<string[]>([]);
+  const [topics, setTopics] = useState<PickerTopic[]>([]);
   const [materials, setMaterials] = useState<string[]>([]);
   const [publicationDate, setPublicationDate] = useState("");
   const [details, setDetails] = useState<WorkDetails>({});
@@ -243,7 +244,7 @@ function NewWork() {
       excerpt,
       description,
       publicationDate,
-      subjects,
+      subjects: topics.map((t) => t.name),
       materials,
       details,
       primaryUrl,
@@ -323,6 +324,16 @@ function NewWork() {
     });
     await supabase.from("work_credits").insert(credits);
 
+    if (topics.length > 0) {
+      try {
+        await setEntityTopics({
+          data: { kind: "work", entityId: work.id, topicIds: topics.map((t) => t.id) },
+        });
+      } catch {
+        // Topics are additive context — never block publishing on them.
+      }
+    }
+
     const { error: publishError } = await supabase
       .from("works")
       .update({ status: "published" })
@@ -361,7 +372,7 @@ function NewWork() {
       setCoverUrl(null); setPrimaryUrl(""); setEmbedUrl(null);
       setProvider(null); setOwnsRights(false);
       setFields([]); setCategoryId(""); setCustomCategory("");
-      setSubjects([]); setMaterials([]); setPublicationDate(""); setDetails({});
+      setTopics([]); setMaterials([]); setPublicationDate(""); setDetails({});
       setCoCreators([]); setDetailsOpen(false);
       setCoverAspect("portrait"); setCoverFocal({ x: 50, y: 50 });
 
@@ -481,7 +492,12 @@ function NewWork() {
               onCategoryChange={setCategoryId}
               onCustomCategoryChange={setCustomCategory}
             />
-            <SubjectField values={subjects} onChange={setSubjects} />
+            <TopicPicker
+              value={topics}
+              onChange={setTopics}
+              max={5}
+              helper="What is this Work about? Topics connect it to everything else on Workshop."
+            />
             <MaterialField categoryId={categoryId} values={materials} onChange={setMaterials} />
             <PublicationDateField value={publicationDate} onChange={setPublicationDate} />
             <CategoryDetailFields categoryId={categoryId} value={details} onChange={setDetails} />

@@ -82,13 +82,34 @@ export const listTrendingTopics = createServerFn({ method: "GET" })
 export const getTopicHub = createServerFn({ method: "GET" })
   .inputValidator((d: unknown) => z.object({ slug: z.string().min(1).max(80) }).parse(d))
   .handler(async ({ data }) => {
-    const { getTopicBySlugServer } = await import("./topics/topics.server");
+    const { resolveTopicSlug } = await import("./topics/search.server");
+    const { topicHubEntities } = await import("./topics/hub.server");
     const { listBlogFeedServer } = await import("./blog-feed.server");
     setResponseHeader("cache-control", PUBLIC_CACHE);
-    const topic = await getTopicBySlugServer(data.slug);
-    if (!topic) return { topic: null, posts: [], nextCursor: null };
-    const feed = await listBlogFeedServer({ tab: "latest", topic: topic.slug, limit: 24 });
-    return { topic, posts: feed.posts, nextCursor: feed.nextCursor };
+
+    const resolved = await resolveTopicSlug(data.slug);
+    if (!resolved) {
+      return {
+        topic: null,
+        canonicalSlug: null,
+        posts: [],
+        nextCursor: null,
+        entities: { works: [], collabs: [], events: [], groups: [] },
+      };
+    }
+
+    const topic = resolved.topic;
+    const [feed, entities] = await Promise.all([
+      listBlogFeedServer({ tab: "latest", topic: topic.slug, limit: 24 }),
+      topicHubEntities(topic.id, 12),
+    ]);
+    return {
+      topic,
+      canonicalSlug: resolved.canonicalSlug,
+      posts: feed.posts,
+      nextCursor: feed.nextCursor,
+      entities,
+    };
   });
 
 export const getMediumHub = createServerFn({ method: "GET" })
@@ -151,4 +172,75 @@ export const setBlogPostTopics = createServerFn({ method: "POST" })
       data.names,
       context.userId,
     );
+  });
+
+/* -------------------------------------------------------------------------- */
+/* Canonical Topic picker contract                                            */
+/* -------------------------------------------------------------------------- */
+
+/** Ranked search across canonical preferred labels and aliases. */
+export const topicSearch = createServerFn({ method: "GET" })
+  .inputValidator((d: unknown) =>
+    z
+      .object({ q: z.string().max(80).default(""), limit: z.number().int().min(1).max(30).optional() })
+      .parse(d ?? {}),
+  )
+  .handler(async ({ data }) => {
+    const { searchCanonicalTopics } = await import("./topics/search.server");
+    setResponseHeader("cache-control", "public, s-maxage=30, stale-while-revalidate=300");
+    const { topics, exactMatch } = await searchCanonicalTopics(data.q, data.limit ?? 12);
+    return { topics, exactMatchId: exactMatch?.id ?? null };
+  });
+
+/** Hydrate selected Topics by id (for edit forms). */
+export const topicsByIdList = createServerFn({ method: "GET" })
+  .inputValidator((d: unknown) => z.object({ ids: z.array(z.string().uuid()).max(20) }).parse(d))
+  .handler(async ({ data }) => {
+    const { topicsByIds } = await import("./topics/search.server");
+    return topicsByIds(data.ids);
+  });
+
+/** Member-created canonical Topic. Rate limited; races collapse onto one row. */
+export const createTopic = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ label: z.string().min(1).max(80) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { createCanonicalTopic } = await import("./topics/search.server");
+    const { data: allowed } = await context.supabase.rpc("check_and_bump", {
+      _action: "topic_create",
+      _key: context.userId,
+      _window_s: 86400,
+      _max: 10,
+    });
+    if (allowed === false) {
+      throw new Error("You've added a lot of new topics today. Try again tomorrow.");
+    }
+
+    const { moderateOrThrow } = await import("@/lib/moderation/service.server");
+    await moderateOrThrow({
+      userId: context.userId,
+      surface: "topic.create",
+      text: data.label,
+      strict: true,
+    });
+
+    return createCanonicalTopic(context.supabase, data.label, context.userId);
+  });
+
+/** Replace the Topics attached to any entity the caller can edit (RLS decides). */
+export const setEntityTopics = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z
+      .object({
+        kind: z.enum(["post", "work", "group", "collab", "event"]),
+        entityId: z.string().uuid(),
+        topicIds: z.array(z.string().uuid()).max(10),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { setEntityTopicIdsServer } = await import("./topics/topics.server");
+    const max = data.kind === "collab" || data.kind === "event" ? 3 : 5;
+    return setEntityTopicIdsServer(context.supabase, data.kind, data.entityId, data.topicIds, max);
   });
