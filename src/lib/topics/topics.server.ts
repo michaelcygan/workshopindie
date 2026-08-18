@@ -10,7 +10,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { mediumLabel, mediumSlugForField, normalizeTopicNames, topicSlug, type Medium, type Topic } from "@/lib/topics/topics";
 import type { FieldId } from "@/lib/taxonomy";
 
-export type TopicEntityKind = "post" | "work" | "group" | "collab" | "event";
+export type TopicEntityKind = "post" | "work" | "group" | "collab" | "event" | "resource";
 
 const JOIN: Record<TopicEntityKind, { table: string; column: string }> = {
   post: { table: "blog_post_topics", column: "post_id" },
@@ -18,6 +18,7 @@ const JOIN: Record<TopicEntityKind, { table: string; column: string }> = {
   group: { table: "group_topics", column: "group_id" },
   collab: { table: "collab_post_topics", column: "collab_post_id" },
   event: { table: "group_event_topics", column: "event_id" },
+  resource: { table: "resource_topics", column: "resource_id" },
 };
 
 export function topicsPublicClient(): SupabaseClient<Database> {
