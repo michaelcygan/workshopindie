@@ -17,6 +17,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { zonedPartsToUtc } from "@/lib/event-series.server";
+import { writingCoworkingTitle } from "@/lib/events/coworking";
 import { getWorkshopVenue, venueImageUrl } from "@/lib/events/workshop-venues";
 import { reconcileVenue } from "@/lib/events/venue-reconcile";
 import {
