@@ -37,13 +37,14 @@ import { WorkshopVenuePicker } from "@/components/event/workshop-venue-picker";
 import { HackathonControlRoom } from "@/components/event/hackathon-control-room";
 import { coworkingVenueMeta, evaluateVenuePolicy, getWorkshopVenue } from "@/lib/events/workshop-venues";
 import {
-  ACTIVITY_OPTIONS,
   COWORKING_DEFAULTS,
-  DEFAULT_COWORKING_ACTIVITIES,
+  WRITING_ONLY_ACTIVITIES,
+  activityLabel,
   DAYPARTS,
   daypartLabel,
   type Daypart,
 } from "@/lib/events/coworking";
+
 import { CoworkingRotationBuilder } from "@/components/admin/coworking-rotation-builder";
 import { CoverImagePicker } from "@/components/event/cover-image-picker";
 import { SeedChicagoButton } from "@/components/admin/seed-chicago-button";
