@@ -82,13 +82,34 @@ export const listTrendingTopics = createServerFn({ method: "GET" })
 export const getTopicHub = createServerFn({ method: "GET" })
   .inputValidator((d: unknown) => z.object({ slug: z.string().min(1).max(80) }).parse(d))
   .handler(async ({ data }) => {
-    const { getTopicBySlugServer } = await import("./topics/topics.server");
+    const { resolveTopicSlug } = await import("./topics/search.server");
+    const { topicHubEntities } = await import("./topics/hub.server");
     const { listBlogFeedServer } = await import("./blog-feed.server");
     setResponseHeader("cache-control", PUBLIC_CACHE);
-    const topic = await getTopicBySlugServer(data.slug);
-    if (!topic) return { topic: null, posts: [], nextCursor: null };
-    const feed = await listBlogFeedServer({ tab: "latest", topic: topic.slug, limit: 24 });
-    return { topic, posts: feed.posts, nextCursor: feed.nextCursor };
+
+    const resolved = await resolveTopicSlug(data.slug);
+    if (!resolved) {
+      return {
+        topic: null,
+        canonicalSlug: null,
+        posts: [],
+        nextCursor: null,
+        entities: { works: [], collabs: [], events: [], groups: [] },
+      };
+    }
+
+    const topic = resolved.topic;
+    const [feed, entities] = await Promise.all([
+      listBlogFeedServer({ tab: "latest", topic: topic.slug, limit: 24 }),
+      topicHubEntities(topic.id, 12),
+    ]);
+    return {
+      topic,
+      canonicalSlug: resolved.canonicalSlug,
+      posts: feed.posts,
+      nextCursor: feed.nextCursor,
+      entities,
+    };
   });
 
 export const getMediumHub = createServerFn({ method: "GET" })
