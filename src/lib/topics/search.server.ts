@@ -112,7 +112,7 @@ export async function resolveTopicSlug(
   const client = topicsPublicClient();
   const clean = slug.trim().toLowerCase();
   const { data } = await client.from("topics").select(TOPIC_COLUMNS).eq("slug", clean).maybeSingle();
-  let row = (data as unknown as TopicRow) ?? null;
+  let row: TopicRow | null = (data as unknown as TopicRow | null) ?? null;
 
   if (!row) {
     const { data: redirect } = await client
