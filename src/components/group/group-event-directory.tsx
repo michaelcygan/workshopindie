@@ -75,6 +75,8 @@ export type DirectoryFilters = {
   category: string | null;
   kind: string | null;
   format: AttendanceFilter;
+  /** Canonical Topic slug, or null for all. */
+  topic?: string | null;
   q: string;
 };
 
@@ -181,6 +183,37 @@ export function GroupEventDirectory({
   const all = events ?? [];
   const now = Date.now();
 
+  // Canonical Topics attached to this Group's events power the Topic pill.
+  const eventIds = all.map((e) => e.id).sort();
+  const { data: topicData } = useQuery({
+    queryKey: ["group-events-topics", eventIds.join(",")],
+    enabled: eventIds.length > 0,
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("group_event_topics")
+        .select("event_id,topic:topics(slug,name)")
+        .in("event_id", eventIds);
+      if (error) throw error;
+      const byEvent = new Map<string, string[]>();
+      const names = new Map<string, string>();
+      for (const row of (data ?? []) as unknown as {
+        event_id: string;
+        topic: { slug: string; name: string } | null;
+      }[]) {
+        if (!row.topic) continue;
+        names.set(row.topic.slug, row.topic.name);
+        const cur = byEvent.get(row.event_id);
+        if (cur) cur.push(row.topic.slug);
+        else byEvent.set(row.event_id, [row.topic.slug]);
+      }
+      return { byEvent, names };
+    },
+  });
+  const topicOptions = Array.from(topicData?.names.entries() ?? [])
+    .map(([slug, name]) => ({ slug, name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
   // Only offer filters the Group's own dataset can actually satisfy.
   const availableKinds = Array.from(new Set(all.map((e) => e.kind).filter(Boolean)));
   const availableCategories = FIELD_OPTIONS.map((f) => ({
@@ -194,6 +227,7 @@ export function GroupEventDirectory({
     if (filters.category && (!e.creative_category || normalizeField(e.creative_category) !== filters.category)) return false;
     if (filters.kind && e.kind !== filters.kind) return false;
     if (!matchesAttendance(e.format, filters.format)) return false;
+    if (filters.topic && !(topicData?.byEvent.get(e.id) ?? []).includes(filters.topic)) return false;
     const needle = filters.q.trim().toLowerCase();
     if (needle) {
       const hay =
@@ -218,7 +252,11 @@ export function GroupEventDirectory({
 
   const hasAnyMatch = pinnedOrRecurring.length + upcoming.length > 0;
   const hasFilters =
-    !!filters.category || !!filters.kind || filters.format !== "all" || filters.q.trim().length > 0;
+    !!filters.category ||
+    !!filters.kind ||
+    !!filters.topic ||
+    filters.format !== "all" ||
+    filters.q.trim().length > 0;
 
   const embedded = variant === "embedded";
   const cap = <T,>(list: T[]) => (embedded && limit ? list.slice(0, limit) : list);
@@ -228,7 +266,7 @@ export function GroupEventDirectory({
     pinnedOrRecurring.length - pinnedShown.length + (upcoming.length - upcomingShown.length);
 
   const clearAll = () => {
-    onFiltersChange({ category: null, kind: null, format: "all", q: "" });
+    onFiltersChange({ category: null, kind: null, topic: null, format: "all", q: "" });
   };
 
 
@@ -322,6 +360,22 @@ export function GroupEventDirectory({
                 </option>
               ))}
             </FilterSelect>
+
+            {topicOptions.length > 0 ? (
+              <FilterSelect
+                label="Filter by topic"
+                width="min-w-[10rem]"
+                value={filters.topic ?? ""}
+                onChange={(v) => onFiltersChange({ topic: v || null })}
+              >
+                <option value="">All topics</option>
+                {topicOptions.map((t) => (
+                  <option key={t.slug} value={t.slug}>
+                    {t.name}
+                  </option>
+                ))}
+              </FilterSelect>
+            ) : null}
 
             {hasFilters ? <FilterClear onClick={clearAll} /> : null}
           </FilterControls>

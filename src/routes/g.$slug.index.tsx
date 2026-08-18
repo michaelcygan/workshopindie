@@ -221,6 +221,7 @@ function GroupPage() {
   const [eventFilters, setEventFilters] = useState<DirectoryFilters>({
     category: null,
     kind: null,
+    topic: null,
     format: "all",
     q: "",
   });
