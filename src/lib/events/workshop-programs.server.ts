@@ -47,6 +47,27 @@ function toProgram(row: Record<string, unknown>): ProgramRow {
   };
 }
 
+/**
+ * Events require an author. A program's `created_by` is preferred; otherwise
+ * fall back to a Workshop admin so automation always has a real owner.
+ */
+async function programAuthor(
+  admin: SupabaseClient<Database>,
+  program: ProgramRow,
+): Promise<string> {
+  if (program.created_by) return program.created_by;
+  const { data } = await admin
+    .from("user_roles")
+    .select("user_id")
+    .eq("role", "admin")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  const id = data?.user_id as string | undefined;
+  if (!id) throw new Error("No Workshop admin available to own automated events.");
+  return id;
+}
+
 async function groupCityId(
   admin: SupabaseClient<Database>,
   groupId: string,
@@ -100,6 +121,7 @@ export async function materializeProgram(
   );
 
   const cityId = await groupCityId(admin, program.group_id);
+  const author = await programAuthor(admin, program);
   const base = program.template ?? {};
 
   let inserted = 0;
@@ -134,7 +156,7 @@ export async function materializeProgram(
       if (startsAt < earliest) continue;
 
       try {
-        await insertOccurrence(admin, program, occ, startsAt, cityId, base);
+        await insertOccurrence(admin, program, occ, startsAt, cityId, base, author);
         inserted += 1;
         needed -= 1;
         existing.add(occ.occurrenceKey);
@@ -156,6 +178,7 @@ async function insertOccurrence(
   startsAt: Date,
   cityId: string | null,
   base: ProgramRow["template"],
+  author: string,
 ): Promise<void> {
   const venue = getWorkshopVenue(occ.venueKey);
   if (!venue) throw new Error(`Unknown venue "${occ.venueKey}".`);
@@ -200,7 +223,7 @@ async function insertOccurrence(
     published_at: nowIso,
     archived_at: null,
     is_recurring: false,
-    created_by: program.created_by,
+    created_by: author,
     workshop_event_program_id: program.id,
     program_occurrence_key: occ.occurrenceKey,
   };
