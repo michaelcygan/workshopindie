@@ -173,8 +173,8 @@ export function BlogFeatureShowcase({ posts }: { posts: PublicBlogCard[] }) {
         ) : null}
       </div>
 
-      {/* Desktop: rotating lead + list */}
-      <div className="hidden gap-8 md:grid md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] md:gap-10">
+      {/* Desktop: rotating lead + scrollable list */}
+      <div className="hidden md:grid md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)] md:gap-10">
         <article className="group">
           <Link to="/blog/$slug" params={{ slug: lead.slug }} className="block">
             <div className="relative aspect-[16/10] w-full overflow-hidden rounded-lg bg-muted">
