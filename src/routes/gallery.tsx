@@ -31,7 +31,6 @@ import { listFollowingWorks } from "@/lib/gallery.functions";
 import { useDefaultCity, useApplyDefaultCity } from "@/hooks/use-default-city";
 import { useBlockedIds } from "@/hooks/use-blocked-ids";
 import { GeoDefaultBanner } from "@/components/geo-default-banner";
-import { FreshWorksStrip } from "@/components/fresh-works-strip";
 // BoostedWorksStrip retired in v1 distillation pass.
 import { GallerySpotlight } from "@/components/gallery/gallery-spotlight";
 import { GalleryLoggedOutHero } from "@/components/gallery-logged-out-hero";
@@ -695,12 +694,7 @@ function GalleryPage() {
 
 
       {/* Editorial lead-in — only on the default, unfiltered view */}
-      {showFeatured && (
-        <>
-          <GallerySpotlight />
-          <FreshWorksStrip className="mt-5 border-y" />
-        </>
-      )}
+      {showFeatured && <GallerySpotlight />}
 
       {/* Grid */}
       <section className="mx-auto max-w-7xl px-4 py-5 md:px-6 md:py-6">
