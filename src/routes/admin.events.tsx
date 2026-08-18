@@ -27,6 +27,8 @@ import {
 } from "@/lib/group-events-admin.functions";
 import { FIELD_OPTIONS, type FieldId } from "@/lib/taxonomy";
 import { SubcategoryPicker } from "@/components/subcategory-picker";
+import { TopicPicker, type PickerTopic } from "@/components/topics/topic-picker";
+import { setEntityTopics } from "@/lib/topics.functions";
 import { EVENT_KIND_OPTIONS, type EventKind } from "@/lib/events/kinds";
 import { toast } from "sonner";
 import { AdminImportEventDialog } from "@/components/admin-import-event-dialog";
@@ -157,6 +159,7 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
   const groupsFn = useServerFn(adminListGroups);
   const createFn = useServerFn(createEvent);
   const seriesFn = useServerFn(createEventSeries);
+  const saveTopics = useServerFn(setEntityTopics);
   const [open, setOpen] = useState(false);
   const { data: groups } = useQuery({ queryKey: ["admin-events-groups"], queryFn: () => groupsFn(), enabled: open });
 
@@ -228,6 +231,7 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
     pinned: false,
   });
   const [extraGroupIds, setExtraGroupIds] = useState<string[]>([]);
+  const [topics, setTopics] = useState<PickerTopic[]>([]);
 
   const [saving, setSaving] = useState<null | "draft" | "publish">(null);
 
@@ -299,7 +303,13 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
           `Recurring series created — ${res.count} occurrence${res.count === 1 ? "" : "s"} scheduled. More will roll in automatically.`,
         );
       } else {
-        await createFn({ data: payload });
+        const created = await createFn({ data: payload });
+        const createdId = (created as { id?: string } | null)?.id;
+        if (createdId && topics.length > 0) {
+          await saveTopics({
+            data: { kind: "event", entityId: createdId, topicIds: topics.map((t) => t.id) },
+          }).catch(() => toast.error("Event saved, but topics didn't attach."));
+        }
         toast.success(mode === "draft" ? "Draft saved — only you can see it" : "Event published");
       }
       setOpen(false);
@@ -461,6 +471,14 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="col-span-2">
+              <TopicPicker
+                value={topics}
+                onChange={setTopics}
+                max={3}
+                helper="What is this event about? Topics connect it across Workshop."
+              />
             </div>
             {form.creative_category ? (
               <div className="col-span-2">
