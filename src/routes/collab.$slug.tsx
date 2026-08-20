@@ -692,8 +692,8 @@ function CollabDetail() {
               <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-4">
                 <Sparkles className="h-5 w-5 text-ink-muted" />
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium text-ink">Quiet so far. Try opening live audio or another share.</p>
-                  <p className="text-xs text-ink-muted">A live session and one fresh share usually unstick a post.</p>
+                  <p className="font-medium text-ink">Quiet so far. One more share usually does it.</p>
+                  <p className="text-xs text-ink-muted">Post the link somewhere new — a group chat, a story, a Group. No account needed to apply.</p>
                 </div>
               </div>
             );
@@ -813,7 +813,12 @@ function CollabDetail() {
           <section className="mt-10">
             {roles.length > 0 && (
               <>
-                <h2 className="font-display text-2xl text-ink">Roles</h2>
+                <div className="flex flex-wrap items-baseline gap-2">
+                  <h2 className="font-display text-2xl text-ink">Roles</h2>
+                  {!isOwner && acceptingNow && (
+                    <span className="text-xs text-ink-muted">Apply in one tap — no account needed.</span>
+                  )}
+                </div>
                 {isShipped ? (
                   <p className="mt-3 text-sm text-ink-muted">
                     Cast · {workCollabCount ?? roles.length} {((workCollabCount ?? roles.length) === 1) ? "collaborator" : "collaborators"}
@@ -856,6 +861,7 @@ function CollabDetail() {
                 <p className="mt-1 text-sm text-ink-muted">
                   Don't see a role that fits? Pitch what you'd bring — the organizer will read it.
                 </p>
+                <p className="mt-1 text-xs text-ink-muted">No account needed.</p>
                 <div className="mt-3">
                   <Button variant="outline" className="rounded-md gap-2" onClick={() => openContact(null)}>
                     <MessageCircle className="h-4 w-4" /> Suggest a way to help

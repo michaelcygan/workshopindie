@@ -6,7 +6,7 @@ import { z } from "zod";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Plus, X, Globe2, Scale, Check, Copy } from "lucide-react";
+import { Plus, X, Globe2, Scale, Check, Copy, ChevronDown } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -25,8 +25,10 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { usePlus, FREE_OPEN_COLLAB_CAP } from "@/hooks/use-plus";
 import { PlusGate } from "@/components/plus-gate";
-// Workshop pairing on Collab creation is retired — every Collab gets a private Lounge.
 import { logShareEvent } from "@/lib/collab.functions";
+import { useCollabDraftFlow } from "@/lib/collab/use-collab-draft-flow";
+import { useDefaultCity } from "@/hooks/use-default-city";
+
 import { GroupPicker, usePreselectGroup, type PickerGroup } from "@/components/group-picker";
 import { tagCollabInGroup } from "@/lib/groups.functions";
 import { pinCollab } from "@/lib/room-pins.functions";
@@ -44,6 +46,8 @@ export const Route = createFileRoute("/collab/new")({
   validateSearch: z.object({
     group: z.string().optional(),
     fromLounge: z.string().uuid().optional(),
+    /** Set when returning from signup to auto-publish a saved draft. */
+    resume: z.string().optional(),
     /** Allowlisted starter prompt from the desktop Now board. */
     prompt: z.enum(COLLAB_PROMPT_IDS).optional(),
   }),
@@ -52,20 +56,25 @@ export const Route = createFileRoute("/collab/new")({
 function NewCollabRoute() {
   const search = Route.useSearch();
   const navigate = useNavigate();
+  // Signed-out visitors draft here too: the draft is stored, they create an
+  // account, and it publishes itself when they land back.
+  const { composerProps } = useCollabDraftFlow({
+    returnTo: "/collab/new?resume=1",
+    source: "collab_new",
+  });
   return (
     <CollabComposer
       groupPreselectId={search.group ?? null}
       fromLounge={search.fromLounge ?? null}
       promptId={search.prompt ?? null}
       onCancel={() => navigate({ to: "/collab" })}
-      onPosted={(slug) => navigate({ to: "/collab/$slug", params: { slug } })}
       onDraftSaved={() => navigate({ to: "/me/collabs" })}
-      onBackToLounge={(loungeId) =>
-        navigate({ to: "/lounge/$id", params: { id: loungeId } })
-      }
+      {...composerProps}
+      onPosted={(slug) => composerProps.onPosted(slug)}
     />
   );
 }
+
 
 export type CollabComposerProps = {
   /** When present, the composer is mounted inside another surface (e.g. a Lounge dialog). */
@@ -96,7 +105,7 @@ export type CollabComposerProps = {
   onCancel?: () => void;
   onPosted?: (slug: string, id: string) => void;
   onDraftSaved?: () => void;
-  onBackToLounge?: (loungeId: string) => void;
+  
 };
 
 
@@ -145,6 +154,50 @@ const ROLE_PRESETS: Record<FieldId, string[]> = {
   environment_nature: ["Field researcher", "Photographer", "Writer", "Organizer", "Analyst"],
   other: ["Collaborator", "Producer", "Designer", "Writer", "Editor"],
 };
+
+const TIMELINE_SUMMARY: Record<string, string> = {
+  asap: "ASAP",
+  by_date: "By a date",
+  window: "In a window",
+  ongoing: "Ongoing",
+  flexible: "Flexible timing",
+};
+
+/**
+ * Collapsible section: keeps the composer to essentials while showing a live
+ * summary of what's inside, so nothing feels hidden.
+ */
+function Disclosure({
+  title,
+  summary,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  summary: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="rounded-2xl border border-border bg-surface">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-3 p-4 text-left md:p-5"
+      >
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-medium text-ink">{title}</span>
+          <span className="mt-0.5 block truncate text-[11px] text-ink-muted">{summary}</span>
+        </span>
+        <ChevronDown className={cn("h-4 w-4 shrink-0 text-ink-muted transition", open && "rotate-180")} />
+      </button>
+      {open && <div className="space-y-5 border-t border-border p-4 md:p-5">{children}</div>}
+    </div>
+  );
+}
+
 export function CollabComposer({
   embed = false,
   groupPreselectId = null,
@@ -160,7 +213,7 @@ export function CollabComposer({
   onCancel,
   onPosted,
   onDraftSaved,
-  onBackToLounge,
+  
 }: CollabComposerProps) {
   const { user, loading } = useAuth();
   const { isPlus } = usePlus();
@@ -268,10 +321,20 @@ export function CollabComposer({
     setCategory((c) => (c === "other" ? normalizeField(seed.category) : c));
   }, [promptId]);
 
+  // Smart default: prefill the member's home city so "In person" is one tap.
+  const defaultCity = useDefaultCity();
+  const citySeeded = useRef(false);
   useEffect(() => {
-    if (onRequireAuth) return; // logged-out drafting is allowed on the acquisition page
-    if (!loading && !user) navigate({ to: "/login" });
-  }, [user, loading, navigate, onRequireAuth]);
+    if (citySeeded.current || city || initialDraft?.city) return;
+    const c = defaultCity.data?.city;
+    if (!c) return;
+    citySeeded.current = true;
+    setCity({ id: c.id, name: c.name, country: c.country });
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultCity.data]);
+
+
 
 
   useEffect(() => {
@@ -282,6 +345,8 @@ export function CollabComposer({
     setAlsoCities((cs) => [...cs, pendingAlso]);
     setPendingAlso(null);
   }, [pendingAlso, alsoCities, city]);
+
+  const filledRoles = useMemo(() => roles.filter((r) => r.role_name.trim()), [roles]);
 
   const presetSuggestions = useMemo(() => {
     const taken = new Set(roles.map((r) => r.role_name.trim().toLowerCase()));
@@ -460,18 +525,18 @@ export function CollabComposer({
     }
   }
 
-  // Validation snapshots for progress dots + submit affordance.
+  // Single readiness line: what's ready, or the one thing still missing.
   const pitchValid = title.trim().length > 0;
   const shapeValid = locationMode === "online" || !!city;
   const teamValid = contactMode === "email_relay" || externalUrl.trim().length > 0;
   const allValid = pitchValid && shapeValid && teamValid;
-
-  const dots: { ok: boolean; label: string }[] = [
-    { ok: pitchValid, label: "The pitch" },
-    { ok: shapeValid, label: "The shape" },
-    { ok: teamValid, label: "The team" },
-  ];
-
+  const readiness = allValid
+    ? "Ready to post — you can edit everything later."
+    : !pitchValid
+      ? "Add a title or one-line idea to continue."
+      : !shapeValid
+        ? "Pick a city, or set location to Remote."
+        : "Add the contact link people should use.";
 
   return (
     <main className={cn(
@@ -490,25 +555,15 @@ export function CollabComposer({
           </>
         )}
 
-        <div className="mt-4 flex items-center gap-2" aria-label="Form progress">
-          {dots.map((d, i) => (
-            <div key={i} className="flex items-center gap-1.5">
-              <span
-                className={cn(
-                  "h-2 w-2 rounded-full transition",
-                  d.ok ? "bg-ink" : "bg-border",
-                )}
-                aria-label={`${d.label} ${d.ok ? "complete" : "incomplete"}`}
-              />
-              <span className={cn("text-[11px]", d.ok ? "text-ink" : "text-ink-muted")}>{d.label}</span>
-              {i < dots.length - 1 && <span className="mx-1 h-px w-4 bg-border" />}
-            </div>
-          ))}
+        <div className="mt-4 flex items-center gap-2" aria-live="polite">
+          <span className={cn("h-2 w-2 rounded-full", allValid ? "bg-ink" : "bg-border")} />
+          <span className={cn("text-[11px]", allValid ? "text-ink" : "text-ink-muted")}>{readiness}</span>
         </div>
       </motion.div>
 
-      <form onSubmit={onSubmit} className="mt-6 space-y-5">
-        {/* Card 1 — The pitch */}
+
+      <form onSubmit={onSubmit} className="mt-6 space-y-4">
+        {/* Essentials — everything else is one tap away. */}
         <div className="space-y-5 rounded-2xl border border-border bg-surface p-4 md:p-5">
           <section className="space-y-1.5">
             <Label htmlFor="title">Title</Label>
@@ -529,30 +584,11 @@ export function CollabComposer({
 
           <SubcategoryPicker field={category} value={subcategory} onChange={setSubcategory} />
 
-          <TopicPicker
-            value={topics}
-            onChange={setTopics}
-            max={3}
-            helper="What is this Collab about? Topics connect it to everything else on Workshop."
-          />
-
           <section className="space-y-1.5">
             <Label htmlFor="desc">What's the idea (optional)</Label>
             <Textarea id="desc" rows={5} maxLength={3000} value={description} onChange={(e) => setDescription(e.target.value)}
               placeholder="Even a sentence works: ‘I want to make a short film this week.’ You can flesh it out later." />
             <p className="text-[11px] text-ink-muted">A line is fine. You can edit anytime.</p>
-          </section>
-        </div>
-
-        {/* Card 2 — The shape */}
-        <div className="space-y-5 rounded-2xl border border-border bg-surface p-4 md:p-5">
-          <section className="space-y-2">
-            <Label>Timeline</Label>
-            <TimelinePicker value={timeline} onChange={setTimeline} />
-            <div className="space-y-1.5 pt-1">
-              <Label htmlFor="tlnote" className="text-xs text-ink-muted">Anything else about timing? (optional)</Label>
-              <Input id="tlnote" maxLength={120} value={timelineNote} onChange={(e) => setTimelineNote(e.target.value)} placeholder="Evenings only, async OK" />
-            </div>
           </section>
 
           <section className="space-y-2">
@@ -624,58 +660,45 @@ export function CollabComposer({
               </div>
             )}
           </section>
-
-          <div className="grid gap-5 md:grid-cols-2">
-            <section className="space-y-2">
-              <Label>Pay</Label>
-              <div className="flex flex-wrap gap-2">
-                {COMP_OPTIONS.map((c) => (
-                  <button key={c.id} type="button" onClick={() => setComp(c.id)}
-                    className={cn("rounded-full border px-3 py-1.5 text-sm transition",
-                      comp === c.id ? "border-transparent bg-ink text-background" : "border-border bg-background text-ink-soft hover:bg-muted")}>
-                    {c.label}
-                  </button>
-                ))}
-              </div>
-              <p className="text-[11px] text-ink-muted">Set expectations up front — better matches.</p>
-            </section>
-
-            <section className="space-y-2">
-              <Label className="flex items-center gap-1.5">
-                <Scale className="h-4 w-4 text-ink-muted" /> Rights
-              </Label>
-              <div className="space-y-1.5">
-                {RIGHTS_OPTIONS.map((o) => (
-                  <label
-                    key={o.id}
-                    className={cn(
-                      "flex cursor-pointer items-start gap-2 rounded-xl border bg-background/60 p-2.5 transition",
-                      rights === o.id ? "border-ink shadow-sm" : "border-border hover:border-ink/40",
-                    )}
-                  >
-                    <input
-                      type="radio"
-                      name="rights"
-                      className="mt-1 accent-ink"
-                      checked={rights === o.id}
-                      onChange={() => setRights(o.id)}
-                    />
-                    <span className="flex-1">
-                      <span className="block text-sm font-medium text-ink">{o.label}</span>
-                      <span className="block text-[11px] text-ink-muted">{o.body}</span>
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </section>
-          </div>
         </div>
 
-        {/* Card 3 — The team */}
-        <div className="space-y-5 rounded-2xl border border-border bg-surface p-4 md:p-5">
+        <Disclosure
+          title="Timeline & pay"
+          summary={`${TIMELINE_SUMMARY[timeline.mode] ?? "Flexible"} · ${COMP_OPTIONS.find((c) => c.id === comp)?.label ?? "Not specified"}`}
+          defaultOpen={timeline.mode !== "flexible" || comp !== "unspecified" || !!timelineNote}
+        >
+          <section className="space-y-2">
+            <Label>Timeline</Label>
+            <TimelinePicker value={timeline} onChange={setTimeline} />
+            <div className="space-y-1.5 pt-1">
+              <Label htmlFor="tlnote" className="text-xs text-ink-muted">Anything else about timing? (optional)</Label>
+              <Input id="tlnote" maxLength={120} value={timelineNote} onChange={(e) => setTimelineNote(e.target.value)} placeholder="Evenings only, async OK" />
+            </div>
+          </section>
+
+          <section className="space-y-2">
+            <Label>Pay</Label>
+            <div className="flex flex-wrap gap-2">
+              {COMP_OPTIONS.map((c) => (
+                <button key={c.id} type="button" onClick={() => setComp(c.id)}
+                  className={cn("rounded-full border px-3 py-1.5 text-sm transition",
+                    comp === c.id ? "border-transparent bg-ink text-background" : "border-border bg-background text-ink-soft hover:bg-muted")}>
+                  {c.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-[11px] text-ink-muted">Set expectations up front — better matches.</p>
+          </section>
+        </Disclosure>
+
+        <Disclosure
+          title="Roles you need"
+          summary={filledRoles.length > 0 ? filledRoles.map((r) => r.role_name.trim()).join(", ") : "Optional — anyone can pitch"}
+          defaultOpen={filledRoles.length > 0}
+        >
           <section className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Roles you need</Label>
+              <Label>Roles</Label>
               <Button type="button" size="sm" variant="ghost" className="rounded-md gap-1" onClick={() => addRole()}>
                 <Plus className="h-3.5 w-3.5" /> Add role
               </Button>
@@ -713,10 +736,59 @@ export function CollabComposer({
               Roles are optional. While submissions are open, anyone can also pitch
               another way they could help.
             </p>
-
           </section>
+        </Disclosure>
 
+        <Disclosure
+          title="Topics & Groups"
+          summary={
+            [...topics.map((t) => t.name), ...selectedGroups.map((g) => g.name)].join(", ") ||
+            "Help the right people find it"
+          }
+          defaultOpen={topics.length > 0 || selectedGroups.length > 0}
+        >
+          <TopicPicker
+            value={topics}
+            onChange={setTopics}
+            max={3}
+            helper="What is this Collab about? Topics connect it to everything else on Workshop."
+          />
           <GroupPicker value={selectedGroups} onChange={setSelectedGroups} max={3} />
+        </Disclosure>
+
+        <Disclosure
+          title="Rights & contact"
+          summary={`${RIGHTS_OPTIONS.find((o) => o.id === rights)?.label ?? ""} · ${contactMode === "email_relay" ? "In-app message" : "External link"}`}
+          defaultOpen={rights !== "decide_later" || contactMode !== "email_relay"}
+        >
+          <section className="space-y-2">
+            <Label className="flex items-center gap-1.5">
+              <Scale className="h-4 w-4 text-ink-muted" /> Rights
+            </Label>
+            <div className="space-y-1.5">
+              {RIGHTS_OPTIONS.map((o) => (
+                <label
+                  key={o.id}
+                  className={cn(
+                    "flex cursor-pointer items-start gap-2 rounded-xl border bg-background/60 p-2.5 transition",
+                    rights === o.id ? "border-ink shadow-sm" : "border-border hover:border-ink/40",
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="rights"
+                    className="mt-1 accent-ink"
+                    checked={rights === o.id}
+                    onChange={() => setRights(o.id)}
+                  />
+                  <span className="flex-1">
+                    <span className="block text-sm font-medium text-ink">{o.label}</span>
+                    <span className="block text-[11px] text-ink-muted">{o.body}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </section>
 
           <section className="space-y-2">
             <Label>How people contact you</Label>
@@ -738,7 +810,8 @@ export function CollabComposer({
                 value={externalUrl} onChange={(e) => setExternalUrl(e.target.value)} onBlur={(e) => setExternalUrl(normalizeUrlOrKeep(e.target.value))} />
             )}
           </section>
-        </div>
+        </Disclosure>
+
 
         {/* Accepted collaborators get a private chat, shared Links, and a meeting button right on the Collab page. */}
 
@@ -838,31 +911,18 @@ export function CollabComposer({
             <Button type="button" variant="ghost" className="rounded-md" onClick={() => setPostedDialog(null)}>
               Stay here
             </Button>
-            {fromLounge ? (
-              <Button
-                type="button"
-                className="rounded-md"
-                onClick={() => {
-                  const lounge = fromLounge;
-                  setPostedDialog(null);
-                  onBackToLounge?.(lounge);
-                }}
-              >
-                Back to the audio room
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                className="rounded-md"
-                onClick={() => {
-                  const posted = postedDialog!;
-                  setPostedDialog(null);
-                  onPosted?.(posted.slug, posted.id);
-                }}
-              >
-                Open Collab page
-              </Button>
-            )}
+            <Button
+              type="button"
+              className="rounded-md"
+              onClick={() => {
+                const posted = postedDialog!;
+                setPostedDialog(null);
+                onPosted?.(posted.slug, posted.id);
+              }}
+            >
+              Open Collab page
+            </Button>
+
           </DialogFooter>
 
         </DialogContent>

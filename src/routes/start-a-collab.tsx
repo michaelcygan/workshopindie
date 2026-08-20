@@ -1,8 +1,7 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
-import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -12,22 +11,10 @@ import { CollabPeek } from "@/components/collab-peek";
 import { COLLAB_CARD_SELECT } from "@/lib/collab/card-select";
 import { recruitingCollabs } from "@/lib/collab/query";
 import { CollabComposer } from "@/routes/collab.new";
-import { setPostAuthIntent } from "@/lib/post-auth-intent";
 import { gtagEvent } from "@/lib/analytics/google";
 import { shareImageMeta } from "@/lib/og-image";
-import { workshopEntityUrl } from "@/lib/entities/kinds";
-import {
-  clearCollabDraft,
-  loadCollabDraft,
-  markDraftPublished,
-  newDraftToken,
-  readUtmParams,
-  saveCollabDraft,
-  wasDraftPublished,
-  withUtm,
-  type CollabDraft,
-  type StoredCollabDraft,
-} from "@/lib/collab-draft";
+import { useCollabDraftFlow } from "@/lib/collab/use-collab-draft-flow";
+
 
 const TITLE = "Post a Collab | Workshop";
 const DESCRIPTION =
@@ -82,36 +69,21 @@ function scrollToId(id: string) {
 
 function StartACollabPage() {
   const search = Route.useSearch();
-  const navigate = useNavigate();
   const { user, loading } = useAuth();
 
-  // Restore any saved draft exactly once, before the composer mounts.
-  const [stored] = useState<StoredCollabDraft | null>(() => loadCollabDraft());
-  const tokenRef = useRef<string>(stored?.token ?? newDraftToken());
-  const utmRef = useRef<Record<string, string>>(stored?.utm ?? {});
   const [peekId, setPeekId] = useState<string | null>(null);
-  const startedRef = useRef(false);
 
-  // Capture UTMs on arrival (they win over anything stored from a prior visit).
+  const { composerProps } = useCollabDraftFlow({
+    returnTo: "/start-a-collab?resume=1",
+    source: "collab_landing",
+  });
+
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const fresh = readUtmParams(window.location.search);
-    if (Object.keys(fresh).length > 0) utmRef.current = fresh;
     gtagEvent("select_content", {
       content_type: "collab_landing",
       item_id: "acquisition_page_viewed",
-      ...utmRef.current,
     });
   }, []);
-
-  const resumePublish =
-    !!stored?.pendingPublish && !!user && !wasDraftPublished(tokenRef.current);
-
-  useEffect(() => {
-    if (resumePublish) {
-      gtagEvent("login", { method: "collab_landing_resume" });
-    }
-  }, [resumePublish]);
 
   const examples = useQuery({
     queryKey: ["start-a-collab", "examples"],
@@ -127,62 +99,6 @@ function StartACollabPage() {
     },
   });
 
-  const persist = useCallback((draft: CollabDraft, pendingPublish: boolean) => {
-    saveCollabDraft({
-      draft,
-      token: tokenRef.current,
-      pendingPublish,
-      utm: utmRef.current,
-    });
-  }, []);
-
-  const onDraftChange = useCallback(
-    (draft: CollabDraft) => {
-      if (!draft.title.trim() && !draft.description.trim()) return;
-      if (!startedRef.current) {
-        startedRef.current = true;
-        gtagEvent("select_content", { content_type: "collab_landing", item_id: "form_started" });
-      }
-      persist(draft, false);
-    },
-    [persist],
-  );
-
-  const onRequireAuth = useCallback(
-    (draft: CollabDraft) => {
-      persist(draft, true);
-      gtagEvent("select_content", {
-        content_type: "collab_landing",
-        item_id: "continue_to_publish",
-      });
-      gtagEvent("sign_up", { method: "collab_landing_start" });
-      const returnTo = withUtm("/start-a-collab?resume=1", utmRef.current);
-      setPostAuthIntent({ kind: "return_to", returnTo });
-      navigate({ to: "/signup", search: { from: "collab_landing", redirect: returnTo } });
-    },
-    [navigate, persist],
-  );
-
-  const onPosted = useCallback(
-    (slug: string) => {
-      markDraftPublished(tokenRef.current);
-      clearCollabDraft();
-      gtagEvent("select_content", {
-        content_type: "collab_landing",
-        item_id: "collab_published",
-        ...utmRef.current,
-      });
-      const url = `${window.location.origin}${workshopEntityUrl({ kind: "collab", slug })}`;
-      toast.success("Your Collab is live — share the link.", {
-        action: {
-          label: "Copy link",
-          onClick: () => void navigator.clipboard.writeText(url).catch(() => {}),
-        },
-      });
-      navigate({ to: "/collab/$slug", params: { slug } });
-    },
-    [navigate],
-  );
 
   const cards = examples.data ?? [];
   const showExamples = cards.length > 0;
@@ -297,21 +213,8 @@ function StartACollabPage() {
             Start your Collab
           </h2>
           <div className="-mx-4 mt-4 md:mx-0">
-            <CollabComposer
-              embed
-              hideHeading
-              initialDraft={stored?.draft ?? null}
-              onDraftChange={onDraftChange}
-              onRequireAuth={user ? undefined : onRequireAuth}
-              autoSubmit={resumePublish}
-              submitLabel={user ? "Publish Collab" : "Continue to publish"}
-              helperNote={
-                user
-                  ? undefined
-                  : "Draft your Collab first. A free Workshop account is required to publish it and manage responses."
-              }
-              onPosted={onPosted}
-            />
+            <CollabComposer embed hideHeading {...composerProps} />
+
           </div>
         </section>
       </main>
