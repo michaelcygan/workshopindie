@@ -841,15 +841,7 @@ export function CollabComposer({
       )}>
         <div className="mx-auto max-w-2xl px-4">
           <div className="flex items-center justify-between gap-3 py-3">
-            <p className="text-xs text-ink-muted">
-              {allValid
-                ? "All set — start it. You can edit everything later."
-                : !pitchValid
-                  ? "Add a title or one-line idea to continue."
-                  : !shapeValid
-                    ? "Pick a city or set location to Remote."
-                    : "Add the contact link people should use."}
-            </p>
+            <p className="text-xs text-ink-muted">{helperNote ?? readiness}</p>
             <div className="flex items-center gap-2">
               <Button type="button" variant="ghost" className="rounded-md" onClick={() => onCancel?.()}>Cancel</Button>
               <Button
@@ -863,9 +855,10 @@ export function CollabComposer({
                   else onSubmit(e as unknown as React.FormEvent);
                 }}
               >
-                {submitting ? "Starting…" : "Start Collab"}
+                {submitting ? "Starting…" : (submitLabel ?? "Start Collab")}
               </Button>
             </div>
+
           </div>
           <p className="pb-2 text-[11px] text-ink-muted">
             What happens next:&nbsp;
