@@ -546,25 +546,29 @@ export function CollabComposer({
 
       <CollabComposerWalkthrough />
 
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+      {!hideHeading && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+          <h1 className="font-display text-4xl text-ink">Start a Collab</h1>
+          <p className="mt-1 text-ink-muted">Start with an idea. Add roles, timing and detail whenever you want — it's In Progress from the moment you start it.</p>
 
-        {!hideHeading && (
-          <>
-            <h1 className="font-display text-4xl text-ink">Start a Collab</h1>
-            <p className="mt-1 text-ink-muted">Start with an idea. Add roles, timing and detail whenever you want — it's In Progress from the moment you start it.</p>
-          </>
-        )}
-
-        <div className="mt-4 flex items-center gap-2" aria-live="polite">
-          <span className={cn("h-2 w-2 rounded-full", allValid ? "bg-ink" : "bg-border")} />
-          <span className={cn("text-[11px]", allValid ? "text-ink" : "text-ink-muted")}>{readiness}</span>
-        </div>
-      </motion.div>
+          <div className="mt-4 flex items-center gap-2" aria-live="polite">
+            <span className={cn("h-2 w-2 rounded-full", allValid ? "bg-ink" : "bg-border")} />
+            <span className={cn("text-[11px]", allValid ? "text-ink" : "text-ink-muted")}>{readiness}</span>
+          </div>
+        </motion.div>
+      )}
 
 
-      <form onSubmit={onSubmit} className="mt-6 space-y-4">
+      <form onSubmit={onSubmit} className={cn("space-y-4", hideHeading ? "" : "mt-6")}>
         {/* Essentials — everything else is one tap away. */}
         <div className="space-y-5 rounded-2xl border border-border bg-surface p-4 md:p-5">
+          {hideHeading && (
+            <div className="flex items-center gap-2 border-b border-border/70 pb-3" aria-live="polite">
+              <span className={cn("h-2 w-2 rounded-full", allValid ? "bg-ink" : "bg-border")} />
+              <span className={cn("text-[11px]", allValid ? "text-ink" : "text-ink-muted")}>{readiness}</span>
+            </div>
+          )}
+
           <section className="space-y-1.5">
             <Label htmlFor="title">Title</Label>
             <Input id="title" required maxLength={140} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Looking for a vocalist for a moody synthwave EP" />
