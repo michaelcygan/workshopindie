@@ -30,7 +30,6 @@ type SearchShape = z.infer<typeof eventsSearchSchema>;
 
 export const Route = createFileRoute("/events/")({
   validateSearch: zodValidator(eventsSearchSchema),
-  search: { middlewares: [] },
   // Legacy `?format=online` links are the Remote calendar: send them to the
   // canonical URL and keep every other param (including UTM) intact.
   beforeLoad: ({ search }) => {
