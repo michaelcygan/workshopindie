@@ -230,7 +230,7 @@ export function GuestApplyDialog(props: Props) {
             <div className="mt-2 rounded-2xl border border-border bg-gradient-to-br from-surface-2 to-surface p-5">
               <h3 className="font-display text-xl text-ink">Want a real shot at it?</h3>
               <p className="mt-1.5 text-sm text-ink-muted">
-                Claim your application to unlock direct messaging with {props.hostFirstName || "the host"} — and get a profile, a face, and a few past works in front of them. Takes 30 seconds.
+Claim it to message {props.hostFirstName || "the host"} directly. Takes 30 seconds.
               </p>
               <Button onClick={goToSignup} className="mt-4 w-full rounded-md gap-2">
                 <Sparkles className="h-4 w-4" /> Sign up to claim & DM
