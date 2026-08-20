@@ -2,7 +2,7 @@
  * Pure account-lifecycle state machine. No React, no network — unit tested.
  *
  * Three independent pieces of profile state drive first-run:
- *   birthdate         → age confirmed (mandatory, 18+ enforced by the DB)
+ *   adult_attested_at → 18+ attestation (mandatory; legacy 18+ birthdate counts)
  *   tour_completed_at → welcome introduction seen
  *   onboarded         → public profile completed (OPTIONAL, never gates)
  *
@@ -19,7 +19,7 @@ export type AccountLifecycleState =
   | "underage_removal";
 
 export type LifecycleFacts = {
-  hasBirthdate: boolean;
+  adultConfirmed: boolean;
   welcomeCompleted: boolean;
   profileCompleted: boolean;
   profileExists: boolean;
@@ -33,7 +33,7 @@ export type LifecycleInput = {
   /** Lifecycle facts query state. */
   queryStatus: "idle" | "loading" | "error" | "success";
   facts?: LifecycleFacts | null;
-  /** Set once the server rejects a submitted birthdate as under 18. */
+  /** Set once the member declines the 18+ attestation. */
   underage?: boolean;
 };
 
@@ -47,7 +47,7 @@ export function deriveLifecycleState(input: LifecycleInput): AccountLifecycleSta
   const facts = input.facts;
   // A missing profile row is NOT "ready" — it needs repair, never a silent bypass.
   if (!facts.profileExists) return "load_error";
-  if (!facts.hasBirthdate) return "age_required";
+  if (!facts.adultConfirmed) return "age_required";
   if (!facts.welcomeCompleted) return "welcome_required";
   return "ready";
 }

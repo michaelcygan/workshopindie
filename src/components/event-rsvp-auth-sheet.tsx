@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { setPostAuthIntent } from "@/lib/post-auth-intent";
 import { AUTH_CALLBACK_PATH } from "@/lib/auth-launcher";
+import { AdultAttestationCheckbox } from "@/components/adult-attestation-checkbox";
+import { rememberAdultAttestation } from "@/lib/adult-attestation";
 
 export function EventRsvpAuthSheet({
   open,
@@ -27,6 +29,8 @@ export function EventRsvpAuthSheet({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [adult, setAdult] = useState(false);
+  const needsAdult = mode === "signup" && !adult;
   const navigate = useNavigate();
 
   const intent = {
@@ -41,6 +45,10 @@ export function EventRsvpAuthSheet({
 
   async function handleEmail(e: React.FormEvent) {
     e.preventDefault();
+    if (needsAdult) {
+      toast.error("Please confirm that you are 18 or older.");
+      return;
+    }
     setBusy(true);
     persist();
     try {
@@ -75,7 +83,21 @@ export function EventRsvpAuthSheet({
           </SheetDescription>
         </SheetHeader>
         <div className="mt-5 flex flex-col gap-3">
-          <div onClick={persist} className="flex flex-col gap-2">
+          {mode === "signup" && (
+            <AdultAttestationCheckbox
+              id="rsvp-adult"
+              checked={adult}
+              onChange={(v) => {
+                setAdult(v);
+                if (v) rememberAdultAttestation();
+              }}
+              className="rounded-xl border border-border bg-surface-2 p-3"
+            />
+          )}
+          <div
+            onClick={persist}
+            className={`flex flex-col gap-2 ${needsAdult ? "pointer-events-none opacity-50" : ""}`}
+          >
             <GoogleSignIn intent={intent} />
             <AppleSignIn intent={intent} />
           </div>
@@ -89,7 +111,7 @@ export function EventRsvpAuthSheet({
           <form onSubmit={handleEmail} className="flex flex-col gap-2">
             <Input type="email" placeholder="you@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
             <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required />
-            <Button type="submit" className="rounded-md" disabled={busy}>
+            <Button type="submit" className="rounded-md" disabled={busy || needsAdult}>
               {mode === "signup" ? "Sign up & RSVP" : "Log in & RSVP"}
             </Button>
             <button

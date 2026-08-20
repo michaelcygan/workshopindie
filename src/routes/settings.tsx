@@ -370,15 +370,15 @@ function AccountSection() {
           </Button>
         )}
       </Row>
-      <Row label="Date of birth" icon={UserIcon}>
+      <Row label="Age" icon={UserIcon}>
         <span className="text-sm text-ink">
-          {ageInfo?.birthdate ? (
+          {ageInfo?.adultConfirmed ? (
             <>
-              {ageInfo.birthdate}
-              <span className="ml-2 text-xs text-ink-muted">Locked after signup</span>
+              18+ confirmed
+              <span className="ml-2 text-xs text-ink-muted">Workshop is an 18+ platform</span>
             </>
           ) : (
-            <span className="text-ink-muted">Not set</span>
+            <span className="text-ink-muted">Not confirmed yet</span>
           )}
         </span>
       </Row>
@@ -674,7 +674,7 @@ function PrivacySection() {
     { v: 18, label: "18+" },
     { v: 21, label: "21+" },
   ];
-  const birthdateLocked = !!ageInfo?.birthdate;
+  const adultConfirmed = !!ageInfo?.adultConfirmed;
 
   const dmOptions: { v: "mutuals" | "everyone" | "nobody"; label: string; hint: string }[] = [
     { v: "mutuals", label: "Mutuals only", hint: "Only people you follow back can start a new DM. (Recommended)" },
@@ -772,11 +772,9 @@ function PrivacySection() {
             );
           })}
         </div>
-        {(ageInfo?.ageFilterMin ?? null) !== null && !birthdateLocked && (
+        {(ageInfo?.ageFilterMin ?? null) !== null && !adultConfirmed && (
           <p className="mt-2 text-xs text-amber-700">
-            Add your date of birth on{" "}
-            <Link to="/me/edit" className="underline">Edit profile</Link>{" "}
-            to take effect.
+            Confirm you're 18+ when prompted for this filter to take effect.
           </p>
         )}
       </div>

@@ -36,7 +36,7 @@ import { sanitizeInstagramHandle } from "@/lib/display-name";
 import { RequireAuth } from "@/components/require-auth";
 import { PinnedWorksPicker, type PinnableWork } from "@/components/pinned-works-picker";
 import { InfluencesEditor } from "@/components/influences/influences-editor";
-import { getMyAgeFields, setMyBirthdate, setMyAgeFilter } from "@/lib/profile-age.functions";
+import { getMyAgeFields, setMyAgeFilter } from "@/lib/profile-age.functions";
 import {
   GlobalLocationCombobox,
   type SelectedLocation,
@@ -127,9 +127,6 @@ function EditProfile() {
   const [initial, setInitial] = useState<FormState>(EMPTY);
   const [form, setForm] = useState<FormState>(EMPTY);
   const [activeSection, setActiveSection] = useState<SectionId>("identity");
-  const [birthdate, setBirthdate] = useState<string>(""); // YYYY-MM-DD
-  const [birthdateLocked, setBirthdateLocked] = useState(false);
-  const [savingBirthdate, setSavingBirthdate] = useState(false);
   const [bioLinkCopied, setBioLinkCopied] = useState(false);
 
   const bioLinkUrl = useMemo(() => {
@@ -180,7 +177,6 @@ function EditProfile() {
   }
 
   const fetchAge = useServerFn(getMyAgeFields);
-  const saveBirthdateFn = useServerFn(setMyBirthdate);
   const saveAgeFilterFn = useServerFn(setMyAgeFilter);
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
@@ -309,8 +305,6 @@ function EditProfile() {
 
     fetchAge()
       .then((r) => {
-        setBirthdate(r.birthdate ?? "");
-        setBirthdateLocked(r.locked);
         setInitial((prev) => ({ ...prev, ageFilterMin: r.ageFilterMin }));
         setForm((prev) => ({ ...prev, ageFilterMin: r.ageFilterMin }));
       })
@@ -446,19 +440,6 @@ function EditProfile() {
     }
   }
 
-  async function onSaveBirthdate() {
-    if (!birthdate) return toast.error("Please pick your date of birth.");
-    setSavingBirthdate(true);
-    try {
-      await saveBirthdateFn({ data: { birthdate } });
-      setBirthdateLocked(true);
-      toast.success("Date of birth saved");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't save");
-    } finally {
-      setSavingBirthdate(false);
-    }
-  }
 
   if (!hydrated)
     return <main className="mx-auto max-w-2xl px-4 py-20 text-ink-muted">Loading…</main>;
@@ -744,42 +725,6 @@ function EditProfile() {
               </div>
             </div>
 
-            {/* Date of birth (private) */}
-            <div className="space-y-1.5">
-              <Label htmlFor="dob">
-                Date of birth <span className="text-ink-muted font-normal">(private)</span>
-              </Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="dob"
-                  type="date"
-                  value={birthdate}
-                  onChange={(e) => setBirthdate(e.target.value)}
-                  max={new Date(Date.now() - 13 * 365.25 * 24 * 3600 * 1000)
-                    .toISOString()
-                    .slice(0, 10)}
-                  disabled={birthdateLocked}
-                  className="max-w-[12rem]"
-                />
-                {!birthdateLocked && birthdate && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="rounded-md"
-                    disabled={savingBirthdate}
-                    onClick={onSaveBirthdate}
-                  >
-                    {savingBirthdate ? "Saving…" : "Save"}
-                  </Button>
-                )}
-              </div>
-              <p className="text-xs text-ink-muted">
-                {birthdateLocked
-                  ? "Locked. Contact support if this needs to change."
-                  : "Never shown on your profile. Powers optional age filters for Groups."}
-              </p>
-            </div>
           </Section>
 
           {/* MEDIUMS & BIO */}

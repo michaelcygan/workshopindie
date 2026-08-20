@@ -12,6 +12,8 @@ import { Label } from "@/components/ui/label";
 import { GoogleSignIn } from "@/components/google-sign-in";
 import { AppleSignIn } from "@/components/apple-sign-in";
 import { KickerChip } from "@/components/kicker-chip";
+import { AdultAttestationCheckbox } from "@/components/adult-attestation-checkbox";
+import { rememberAdultAttestation } from "@/lib/adult-attestation";
 import { sanitizeInstagramHandle } from "@/lib/display-name";
 import { toast } from "sonner";
 import { workshopEntityUrl } from "@/lib/entities/kinds";
@@ -60,6 +62,7 @@ function Signup() {
   const [password, setPassword] = useState(() => takeHandoffPassword());
 
   const [loading, setLoading] = useState(false);
+  const [adult, setAdult] = useState(false);
   const fromGuest = search.from === "guest_apply";
   const fromCollabLanding = search.from === "collab_landing";
 
@@ -101,6 +104,10 @@ function Signup() {
     if (!first || !last) {
       return toast.error("Please enter your first and last name.");
     }
+    if (!adult) {
+      return toast.error("Please confirm that you are 18 or older.");
+    }
+    rememberAdultAttestation();
     setLoading(true);
     const ig = sanitizeInstagramHandle(instagram);
     setPostAuthIntentFromSearch(search);
@@ -185,7 +192,19 @@ function Signup() {
           : "Show your Work. Join a Group, or post a Collab and pull a team together."}
       </p>
       <div className="mt-6 rounded-xl border border-border bg-surface p-8 shadow-soft">
-        <div className="mt-6 space-y-3">
+        <AdultAttestationCheckbox
+          id="signup-adult"
+          checked={adult}
+          onChange={(v) => {
+            setAdult(v);
+            if (v) rememberAdultAttestation();
+          }}
+          className="rounded-xl border border-border bg-surface-2 p-3"
+        />
+        <div
+          className={`mt-6 space-y-3 ${adult ? "" : "pointer-events-none opacity-50"}`}
+          aria-disabled={!adult}
+        >
           <GoogleSignIn
             label="Sign up with Google"
             redirectTo={
@@ -270,12 +289,9 @@ function Signup() {
               />
             </div>
           </div>
-          <Button type="submit" className="w-full rounded-md" disabled={loading}>
+          <Button type="submit" className="w-full rounded-md" disabled={loading || !adult}>
             {loading ? "Creating account…" : "Create account"}
           </Button>
-          <p className="text-center text-[11px] text-ink-muted">
-            By creating an account you confirm you are at least 18 years old.
-          </p>
         </form>
         <p className="mt-6 text-center text-sm text-ink-muted">
           Already here?{" "}

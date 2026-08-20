@@ -6,7 +6,7 @@ const base: LifecycleInput = {
   authLoading: false,
   queryStatus: "success",
   facts: {
-    hasBirthdate: true,
+    adultConfirmed: true,
     welcomeCompleted: true,
     profileCompleted: true,
     profileExists: true,
@@ -30,43 +30,43 @@ describe("deriveLifecycleState", () => {
     expect(deriveLifecycleState({ ...base, authLoading: true })).toBe("loading");
   });
 
-  it("3. no birthdate, onboarded false, no tour → age required", () => {
+  it("3. no attestation, onboarded false, no tour → age required", () => {
     expect(
       deriveLifecycleState(
-        facts({ hasBirthdate: false, profileCompleted: false, welcomeCompleted: false }),
+        facts({ adultConfirmed: false, profileCompleted: false, welcomeCompleted: false }),
       ),
     ).toBe("age_required");
   });
 
-  it("4. no birthdate, onboarded true, tour complete → age required", () => {
+  it("4. no attestation, onboarded true, tour complete → age required", () => {
     expect(
       deriveLifecycleState(
-        facts({ hasBirthdate: false, profileCompleted: true, welcomeCompleted: true }),
+        facts({ adultConfirmed: false, profileCompleted: true, welcomeCompleted: true }),
       ),
     ).toBe("age_required");
   });
 
-  it("5. birthdate, onboarded false, no tour → welcome required", () => {
+  it("5. attested, onboarded false, no tour → welcome required", () => {
     expect(
       deriveLifecycleState(
-        facts({ hasBirthdate: true, profileCompleted: false, welcomeCompleted: false }),
+        facts({ adultConfirmed: true, profileCompleted: false, welcomeCompleted: false }),
       ),
     ).toBe("welcome_required");
   });
 
-  it("6. birthdate, onboarded true, no tour → welcome required", () => {
+  it("6. attested, onboarded true, no tour → welcome required", () => {
     expect(
       deriveLifecycleState(
-        facts({ hasBirthdate: true, profileCompleted: true, welcomeCompleted: false }),
+        facts({ adultConfirmed: true, profileCompleted: true, welcomeCompleted: false }),
       ),
     ).toBe("welcome_required");
   });
 
-  it("7. birthdate + tour, onboarded false → ready (profile stays incomplete)", () => {
+  it("7. attested + tour, onboarded false → ready (profile stays incomplete)", () => {
     expect(deriveLifecycleState(facts({ profileCompleted: false }))).toBe("ready");
   });
 
-  it("8. birthdate + tour + onboarded → ready", () => {
+  it("8. attested + tour + onboarded → ready", () => {
     expect(deriveLifecycleState(base)).toBe("ready");
   });
 
