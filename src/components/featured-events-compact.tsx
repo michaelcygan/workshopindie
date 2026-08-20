@@ -21,12 +21,19 @@ type EventLite = {
  * empty state shows a slim CTA panel, populated state shows a stacked
  * list of up to 4 upcoming events.
  */
-export function FeaturedEventsCompact({ className }: { className?: string }) {
+export function FeaturedEventsCompact({
+  className,
+  format = "all",
+}: {
+  className?: string;
+  /** Attendance state of the surrounding calendar; Remote never features in-person-only events. */
+  format?: "all" | "in_person" | "online";
+}) {
   const fetchFn = useServerFn(listFeaturedEvents);
   const { isAdmin } = useUserRoles();
   const { data } = useQuery({
-    queryKey: ["events", "featured"],
-    queryFn: () => fetchFn(),
+    queryKey: ["events", "featured", format],
+    queryFn: () => fetchFn({ data: { format } }),
     staleTime: 60_000,
   });
   const events = (data ?? []) as unknown as EventLite[];

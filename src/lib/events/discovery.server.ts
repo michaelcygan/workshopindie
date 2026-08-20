@@ -112,6 +112,8 @@ export type DiscoveryFilters = {
   q?: string | null;
   /** Slug of a system medium group (music, film-video, writing, …). */
   medium?: string | null;
+  /** Canonical Topic slug (see public.topics / group_event_topics). */
+  topic?: string | null;
   format?: EventFormatFilter;
 
   /** Only events marked featured. */
@@ -152,6 +154,7 @@ export async function listDiscoveryEvents(
     daypart = null,
     q: text = null,
     medium = null,
+    topic = null,
     format = "all",
 
     featuredOnly = false,
@@ -185,6 +188,22 @@ export async function listDiscoveryEvents(
       .limit(2000);
     mediumEventIds = ((links ?? []) as { event_id: string }[]).map((l) => l.event_id);
     if (mediumEventIds.length === 0) return [];
+  }
+
+  // Topic is the same shape of many-to-many, and must narrow the query BEFORE
+  // the limit + series collapse — otherwise a valid topic URL can come back
+  // empty just because the topic wasn't in the first batch.
+  let idFilter: string[] | null = mediumEventIds;
+  if (topic) {
+    const { data: tlinks } = await supabase
+      .from("group_event_topics")
+      .select("event_id,topic:topics!inner(slug)")
+      .eq("topic.slug", topic)
+      .limit(2000);
+    const topicIds = ((tlinks ?? []) as unknown as { event_id: string }[]).map((l) => l.event_id);
+    if (topicIds.length === 0) return [];
+    idFilter = idFilter ? idFilter.filter((id) => topicIds.includes(id)) : topicIds;
+    if (idFilter.length === 0) return [];
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -231,7 +250,7 @@ export async function listDiscoveryEvents(
   if (kind) q = q.eq("kind", kind);
   if (daypart) q = q.eq("daypart", daypart);
   if (featuredOnly) q = q.not("featured_at", "is", null);
-  if (mediumEventIds) q = q.in("id", mediumEventIds);
+  if (idFilter) q = q.in("id", idFilter);
   if (text && text.trim()) {
     // Escape PostgREST's or() separators so a stray comma can't inject filters.
     const safe = text.trim().slice(0, 80).replace(/[,()]/g, " ");
@@ -254,7 +273,13 @@ export async function listDiscoveryEvents(
  * every caller gets the same guarantee.
  */
 export function sanitizeDiscoveryRows(rows: unknown): DiscoveryEvent[] {
-  return ((rows ?? []) as DiscoveryEvent[]).filter(
-    (e) => e && e.group && !e.group.deleted_at && !!e.group.slug,
-  );
+  return ((rows ?? []) as DiscoveryEvent[])
+    .filter((e) => e && e.group && !e.group.deleted_at && !!e.group.slug)
+    // Meeting links never travel through discovery: cards only need to know a
+    // link exists; the URL itself comes from the authenticated access check.
+    .map((e) =>
+      "online_url" in e
+        ? ({ ...e, online_url: null, has_online_url: Boolean(e.online_url) } as DiscoveryEvent)
+        : e,
+    );
 }
