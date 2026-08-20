@@ -146,13 +146,22 @@ function bucketLabel(eventDate: Date, when: When): string {
   return `Week of ${evWeek.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
 }
 
-type SearchShape = z.infer<typeof searchSchema>;
-
-function EventsIndexPage() {
-  const search = Route.useSearch();
-  const navigate = useNavigate({ from: "/events/" });
-  const { when, format, city: cityId, cityName, mine, kind, daypart, q, medium } = search;
-  const topic = search.topic;
+export function EventsDirectory({
+  search,
+  format,
+  remote,
+  title,
+  description,
+  emptyTitle,
+  emptyBody,
+  onPatch: patch,
+  onFormatChange: setFormat,
+  onClear: clearFilters,
+}: EventsDirectoryProps) {
+  const { when, city: cityIdRaw, cityName: cityNameRaw, mine, kind, daypart, q, medium, topic } = search;
+  // Remote is city-agnostic by definition; a stale city param never constrains it.
+  const cityId = remote ? undefined : cityIdRaw;
+  const cityName = remote ? undefined : cityNameRaw;
   const { user } = useAuth();
 
   const mineUpcomingFn = useServerFn(listMyUpcomingRsvps);
@@ -160,13 +169,23 @@ function EventsIndexPage() {
   const publicEventsFn = useServerFn(listPublicEvents);
   const eventCitiesFn = useServerFn(listEventCities);
   const eventMediumsFn = useServerFn(listEventMediums);
+  const eventTopicsFn = useServerFn(listEventTopics);
 
   const mineActive = mine && !!user;
 
   const { data: publicData, isLoading: publicLoading } = useQuery({
-    queryKey: ["public-events", when, format, cityId ?? null, kind, daypart, medium, q],
+    queryKey: ["public-events", when, format, cityId ?? null, kind, daypart, medium, topic, q],
     queryFn: () =>
-      fetchPublicEvents(publicEventsFn, when, format, cityId, kind, daypart, medium, q),
+      fetchPublicEvents(publicEventsFn, {
+        when,
+        format,
+        cityId,
+        kind,
+        daypart,
+        medium,
+        topic,
+        q,
+      }),
     staleTime: 60_000,
     enabled: !mineActive,
   });
@@ -178,8 +197,15 @@ function EventsIndexPage() {
     staleTime: 5 * 60_000,
   });
   const { data: mediumRows } = useQuery({
-    queryKey: ["events", "filter-mediums"],
-    queryFn: () => eventMediumsFn(),
+    queryKey: ["events", "filter-mediums", format],
+    queryFn: () => eventMediumsFn({ data: { format } }),
+    staleTime: 10 * 60_000,
+  });
+  // Topic options come from the server so a topic can never disappear just
+  // because it wasn't in the current page of results.
+  const { data: topicRows } = useQuery({
+    queryKey: ["events", "filter-topics", format],
+    queryFn: () => eventTopicsFn({ data: { format } }),
     staleTime: 10 * 60_000,
   });
   const cityOptions: FilterCityOption[] = useMemo(
@@ -208,44 +234,18 @@ function EventsIndexPage() {
   const events = mineActive ? mineData : publicData;
   const isLoading = mineActive ? mineLoading : publicLoading;
   const rawList = events ?? [];
-  const eventIds = useMemo(() => rawList.map((e) => e.id).sort(), [rawList]);
-  const { data: eventTopicData } = useQuery({
-    queryKey: ["events-topics", eventIds.join(",")],
-    enabled: eventIds.length > 0,
-    staleTime: 5 * 60_000,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("group_event_topics")
-        .select("event_id,topic:topics(slug,name)")
-        .in("event_id", eventIds);
-      if (error) throw error;
-      const byEvent = new Map<string, string[]>();
-      const names = new Map<string, string>();
-      for (const row of (data ?? []) as unknown as {
-        event_id: string;
-        topic: { slug: string; name: string } | null;
-      }[]) {
-        if (!row.topic) continue;
-        names.set(row.topic.slug, row.topic.name);
-        const cur = byEvent.get(row.event_id);
-        if (cur) cur.push(row.topic.slug);
-        else byEvent.set(row.event_id, [row.topic.slug]);
-      }
-      return { byEvent, names };
-    },
-  });
-  const topicOptions = useMemo(
-    () =>
-      Array.from(eventTopicData?.names.entries() ?? [])
-        .map(([slug, name]) => ({ slug, name }))
-        .sort((a, b) => a.name.localeCompare(b.name)),
-    [eventTopicData],
-  );
+  const topicOptions = (topicRows ?? []) as { slug: string; name: string }[];
   const list = useMemo(() => {
-    if (!topic) return rawList;
-    return rawList.filter((e) => (eventTopicData?.byEvent.get(e.id) ?? []).includes(topic));
+    // Public results are already filtered server-side; only the personal
+    // RSVP list (an authenticated, unlimited read) narrows here.
+    if (!mineActive) return rawList;
+    return rawList.filter((e) => {
+      if (format === "online" && !["online", "hybrid"].includes(e.format)) return false;
+      if (format === "in_person" && !["in_person", "hybrid"].includes(e.format)) return false;
+      return true;
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rawList, topic, eventTopicData]);
+  }, [rawList, mineActive, format]);
 
   const happeningCount = useMemo(() => {
     const now = Date.now();
@@ -260,7 +260,7 @@ function EventsIndexPage() {
     queryKey: ["events", "map-points", when, cityId ?? null],
     queryFn: () => mapPointsFn({ data: { when, cityId: cityId ?? null } }),
     staleTime: 5 * 60_000,
-    enabled: !mineActive && format !== "online",
+    enabled: !mineActive && !remote && format !== "online",
   });
   const mapVenues = (mapData?.venues ?? []) as unknown as MapVenuePoint[];
   const mapCities = (mapData?.cities ?? []) as unknown as MapCityPoint[];
@@ -291,42 +291,22 @@ function EventsIndexPage() {
   }, [list, when]);
 
   function setWhen(next: When) {
-    navigate({ search: (prev: SearchShape): SearchShape => ({ ...prev, when: next }) });
-  }
-  function setFormat(next: Format) {
-    navigate({
-      search: (prev: SearchShape): SearchShape => ({
-        ...prev,
-        format: next,
-        // Online ignores city.
-        city: next === "online" ? undefined : prev.city,
-        cityName: next === "online" ? undefined : prev.cityName,
-      }),
-    });
+    patch({ when: next });
   }
   function setCity(next: { id: string; name: string } | null) {
-    navigate({
-      search: (prev: SearchShape): SearchShape => ({
-        ...prev,
-        city: next?.id,
-        cityName: next?.name,
-      }),
-    });
+    patch({ city: next?.id, cityName: next?.name });
   }
   function setCityId(nextId: string) {
     const match = cityOptions.find((c) => c.value === nextId);
     setCity(nextId && match ? { id: nextId, name: match.label } : null);
   }
   function setMine(next: boolean) {
-    navigate({ search: (prev: SearchShape): SearchShape => ({ ...prev, mine: next }) });
-  }
-  function patch(next: Partial<SearchShape>) {
-    navigate({ search: (prev: SearchShape): SearchShape => ({ ...prev, ...next }) });
+    patch({ mine: next });
   }
 
   const filtersActive =
     when !== "upcoming" ||
-    format !== "all" ||
+    (!remote && format !== "all") ||
     !!cityId ||
     mine ||
     kind !== "all" ||
@@ -337,28 +317,16 @@ function EventsIndexPage() {
 
   const moreCount = (daypart !== "all" ? 1 : 0) + (mine ? 1 : 0) + (topic ? 1 : 0);
 
-  const clearFilters = () =>
-    navigate({
-      search: () => ({
-        when: "upcoming" as const,
-        format: "all" as const,
-        mine: false,
-        kind: "all" as const,
-        daypart: "all" as const,
-        q: "",
-        medium: "",
-        topic: "",
-      }),
-      replace: true,
-    });
-
 
   const defaultCityQuery = useDefaultCity();
   const defaultCity = defaultCityQuery.data?.city ?? null;
   useApplyDefaultCity({
     feedKey: "events",
-    isWorldwide: !cityId && format !== "online",
-    apply: (city) => setCity({ id: city.id, name: city.name }),
+    // Remote never auto-applies a city.
+    isWorldwide: !remote && !cityId && format !== "online",
+    apply: (city) => {
+      if (!remote) setCity({ id: city.id, name: city.name });
+    },
     defaultCity,
   });
 
@@ -367,7 +335,7 @@ function EventsIndexPage() {
       <YourGroupsStrip />
       <main className="mx-auto max-w-7xl px-4 pb-20 pt-6 md:px-6 md:pt-10">
         <PageHeaderCompact
-          title="Events"
+          title={title}
           backTo="/"
           backLabel="Home"
           right={
@@ -382,9 +350,7 @@ function EventsIndexPage() {
           <KickerChip live={happeningCount > 0}>
             {happeningCount > 0 ? `${happeningCount} happening now` : "On the calendar"}
           </KickerChip>
-          <p className="text-sm text-ink-muted">
-            Networking, listening parties, work-in-progress nights.
-          </p>
+          <p className="text-sm text-ink-muted">{description}</p>
           {list.length > 0 && (
             <span className="ml-auto rounded-full border border-border bg-surface px-2.5 py-0.5 text-[11px] font-medium text-ink-soft">
               {list.length} {when}
@@ -426,12 +392,14 @@ function EventsIndexPage() {
                   ))}
                 </FilterSelect>
 
-                <FilterCityPicker
-                  value={format === "online" ? "" : (cityId ?? "")}
-                  onChange={setCityId}
-                  options={format === "online" ? [] : cityOptions}
-                  allLabel="All cities"
-                />
+                {!remote && format !== "online" && (
+                  <FilterCityPicker
+                    value={cityId ?? ""}
+                    onChange={setCityId}
+                    options={cityOptions}
+                    allLabel="All cities"
+                  />
+                )}
 
                 <FilterToggleGroup
                   value={format}
@@ -439,7 +407,7 @@ function EventsIndexPage() {
                   options={[
                     { value: "all" as const, label: "All", icon: Calendar },
                     { value: "in_person" as const, label: "In person", icon: MapPin },
-                    { value: "online" as const, label: "Online", icon: Radio },
+                    { value: "online" as const, label: "Remote", icon: Radio },
                   ]}
                 />
                 <FilterPillToggle
@@ -535,7 +503,7 @@ function EventsIndexPage() {
 
         {when === "upcoming" && !mineActive && (
           <section className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:items-start">
-            <FeaturedEventsCompact />
+            <FeaturedEventsCompact format={format} />
             {mapCount > 0 && (
               <div className="hidden lg:block">
                 <div className="mb-2 flex items-baseline justify-between px-1">
@@ -573,7 +541,7 @@ function EventsIndexPage() {
 
           {!isLoading && list.length === 0 && (
             <EmptySpark
-              title={mineActive ? "No RSVPs yet." : "Nothing on the calendar."}
+              title={mineActive ? "No RSVPs yet." : emptyTitle}
               body={
                 mineActive
                   ? when === "past"
@@ -581,8 +549,7 @@ function EventsIndexPage() {
                     : "RSVP to an event and it'll appear here for quick access."
                   : cityName
                     ? `No ${when} events in ${cityName} yet. Try Worldwide or a different city.`
-
-                    : "Events hosted by the Groups you join will list here."
+                    : emptyBody
               }
               action={
                 <Button asChild className="rounded-md" onClick={() => mineActive && setMine(false)}>
@@ -627,38 +594,5 @@ function EventsIndexPage() {
         )}
       </main>
     </>
-  );
-}
-
-function SegToggle<T extends string>({
-  value,
-  onChange,
-  options,
-}: {
-  value: T;
-  onChange: (v: T) => void;
-  options: { value: T; label: string; icon?: React.ComponentType<{ className?: string }> }[];
-}) {
-  return (
-    <div className="inline-flex rounded-full border border-border bg-surface p-1 text-xs shadow-soft">
-      {options.map((o) => {
-        const Icon = o.icon;
-        const active = o.value === value;
-        return (
-          <button
-            key={o.value}
-            type="button"
-            onClick={() => onChange(o.value)}
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-medium transition",
-              active ? "bg-ink text-surface shadow-soft" : "text-ink-soft hover:text-ink",
-            )}
-          >
-            {Icon && <Icon className="h-3 w-3" />}
-            {o.label}
-          </button>
-        );
-      })}
-    </div>
   );
 }
