@@ -21,7 +21,7 @@ type Props = {
 
 /**
  * Reusable "create your free account to continue" gate. Wraps email/password
- * signup + Google. On successful signup, calls onAuthed(). emailRedirectTo
+ * signup + Google/Apple. On successful signup, calls onAuthed(). emailRedirectTo
  * is the current URL so confirm-flow lands the user right back here.
  */
 export function SignupGateModal({ open, onOpenChange, title, subtitle, onAuthed, footer }: Props) {
@@ -64,35 +64,67 @@ export function SignupGateModal({ open, onOpenChange, title, subtitle, onAuthed,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="font-display text-2xl">
-            {title ?? "Create your free account"}
+      <DialogContent className="border-border bg-surface p-6 shadow-lift sm:max-w-[440px] sm:p-8">
+        <DialogHeader className="text-center">
+          <DialogTitle className="font-display text-[28px] tracking-tight text-ink">
+            {title ?? "Join Workshop"}
           </DialogTitle>
-          {subtitle && <DialogDescription>{subtitle}</DialogDescription>}
+          {subtitle && (
+            <DialogDescription className="text-[15px] leading-relaxed text-ink-soft">
+              {subtitle}
+            </DialogDescription>
+          )}
         </DialogHeader>
         <div className="space-y-3">
           <GoogleSignIn
             label={mode === "signup" ? "Sign up with Google" : "Continue with Google"}
             redirectTo={typeof window !== "undefined" ? window.location.pathname + window.location.search : undefined}
+            className="rounded-full border border-signal bg-surface hover:bg-surface-2"
           />
           <AppleSignIn
             label={mode === "signup" ? "Sign up with Apple" : "Continue with Apple"}
             redirectTo={typeof window !== "undefined" ? window.location.pathname + window.location.search : undefined}
+            className="rounded-full border border-border bg-surface-2 hover:bg-surface"
           />
-          <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-ink-muted">
-            <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
+          <div className="flex items-center gap-3 py-1 text-xs uppercase tracking-widest text-ink-muted">
+            <span className="h-px flex-1 bg-border" /> or{" "}
+            <span className="h-px flex-1 bg-border" />
           </div>
-          <form onSubmit={submit} className="space-y-3">
+          <form onSubmit={submit} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="gate-email">Email</Label>
-              <Input id="gate-email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Label htmlFor="gate-email" className="text-sm font-semibold text-ink-soft">
+                Email
+              </Label>
+              <Input
+                id="gate-email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="rounded-xl border-border bg-surface-2"
+              />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="gate-password">Password</Label>
-              <Input id="gate-password" type="password" autoComplete={mode === "signup" ? "new-password" : "current-password"} required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+              <Label htmlFor="gate-password" className="text-sm font-semibold text-ink-soft">
+                Password
+              </Label>
+              <Input
+                id="gate-password"
+                type="password"
+                autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                required
+                minLength={6}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="rounded-xl border-border bg-surface-2"
+              />
             </div>
-            <Button type="submit" disabled={loading} className="w-full rounded-md">
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-xl bg-primary text-primary-foreground shadow-soft transition-transform active:scale-[0.98]"
+            >
               {loading ? "…" : mode === "signup" ? "Create account & join" : "Sign in & join"}
             </Button>
           </form>
@@ -100,7 +132,7 @@ export function SignupGateModal({ open, onOpenChange, title, subtitle, onAuthed,
             {mode === "signup" ? "Already have an account?" : "New here?"}{" "}
             <button
               type="button"
-              className="text-ink underline-offset-2 hover:underline"
+              className="font-semibold text-ink underline-offset-2 hover:underline"
               onClick={() => setMode((m) => (m === "signup" ? "signin" : "signup"))}
             >
               {mode === "signup" ? "Sign in" : "Create one"}
