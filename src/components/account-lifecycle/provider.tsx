@@ -9,6 +9,10 @@ import {
 } from "@/lib/account-lifecycle.functions";
 import { confirmAdultAttestation } from "@/lib/profile-age.functions";
 import {
+  clearPendingAdultAttestation,
+  hasPendingAdultAttestation,
+} from "@/lib/adult-attestation";
+import {
   deriveLifecycleState,
   type AccountLifecycleState,
   type LifecycleFacts,
@@ -104,6 +108,26 @@ export function AccountLifecycleProvider({ children }: { children: ReactNode }) 
     await attestAdult({ data: { confirmed: true } });
     await refresh();
   }, [attestAdult, refresh]);
+
+  // Signup surfaces collect the 18+ checkbox before the session exists (email
+  // confirm / OAuth round-trips). Stamp it as soon as we have a session so the
+  // member isn't asked the same question twice.
+  const stampedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!userId || !query.data || query.data.adultConfirmed) return;
+    if (stampedFor.current === userId) return;
+    if (!hasPendingAdultAttestation()) return;
+    stampedFor.current = userId;
+    void (async () => {
+      try {
+        await attestAdult({ data: { confirmed: true } });
+        clearPendingAdultAttestation();
+        await refresh();
+      } catch {
+        /* the first-run gate will ask directly */
+      }
+    })();
+  }, [userId, query.data, attestAdult, refresh]);
 
   const declineAdult = useCallback(() => {
     setUnderage(true);
