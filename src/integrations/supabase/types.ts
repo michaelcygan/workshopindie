@@ -6066,6 +6066,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          adult_attested_at: string | null
           age_filter_min: number | null
           alias_urls: string[]
           aliases: string[]
@@ -6118,6 +6119,7 @@ export type Database = {
           worked_with_count: number
         }
         Insert: {
+          adult_attested_at?: string | null
           age_filter_min?: number | null
           alias_urls?: string[]
           aliases?: string[]
@@ -6170,6 +6172,7 @@ export type Database = {
           worked_with_count?: number
         }
         Update: {
+          adult_attested_at?: string | null
           age_filter_min?: number | null
           alias_urls?: string[]
           aliases?: string[]

@@ -7,7 +7,7 @@ import {
   ensureProfileRow,
   completeWelcome as completeWelcomeFn,
 } from "@/lib/account-lifecycle.functions";
-import { setMyBirthdate } from "@/lib/profile-age.functions";
+import { confirmAdultAttestation } from "@/lib/profile-age.functions";
 import {
   deriveLifecycleState,
   type AccountLifecycleState,
@@ -21,8 +21,10 @@ type Ctx = {
   /** True once the account may use the signed-in product. */
   isReady: boolean;
   refresh: () => Promise<void>;
-  /** Saves a birthdate. Returns "ok" | "underage" | throws for other errors. */
-  submitBirthdate: (birthdate: string) => Promise<"ok" | "underage">;
+  /** Records the 18+ attestation. */
+  confirmAdult: () => Promise<void>;
+  /** Member declared they are under 18 — moves to the removal stage. */
+  declineAdult: () => void;
   completeWelcome: () => Promise<void>;
 };
 
@@ -32,7 +34,8 @@ const LifecycleCtx = createContext<Ctx>({
   userId: null,
   isReady: false,
   refresh: async () => {},
-  submitBirthdate: async () => "ok",
+  confirmAdult: async () => {},
+  declineAdult: () => {},
   completeWelcome: async () => {},
 });
 
@@ -45,7 +48,7 @@ export function AccountLifecycleProvider({ children }: { children: ReactNode }) 
 
   const fetchLifecycle = useServerFn(getAccountLifecycle);
   const repairProfile = useServerFn(ensureProfileRow);
-  const saveBirthdate = useServerFn(setMyBirthdate);
+  const attestAdult = useServerFn(confirmAdultAttestation);
   const markWelcome = useServerFn(completeWelcomeFn);
 
   const [underage, setUnderage] = useState(false);
@@ -97,24 +100,14 @@ export function AccountLifecycleProvider({ children }: { children: ReactNode }) 
     await query.refetch();
   }, [qc, query, userId]);
 
-  const submitBirthdate = useCallback(
-    async (birthdate: string): Promise<"ok" | "underage"> => {
-      try {
-        await saveBirthdate({ data: { birthdate } });
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        // The DB trigger owns the 18+ decision.
-        if (/18\+|under\s?18|too young/i.test(msg)) {
-          setUnderage(true);
-          return "underage";
-        }
-        throw err;
-      }
-      await refresh();
-      return "ok";
-    },
-    [saveBirthdate, refresh],
-  );
+  const confirmAdult = useCallback(async () => {
+    await attestAdult({ data: { confirmed: true } });
+    await refresh();
+  }, [attestAdult, refresh]);
+
+  const declineAdult = useCallback(() => {
+    setUnderage(true);
+  }, []);
 
   const completeWelcome = useCallback(async () => {
     await markWelcome();
@@ -128,10 +121,11 @@ export function AccountLifecycleProvider({ children }: { children: ReactNode }) 
       userId,
       isReady: state === "ready",
       refresh,
-      submitBirthdate,
+      confirmAdult,
+      declineAdult,
       completeWelcome,
     }),
-    [state, query.data, userId, refresh, submitBirthdate, completeWelcome],
+    [state, query.data, userId, refresh, confirmAdult, declineAdult, completeWelcome],
   );
 
   return <LifecycleCtx.Provider value={value}>{children}</LifecycleCtx.Provider>;

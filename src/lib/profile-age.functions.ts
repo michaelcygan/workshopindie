@@ -3,49 +3,67 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-/** Read the signed-in user's own private age fields. Never exposes other users. */
+/** True when a legacy birthdate on file already proves the member is 18+. */
+function birthdateProvesAdult(birthdate: string | null): boolean {
+  if (!birthdate) return false;
+  const b = new Date(birthdate);
+  if (Number.isNaN(b.getTime())) return false;
+  const cutoff = new Date();
+  cutoff.setFullYear(cutoff.getFullYear() - 18);
+  return b.getTime() <= cutoff.getTime();
+}
+
+/**
+ * Read the signed-in user's own private age fields. Never exposes other users.
+ *
+ * Workshop no longer collects birth dates — the platform rule is a single 18+
+ * attestation. A legacy birthdate that proves 18+ still satisfies it.
+ */
 export const getMyAgeFields = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { userId } = context;
     const { data, error } = await supabaseAdmin
       .from("profiles")
-      .select("birthdate, age_filter_min, home_city_id")
+      .select("birthdate, adult_attested_at, age_filter_min, home_city_id")
       .eq("id", userId)
       .maybeSingle();
     if (error) throw new Error(error.message);
     const birthdate = (data?.birthdate as string | null) ?? null;
-    let age: number | null = null;
-    if (birthdate) {
-      const b = new Date(birthdate);
-      const now = new Date();
-      age = now.getFullYear() - b.getFullYear();
-      const m = now.getMonth() - b.getMonth();
-      if (m < 0 || (m === 0 && now.getDate() < b.getDate())) age -= 1;
-    }
+    const attestedAt = (data?.adult_attested_at as string | null) ?? null;
     return {
-      birthdate,
+      adultConfirmed: !!attestedAt || birthdateProvesAdult(birthdate),
+      attestedAt,
       ageFilterMin: (data?.age_filter_min as number | null) ?? null,
       homeCityId: (data?.home_city_id as string | null) ?? null,
-      locked: !!birthdate,
-      age,
     };
   });
 
-/** Set the user's birthdate. Trigger enforces 13+ and one-time set. */
-export const setMyBirthdate = createServerFn({ method: "POST" })
+/**
+ * Record the 18+ attestation. Idempotent — the first stamp wins so repeated
+ * confirmations can't move the timestamp around. Server-authoritative: the
+ * client checkbox is UX, this write is the record.
+ */
+export const confirmAdultAttestation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
-    z.object({ birthdate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }).parse(input),
+    z.object({ confirmed: z.literal(true) }).parse(input),
   )
-  .handler(async ({ data, context }) => {
+  .handler(async ({ context }) => {
     const { userId } = context;
+    const { data: current, error: readError } = await supabaseAdmin
+      .from("profiles")
+      .select("adult_attested_at")
+      .eq("id", userId)
+      .maybeSingle();
+    if (readError) throw new Error(readError.message);
+    if (current?.adult_attested_at) return { ok: true, alreadyConfirmed: true };
     const { error } = await supabaseAdmin
       .from("profiles")
-      .update({ birthdate: data.birthdate })
+      .update({ adult_attested_at: new Date().toISOString() })
       .eq("id", userId);
     if (error) throw new Error(error.message);
-    return { ok: true };
+    return { ok: true, alreadyConfirmed: false };
   });
 
 /** Set the personal "only show me X+" workshops filter. Null = no filter. */

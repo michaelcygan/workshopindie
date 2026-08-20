@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
@@ -9,8 +9,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { requestAccountDeletion } from "@/lib/account-deletion.functions";
 import { clearPostAuthIntent } from "@/lib/post-auth-intent";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 /**
@@ -61,25 +59,18 @@ async function hardSignOut(qc: ReturnType<typeof useQueryClient>) {
 /* ------------------------------------------------------------------ age --- */
 
 function AgeStage() {
-  const { submitBirthdate } = useAccountLifecycle();
-  const [birthdate, setBirthdate] = useState("");
+  const { confirmAdult, declineAdult } = useAccountLifecycle();
+  const [checked, setChecked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // A real date range: the DB's 18+ guard makes the decision, not the input.
-  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
-
   async function onConfirm(e: React.FormEvent) {
     e.preventDefault();
-    if (!birthdate) return;
-    if (birthdate < "1900-01-01" || birthdate > today) {
-      setError("Please enter a real date of birth.");
-      return;
-    }
+    if (!checked) return;
     setError(null);
     setSubmitting(true);
     try {
-      await submitBirthdate(birthdate);
+      await confirmAdult();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't save that just now.");
     } finally {
@@ -91,28 +82,36 @@ function AgeStage() {
     <>
       <h2 className="font-display text-2xl text-ink">First, confirm you're 18+</h2>
       <p className="mt-2 text-sm text-ink-muted">
-        Workshop is for adults. Your birth date stays private and never appears on your profile.
+        Workshop is an adults-only platform. We don't ask for your birthday — just this
+        confirmation. Individual events and venues may set their own 18+ or 21+ rules and check ID
+        at the door.
       </p>
       <form onSubmit={onConfirm} className="mt-5 space-y-4">
-        <div className="space-y-1.5">
-          <Label htmlFor="lifecycle-dob">Date of birth</Label>
-          <Input
-            id="lifecycle-dob"
-            type="date"
+        <label
+          htmlFor="lifecycle-adult"
+          className="flex cursor-pointer items-start gap-3 rounded-xl border border-border p-3.5 text-left"
+        >
+          <input
+            id="lifecycle-adult"
+            type="checkbox"
             required
-            min="1900-01-01"
-            max={today}
-            value={birthdate}
-            onChange={(e) => setBirthdate(e.target.value)}
+            checked={checked}
+            onChange={(e) => setChecked(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
           />
-          {error && <p className="text-xs text-destructive">{error}</p>}
-        </div>
-        <Button type="submit" className="w-full rounded-md" disabled={submitting || !birthdate}>
-          {submitting ? "Saving…" : "Confirm"}
+          <span className="text-sm text-ink">I confirm that I am 18 or older.</span>
+        </label>
+        {error && <p className="text-xs text-destructive">{error}</p>}
+        <Button type="submit" className="w-full rounded-md" disabled={submitting || !checked}>
+          {submitting ? "Saving…" : "Continue"}
         </Button>
-        <p className="text-center text-xs text-ink-muted">
-          By confirming you attest that you are at least 18 years old.
-        </p>
+        <button
+          type="button"
+          onClick={declineAdult}
+          className="w-full text-center text-xs text-ink-muted underline-offset-2 hover:underline"
+        >
+          I'm under 18
+        </button>
       </form>
     </>
   );

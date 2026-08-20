@@ -5,8 +5,8 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 /**
  * Account lifecycle facts for the signed-in user.
  *
- * Returns booleans only — the raw birthdate never leaves the server. Age
- * confirmation only needs to know *whether* a birthdate exists.
+ * Returns booleans only. Age gating is a single 18+ attestation; a legacy
+ * birthdate that already proves 18+ counts as confirmed and is never re-asked.
  */
 export const getAccountLifecycle = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -14,13 +14,21 @@ export const getAccountLifecycle = createServerFn({ method: "GET" })
     const { userId } = context;
     const { data, error } = await supabaseAdmin
       .from("profiles")
-      .select("id, birthdate, tour_completed_at, onboarded")
+      .select("id, birthdate, adult_attested_at, tour_completed_at, onboarded")
       .eq("id", userId)
       .maybeSingle();
     if (error) throw new Error(error.message);
+    const birthdate = (data?.birthdate as string | null) ?? null;
+    let legacyAdult = false;
+    if (birthdate) {
+      const cutoff = new Date();
+      cutoff.setFullYear(cutoff.getFullYear() - 18);
+      const b = new Date(birthdate);
+      legacyAdult = !Number.isNaN(b.getTime()) && b.getTime() <= cutoff.getTime();
+    }
     return {
       profileExists: !!data,
-      hasBirthdate: !!data?.birthdate,
+      adultConfirmed: !!data?.adult_attested_at || legacyAdult,
       welcomeCompleted: !!data?.tour_completed_at,
       profileCompleted: !!data?.onboarded,
     };
