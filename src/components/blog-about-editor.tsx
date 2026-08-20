@@ -48,14 +48,24 @@ const ROWS: Array<{ kind: BlogEntityKind; label: string; plural: string; add: st
   { kind: "post", label: "Blog post", plural: "Blog posts", add: "Add a Blog post" },
 ];
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+/** Compact labelled block: label sits above its control, no gutter column. */
+function Block({
+  label,
+  children,
+  className,
+}: {
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div className="grid grid-cols-1 gap-1.5 py-3 sm:grid-cols-[7.5rem_minmax(0,1fr)] sm:gap-6 sm:py-4">
-      <div className="pt-1 text-[11px] uppercase tracking-wider text-ink-muted">{label}</div>
-      <div className="min-w-0">{children}</div>
+    <div className={cn("min-w-0", className)}>
+      <div className="text-[11px] uppercase tracking-wider text-ink-muted">{label}</div>
+      <div className="mt-1.5 min-w-0">{children}</div>
     </div>
   );
 }
+
 
 /**
  * Authoring twin of the public `BlogPostContext` colophon. Same order, same
