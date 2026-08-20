@@ -495,7 +495,7 @@ function MemberBlogEditorPage() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8 md:px-6 md:py-12">
+    <main className="mx-auto max-w-3xl px-4 py-8 md:px-6 md:py-12 lg:max-w-6xl">
       <div className="flex items-center justify-between gap-2">
         <Link
           to="/me/blog"
@@ -619,7 +619,7 @@ function MemberBlogEditorPage() {
 
 
         <TabsContent value="preview" className="mt-4">
-          <article className="prose-workshop">
+          <article className="prose-workshop mx-auto max-w-3xl">
             {cover && (
               <img
                 src={cover}
@@ -645,7 +645,7 @@ function MemberBlogEditorPage() {
           </article>
         </TabsContent>
 
-        <TabsContent value="details" className="mt-4 space-y-4">
+        <TabsContent value="details" className="mx-auto mt-4 max-w-3xl space-y-4">
 
 
           <div className="flex items-start justify-between gap-4 rounded-2xl border border-border bg-surface px-4 py-3">
