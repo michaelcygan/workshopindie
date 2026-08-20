@@ -230,7 +230,7 @@ export function CollabComposer({
   const preselect = usePreselectGroup(groupPreselectId ?? undefined);
 
   const [selectedGroups, setSelectedGroups] = useState<PickerGroup[]>(initialDraft?.groups ?? []);
-  const [topics, setTopics] = useState<PickerTopic[]>([]);
+  const [topics, setTopics] = useState<PickerTopic[]>(initialDraft?.topics ?? []);
   useEffect(() => {
     if (preselect.data && preselect.data.length > 0 && selectedGroups.length === 0) {
       setSelectedGroups(preselect.data);
@@ -282,10 +282,12 @@ export function CollabComposer({
       roles,
       rights,
       groups: selectedGroups,
+      topics,
     }),
     [
       title, category, extraCategories, subcategory, description, timeline, timelineNote,
       locationMode, city, alsoCities, comp, contactMode, externalUrl, roles, rights, selectedGroups,
+      topics,
     ],
   );
 
