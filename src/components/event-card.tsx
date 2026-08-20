@@ -43,7 +43,14 @@ function formatTime(iso: string) {
 export function EventCard({ event, className }: { event: EventCardData; className?: string }) {
   const isExternal = event.source === "external" && !!event.external_url;
   const isOnline = event.format === "online" || event.format === "hybrid";
-  const locationLabel = isOnline ? "Online" : (event.venue_name ?? event.venue_address ?? "TBA");
+  // Hybrid is remotely attendable AND has a room, so say both.
+  const locationLabel =
+    event.format === "hybrid"
+      ? `Hybrid · Remote + ${event.venue_name ?? "in person"}`
+      : isOnline
+        ? "Remote"
+        : (event.venue_name ?? event.venue_address ?? "TBA");
+
 
   const Body = (
     <>
