@@ -8,12 +8,20 @@ import {
   User,
   ChevronUp,
   ChevronDown,
+  ChevronRight,
   X,
   Plus,
   ArrowUpRight,
   BookOpen,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { BlogEntityTagPicker } from "@/components/blog-entity-tag-picker";
 import { QuickCreateWorkSheet } from "@/components/quick-create-work-sheet";
 import type { BlogEntityKind, BlogEntityTag } from "@/lib/blog-entity-tags";
@@ -29,6 +37,7 @@ import {
   type BlogStoryType,
 } from "@/lib/blog-story-types";
 import { TopicPicker, type PickerTopic } from "@/components/topics/topic-picker";
+
 
 const KIND_ICONS: Record<BlogEntityKind, typeof Briefcase> = {
   work: Briefcase,
@@ -48,14 +57,24 @@ const ROWS: Array<{ kind: BlogEntityKind; label: string; plural: string; add: st
   { kind: "post", label: "Blog post", plural: "Blog posts", add: "Add a Blog post" },
 ];
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+/** Compact labelled block: label sits above its control, no gutter column. */
+function Block({
+  label,
+  children,
+  className,
+}: {
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div className="grid grid-cols-1 gap-1.5 py-3 sm:grid-cols-[7.5rem_minmax(0,1fr)] sm:gap-6 sm:py-4">
-      <div className="pt-1 text-[11px] uppercase tracking-wider text-ink-muted">{label}</div>
-      <div className="min-w-0">{children}</div>
+    <div className={cn("min-w-0", className)}>
+      <div className="text-[11px] uppercase tracking-wider text-ink-muted">{label}</div>
+      <div className="mt-1.5 min-w-0">{children}</div>
     </div>
   );
 }
+
 
 /**
  * Authoring twin of the public `BlogPostContext` colophon. Same order, same
@@ -106,6 +125,9 @@ export function BlogAboutEditor({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerKind, setPickerKind] = useState<BlogEntityKind | "all">("all");
   const [createWorkOpen, setCreateWorkOpen] = useState(false);
+  // Collapsed once the post already carries structure; open while it's blank.
+  const [open, setOpen] = useState(() => !postType && tags.length === 0);
+
 
   const primaryField: FieldId = fields[0] ?? "other";
   const extraFields = fields.slice(1);
@@ -145,20 +167,8 @@ export function BlogAboutEditor({
     onChangeTags(tags.filter((t) => tagKey(t) !== tagKey(tag)));
   }
 
-  function AddButton({ kind, label }: { kind: BlogEntityKind; label: string }) {
-    return (
-      <button
-        type="button"
-        disabled={readOnly || atCap}
-        onClick={() => openPicker(kind)}
-        className="inline-flex min-h-8 items-center gap-1 rounded-full border border-border bg-background px-3 py-1 text-xs text-ink-soft transition hover:bg-muted disabled:opacity-40"
-      >
-        <Plus className="h-3.5 w-3.5" /> {label}
-      </button>
-    );
-  }
-
   function TagRow({ tag }: { tag: BlogEntityTag }) {
+
     const Icon = KIND_ICONS[tag.kind];
     const i = tags.findIndex((t) => tagKey(t) === tagKey(tag));
     return (
@@ -245,117 +255,167 @@ export function BlogAboutEditor({
     post: context.posts,
   };
 
+  const summary = [
+    section?.label ?? (postType ? null : "No post type"),
+    fieldLabel(primaryField),
+    topics.length > 0 ? `${topics.length} topic${topics.length === 1 ? "" : "s"}` : null,
+    tags.length > 0 ? `${tags.length} connection${tags.length === 1 ? "" : "s"}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
     <section className="rounded-2xl border border-border bg-surface p-4">
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-[11px] uppercase tracking-[0.18em] text-ink-muted">About this post</h2>
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          className="group flex min-w-0 items-center gap-1.5 text-left"
+        >
+          <ChevronRight
+            className={cn(
+              "h-3.5 w-3.5 shrink-0 text-ink-muted transition-transform",
+              open && "rotate-90",
+            )}
+          />
+          <h2 className="text-[11px] uppercase tracking-[0.18em] text-ink-muted">About this post</h2>
+        </button>
         <span className="text-[11px] text-ink-muted">
           {tags.length}/{MAX_BLOG_ENTITY_TAGS} linked items
         </span>
       </div>
-      <p className="mt-1 text-[11px] leading-relaxed text-ink-muted">
-        This is the structured record readers see under your story — and how the post shows up on the
-        pages it is about.
-      </p>
 
-      <div className="mt-2 divide-y divide-border border-t border-border">
-        <Row label="Post type">
-          <div className="flex flex-wrap items-center gap-2">
-            {BLOG_STORY_TYPES.map((t) => {
-              const active = postType === t.id;
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  disabled={readOnly}
-                  aria-pressed={active}
-                  onClick={() => onChangePostType(active ? null : t.id)}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-40 ${
-                    active
-                      ? "border-ink bg-ink text-surface"
-                      : "border-border bg-background text-ink-soft hover:border-ink/40"
-                  }`}
-                >
-                  {t.label}
-                </button>
-              );
-            })}
-          </div>
-          <p className="mt-1.5 text-[11px] text-ink-muted">
-            {section
-              ? `Publishes under ${section.label}.`
-              : "Pick one — it decides which section of the Blog this post appears in."}
+      {!open ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="mt-1.5 flex w-full items-center gap-2 text-left text-xs text-ink-soft hover:text-ink"
+        >
+          <span className="min-w-0 flex-1 truncate">{summary}</span>
+          <span className="shrink-0 text-[11px] underline underline-offset-2">Edit</span>
+        </button>
+      ) : (
+        <>
+          <p className="mt-1 text-[11px] leading-relaxed text-ink-muted">
+            The structured record readers see under your story — and how the post shows up on the
+            pages it is about.
           </p>
-        </Row>
 
-        <Row label={fields.length === 1 ? "Field" : "Fields"}>
-          {readOnly ? (
-            <div className="flex flex-wrap gap-2">
-              {fields.map((f) => (
-                <span
-                  key={f}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium ${fieldClass(f)}`}
-                >
-                  {fieldLabel(f)}
+          <div className="mt-3 grid gap-4 border-t border-border pt-3 md:grid-cols-2 md:gap-x-8">
+            <Block label="Post type" className="md:col-span-2">
+              <div className="flex flex-wrap items-center gap-1.5">
+                {BLOG_STORY_TYPES.map((t) => {
+                  const active = postType === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      disabled={readOnly}
+                      aria-pressed={active}
+                      onClick={() => onChangePostType(active ? null : t.id)}
+                      className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-40 ${
+                        active
+                          ? "border-ink bg-ink text-surface"
+                          : "border-border bg-background text-ink-soft hover:border-ink/40"
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  );
+                })}
+                <span className="ml-1 text-[11px] text-ink-muted">
+                  {section ? `Publishes under ${section.label}.` : "Decides the Blog section."}
                 </span>
-              ))}
-            </div>
-          ) : (
-            <FieldPicker
-              label=""
-              primary={primaryField}
-              extras={extraFields}
-              onChange={(next) => onChangeFields(next)}
-              onPrimaryChange={(next) => onChangeFields([next, ...extraFields.filter((f) => f !== next)])}
-              onExtrasChange={(next) => onChangeFields([primaryField, ...next.filter((f) => f !== primaryField)])}
-              hint="What this story is about. Up to 3 — star one to lead with it."
-            />
+              </div>
+            </Block>
 
-          )}
-        </Row>
+            <Block label={fields.length === 1 ? "Field" : "Fields"}>
+              {readOnly ? (
+                <div className="flex flex-wrap gap-2">
+                  {fields.map((f) => (
+                    <span
+                      key={f}
+                      className={`rounded-full px-3 py-1.5 text-xs font-medium ${fieldClass(f)}`}
+                    >
+                      {fieldLabel(f)}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <FieldPicker
+                  label=""
+                  primary={primaryField}
+                  extras={extraFields}
+                  onChange={(next) => onChangeFields(next)}
+                  onPrimaryChange={(next) => onChangeFields([next, ...extraFields.filter((f) => f !== next)])}
+                  onExtrasChange={(next) => onChangeFields([primaryField, ...next.filter((f) => f !== primaryField)])}
+                  hint="Up to 3 — star one to lead with it."
+                />
+              )}
+            </Block>
 
-        <Row label={topics.length === 1 ? "Topic" : "Topics"}>
-          {readOnly ? (
-            <div className="text-sm text-ink-soft">
-              {topics.length > 0
-                ? topics.map((t) => t.name).join(" · ")
-                : subjects.length > 0
-                  ? subjects.join(" · ")
-                  : "—"}
-            </div>
-          ) : (
-            <TopicPicker
-              label=""
-              value={topics}
-              onChange={onChangeTopics}
-              max={MAX_BLOG_SUBJECTS}
-              helper={`What is this post about? Optional, up to ${MAX_BLOG_SUBJECTS}. The first one leads.`}
-            />
-          )}
-        </Row>
+            <Block label={topics.length === 1 ? "Topic" : "Topics"}>
+              {readOnly ? (
+                <div className="text-sm text-ink-soft">
+                  {topics.length > 0
+                    ? topics.map((t) => t.name).join(" · ")
+                    : subjects.length > 0
+                      ? subjects.join(" · ")
+                      : "—"}
+                </div>
+              ) : (
+                <TopicPicker
+                  label=""
+                  value={topics}
+                  onChange={onChangeTopics}
+                  max={MAX_BLOG_SUBJECTS}
+                  helper={`Optional, up to ${MAX_BLOG_SUBJECTS}. The first one leads.`}
+                />
+              )}
+            </Block>
 
-        {/* Specialization is legacy: preserved on posts that carry one, never
-            offered in new authoring. */}
-        {subcategory && (
-          <Row label="Specialization">
-            <div className="text-sm text-ink-soft">{subcategoryLabel(subcategory)}</div>
-          </Row>
-        )}
+            {/* Specialization is legacy: preserved on posts that carry one, never
+                offered in new authoring. */}
+            {subcategory && (
+              <Block label="Specialization">
+                <div className="text-sm text-ink-soft">{subcategoryLabel(subcategory)}</div>
+              </Block>
+            )}
 
-        {ROWS.map((row) => {
-          const items = byKind[row.kind];
-          return (
-            <Row key={row.kind} label={items.length === 1 ? row.label : row.plural}>
-              {items.length > 0 && (
-                <ul className="space-y-2">
-                  {items.map((t) => (
+            {/* One list for every kind — Works, People, Collabs, Groups, Events, posts. */}
+            <Block label="Connections" className="md:col-span-2">
+              {tags.length > 0 && (
+                <ul className="grid gap-1.5 md:grid-cols-2">
+                  {ROWS.flatMap((row) => byKind[row.kind]).map((t) => (
                     <TagRow key={tagKey(t)} tag={t} />
                   ))}
                 </ul>
               )}
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <AddButton kind={row.kind} label={items.length > 0 ? "Add another" : row.add} />
-                {row.kind === "work" && canCreateWork && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      disabled={readOnly || atCap}
+                      className="inline-flex min-h-8 items-center gap-1 rounded-full border border-border bg-background px-3 py-1 text-xs text-ink-soft transition hover:bg-muted disabled:opacity-40"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      {tags.length > 0 ? "Add another" : "Add a connection"}
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    {ROWS.map((row) => {
+                      const Icon = KIND_ICONS[row.kind];
+                      return (
+                        <DropdownMenuItem key={row.kind} onSelect={() => openPicker(row.kind)}>
+                          <Icon className="mr-2 h-3.5 w-3.5" /> {row.add}
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                {canCreateWork && (
                   <button
                     type="button"
                     disabled={readOnly || atCap}
@@ -366,16 +426,20 @@ export function BlogAboutEditor({
                   </button>
                 )}
               </div>
-            </Row>
-          );
-        })}
-      </div>
+              <p className="mt-1.5 text-[11px] text-ink-muted">
+                Link the Works, people, Collabs, Groups, Events, or posts this story is about.
+              </p>
+            </Block>
+          </div>
+        </>
+      )}
 
-      {atCap && (
+      {open && atCap && (
         <div className="mt-2 text-[11px] text-ink-muted">
           Maximum of {MAX_BLOG_ENTITY_TAGS} linked items reached.
         </div>
       )}
+
 
       <BlogEntityTagPicker
         open={pickerOpen}
