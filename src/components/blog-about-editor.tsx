@@ -125,6 +125,9 @@ export function BlogAboutEditor({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerKind, setPickerKind] = useState<BlogEntityKind | "all">("all");
   const [createWorkOpen, setCreateWorkOpen] = useState(false);
+  // Collapsed once the post already carries structure; open while it's blank.
+  const [open, setOpen] = useState(() => !postType && tags.length === 0);
+
 
   const primaryField: FieldId = fields[0] ?? "other";
   const extraFields = fields.slice(1);
