@@ -192,7 +192,16 @@ function Signup() {
           : "Show your Work. Join a Group, or post a Collab and pull a team together."}
       </p>
       <div className="mt-6 rounded-xl border border-border bg-surface p-8 shadow-soft">
-        <div className="mt-6 space-y-3">
+        <AdultAttestationCheckbox
+          id="signup-adult"
+          checked={adult}
+          onChange={setAdult}
+          className="rounded-xl border border-border bg-surface-2 p-3"
+        />
+        <div
+          className={`mt-6 space-y-3 ${adult ? "" : "pointer-events-none opacity-50"}`}
+          aria-disabled={!adult}
+        >
           <GoogleSignIn
             label="Sign up with Google"
             redirectTo={
@@ -277,7 +286,6 @@ function Signup() {
               />
             </div>
           </div>
-          <AdultAttestationCheckbox id="signup-adult" checked={adult} onChange={setAdult} />
           <Button type="submit" className="w-full rounded-md" disabled={loading || !adult}>
             {loading ? "Creating account…" : "Create account"}
           </Button>
