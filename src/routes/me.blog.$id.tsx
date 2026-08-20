@@ -538,80 +538,85 @@ function MemberBlogEditorPage() {
           <TabsTrigger value="details">Details</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="edit" className="mt-4 space-y-4">
-          <div>
-            <label className="text-xs font-medium uppercase tracking-wider text-ink-muted">Title</label>
-            <input
-              type="text"
-              value={title}
-              readOnly={readOnly}
-              maxLength={160}
-              onChange={(e) => { setTitle(e.target.value); setDirty(true); }}
-              className="mt-1 w-full rounded-2xl border border-border bg-surface px-4 py-3 font-display text-2xl text-ink focus:border-primary focus:outline-none"
-              placeholder="Give your post a title"
-            />
-            {title.length > 140 && (
-              <p className="mt-1 text-right text-[11px] text-ink-muted">{title.length}/160</p>
-            )}
-          </div>
+        <TabsContent value="edit" className="mt-4">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-6">
+            <div className="min-w-0 space-y-4">
+              <div>
+                <label className="text-xs font-medium uppercase tracking-wider text-ink-muted">Title</label>
+                <input
+                  type="text"
+                  value={title}
+                  readOnly={readOnly}
+                  maxLength={160}
+                  onChange={(e) => { setTitle(e.target.value); setDirty(true); }}
+                  className="mt-1 w-full rounded-2xl border border-border bg-surface px-4 py-3 font-display text-2xl text-ink focus:border-primary focus:outline-none"
+                  placeholder="Give your post a title"
+                />
+                {title.length > 140 && (
+                  <p className="mt-1 text-right text-[11px] text-ink-muted">{title.length}/160</p>
+                )}
+              </div>
 
-          <div>
-            <label className="text-xs font-medium uppercase tracking-wider text-ink-muted">Cover image</label>
-            <div className="mt-2">
-              <ImageUpload
-                value={cover}
-                onChange={(url) => {
-                  // A new image invalidates the old description.
-                  if (url !== cover) setCoverAlt("");
-                  setCover(url);
+              <div>
+                <BlogBodyEditor
+                  value={body}
+                  readOnly={readOnly}
+                  onChange={(v) => { setBody(v); setDirty(true); }}
+                  onBusyChange={setComposerBusy}
+                  onRequestEntityInsert={(insert) => {
+                    setPendingInsertRef(() => insert);
+                    setEntityPickerOpen(true);
+                  }}
+                />
+              </div>
+
+              <div ref={bottomActionsRef} className="flex items-center justify-end border-t border-border pt-4">
+                <PostActions post={post} />
+              </div>
+            </div>
+
+            {/* Meta rail — sticky beside the writing area on desktop. */}
+            <aside className="min-w-0 space-y-4 lg:sticky lg:top-20 lg:self-start">
+              <div>
+                <label className="text-xs font-medium uppercase tracking-wider text-ink-muted">Cover image</label>
+                <div className="mt-2">
+                  <ImageUpload
+                    value={cover}
+                    onChange={(url) => {
+                      // A new image invalidates the old description.
+                      if (url !== cover) setCoverAlt("");
+                      setCover(url);
+                      setDirty(true);
+                    }}
+                    bucket="covers"
+                    aspect="wide"
+                    label="Add cover"
+                  />
+                </div>
+              </div>
+
+              {/* "About this post" — the authoring twin of the public colophon. */}
+              <BlogAboutEditor
+                postId={post.post.id}
+                fields={fields}
+                postType={postType}
+                onChangePostType={(next) => { setPostType(next); setDirty(true); }}
+                subjects={subjects}
+                topics={topics}
+                onChangeTopics={(next) => {
+                  setTopics(next);
+                  setSubjects(next.map((t) => t.name));
                   setDirty(true);
                 }}
-                bucket="covers"
-                aspect="wide"
-                label="Add cover"
+                tags={entityTags}
+                readOnly={readOnly}
+                onChangeFields={(next) => { setFields(next.length ? next : ["other"]); setDirty(true); }}
+                onChangeTags={(next) => { setEntityTags(next); setDirty(true); }}
               />
-            </div>
+            </aside>
           </div>
-
-          {/* "About this post" — the authoring twin of the public colophon. */}
-          <BlogAboutEditor
-            postId={post.post.id}
-            fields={fields}
-            postType={postType}
-            onChangePostType={(next) => { setPostType(next); setDirty(true); }}
-            subjects={subjects}
-            topics={topics}
-            onChangeTopics={(next) => {
-              setTopics(next);
-              setSubjects(next.map((t) => t.name));
-              setDirty(true);
-            }}
-            tags={entityTags}
-            readOnly={readOnly}
-            onChangeFields={(next) => { setFields(next.length ? next : ["other"]); setDirty(true); }}
-            onChangeTags={(next) => { setEntityTags(next); setDirty(true); }}
-          />
-
-
-          <div>
-            <BlogBodyEditor
-              value={body}
-              readOnly={readOnly}
-              onChange={(v) => { setBody(v); setDirty(true); }}
-              onBusyChange={setComposerBusy}
-              onRequestEntityInsert={(insert) => {
-                setPendingInsertRef(() => insert);
-                setEntityPickerOpen(true);
-              }}
-            />
-
-          </div>
-
-          <div ref={bottomActionsRef} className="flex items-center justify-end border-t border-border pt-4">
-            <PostActions post={post} />
-          </div>
-
         </TabsContent>
+
 
         <TabsContent value="preview" className="mt-4">
           <article className="prose-workshop">
