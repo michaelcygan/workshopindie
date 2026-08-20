@@ -70,6 +70,7 @@ import { Route as ClaimTokenRouteImport } from './routes/claim.$token'
 import { Route as CollabIndexRouteImport } from './routes/collab.index'
 import { Route as CollabSlugRouteImport } from './routes/collab.$slug'
 import { Route as CollabNewRouteImport } from './routes/collab.new'
+import { Route as CollabRemoteRouteImport } from './routes/collab.remote'
 import { Route as DmsIndexRouteImport } from './routes/dms.index'
 import { Route as DmsConversationIdRouteImport } from './routes/dms.$conversationId'
 import { Route as ECodeRouteImport } from './routes/e.$code'
@@ -438,6 +439,11 @@ const CollabSlugRoute = CollabSlugRouteImport.update({
 const CollabNewRoute = CollabNewRouteImport.update({
   id: '/new',
   path: '/new',
+  getParentRoute: () => CollabRoute,
+} as any)
+const CollabRemoteRoute = CollabRemoteRouteImport.update({
+  id: '/remote',
+  path: '/remote',
   getParentRoute: () => CollabRoute,
 } as any)
 const DmsIndexRoute = DmsIndexRouteImport.update({
@@ -814,6 +820,7 @@ export interface FileRoutesByFullPath {
   '/claim/$token': typeof ClaimTokenRoute
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
+  '/collab/remote': typeof CollabRemoteRoute
   '/dms/$conversationId': typeof DmsConversationIdRoute
   '/e/$code': typeof ECodeRoute
   '/go/$slug': typeof GoSlugRoute
@@ -933,6 +940,7 @@ export interface FileRoutesByTo {
   '/claim/$token': typeof ClaimTokenRoute
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
+  '/collab/remote': typeof CollabRemoteRoute
   '/dms/$conversationId': typeof DmsConversationIdRoute
   '/e/$code': typeof ECodeRoute
   '/go/$slug': typeof GoSlugRoute
@@ -1059,6 +1067,7 @@ export interface FileRoutesById {
   '/claim/$token': typeof ClaimTokenRoute
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
+  '/collab/remote': typeof CollabRemoteRoute
   '/dms/$conversationId': typeof DmsConversationIdRoute
   '/e/$code': typeof ECodeRoute
   '/go/$slug': typeof GoSlugRoute
@@ -1186,6 +1195,7 @@ export interface FileRouteTypes {
     | '/claim/$token'
     | '/collab/$slug'
     | '/collab/new'
+    | '/collab/remote'
     | '/dms/$conversationId'
     | '/e/$code'
     | '/go/$slug'
@@ -1305,6 +1315,7 @@ export interface FileRouteTypes {
     | '/claim/$token'
     | '/collab/$slug'
     | '/collab/new'
+    | '/collab/remote'
     | '/dms/$conversationId'
     | '/e/$code'
     | '/go/$slug'
@@ -1430,6 +1441,7 @@ export interface FileRouteTypes {
     | '/claim/$token'
     | '/collab/$slug'
     | '/collab/new'
+    | '/collab/remote'
     | '/dms/$conversationId'
     | '/e/$code'
     | '/go/$slug'
@@ -2005,6 +2017,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CollabNewRouteImport
       parentRoute: typeof CollabRoute
     }
+    '/collab/remote': {
+      id: '/collab/remote'
+      path: '/remote'
+      fullPath: '/collab/remote'
+      preLoaderRoute: typeof CollabRemoteRouteImport
+      parentRoute: typeof CollabRoute
+    }
     '/dms/': {
       id: '/dms/'
       path: '/dms'
@@ -2532,6 +2551,7 @@ const CitiesRouteWithChildren =
 interface CollabRouteChildren {
   CollabSlugRoute: typeof CollabSlugRoute
   CollabNewRoute: typeof CollabNewRoute
+  CollabRemoteRoute: typeof CollabRemoteRoute
   CollabIndexRoute: typeof CollabIndexRoute
   CollabSlugEditRoute: typeof CollabSlugEditRoute
   CollabClaimTokenRoute: typeof CollabClaimTokenRoute
@@ -2540,6 +2560,7 @@ interface CollabRouteChildren {
 const CollabRouteChildren: CollabRouteChildren = {
   CollabSlugRoute: CollabSlugRoute,
   CollabNewRoute: CollabNewRoute,
+  CollabRemoteRoute: CollabRemoteRoute,
   CollabIndexRoute: CollabIndexRoute,
   CollabSlugEditRoute: CollabSlugEditRoute,
   CollabClaimTokenRoute: CollabClaimTokenRoute,
