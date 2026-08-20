@@ -167,20 +167,8 @@ export function BlogAboutEditor({
     onChangeTags(tags.filter((t) => tagKey(t) !== tagKey(tag)));
   }
 
-  function AddButton({ kind, label }: { kind: BlogEntityKind; label: string }) {
-    return (
-      <button
-        type="button"
-        disabled={readOnly || atCap}
-        onClick={() => openPicker(kind)}
-        className="inline-flex min-h-8 items-center gap-1 rounded-full border border-border bg-background px-3 py-1 text-xs text-ink-soft transition hover:bg-muted disabled:opacity-40"
-      >
-        <Plus className="h-3.5 w-3.5" /> {label}
-      </button>
-    );
-  }
-
   function TagRow({ tag }: { tag: BlogEntityTag }) {
+
     const Icon = KIND_ICONS[tag.kind];
     const i = tags.findIndex((t) => tagKey(t) === tagKey(tag));
     return (
