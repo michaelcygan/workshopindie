@@ -8,12 +8,20 @@ import {
   User,
   ChevronUp,
   ChevronDown,
+  ChevronRight,
   X,
   Plus,
   ArrowUpRight,
   BookOpen,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { BlogEntityTagPicker } from "@/components/blog-entity-tag-picker";
 import { QuickCreateWorkSheet } from "@/components/quick-create-work-sheet";
 import type { BlogEntityKind, BlogEntityTag } from "@/lib/blog-entity-tags";
@@ -29,6 +37,7 @@ import {
   type BlogStoryType,
 } from "@/lib/blog-story-types";
 import { TopicPicker, type PickerTopic } from "@/components/topics/topic-picker";
+
 
 const KIND_ICONS: Record<BlogEntityKind, typeof Briefcase> = {
   work: Briefcase,
