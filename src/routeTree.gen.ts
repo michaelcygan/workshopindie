@@ -75,6 +75,7 @@ import { Route as DmsIndexRouteImport } from './routes/dms.index'
 import { Route as DmsConversationIdRouteImport } from './routes/dms.$conversationId'
 import { Route as ECodeRouteImport } from './routes/e.$code'
 import { Route as EventsIndexRouteImport } from './routes/events.index'
+import { Route as EventsRemoteRouteImport } from './routes/events.remote'
 import { Route as GoSlugRouteImport } from './routes/go.$slug'
 import { Route as GroupsIndexRouteImport } from './routes/groups.index'
 import { Route as LoungeIndexRouteImport } from './routes/lounge.index'
@@ -466,6 +467,11 @@ const EventsIndexRoute = EventsIndexRouteImport.update({
   path: '/events/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EventsRemoteRoute = EventsRemoteRouteImport.update({
+  id: '/events/remote',
+  path: '/events/remote',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GoSlugRoute = GoSlugRouteImport.update({
   id: '/go/$slug',
   path: '/go/$slug',
@@ -823,6 +829,7 @@ export interface FileRoutesByFullPath {
   '/collab/remote': typeof CollabRemoteRoute
   '/dms/$conversationId': typeof DmsConversationIdRoute
   '/e/$code': typeof ECodeRoute
+  '/events/remote': typeof EventsRemoteRoute
   '/go/$slug': typeof GoSlugRoute
   '/lounge/$id': typeof LoungeIdRoute
   '/me/blocked': typeof MeBlockedRoute
@@ -943,6 +950,7 @@ export interface FileRoutesByTo {
   '/collab/remote': typeof CollabRemoteRoute
   '/dms/$conversationId': typeof DmsConversationIdRoute
   '/e/$code': typeof ECodeRoute
+  '/events/remote': typeof EventsRemoteRoute
   '/go/$slug': typeof GoSlugRoute
   '/lounge/$id': typeof LoungeIdRoute
   '/me/blocked': typeof MeBlockedRoute
@@ -1070,6 +1078,7 @@ export interface FileRoutesById {
   '/collab/remote': typeof CollabRemoteRoute
   '/dms/$conversationId': typeof DmsConversationIdRoute
   '/e/$code': typeof ECodeRoute
+  '/events/remote': typeof EventsRemoteRoute
   '/go/$slug': typeof GoSlugRoute
   '/lounge/$id': typeof LoungeIdRoute
   '/me/blocked': typeof MeBlockedRoute
@@ -1198,6 +1207,7 @@ export interface FileRouteTypes {
     | '/collab/remote'
     | '/dms/$conversationId'
     | '/e/$code'
+    | '/events/remote'
     | '/go/$slug'
     | '/lounge/$id'
     | '/me/blocked'
@@ -1318,6 +1328,7 @@ export interface FileRouteTypes {
     | '/collab/remote'
     | '/dms/$conversationId'
     | '/e/$code'
+    | '/events/remote'
     | '/go/$slug'
     | '/lounge/$id'
     | '/me/blocked'
@@ -1444,6 +1455,7 @@ export interface FileRouteTypes {
     | '/collab/remote'
     | '/dms/$conversationId'
     | '/e/$code'
+    | '/events/remote'
     | '/go/$slug'
     | '/lounge/$id'
     | '/me/blocked'
@@ -1545,6 +1557,7 @@ export interface RootRouteChildren {
   ClaimTokenRoute: typeof ClaimTokenRoute
   DmsConversationIdRoute: typeof DmsConversationIdRoute
   ECodeRoute: typeof ECodeRoute
+  EventsRemoteRoute: typeof EventsRemoteRoute
   GoSlugRoute: typeof GoSlugRoute
   MeBlockedRoute: typeof MeBlockedRoute
   MeCollabsRoute: typeof MeCollabsRoute
@@ -2050,6 +2063,13 @@ declare module '@tanstack/react-router' {
       path: '/events'
       fullPath: '/events/'
       preLoaderRoute: typeof EventsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events/remote': {
+      id: '/events/remote'
+      path: '/events/remote'
+      fullPath: '/events/remote'
+      preLoaderRoute: typeof EventsRemoteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/go/$slug': {
@@ -2685,6 +2705,7 @@ const rootRouteChildren: RootRouteChildren = {
   ClaimTokenRoute: ClaimTokenRoute,
   DmsConversationIdRoute: DmsConversationIdRoute,
   ECodeRoute: ECodeRoute,
+  EventsRemoteRoute: EventsRemoteRoute,
   GoSlugRoute: GoSlugRoute,
   MeBlockedRoute: MeBlockedRoute,
   MeCollabsRoute: MeCollabsRoute,
