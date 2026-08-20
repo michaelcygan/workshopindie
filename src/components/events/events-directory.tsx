@@ -1,11 +1,17 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+/**
+ * The one Events calendar.
+ *
+ * Rendered by `/events` and by `/events/remote` — the second is this same
+ * directory with the existing online attendance filter (format = online, which
+ * covers `online` and `hybrid` rows) active on entry. There is no second feed,
+ * card, event page or authoring flow: the route only decides the initial
+ * attendance state, the copy, and how attendance changes navigate.
+ */
+import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo } from "react";
-import { Calendar, MapPin, Radio, Ticket } from "lucide-react";
-import { zodValidator, fallback } from "@tanstack/zod-adapter";
-import { z } from "zod";
-import { supabase } from "@/integrations/supabase/client";
+import { Calendar, MapPin, Radio } from "lucide-react";
 import { EventCard, type EventCardData } from "@/components/event-card";
 import { PageHeaderCompact } from "@/components/page-header-compact";
 import { KickerChip } from "@/components/kicker-chip";
@@ -28,8 +34,6 @@ import {
 } from "@/components/filter-header";
 import { FilterCityPicker, type FilterCityOption } from "@/components/filter-header/filter-city-picker";
 import { FilterMore, FilterMoreSection, FilterMoreToggle } from "@/components/filter-header/filter-more";
-
-
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useDefaultCity, useApplyDefaultCity } from "@/hooks/use-default-city";
@@ -40,36 +44,43 @@ import {
   listEventMapPoints,
   listEventCities,
   listEventMediums,
+  listEventTopics,
 } from "@/lib/group-events.functions";
-
-import { cn } from "@/lib/utils";
 import { workshopEntityUrl } from "@/lib/entities/kinds";
 
 // Public events feed. Drop-in surface for visitors and logged-out crawlers —
 // groups still own their event pages and RSVP still auto-joins the host group.
 
-type Format = "all" | "in_person" | "online";
-type When = "upcoming" | "past";
+/** Attendance filter. `online` means "remotely attendable": online + hybrid. */
+export type Format = "all" | "in_person" | "online";
+export type When = "upcoming" | "past";
 
-const searchSchema = z.object({
-  when: fallback(z.enum(["upcoming", "past"]), "upcoming").default("upcoming"),
-  format: fallback(z.enum(["all", "in_person", "online"]), "all").default("all"),
-  city: z
-    .string()
-    .uuid()
-    .catch(undefined as unknown as string)
-    .optional(),
-  cityName: z
-    .string()
-    .catch(undefined as unknown as string)
-    .optional(),
-  q: fallback(z.string(), "").default(""),
-  medium: fallback(z.string(), "").default(""),
-  topic: fallback(z.string(), "").default(""),
-  mine: fallback(z.boolean(), false).default(false),
-  kind: fallback(z.enum(["all", "coworking"]), "all").default("all"),
-  daypart: fallback(z.enum(["all", "morning", "afternoon", "evening"]), "all").default("all"),
-});
+/** Everything the directory reads out of the URL, minus attendance itself. */
+export type DirectorySearch = {
+  when: When;
+  city?: string;
+  cityName?: string;
+  q: string;
+  medium: string;
+  topic: string;
+  mine: boolean;
+  kind: "all" | "coworking";
+  daypart: "all" | "morning" | "afternoon" | "evening";
+};
+
+export type EventsDirectoryProps = {
+  search: DirectorySearch;
+  format: Format;
+  /** True on `/events/remote`: city is not a constraint and never defaults. */
+  remote: boolean;
+  title: string;
+  description: string;
+  emptyTitle: string;
+  emptyBody: string;
+  onPatch: (next: Partial<DirectorySearch>) => void;
+  onFormatChange: (next: Format) => void;
+  onClear: () => void;
+};
 
 async function fetchPublicEvents(
   fn: (opts: {
@@ -80,62 +91,38 @@ async function fetchPublicEvents(
       kind?: string | null;
       daypart?: "morning" | "afternoon" | "evening" | null;
       medium?: string | null;
+      topic?: string | null;
       q?: string | null;
     };
   }) => Promise<unknown>,
-  when: When,
-  format: Format,
-  cityId?: string,
-  kind?: string,
-  daypart?: string,
-  medium?: string,
-  q?: string,
+  args: {
+    when: When;
+    format: Format;
+    cityId?: string;
+    kind?: string;
+    daypart?: string;
+    medium?: string;
+    topic?: string;
+    q?: string;
+  },
 ) {
   const rows = await fn({
     data: {
-      when,
-      format,
-      cityId: cityId ?? null,
-      kind: kind && kind !== "all" ? kind : null,
+      when: args.when,
+      format: args.format,
+      cityId: args.cityId ?? null,
+      kind: args.kind && args.kind !== "all" ? args.kind : null,
       daypart:
-        daypart && daypart !== "all" ? (daypart as "morning" | "afternoon" | "evening") : null,
-      medium: medium ? medium : null,
-      q: q && q.trim() ? q.trim() : null,
+        args.daypart && args.daypart !== "all"
+          ? (args.daypart as "morning" | "afternoon" | "evening")
+          : null,
+      medium: args.medium ? args.medium : null,
+      topic: args.topic ? args.topic : null,
+      q: args.q && args.q.trim() ? args.q.trim() : null,
     },
   });
   return rows as unknown as EventCardData[];
 }
-
-
-export const Route = createFileRoute("/events/")({
-  validateSearch: zodValidator(searchSchema),
-  component: EventsIndexPage,
-  head: () => ({
-    meta: [
-      { title: "Events — Workshop" },
-      {
-        name: "description",
-        content:
-          "Listening parties, work-in-progress nights, networking. Public creative events on Workshop.",
-      },
-      { property: "og:title", content: "Events — Workshop" },
-      {
-        property: "og:description",
-        content:
-          "Listening parties, work-in-progress nights, networking. Public creative events on Workshop.",
-      },
-      { property: "og:url", content: "https://workshopindie.com/events" },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Events — Workshop" },
-      {
-        name: "twitter:description",
-        content: "Find creative events near you and online.",
-      },
-    ],
-    links: [{ rel: "canonical", href: "https://workshopindie.com/events" }],
-  }),
-});
 
 // --- Week bucketing -------------------------------------------------------
 function startOfWeek(d: Date) {
