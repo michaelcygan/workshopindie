@@ -63,7 +63,7 @@ function relativeTime(iso: string): string {
 }
 
 function locationLabel(post: CollabCardData): string {
-  if (post.location_mode === "online") return "Online";
+  if (post.location_mode === "online") return "Remote";
   if (post.location_mode === "hybrid") return post.city?.name ? `Hybrid · ${post.city.name}` : "Hybrid";
   return post.city?.name || "In person";
 }

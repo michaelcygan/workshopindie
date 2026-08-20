@@ -455,7 +455,7 @@ function CollabDetail() {
               hostAvatarUrl={hostUser?.avatar_url}
               roles={roles.map((r: { role_name: string }) => r.role_name)}
               category={post.category}
-              location={post.location_mode === "online" ? "Online" : (cityName || post.location_mode)}
+              location={post.location_mode === "online" ? "Remote" : (cityName || post.location_mode)}
               compensation={COMP_LABEL[post.compensation_type] ?? post.compensation_type}
             />
             {isOwner ? (
@@ -781,7 +781,7 @@ function CollabDetail() {
         <h1 className="font-display text-4xl text-ink md:text-5xl">{post.title}</h1>
         <div className="mt-3 flex flex-wrap gap-3 text-sm text-ink-soft">
           <span className="inline-flex items-center gap-1"><DollarSign className="h-4 w-4" /> {COMP_LABEL[post.compensation_type] ?? post.compensation_type}</span>
-          <span className="inline-flex items-center gap-1"><MapPin className="h-4 w-4" /> {post.location_mode === "online" ? "Online" : (cityName || post.location_mode)}</span>
+          <span className="inline-flex items-center gap-1"><MapPin className="h-4 w-4" /> {post.location_mode === "online" ? "Remote" : (cityName || post.location_mode)}</span>
           {post.timeline_text && <span className="inline-flex items-center gap-1"><Clock className="h-4 w-4" /> {post.timeline_text}</span>}
           {post.rights_arrangement && RIGHTS_LABEL[post.rights_arrangement] && (
             <span className="inline-flex items-center gap-1"><Scale className="h-4 w-4" /> {RIGHTS_LABEL[post.rights_arrangement]}</span>

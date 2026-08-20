@@ -10,6 +10,7 @@ import type { FieldId } from "@/lib/taxonomy";
 import type { CityValue } from "@/components/city-combobox";
 import type { TimelineValue } from "@/components/timeline-picker";
 import type { PickerGroup } from "@/components/group-picker";
+import type { PickerTopic } from "@/components/topics/topic-picker";
 
 export type CollabDraft = {
   title: string;
@@ -28,6 +29,8 @@ export type CollabDraft = {
   roles: { role_name: string; quantity: number; description: string }[];
   rights: "owner_retains" | "equal_split" | "creative_commons" | "decide_later";
   groups: PickerGroup[];
+  /** Canonical Topics picked before signup; re-attached on resume publish. */
+  topics?: PickerTopic[];
 };
 
 export type StoredCollabDraft = {
