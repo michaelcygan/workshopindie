@@ -68,23 +68,27 @@ export function JoinWorkshopPrompt() {
         if (!next) dismiss();
       }}
       title="Join Workshop"
-      subtitle="Read, publish your work, and find people to make things with. Free to join."
+      subtitle="Read, publish your work, and find people to make things with. Join the network for free."
       onAuthed={() => {
         setOpen(false);
         setDone(true);
       }}
       footer={
-        <div className="space-y-2 border-t border-border pt-3 text-center">
-          <p className="text-xs text-ink-muted">
-            Free includes the whole network within generous limits.{" "}
-            <Link to="/pricing" className="text-ink underline-offset-2 hover:underline" onClick={dismiss}>
-              Plus removes them — $4.99/mo
+        <div className="space-y-3 border-t border-border pt-4 text-center">
+          <p className="mx-auto max-w-[280px] text-[12px] leading-relaxed text-ink-muted">
+            Free access includes the complete Workshop network within generous limits.{" "}
+            <Link
+              to="/pricing"
+              className="text-ink underline-offset-2 hover:underline"
+              onClick={dismiss}
+            >
+              Plus removes limits — $4.99/mo
             </Link>
           </p>
           <button
             type="button"
             onClick={dismiss}
-            className="text-xs text-ink-muted underline-offset-2 hover:underline"
+            className="text-sm font-medium text-ink-muted underline-offset-2 hover:text-ink hover:underline"
           >
             Maybe later
           </button>
