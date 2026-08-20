@@ -9,7 +9,7 @@ import { MEDIUM_LIST } from "@/lib/topics/topics";
 const SITE = "https://workshopindie.com";
 
 const STATIC_PATHS = [
-  "", "gallery", "workshops", "collab", "cities", "groups", "g", "events",
+  "", "gallery", "workshops", "collab", "collab/remote", "cities", "groups", "g", "events",
   "pricing", "refer", "onboarding", "login", "signup", "forgot-password", "reset-password", "blog", "topics", "mediums", "applypodcast", "applyopenhouse", "film-festival",
 ];
 
