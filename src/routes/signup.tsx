@@ -195,7 +195,10 @@ function Signup() {
         <AdultAttestationCheckbox
           id="signup-adult"
           checked={adult}
-          onChange={setAdult}
+          onChange={(v) => {
+            setAdult(v);
+            if (v) rememberAdultAttestation();
+          }}
           className="rounded-xl border border-border bg-surface-2 p-3"
         />
         <div

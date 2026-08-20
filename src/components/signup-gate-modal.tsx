@@ -8,6 +8,8 @@ import { AppleSignIn } from "@/components/apple-sign-in";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AUTH_CALLBACK_PATH } from "@/lib/auth-launcher";
+import { AdultAttestationCheckbox } from "@/components/adult-attestation-checkbox";
+import { rememberAdultAttestation } from "@/lib/adult-attestation";
 
 type Props = {
   open: boolean;
@@ -29,9 +31,15 @@ export function SignupGateModal({ open, onOpenChange, title, subtitle, onAuthed,
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [adult, setAdult] = useState(false);
+  const needsAdult = mode === "signup" && !adult;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (needsAdult) {
+      toast.error("Please confirm that you are 18 or older.");
+      return;
+    }
     setLoading(true);
     try {
       if (mode === "signup") {
@@ -76,6 +84,18 @@ export function SignupGateModal({ open, onOpenChange, title, subtitle, onAuthed,
           )}
         </DialogHeader>
         <div className="space-y-3">
+          {mode === "signup" && (
+            <AdultAttestationCheckbox
+              id="gate-adult"
+              checked={adult}
+              onChange={(v) => {
+                setAdult(v);
+                if (v) rememberAdultAttestation();
+              }}
+              className="rounded-xl border border-border bg-surface-2 p-3"
+            />
+          )}
+          <div className={needsAdult ? "pointer-events-none space-y-3 opacity-50" : "space-y-3"}>
           <GoogleSignIn
             label={mode === "signup" ? "Sign up with Google" : "Continue with Google"}
             redirectTo={typeof window !== "undefined" ? window.location.pathname + window.location.search : undefined}
@@ -86,6 +106,7 @@ export function SignupGateModal({ open, onOpenChange, title, subtitle, onAuthed,
             redirectTo={typeof window !== "undefined" ? window.location.pathname + window.location.search : undefined}
             className="rounded-full border border-border bg-surface-2 hover:bg-surface"
           />
+          </div>
           <div className="flex items-center gap-3 py-1 text-xs uppercase tracking-widest text-ink-muted">
             <span className="h-px flex-1 bg-border" /> or{" "}
             <span className="h-px flex-1 bg-border" />
@@ -122,7 +143,7 @@ export function SignupGateModal({ open, onOpenChange, title, subtitle, onAuthed,
             </div>
             <Button
               type="submit"
-              disabled={loading}
+              disabled={loading || needsAdult}
               className="w-full rounded-xl bg-primary text-primary-foreground shadow-soft transition-transform active:scale-[0.98]"
             >
               {loading ? "…" : mode === "signup" ? "Create account & join" : "Sign in & join"}
