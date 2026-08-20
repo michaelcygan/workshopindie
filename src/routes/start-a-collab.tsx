@@ -34,12 +34,16 @@ export const Route = createFileRoute("/start-a-collab")({
     })
     .parse,
   head: () => ({
+    // Paid traffic arrives with UTM/click-id variants of this URL; point every
+    // one of them at the single clean address so shares and indexing collapse.
+    links: [{ rel: "canonical", href: `${SITE}/start-a-collab` }],
     meta: [
       { title: TITLE },
       { name: "description", content: DESCRIPTION },
       { property: "og:title", content: TITLE },
       { property: "og:description", content: DESCRIPTION },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: `${SITE}/start-a-collab` },
       ...shareImageMeta(null, "Post a Collab on Workshop"),
     ],
   }),
