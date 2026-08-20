@@ -217,22 +217,32 @@ export const listEventMapPoints = createServerFn({ method: "GET" })
 
 
 
-export const listFeaturedEvents = createServerFn({ method: "GET" }).handler(async () => {
-  const { listDiscoveryEvents } = await import("@/lib/events/discovery.server");
-  const fields = EVENT_FIELDS;
-  // Featured first, then anything current, then the freshest recent past.
-  const featured = await listDiscoveryEvents({
-    when: "upcoming",
-    featuredOnly: true,
-    limit: 6,
-    fields,
+export const listFeaturedEvents = createServerFn({ method: "GET" })
+  .inputValidator((i) =>
+    z
+      .object({ format: z.enum(["all", "in_person", "online"]).default("all") })
+      .parse(i ?? {}),
+  )
+  .handler(async ({ data }) => {
+    const { listDiscoveryEvents } = await import("@/lib/events/discovery.server");
+    const fields = EVENT_FIELDS;
+    // Attendance filter is honoured here too, so the Remote calendar can never
+    // surface an in-person-only event above its own results.
+    const format = data.format;
+    // Featured first, then anything current, then the freshest recent past.
+    const featured = await listDiscoveryEvents({
+      when: "upcoming",
+      featuredOnly: true,
+      format,
+      limit: 6,
+      fields,
+    });
+    if (featured.length > 0) return featured;
+    const upcoming = await listDiscoveryEvents({ when: "upcoming", format, limit: 6, fields });
+    if (upcoming.length > 0) return upcoming;
+    const recentCutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    return listDiscoveryEvents({ when: "past", after: recentCutoff, format, limit: 6, fields });
   });
-  if (featured.length > 0) return featured;
-  const upcoming = await listDiscoveryEvents({ when: "upcoming", limit: 6, fields });
-  if (upcoming.length > 0) return upcoming;
-  const recentCutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-  return listDiscoveryEvents({ when: "past", after: recentCutoff, limit: 6, fields });
-});
 
 /**
  * Public: the /events feed. Filters run through the shared discovery layer so
@@ -248,6 +258,7 @@ export const listPublicEvents = createServerFn({ method: "GET" })
         kind: z.string().max(40).nullish(),
         daypart: z.enum(["morning", "afternoon", "evening"]).nullish(),
         medium: z.string().max(40).nullish(),
+        topic: z.string().max(80).nullish(),
         q: z.string().max(80).nullish(),
         limit: z.number().int().min(1).max(100).default(60),
       })
@@ -262,6 +273,7 @@ export const listPublicEvents = createServerFn({ method: "GET" })
       kind: data.kind ?? null,
       daypart: data.daypart ?? null,
       medium: data.medium ?? null,
+      topic: data.topic ?? null,
       q: data.q ?? null,
       limit: data.limit,
     });
