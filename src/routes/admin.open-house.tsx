@@ -347,6 +347,8 @@ function AdminOpenHousePage() {
                 </div>
 
 
+                <OpenHouseBookingPanel app={selected} />
+
                 <Section title="Proposal">{selected.proposal}</Section>
                 {selected.setup_needs && (
                   <Section title="Setup needs">{selected.setup_needs}</Section>
