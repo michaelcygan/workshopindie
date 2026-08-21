@@ -424,7 +424,7 @@ function EventPage() {
               venueLat={ev.venue_lat}
               venueLng={ev.venue_lng}
               workshopVenueKey={ev.workshop_venue_key}
-              hostless={Boolean(ev.workshop_venue_key)}
+              hostless={ev.facilitation === "hostless"}
               onlineUrl={joinLink?.online_url ?? null}
               city={ev.venue_name ?? null}
               variant="embedded"
