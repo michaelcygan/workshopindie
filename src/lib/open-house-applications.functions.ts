@@ -219,7 +219,7 @@ export const submitOpenHouseApplication = createServerFn({ method: "POST" })
           entityId: inserted?.id ?? null,
           payload: {
             name: data.projectName || data.contactName,
-            program_type: data.programType,
+            program_type: data.partnerType,
             city: data.city,
           },
           dedupeWindowS: 0,
