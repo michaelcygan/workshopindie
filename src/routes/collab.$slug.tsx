@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Clock, MapPin, DollarSign, ExternalLink, MessageCircle, Trash2, CheckCircle2, Sparkles, Scale, Share2, Users, Inbox, Archive, Pencil, LogOut, AlertTriangle, Eye, Pin, PinOff, ArrowLeft, MoreHorizontal } from "lucide-react";
+import { Clock, MapPin, DollarSign, ExternalLink, MessageCircle, Trash2, CheckCircle2, Sparkles, Scale, Share2, Users, Inbox, Archive, Pencil, LogOut, AlertTriangle, Eye, Pin, PinOff, ArrowLeft, MoreHorizontal, ChevronDown } from "lucide-react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { StateBadge } from "@/components/state-badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -186,6 +186,11 @@ function CollabDetail() {
     queryFn: () => fetchCollabPage({ data: { slug } }),
   });
   const post = page?.access === "ok" ? page.post : null;
+  // Server-decided role — recruiting UI never flashes for contributors.
+  const viewerRole = page?.access === "ok" ? page.viewerRole : "public";
+  const isAcceptedContributor: boolean = viewerRole === "member";
+  const isPublicVisitor: boolean = viewerRole === "public";
+  const hasWorkspaceAccess = viewerRole === "owner" || viewerRole === "member";
 
   const { data: resultingWork } = useQuery({
     queryKey: ["collab-resulting-work", post?.resulting_work_id],
@@ -200,7 +205,7 @@ function CollabDetail() {
     },
   });
 
-  const isOwnerEarly = user?.id === post?.user_id;
+  const isOwnerEarly = viewerRole === "owner";
   const fetchApplicants = useServerFn(listApplicants);
   const { data: applicantsData } = useQuery({
     queryKey: ["collab-applicants", post?.id],
@@ -222,7 +227,7 @@ function CollabDetail() {
   const { data: publicCounts } = useQuery({
     queryKey: ["collab-public-counts", post?.id],
     queryFn: () => fetchPublicCounts({ data: { collabPostId: post!.id } }),
-    enabled: !!post && !isOwnerEarly && !post?.archived_at && !post?.resulting_work_id,
+    enabled: !!post && isPublicVisitor && !post?.archived_at && !post?.resulting_work_id,
     staleTime: 60_000,
   });
 
@@ -358,7 +363,7 @@ function CollabDetail() {
     );
   }
 
-  const isOwner = user?.id === post.user_id;
+  const isOwner = viewerRole === "owner";
   const lifecycle = collabLifecycleState(post);
   const recruit = recruitmentState(post);
   const isDraft = isLegacyPrivateDraft(post);
@@ -434,11 +439,6 @@ function CollabDetail() {
               field={post.category_canonical ?? post.category}
             />
             {stateBadge}
-            {!isArchived && !isShipped && (
-              <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-ink-soft">
-                {openedDays === 0 ? "Started today" : `Started ${openedDays}d ago`}
-              </span>
-            )}
             {deadlineSoon && daysToDeadline !== null && (
               <span className="rounded-full bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 text-[11px] font-medium text-amber-700">
                 Deadline in {daysToDeadline === 0 ? "today" : `${daysToDeadline}d`}
@@ -584,7 +584,7 @@ function CollabDetail() {
               </>
             ) : (
               <>
-                {membership?.isMember && (
+                {isAcceptedContributor && (
                   <Button size="sm" variant="ghost" className="rounded-md text-ink-muted gap-1" onClick={() => { if (confirm("Leave this Collab? The owner will be notified.")) leaveMut.mutate(); }}>
                     <LogOut className="h-3.5 w-3.5" /> Leave
                   </Button>
@@ -627,24 +627,8 @@ function CollabDetail() {
         )}
 
 
-        {/* Private workspace — visible only to owner + accepted collaborators */}
-        {!isDraft && (isOwner || membership?.isMember) && (
-          <CollabWorkspace collabPostId={post.id} ownerId={post.user_id} isOwner={isOwner} />
-        )}
-
-
-        {/* Owner activity meter (open state) */}
-        {isOwner && !isArchived && !isShipped && activity && (activity.applicants > 0 || activity.shares > 0) && (
-          <p className="mb-3 text-xs text-ink-muted">
-            {activity.applicants} {activity.applicants === 1 ? "applicant" : "applicants"}
-            {activity.shares > 0 && <> · {activity.shares} {activity.shares === 1 ? "share" : "shares"}</>}
-            {activity.applicants >= 3 && <span className="ml-2 text-primary">· Picking up steam</span>}
-            {activity.applicants === 0 && openedDays >= 3 && <span className="ml-2">· Quiet so far — try sharing</span>}
-          </p>
-        )}
-
-        {/* Visitor signal (open state, non-owner) */}
-        {!isOwner && !isArchived && !isShipped && (
+        {/* Visitor signal (open state) */}
+        {isPublicVisitor && !isArchived && !isShipped && (
           <p className="mb-3 text-xs text-ink-muted">
             {publicCounts && publicCounts.applicants > 0
               ? <>{publicCounts.applicants} on board so far · </>
@@ -652,55 +636,6 @@ function CollabDetail() {
             started {openedDays === 0 ? "today" : `${openedDays}d ago`}
           </p>
         )}
-
-
-
-        {/* Owner: single next-best-action strip */}
-        {isOwner && !isArchived && !isShipped && !deadlinePassed && (
-          (() => {
-            const ageHours = (Date.now() - new Date(post.created_at).getTime()) / 3600_000;
-            if (applicantCount > 0) {
-              return (
-                <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
-                  <Users className="h-5 w-5 text-primary" />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-ink">
-                      {applicantCount} {applicantCount === 1 ? "person is" : "people are"} in. Reply to keep momentum.
-                    </p>
-                    <p className="text-xs text-ink-muted">Fast replies double the odds people stay engaged.</p>
-                  </div>
-                  <Button size="sm" className="rounded-md gap-1" asChild>
-                    <a href="#applicants">
-                      <Inbox className="h-3.5 w-3.5" /> Review applicants
-                    </a>
-                  </Button>
-                </div>
-              );
-            }
-            if (ageHours < 72) {
-              return (
-                <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-4">
-                  <Share2 className="h-5 w-5 text-ink-muted" />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-ink">Share it — that's how applicants find you.</p>
-                    <p className="text-xs text-ink-muted">Drop the link in your IG story or a group chat. No account needed to apply.</p>
-                  </div>
-                </div>
-              );
-            }
-            return (
-              <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-4">
-                <Sparkles className="h-5 w-5 text-ink-muted" />
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-ink">Quiet so far. One more share usually does it.</p>
-                  <p className="text-xs text-ink-muted">Post the link somewhere new — a group chat, a story, a Group. No account needed to apply.</p>
-                </div>
-              </div>
-            );
-          })()
-        )}
-
-
 
         {/* Owner-only: deadline passed but post still open — never auto-acts, just prompts */}
         {isOwner && deadlinePassed && (
@@ -801,21 +736,109 @@ function CollabDetail() {
                 {hostUser.headline && <div className="text-xs text-ink-muted">{hostUser.headline}</div>}
               </div>
             </Link>
-            {!isOwner && <MessageButton otherUserId={hostUser.id} contextCollabPostId={post.id} />}
+            {isPublicVisitor && <MessageButton otherUserId={hostUser.id} contextCollabPostId={post.id} />}
           </div>
+        )}
+
+        {/* Private workspace — visible only to owner + accepted collaborators */}
+        {!isDraft && hasWorkspaceAccess && (
+          <CollabWorkspace collabPostId={post.id} ownerId={post.user_id} isOwner={isOwner} />
         )}
 
         {post.description && (
           <div className="prose prose-sm mt-8 max-w-none whitespace-pre-wrap text-ink">{post.description}</div>
         )}
 
+        {isOwner ? (
+          <RecruitingDisclosure
+            applicantCount={applicantCount}
+            suggestions={activity?.suggestions ?? 0}
+            shares={activity?.shares ?? 0}
+            recruitLabel={recruitmentLabel(recruit)}
+          >
+          {(roles.length > 0 || post.accepts_suggestions) && (
+            <section className="mt-10">
+              {roles.length > 0 && (
+                <>
+                  <div className="flex flex-wrap items-baseline gap-2">
+                    <h2 className="font-display text-2xl text-ink">Roles</h2>
+                    {isPublicVisitor && acceptingNow && (
+                      <span className="text-xs text-ink-muted">Apply in one tap — no account needed.</span>
+                    )}
+                  </div>
+                  {isShipped ? (
+                    <p className="mt-3 text-sm text-ink-muted">
+                      Cast · {workCollabCount ?? roles.length} {((workCollabCount ?? roles.length) === 1) ? "collaborator" : "collaborators"}
+                    </p>
+                  ) : (
+                    <div className="mt-3 space-y-2">
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                      {roles.map((r: any) => {
+                        const interested = activity?.perRole?.[r.id] ?? 0;
+                        return (
+                          <div key={r.id} className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4">
+                            <div className="flex-1">
+                              <div className="flex flex-wrap items-baseline gap-2">
+                                <h3 className="font-medium text-ink">{r.role_name}</h3>
+                                <span className="text-xs text-ink-muted">×{r.quantity}</span>
+                                {isOwner && interested > 0 && (
+                                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                                    {interested} interested
+                                  </span>
+                                )}
+                              </div>
+                              {r.description && <p className="mt-1 text-sm text-ink-muted">{r.description}</p>}
+                            </div>
+                            {isPublicVisitor && acceptingNow && (
+                              <Button size="sm" className="rounded-md gap-1" onClick={() => openContact(r.id)}>
+                                {post.contact_mode === "external_link" && user ? <><ExternalLink className="h-3.5 w-3.5" /> Reach out</> : <><MessageCircle className="h-3.5 w-3.5" /> Apply</>}
+                              </Button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {isPublicVisitor && acceptingNow && (
+                <div className={cn("rounded-2xl border border-dashed border-border bg-surface/60 p-4", roles.length > 0 ? "mt-4" : "")}>
+                  <h3 className="font-medium text-ink">Suggest how you can help</h3>
+                  <p className="mt-1 text-sm text-ink-muted">
+                    Don't see a role that fits? Pitch what you'd bring — the organizer will read it.
+                  </p>
+                  <p className="mt-1 text-xs text-ink-muted">No account needed.</p>
+                  <div className="mt-3">
+                    <Button variant="outline" className="rounded-md gap-2" onClick={() => openContact(null)}>
+                      <MessageCircle className="h-4 w-4" /> Suggest a way to help
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {isOwner && (activity?.suggestions ?? 0) > 0 && (
+                <button
+                  type="button"
+                  onClick={() => focusCollabPanelTab("pitches")}
+                  className="mt-3 inline-flex items-center gap-1 rounded-full text-xs font-medium text-primary underline underline-offset-4 hover:opacity-80"
+                >
+                  {activity!.suggestions} open suggestion{activity!.suggestions === 1 ? "" : "s"} — review
+                </button>
+              )}
+            </section>
+          )}
+            <ApplicantsPanel postId={post.id} />
+          </RecruitingDisclosure>
+        ) : (
+          <>
         {(roles.length > 0 || post.accepts_suggestions) && (
           <section className="mt-10">
             {roles.length > 0 && (
               <>
                 <div className="flex flex-wrap items-baseline gap-2">
                   <h2 className="font-display text-2xl text-ink">Roles</h2>
-                  {!isOwner && acceptingNow && (
+                  {isPublicVisitor && acceptingNow && (
                     <span className="text-xs text-ink-muted">Apply in one tap — no account needed.</span>
                   )}
                 </div>
@@ -842,7 +865,7 @@ function CollabDetail() {
                             </div>
                             {r.description && <p className="mt-1 text-sm text-ink-muted">{r.description}</p>}
                           </div>
-                          {!isOwner && acceptingNow && (
+                          {isPublicVisitor && acceptingNow && (
                             <Button size="sm" className="rounded-md gap-1" onClick={() => openContact(r.id)}>
                               {post.contact_mode === "external_link" && user ? <><ExternalLink className="h-3.5 w-3.5" /> Reach out</> : <><MessageCircle className="h-3.5 w-3.5" /> Apply</>}
                             </Button>
@@ -855,7 +878,7 @@ function CollabDetail() {
               </>
             )}
 
-            {!isOwner && acceptingNow && (
+            {isPublicVisitor && acceptingNow && (
               <div className={cn("rounded-2xl border border-dashed border-border bg-surface/60 p-4", roles.length > 0 ? "mt-4" : "")}>
                 <h3 className="font-medium text-ink">Suggest how you can help</h3>
                 <p className="mt-1 text-sm text-ink-muted">
@@ -881,9 +904,8 @@ function CollabDetail() {
             )}
           </section>
         )}
-
-
-        {isOwner && <ApplicantsPanel postId={post.id} />}
+          </>
+        )}
       </motion.div>
 
       <Dialog open={contactOpen} onOpenChange={setContactOpen}>
@@ -1074,3 +1096,52 @@ function PinCollabMenuItem({ collabId }: { collabId: string }) {
   );
 }
 
+
+
+/**
+ * Owner-only casting surface. Purely presentational: expanding or collapsing
+ * never changes visibility, `applications_open`, status or membership.
+ */
+function RecruitingDisclosure({
+  applicantCount,
+  suggestions,
+  shares,
+  recruitLabel,
+  children,
+}: {
+  applicantCount: number;
+  suggestions: number;
+  shares: number;
+  recruitLabel: string;
+  children: React.ReactNode;
+}) {
+  const waiting = applicantCount > 0 || suggestions > 0;
+  const [open, setOpen] = useState(waiting);
+  const summary = [
+    recruitLabel,
+    applicantCount > 0 ? `${applicantCount} applicant${applicantCount === 1 ? "" : "s"}` : null,
+    suggestions > 0 ? `${suggestions} suggestion${suggestions === 1 ? "" : "s"}` : null,
+    shares > 0 ? `${shares} share${shares === 1 ? "" : "s"}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  return (
+    <section className="mt-10 overflow-hidden rounded-xl border border-border bg-surface">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex min-h-[44px] w-full items-center gap-2 px-4 py-2 text-left transition hover:bg-surface-2"
+      >
+        <Users className="h-4 w-4 text-ink-muted" />
+        <span className="min-w-0 flex-1 truncate text-sm text-ink">
+          <span className="font-medium">Recruiting</span>
+          <span className="text-ink-muted"> · {summary}</span>
+        </span>
+        <ChevronDown className={cn("h-4 w-4 shrink-0 text-ink-muted transition", open && "rotate-180")} />
+      </button>
+      {open && <div className="border-t border-border p-4">{children}</div>}
+    </section>
+  );
+}

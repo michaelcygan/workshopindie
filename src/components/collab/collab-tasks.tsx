@@ -275,6 +275,11 @@ export function CollabTasks({
 
   const [pendingDelete, setPendingDelete] = useState<CollabTask | null>(null);
 
+  // Completed work collapses by default so the list reads as "what's next".
+  const [showDone, setShowDone] = useState(false);
+  const hiddenDone = showDone ? [] : tasks.filter((t) => t.status === "done");
+  const visibleTasks = showDone ? tasks : tasks.filter((t) => t.status !== "done");
+
   return (
     <div className="flex flex-col">
       {/* Header */}
@@ -343,16 +348,16 @@ export function CollabTasks({
         ) : (
           <Reorder.Group
             axis="y"
-            values={tasks}
-            onReorder={(next) => setLocalOrder(next as CollabTask[])}
+            values={visibleTasks}
+            onReorder={(next) => setLocalOrder([...(next as CollabTask[]), ...hiddenDone])}
             className="space-y-1.5"
           >
-            {tasks.map((task, idx) => (
+            {visibleTasks.map((task, idx) => (
               <TaskRow
                 key={task.id}
                 task={task}
                 isFirst={idx === 0}
-                isLast={idx === tasks.length - 1}
+                isLast={idx === visibleTasks.length - 1}
                 canDelete={isOwner || task.created_by === user?.id}
                 onStatusChange={(status) =>
                   update.mutate({ taskId: task.id, patch: { status } })
@@ -369,6 +374,17 @@ export function CollabTasks({
               />
             ))}
           </Reorder.Group>
+        )}
+
+        {totals.done > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowDone((v) => !v)}
+            className="mt-2 inline-flex min-h-[36px] items-center gap-1 text-xs text-ink-muted hover:text-ink"
+            aria-expanded={showDone}
+          >
+            {showDone ? "Hide" : "Show"} {totals.done} completed
+          </button>
         )}
       </div>
 

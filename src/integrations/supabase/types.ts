@@ -1611,19 +1611,25 @@ export type Database = {
       collab_workspace_settings: {
         Row: {
           collab_post_id: string
+          files_url: string | null
           meeting_url: string | null
+          next_meeting_at: string | null
           updated_at: string
           updated_by: string | null
         }
         Insert: {
           collab_post_id: string
+          files_url?: string | null
           meeting_url?: string | null
+          next_meeting_at?: string | null
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
           collab_post_id?: string
+          files_url?: string | null
           meeting_url?: string | null
+          next_meeting_at?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -11351,6 +11357,7 @@ export type Database = {
         | "declined"
         | "withdrawn"
         | "left"
+        | "removed"
       collab_post_status: "open" | "closed" | "archived" | "removed" | "draft"
       collab_review_status:
         | "new"
@@ -11637,6 +11644,7 @@ export const Constants = {
         "declined",
         "withdrawn",
         "left",
+        "removed",
       ],
       collab_post_status: ["open", "closed", "archived", "removed", "draft"],
       collab_review_status: [

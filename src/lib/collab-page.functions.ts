@@ -54,8 +54,15 @@ export type CollabDetailRow = {
   }>;
 };
 
+export type CollabViewerRole = "owner" | "member" | "public";
+
 export type CollabPageResult =
-  | { access: "ok"; post: CollabDetailRow; viewerIsMember: boolean }
+  | {
+      access: "ok";
+      post: CollabDetailRow;
+      viewerIsMember: boolean;
+      viewerRole: CollabViewerRole;
+    }
   | { access: "unavailable" };
 
 /**
@@ -91,8 +98,14 @@ export const getCollabPage = createServerFn({ method: "GET" })
     };
 
     const viewerId = await viewerIdFromRequest();
+    const isOwner = !!viewerId && record.user_id === viewerId;
     const member = await isCollabMemberServer(record.id, record.user_id, viewerId);
     if (!member && !isPubliclyVisible(record)) return { access: "unavailable" };
 
-    return { access: "ok", post: row as unknown as CollabDetailRow, viewerIsMember: member };
+    return {
+      access: "ok",
+      post: row as unknown as CollabDetailRow,
+      viewerIsMember: member,
+      viewerRole: isOwner ? "owner" : member ? "member" : "public",
+    };
   });
