@@ -2917,6 +2917,88 @@ export type Database = {
           },
         ]
       }
+      group_event_features: {
+        Row: {
+          about: string
+          created_at: string
+          display_name: string
+          event_id: string
+          id: string
+          open_house_application_id: string | null
+          role_label: string
+          sort_order: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          about: string
+          created_at?: string
+          display_name: string
+          event_id: string
+          id?: string
+          open_house_application_id?: string | null
+          role_label: string
+          sort_order?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          about?: string
+          created_at?: string
+          display_name?: string
+          event_id?: string
+          id?: string
+          open_house_application_id?: string | null
+          role_label?: string
+          sort_order?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_event_features_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "group_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_event_features_open_house_application_id_fkey"
+            columns: ["open_house_application_id"]
+            isOneToOne: false
+            referencedRelation: "open_house_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_event_features_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_event_features_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_event_features_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_countable_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_event_features_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "vw_user_activation"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       group_event_rsvps: {
         Row: {
           checked_in_at: string | null
