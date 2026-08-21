@@ -10658,6 +10658,13 @@ export type Database = {
         Args: { _canonical: string; _source: string; _user_id: string }
         Returns: undefined
       }
+      event_lineup_notes: {
+        Args: { _event_id: string }
+        Returns: {
+          note: string
+          signup_id: string
+        }[]
+      }
       event_max_rsvps: {
         Args: { _capacity: number; _overflow: number }
         Returns: number
