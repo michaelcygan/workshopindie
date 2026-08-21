@@ -6102,9 +6102,46 @@ export type Database = {
           },
         ]
       }
+      profile_skill_works: {
+        Row: {
+          created_at: string
+          position: number
+          skill_id: string
+          work_id: string
+        }
+        Insert: {
+          created_at?: string
+          position?: number
+          skill_id: string
+          work_id: string
+        }
+        Update: {
+          created_at?: string
+          position?: number
+          skill_id?: string
+          work_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_skill_works_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "profile_skills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_skill_works_work_id_fkey"
+            columns: ["work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile_skills: {
         Row: {
           created_at: string
+          description: string | null
           id: string
           label: string
           normalized_label: string
@@ -6115,6 +6152,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          description?: string | null
           id?: string
           label: string
           normalized_label: string
@@ -6125,6 +6163,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          description?: string | null
           id?: string
           label?: string
           normalized_label?: string
