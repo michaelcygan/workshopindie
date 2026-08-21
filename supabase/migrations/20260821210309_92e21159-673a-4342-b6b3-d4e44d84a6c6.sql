@@ -1,0 +1,2 @@
+REVOKE EXECUTE ON FUNCTION public.get_or_create_conversation(uuid, uuid, uuid, uuid, uuid, uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_or_create_conversation(uuid, uuid, uuid, uuid, uuid, uuid) TO authenticated;

@@ -1844,6 +1844,7 @@ export type Database = {
         Row: {
           context_collab_post_id: string | null
           context_comment_id: string | null
+          context_open_house_application_id: string | null
           context_work_id: string | null
           context_workshop_id: string | null
           created_at: string
@@ -1856,6 +1857,7 @@ export type Database = {
         Insert: {
           context_collab_post_id?: string | null
           context_comment_id?: string | null
+          context_open_house_application_id?: string | null
           context_work_id?: string | null
           context_workshop_id?: string | null
           created_at?: string
@@ -1868,6 +1870,7 @@ export type Database = {
         Update: {
           context_collab_post_id?: string | null
           context_comment_id?: string | null
+          context_open_house_application_id?: string | null
           context_work_id?: string | null
           context_workshop_id?: string | null
           created_at?: string
@@ -1890,6 +1893,13 @@ export type Database = {
             columns: ["context_comment_id"]
             isOneToOne: false
             referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_context_open_house_application_id_fkey"
+            columns: ["context_open_house_application_id"]
+            isOneToOne: false
+            referencedRelation: "open_house_applications"
             referencedColumns: ["id"]
           },
           {
@@ -5430,6 +5440,9 @@ export type Database = {
           id: string
           internal_notes: string | null
           marketing_opt_in: boolean
+          partner_type: string
+          performance_subtype: string | null
+          performance_subtype_other: string | null
           portfolio_url: string
           program_type: string
           project_name: string | null
@@ -5451,6 +5464,9 @@ export type Database = {
           id?: string
           internal_notes?: string | null
           marketing_opt_in?: boolean
+          partner_type?: string
+          performance_subtype?: string | null
+          performance_subtype_other?: string | null
           portfolio_url: string
           program_type: string
           project_name?: string | null
@@ -5472,6 +5488,9 @@ export type Database = {
           id?: string
           internal_notes?: string | null
           marketing_opt_in?: boolean
+          partner_type?: string
+          performance_subtype?: string | null
+          performance_subtype_other?: string | null
           portfolio_url?: string
           program_type?: string
           project_name?: string | null
@@ -10657,6 +10676,7 @@ export type Database = {
         Args: {
           _context_collab_post_id?: string
           _context_comment_id?: string
+          _context_open_house_application_id?: string
           _context_work_id?: string
           _context_workshop_id?: string
           _other: string

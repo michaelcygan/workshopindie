@@ -11,7 +11,8 @@ import { parseFriendly } from "@/lib/zod-message";
 import {
   LENGTH_IDS,
   OPEN_HOUSE_STATUSES,
-  PROGRAM_TYPE_IDS,
+  PARTNER_TYPE_IDS,
+  PERFORMANCE_SUBTYPE_IDS,
   PROPOSAL_MAX,
   PROPOSAL_MIN,
   type OpenHouseApplication,
@@ -75,7 +76,13 @@ const applicationSchema = z.object({
   contactName: z.string().trim().min(1, "Please add your name.").max(120),
   projectName: optionalLine(140),
   email: z.string().trim().toLowerCase().email("Please enter a valid email.").max(255),
-  programType: z.enum(PROGRAM_TYPE_IDS, { message: "Please choose what you'd like to do." }),
+  partnerType: z.enum(PARTNER_TYPE_IDS, { message: "Please choose what you'd like to do." }),
+  performanceSubtype: z
+    .enum(PERFORMANCE_SUBTYPE_IDS)
+    .nullable()
+    .optional()
+    .transform((v) => v ?? null),
+  performanceSubtypeOther: optionalLine(80),
   city: z.string().trim().min(1, "Please tell us where you're based.").max(160),
   cityId: z
     .string()
@@ -111,7 +118,7 @@ export const submitOpenHouseApplication = createServerFn({ method: "POST" })
     parseFriendly(applicationSchema, d, {
       contactName: "Your name",
       email: "Email",
-      programType: "What you'd like to do",
+      partnerType: "What you'd like to do",
       city: "Where you're based",
       portfolioUrl: "Link to your work",
       proposal: "Your proposal",
@@ -153,9 +160,17 @@ export const submitOpenHouseApplication = createServerFn({ method: "POST" })
     }
 
     const { moderateOrThrow } = await import("@/lib/moderation/service.server");
-    for (const text of [data.contactName, data.projectName, data.proposal, data.setupNeeds]) {
+    for (const text of [
+      data.contactName,
+      data.projectName,
+      data.proposal,
+      data.setupNeeds,
+      data.performanceSubtypeOther,
+    ]) {
       await moderateOrThrow({ userId, surface: "open_house_application", text });
     }
+
+    const isPerformance = data.partnerType === "performance";
 
     const { data: inserted, error } = await supabaseAdmin
       .from("open_house_applications")
@@ -164,7 +179,14 @@ export const submitOpenHouseApplication = createServerFn({ method: "POST" })
         contact_name: data.contactName,
         project_name: data.projectName,
         email: data.email,
-        program_type: data.programType,
+        // Legacy column kept in sync so older reports keep working.
+        program_type: data.partnerType,
+        partner_type: data.partnerType,
+        performance_subtype: isPerformance ? data.performanceSubtype : null,
+        performance_subtype_other:
+          isPerformance && data.performanceSubtype === "other"
+            ? data.performanceSubtypeOther
+            : null,
         city: data.city,
         city_id: data.cityId,
         portfolio_url: portfolioUrl,
