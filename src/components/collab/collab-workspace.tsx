@@ -436,3 +436,318 @@ function MeetingControl({
 
   return null;
 }
+
+/* ─── Team ──────────────────────────────────────────────────────────── */
+
+type TeamMember = {
+  id: string;
+  username: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
+  is_owner?: boolean;
+  role_name?: string | null;
+};
+
+function TeamPopover({
+  collabPostId,
+  members,
+  isOwner,
+  onRemoved,
+}: {
+  collabPostId: string;
+  members: TeamMember[];
+  isOwner: boolean;
+  onRemoved: () => void;
+}) {
+  const removeFn = useServerFn(removeCollabMember);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const ordered = [...members].sort((a, b) => Number(!!b.is_owner) - Number(!!a.is_owner));
+
+  async function remove(m: TeamMember) {
+    const name = m.display_name || m.username || "This collaborator";
+    if (
+      !confirm(
+        `Remove ${name} from this Collab?\n\nThey will lose access to the private chat, tasks, files and meeting details. External services like Google Drive are not affected.`,
+      )
+    )
+      return;
+    setBusyId(m.id);
+    try {
+      await removeFn({ data: { collabPostId, memberUserId: m.id } });
+      toast.success(`${name} was removed.`);
+      onRemoved();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't remove them.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="flex min-h-[36px] items-center gap-2 rounded-full px-1.5 text-left transition hover:bg-surface-2"
+          aria-label="View team"
+        >
+          <div className="flex -space-x-2">
+            {ordered.slice(0, 5).map((m) => (
+              <Avatar key={m.id} className="h-6 w-6 ring-2 ring-surface">
+                <AvatarImage src={m.avatar_url ?? undefined} />
+                <AvatarFallback className="text-[10px]">
+                  {(m.display_name ?? m.username ?? "?").slice(0, 1)}
+                </AvatarFallback>
+              </Avatar>
+            ))}
+          </div>
+          <span className="inline-flex items-center gap-1 text-xs text-ink-muted">
+            <Users className="h-3.5 w-3.5" />
+            {members.length} member{members.length === 1 ? "" : "s"}
+          </span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-72 p-2">
+        <ul className="space-y-1">
+          {ordered.map((m) => (
+            <li key={m.id} className="flex items-center gap-2 rounded-lg px-1.5 py-1.5 hover:bg-surface-2">
+              <Avatar className="h-7 w-7">
+                <AvatarImage src={m.avatar_url ?? undefined} />
+                <AvatarFallback className="text-[10px]">
+                  {(m.display_name ?? m.username ?? "?").slice(0, 1)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                {m.username ? (
+                  <Link
+                    to="/$username"
+                    params={{ username: m.username }}
+                    className="block truncate text-sm font-medium text-ink hover:underline"
+                  >
+                    {m.display_name || m.username}
+                  </Link>
+                ) : (
+                  <span className="block truncate text-sm font-medium text-ink">
+                    {m.display_name || "Member"}
+                  </span>
+                )}
+                <span className="text-[11px] text-ink-muted">
+                  {m.is_owner ? "Owner" : m.role_name || "Collaborator"}
+                </span>
+              </div>
+              {isOwner && !m.is_owner && (
+                <button
+                  type="button"
+                  onClick={() => remove(m)}
+                  disabled={busyId === m.id}
+                  className="text-ink-muted transition hover:text-destructive disabled:opacity-50"
+                  aria-label={`Remove ${m.display_name || m.username || "collaborator"} from this Collab`}
+                  title="Remove from Collab"
+                >
+                  <UserMinus className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/* ─── Next meeting ──────────────────────────────────────────────────── */
+
+function formatMeetingTime(iso: string): string {
+  const d = new Date(iso);
+  const stamp = d.toLocaleString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  const zone =
+    new Intl.DateTimeFormat(undefined, { timeZoneName: "short" })
+      .formatToParts(d)
+      .find((p) => p.type === "timeZoneName")?.value ?? "";
+  return zone ? `${stamp} ${zone}` : stamp;
+}
+
+/** `datetime-local` value in the viewer's own zone. */
+function toLocalInput(iso: string | null): string {
+  const d = iso ? new Date(iso) : new Date(Date.now() + 86400000);
+  const off = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - off).toISOString().slice(0, 16);
+}
+
+function NextMeetingControl({
+  nextMeetingAt,
+  isOwner,
+  onSave,
+}: {
+  nextMeetingAt: string | null;
+  isOwner: boolean;
+  onSave: (iso: string | null) => Promise<unknown>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState(() => toLocalInput(nextMeetingAt));
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setValue(toLocalInput(nextMeetingAt));
+  }, [nextMeetingAt]);
+
+  const upcoming = nextMeetingAt && new Date(nextMeetingAt).getTime() > Date.now() ? nextMeetingAt : null;
+
+  async function commit(next: string | null) {
+    setSaving(true);
+    try {
+      await onSave(next);
+      setOpen(false);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const label = upcoming
+    ? formatMeetingTime(upcoming)
+    : nextMeetingAt
+      ? "Schedule next meeting"
+      : "Schedule meeting";
+
+  if (!isOwner) {
+    if (!upcoming) return null;
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs text-ink-soft">
+        <CalendarClock className="h-3.5 w-3.5" /> {label}
+      </span>
+    );
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button size="sm" variant="ghost" className="rounded-md gap-1.5 text-ink-soft">
+          <CalendarClock className="h-3.5 w-3.5" /> {label}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-64 p-3">
+        <label className="text-xs font-medium text-ink" htmlFor="collab-next-meeting">
+          Next meeting
+        </label>
+        <Input
+          id="collab-next-meeting"
+          type="datetime-local"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="mt-1.5 h-9"
+        />
+        <div className="mt-2 flex items-center gap-2">
+          <Button size="sm" className="rounded-md" disabled={saving} onClick={() => commit(value ? new Date(value).toISOString() : null)}>
+            Save
+          </Button>
+          {nextMeetingAt && (
+            <Button size="sm" variant="ghost" className="rounded-md text-ink-muted" disabled={saving} onClick={() => commit(null)}>
+              Clear
+            </Button>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+/* ─── Project folder ────────────────────────────────────────────────── */
+
+function folderCta(url: string): string {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    if (host.includes("google.com")) return "Open Drive";
+  } catch {
+    /* fall through */
+  }
+  return "Open files";
+}
+
+function ProjectFolderRow({
+  filesUrl,
+  isOwner,
+  onSave,
+}: {
+  filesUrl: string | null;
+  isOwner: boolean;
+  onSave: (url: string | null) => Promise<unknown>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(filesUrl ?? "");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setValue(filesUrl ?? "");
+  }, [filesUrl]);
+
+  async function commit(next: string | null) {
+    setSaving(true);
+    try {
+      await onSave(next);
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (editing) {
+    return (
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface p-3">
+        <Input
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder="https://drive.google.com/…"
+          className="h-9 flex-1 min-w-[12rem]"
+        />
+        <Button size="sm" className="rounded-md" disabled={saving} onClick={() => commit(value.trim() || null)}>
+          Save
+        </Button>
+        {filesUrl && (
+          <Button size="sm" variant="ghost" className="rounded-md text-ink-muted" disabled={saving} onClick={() => commit(null)}>
+            Remove
+          </Button>
+        )}
+        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => { setValue(filesUrl ?? ""); setEditing(false); }} aria-label="Cancel">
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+    );
+  }
+
+  if (!filesUrl) {
+    if (!isOwner) return null;
+    return (
+      <Button size="sm" variant="outline" className="rounded-md gap-1.5" onClick={() => setEditing(true)}>
+        <FolderOpen className="h-4 w-4" /> Add project folder
+      </Button>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3">
+      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
+        <FolderOpen className="h-4 w-4 text-primary" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-ink">Project folder</p>
+        <p className="truncate text-[11px] text-ink-muted">{filesUrl}</p>
+      </div>
+      <Button asChild size="sm" className="rounded-md gap-1.5 shrink-0">
+        <a href={filesUrl} target="_blank" rel="noopener noreferrer">
+          <ExternalLink className="h-3.5 w-3.5" /> {folderCta(filesUrl)}
+        </a>
+      </Button>
+      {isOwner && (
+        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full" onClick={() => setEditing(true)} aria-label="Edit project folder">
+          <Pencil className="h-3.5 w-3.5" />
+        </Button>
+      )}
+    </div>
+  );
+}
