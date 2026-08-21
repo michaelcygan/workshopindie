@@ -325,10 +325,29 @@ export function CollabWorkspace({
       ) : tab === "tasks" ? (
         <CollabTasks collabPostId={collabPostId} ownerId={ownerId} isOwner={isOwner} />
       ) : (
-        <LoungeLinks
-          messages={messages.map((m) => ({ id: m.id, user_id: m.author_id, body: m.body, created_at: m.created_at }))}
-          profileLookup={profileLookup}
-        />
+        <div className="p-3 sm:p-4">
+          <ProjectFolderRow
+            filesUrl={filesUrl}
+            isOwner={isOwner}
+            onSave={(u) =>
+              setFilesFn({ data: { collabPostId, filesUrl: u } }).then(
+                () => invalidateSettings(),
+                (e: Error) => toast.error(e.message),
+              )
+            }
+          />
+          {messages.length > 0 ? (
+            <div className="mt-4">
+              <p className="text-[11px] uppercase tracking-[0.14em] text-ink-muted">Shared links</p>
+              <LoungeLinks
+                messages={messages.map((m) => ({ id: m.id, user_id: m.author_id, body: m.body, created_at: m.created_at }))}
+                profileLookup={profileLookup}
+              />
+            </div>
+          ) : !filesUrl && !isOwner ? (
+            <p className="mt-4 text-sm text-ink-muted">No files or shared links yet.</p>
+          ) : null}
+        </div>
       )}
     </section>
   );
