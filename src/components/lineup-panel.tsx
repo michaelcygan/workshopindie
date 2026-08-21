@@ -11,7 +11,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  getLineupForEvent, signUpForLineup, releaseMyLineupSpot, updateMyLineupNote, hostRemoveFromLineup,
+  getLineupForEvent, getLineupNotes, signUpForLineup, releaseMyLineupSpot, updateMyLineupNote, hostRemoveFromLineup,
 } from "@/lib/lineup.functions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -46,6 +46,7 @@ export function LineupPanel({
   const { user } = useAuth();
   const qc = useQueryClient();
   const getFn = useServerFn(getLineupForEvent);
+  const notesFn = useServerFn(getLineupNotes);
   const signUpFn = useServerFn(signUpForLineup);
   const releaseFn = useServerFn(releaseMyLineupSpot);
   const updateFn = useServerFn(updateMyLineupNote);
@@ -74,6 +75,7 @@ export function LineupPanel({
       .channel(`lineup-${eventId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "event_lineup_signups", filter: `event_id=eq.${eventId}` }, () => {
         qc.invalidateQueries({ queryKey: ["lineup", eventId] });
+        qc.invalidateQueries({ queryKey: ["lineup-notes", eventId] });
       })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
@@ -91,6 +93,7 @@ export function LineupPanel({
         await signUpFn({ data: { event_id: eventId, note: null } });
         toast.success("You're on the list.");
         qc.invalidateQueries({ queryKey: ["lineup", eventId] });
+        qc.invalidateQueries({ queryKey: ["lineup-notes", eventId] });
       } catch (ex) {
         const msg = (ex as Error).message;
         if (!/already on this lineup/i.test(msg)) toast.error(msg);
