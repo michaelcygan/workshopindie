@@ -186,6 +186,10 @@ function CollabDetail() {
     queryFn: () => fetchCollabPage({ data: { slug } }),
   });
   const post = page?.access === "ok" ? page.post : null;
+  // Server-decided role — recruiting UI never flashes for contributors.
+  const viewerRole = page?.access === "ok" ? page.viewerRole : "public";
+  const isAcceptedContributor = viewerRole === "member";
+  const hasWorkspaceAccess = viewerRole === "owner" || viewerRole === "member";
 
   const { data: resultingWork } = useQuery({
     queryKey: ["collab-resulting-work", post?.resulting_work_id],
@@ -200,7 +204,7 @@ function CollabDetail() {
     },
   });
 
-  const isOwnerEarly = user?.id === post?.user_id;
+  const isOwnerEarly = viewerRole === "owner";
   const fetchApplicants = useServerFn(listApplicants);
   const { data: applicantsData } = useQuery({
     queryKey: ["collab-applicants", post?.id],
@@ -222,7 +226,7 @@ function CollabDetail() {
   const { data: publicCounts } = useQuery({
     queryKey: ["collab-public-counts", post?.id],
     queryFn: () => fetchPublicCounts({ data: { collabPostId: post!.id } }),
-    enabled: !!post && !isOwnerEarly && !post?.archived_at && !post?.resulting_work_id,
+    enabled: !!post && viewerRole === "public" && !post?.archived_at && !post?.resulting_work_id,
     staleTime: 60_000,
   });
 
@@ -358,7 +362,7 @@ function CollabDetail() {
     );
   }
 
-  const isOwner = user?.id === post.user_id;
+  const isOwner = viewerRole === "owner";
   const lifecycle = collabLifecycleState(post);
   const recruit = recruitmentState(post);
   const isDraft = isLegacyPrivateDraft(post);
@@ -434,11 +438,6 @@ function CollabDetail() {
               field={post.category_canonical ?? post.category}
             />
             {stateBadge}
-            {!isArchived && !isShipped && (
-              <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-ink-soft">
-                {openedDays === 0 ? "Started today" : `Started ${openedDays}d ago`}
-              </span>
-            )}
             {deadlineSoon && daysToDeadline !== null && (
               <span className="rounded-full bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 text-[11px] font-medium text-amber-700">
                 Deadline in {daysToDeadline === 0 ? "today" : `${daysToDeadline}d`}
@@ -584,7 +583,7 @@ function CollabDetail() {
               </>
             ) : (
               <>
-                {membership?.isMember && (
+                {isAcceptedContributor && (
                   <Button size="sm" variant="ghost" className="rounded-md text-ink-muted gap-1" onClick={() => { if (confirm("Leave this Collab? The owner will be notified.")) leaveMut.mutate(); }}>
                     <LogOut className="h-3.5 w-3.5" /> Leave
                   </Button>
@@ -627,24 +626,8 @@ function CollabDetail() {
         )}
 
 
-        {/* Private workspace — visible only to owner + accepted collaborators */}
-        {!isDraft && (isOwner || membership?.isMember) && (
-          <CollabWorkspace collabPostId={post.id} ownerId={post.user_id} isOwner={isOwner} />
-        )}
-
-
-        {/* Owner activity meter (open state) */}
-        {isOwner && !isArchived && !isShipped && activity && (activity.applicants > 0 || activity.shares > 0) && (
-          <p className="mb-3 text-xs text-ink-muted">
-            {activity.applicants} {activity.applicants === 1 ? "applicant" : "applicants"}
-            {activity.shares > 0 && <> · {activity.shares} {activity.shares === 1 ? "share" : "shares"}</>}
-            {activity.applicants >= 3 && <span className="ml-2 text-primary">· Picking up steam</span>}
-            {activity.applicants === 0 && openedDays >= 3 && <span className="ml-2">· Quiet so far — try sharing</span>}
-          </p>
-        )}
-
-        {/* Visitor signal (open state, non-owner) */}
-        {!isOwner && !isArchived && !isShipped && (
+        {/* Visitor signal (open state) */}
+        {viewerRole === "public" && !isArchived && !isShipped && (
           <p className="mb-3 text-xs text-ink-muted">
             {publicCounts && publicCounts.applicants > 0
               ? <>{publicCounts.applicants} on board so far · </>
@@ -652,55 +635,6 @@ function CollabDetail() {
             started {openedDays === 0 ? "today" : `${openedDays}d ago`}
           </p>
         )}
-
-
-
-        {/* Owner: single next-best-action strip */}
-        {isOwner && !isArchived && !isShipped && !deadlinePassed && (
-          (() => {
-            const ageHours = (Date.now() - new Date(post.created_at).getTime()) / 3600_000;
-            if (applicantCount > 0) {
-              return (
-                <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
-                  <Users className="h-5 w-5 text-primary" />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-ink">
-                      {applicantCount} {applicantCount === 1 ? "person is" : "people are"} in. Reply to keep momentum.
-                    </p>
-                    <p className="text-xs text-ink-muted">Fast replies double the odds people stay engaged.</p>
-                  </div>
-                  <Button size="sm" className="rounded-md gap-1" asChild>
-                    <a href="#applicants">
-                      <Inbox className="h-3.5 w-3.5" /> Review applicants
-                    </a>
-                  </Button>
-                </div>
-              );
-            }
-            if (ageHours < 72) {
-              return (
-                <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-4">
-                  <Share2 className="h-5 w-5 text-ink-muted" />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-ink">Share it — that's how applicants find you.</p>
-                    <p className="text-xs text-ink-muted">Drop the link in your IG story or a group chat. No account needed to apply.</p>
-                  </div>
-                </div>
-              );
-            }
-            return (
-              <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-4">
-                <Sparkles className="h-5 w-5 text-ink-muted" />
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-ink">Quiet so far. One more share usually does it.</p>
-                  <p className="text-xs text-ink-muted">Post the link somewhere new — a group chat, a story, a Group. No account needed to apply.</p>
-                </div>
-              </div>
-            );
-          })()
-        )}
-
-
 
         {/* Owner-only: deadline passed but post still open — never auto-acts, just prompts */}
         {isOwner && deadlinePassed && (
@@ -803,6 +737,11 @@ function CollabDetail() {
             </Link>
             {!isOwner && <MessageButton otherUserId={hostUser.id} contextCollabPostId={post.id} />}
           </div>
+        )}
+
+        {/* Private workspace — visible only to owner + accepted collaborators */}
+        {!isDraft && hasWorkspaceAccess && (
+          <CollabWorkspace collabPostId={post.id} ownerId={post.user_id} isOwner={isOwner} />
         )}
 
         {post.description && (
