@@ -830,6 +830,7 @@ function CollabDetail() {
             <ApplicantsPanel postId={post.id} />
           </RecruitingDisclosure>
         ) : (
+          <>
         {(roles.length > 0 || post.accepts_suggestions) && (
           <section className="mt-10">
             {roles.length > 0 && (
@@ -902,6 +903,7 @@ function CollabDetail() {
             )}
           </section>
         )}
+          </>
         )}
       </motion.div>
 
