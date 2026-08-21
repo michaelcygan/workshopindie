@@ -1228,9 +1228,16 @@ export const listCollabMembers = createServerFn({ method: "POST" })
 
     const { data: invites } = await supabase
       .from("collab_invites")
-      .select("invitee_user_id")
+      .select("invitee_user_id,collab_role_id,role:collab_roles(role_name)")
       .eq("collab_post_id", data.collabPostId)
       .eq("status", "accepted");
+
+    const roleByUser = new Map<string, string | null>();
+    for (const i of invites ?? []) {
+      const roleName =
+        (i as unknown as { role?: { role_name: string | null } | null }).role?.role_name ?? null;
+      if (!roleByUser.has(i.invitee_user_id)) roleByUser.set(i.invitee_user_id, roleName);
+    }
 
     const memberIds = [post.user_id, ...(invites ?? []).map((i) => i.invitee_user_id)];
     const uniqueIds = Array.from(new Set(memberIds));
@@ -1244,11 +1251,64 @@ export const listCollabMembers = createServerFn({ method: "POST" })
     return {
       isOwner,
       ownerId: post.user_id,
-      members: uniqueIds.map((id) => byId[id]).filter(Boolean) as {
+      members: uniqueIds
+        .map((id) => {
+          const p = byId[id];
+          if (!p) return null;
+          return {
+            ...p,
+            is_owner: id === post.user_id,
+            role_name: id === post.user_id ? null : (roleByUser.get(id) ?? null),
+          };
+        })
+        .filter(Boolean) as {
         id: string;
         username: string | null;
         display_name: string | null;
         avatar_url: string | null;
+        is_owner: boolean;
+        role_name: string | null;
       }[],
     };
+  });
+
+/** Owner-only: remove an accepted collaborator. Access ends immediately. */
+export const removeCollabMember = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ collabPostId: z.string().uuid(), memberUserId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: post } = await supabase
+      .from("collab_posts")
+      .select("id,user_id,title")
+      .eq("id", data.collabPostId)
+      .maybeSingle();
+    if (!post) throw new Error("This collab no longer exists.");
+    if (post.user_id !== userId) throw new Error("Only the owner can remove collaborators.");
+    if (data.memberUserId === post.user_id) throw new Error("You can't remove yourself.");
+
+    const { data: rows, error } = await supabase
+      .from("collab_invites")
+      .update({ status: "removed", responded_at: new Date().toISOString() })
+      .eq("collab_post_id", data.collabPostId)
+      .eq("invitee_user_id", data.memberUserId)
+      .eq("status", "accepted")
+      .select("id");
+    if (error) throw new Error(error.message);
+    if (!rows || rows.length === 0) throw new Error("They're not on this collab.");
+
+    const { notify } = await import("@/lib/notifications/deliver.server");
+    await notify({
+      recipientId: data.memberUserId,
+      actorUserId: userId,
+      kind: "collab_member_left",
+      entityType: "collab_post",
+      entityId: data.collabPostId,
+      preference: "inapp_collab_activity",
+      payload: { collab_title: post.title },
+    });
+
+    return { ok: true as const };
   });
