@@ -54,8 +54,15 @@ export type CollabDetailRow = {
   }>;
 };
 
+export type CollabViewerRole = "owner" | "member" | "public";
+
 export type CollabPageResult =
-  | { access: "ok"; post: CollabDetailRow; viewerIsMember: boolean }
+  | {
+      access: "ok";
+      post: CollabDetailRow;
+      viewerIsMember: boolean;
+      viewerRole: CollabViewerRole;
+    }
   | { access: "unavailable" };
 
 /**
