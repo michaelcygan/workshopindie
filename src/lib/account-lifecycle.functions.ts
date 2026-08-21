@@ -78,3 +78,39 @@ export const completeWelcome = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true, alreadyCompleted: false };
   });
+
+/**
+ * Link Open House applications submitted while logged out to the account that
+ * just signed in, matched on the verified auth email. Idempotent and safe to
+ * call on every session: only rows with no owner are ever touched.
+ *
+ * Bookings already made from those applications inherit the account, so the
+ * public "Featuring" entry starts linking to their Workshop profile.
+ */
+export const claimOpenHouseApplications = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { userId, claims } = context;
+    const email = ((claims as { email?: string } | null)?.email ?? "").toLowerCase().trim();
+    const verified = (claims as { email_verified?: boolean } | null)?.email_verified;
+    // Unverified email must never be able to claim someone else's application.
+    if (!email || verified === false) return { claimed: 0 };
+
+    const { data: rows, error } = await supabaseAdmin
+      .from("open_house_applications")
+      .update({ user_id: userId })
+      .is("user_id", null)
+      .eq("email", email)
+      .select("id");
+    if (error) throw new Error(error.message);
+
+    const ids = (rows ?? []).map((r) => r.id as string);
+    if (ids.length) {
+      await supabaseAdmin
+        .from("group_event_features")
+        .update({ user_id: userId })
+        .is("user_id", null)
+        .in("open_house_application_id", ids);
+    }
+    return { claimed: ids.length };
+  });

@@ -21,6 +21,8 @@ import { EventWhosHere } from "@/components/events/event-whos-here";
 import { updateEventSeriesFuture, cancelEventSeriesFuture } from "@/lib/group-events-admin.functions";
 import { EventLocationCard } from "@/components/event-location-card";
 import { EventRsvpBlock, type MyRsvp } from "@/components/event-rsvp-block";
+import { EventFeaturing } from "@/components/events/event-featuring";
+import { listEventFeatures } from "@/lib/events/event-features.functions";
 import { HackathonPanel } from "@/components/event/hackathon-panel";
 import { CoworkingBlock } from "@/components/events/coworking-block";
 import {
@@ -208,6 +210,12 @@ function EventPage() {
   const { data: listedGroups } = useQuery({
     queryKey: ["event-groups", ev.id],
     queryFn: () => listEventGroupsFn({ data: { event_id: ev.id } }),
+    staleTime: 60_000,
+  });
+
+  const { data: features } = useQuery({
+    queryKey: ["event-features", ev.id],
+    queryFn: () => listEventFeatures({ data: { eventId: ev.id } }),
     staleTime: 60_000,
   });
 
@@ -424,7 +432,7 @@ function EventPage() {
               venueLat={ev.venue_lat}
               venueLng={ev.venue_lng}
               workshopVenueKey={ev.workshop_venue_key}
-              hostless={Boolean(ev.workshop_venue_key)}
+              hostless={ev.facilitation === "hostless"}
               onlineUrl={joinLink?.online_url ?? null}
               city={ev.venue_name ?? null}
               variant="embedded"
@@ -434,6 +442,9 @@ function EventPage() {
             )}
           </div>
         </div>
+
+        {/* Featuring — who this night is built around (optional) */}
+        <EventFeaturing features={features ?? []} />
 
         {/* Series admin strip */}
         {ev.series_key && <SeriesAdminStrip eventId={ev.id} seriesKey={ev.series_key} />}

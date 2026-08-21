@@ -6,6 +6,7 @@ import {
   getAccountLifecycle,
   ensureProfileRow,
   completeWelcome as completeWelcomeFn,
+  claimOpenHouseApplications,
 } from "@/lib/account-lifecycle.functions";
 import { confirmAdultAttestation } from "@/lib/profile-age.functions";
 import {
@@ -54,6 +55,7 @@ export function AccountLifecycleProvider({ children }: { children: ReactNode }) 
   const repairProfile = useServerFn(ensureProfileRow);
   const attestAdult = useServerFn(confirmAdultAttestation);
   const markWelcome = useServerFn(completeWelcomeFn);
+  const claimApplications = useServerFn(claimOpenHouseApplications);
 
   const [underage, setUnderage] = useState(false);
   const repairedFor = useRef<string | null>(null);
@@ -128,6 +130,15 @@ export function AccountLifecycleProvider({ children }: { children: ReactNode }) 
       }
     })();
   }, [userId, query.data, attestAdult, refresh]);
+
+  // Applications sent while logged out belong to whoever later proves the same
+  // email. Once per session; failures are silent — nothing depends on it.
+  const claimedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!userId || claimedFor.current === userId) return;
+    claimedFor.current = userId;
+    void claimApplications().catch(() => {});
+  }, [userId, claimApplications]);
 
   const declineAdult = useCallback(() => {
     setUnderage(true);
