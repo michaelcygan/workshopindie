@@ -1,6 +1,11 @@
-export { MAX_SKILLS, SKILL_LABEL_MAX } from "@/lib/skills/normalize";
+export {
+  MAX_SKILLS,
+  MAX_SKILL_WORKS,
+  SKILL_DESCRIPTION_MAX,
+  SKILL_LABEL_MAX,
+} from "@/lib/skills/normalize";
 
-/** Live Work data joined onto a Skill row. Null when the evidence is gone. */
+/** Live Work data joined onto a Skill row. */
 export type SkillWork = {
   id: string;
   slug: string;
@@ -15,8 +20,14 @@ export type Skill = {
   id: string;
   position: number;
   label: string;
+  description: string | null;
+  /** Legacy first-work pointer, kept in sync with works[0]. */
   work_id: string | null;
-  /** Present only when the linked Work is still published + public. */
+  /** Live public Works, in the member's chosen order. */
+  works: SkillWork[];
+  /** Linked Works that are no longer public — owner-facing signal only. */
+  missing_count: number;
+  /** Convenience: the first live Work, or null. */
   work: SkillWork | null;
 };
 
@@ -28,7 +39,7 @@ export type EligibleWork = SkillWork & {
   owned: boolean;
 };
 
-/** A Skill only counts publicly when its evidence is still live. */
+/** A Skill only counts publicly when at least one piece of evidence is live. */
 export function isPublicSkill(skill: Skill): boolean {
-  return !!skill.work;
+  return skill.works.length > 0;
 }

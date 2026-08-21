@@ -9,18 +9,49 @@ import {
   updateSkill,
 } from "@/lib/skills.functions";
 import type { AddSkillInput, UpdateSkillInput } from "@/lib/skills/schemas";
-import type { EligibleWork, Skill } from "@/lib/skills/types";
+import type { EligibleWork, Skill, SkillWork } from "@/lib/skills/types";
 
-const SELECT =
-  "id,position,label,work_id,work:works(id,slug,title,cover_url,category,category_canonical,subtype,status,visibility)";
+const WORK = "id,slug,title,cover_url,category,category_canonical,subtype,status,visibility";
+const SELECT = `id,position,label,description,work_id,links:profile_skill_works(position,work:works(${WORK}))`;
 
 export function skillsQueryKey(profileId: string | undefined) {
   return ["profile-skills", profileId ?? "none"] as const;
 }
 
-type Row = Omit<Skill, "work"> & {
-  work: (Skill["work"] & { status?: string; visibility?: string }) | null;
+type JoinedWork = SkillWork & { status?: string; visibility?: string };
+type Row = {
+  id: string;
+  position: number;
+  label: string;
+  description: string | null;
+  work_id: string | null;
+  links: { position: number; work: JoinedWork | null }[] | null;
 };
+
+function toSkill(row: Row): Skill {
+  const links = [...(row.links ?? [])].sort((a, b) => a.position - b.position);
+  const works: SkillWork[] = [];
+  let missing = 0;
+  for (const link of links) {
+    const w = link.work;
+    if (w && w.status === "published" && w.visibility === "public") {
+      const { status: _s, visibility: _v, ...rest } = w;
+      works.push(rest);
+    } else {
+      missing += 1;
+    }
+  }
+  return {
+    id: row.id,
+    position: row.position,
+    label: row.label,
+    description: row.description ?? null,
+    work_id: row.work_id,
+    works,
+    missing_count: missing,
+    work: works[0] ?? null,
+  };
+}
 
 /** One query for a profile's whole skill shelf, with live Work data joined. */
 export function useSkills(profileId: string | undefined) {
@@ -35,11 +66,7 @@ export function useSkills(profileId: string | undefined) {
         .eq("profile_id", profileId!)
         .order("position", { ascending: true });
       if (error) throw error;
-      return ((data ?? []) as unknown as Row[]).map((row) => {
-        const w = row.work;
-        const live = w && w.status === "published" && w.visibility === "public";
-        return { ...row, work: live ? w : null } as Skill;
-      });
+      return ((data ?? []) as unknown as Row[]).map(toSkill);
     },
   });
 }
