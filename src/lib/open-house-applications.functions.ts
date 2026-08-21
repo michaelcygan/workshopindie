@@ -76,7 +76,13 @@ const applicationSchema = z.object({
   contactName: z.string().trim().min(1, "Please add your name.").max(120),
   projectName: optionalLine(140),
   email: z.string().trim().toLowerCase().email("Please enter a valid email.").max(255),
-  programType: z.enum(PROGRAM_TYPE_IDS, { message: "Please choose what you'd like to do." }),
+  partnerType: z.enum(PARTNER_TYPE_IDS, { message: "Please choose what you'd like to do." }),
+  performanceSubtype: z
+    .enum(PERFORMANCE_SUBTYPE_IDS)
+    .nullable()
+    .optional()
+    .transform((v) => v ?? null),
+  performanceSubtypeOther: optionalLine(80),
   city: z.string().trim().min(1, "Please tell us where you're based.").max(160),
   cityId: z
     .string()
