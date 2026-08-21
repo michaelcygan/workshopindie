@@ -95,7 +95,9 @@ function ApplyOpenHousePage() {
   const [contactName, setContactName] = useState("");
   const [projectName, setProjectName] = useState("");
   const [email, setEmail] = useState("");
-  const [programType, setProgramType] = useState("");
+  const [partnerType, setPartnerType] = useState("");
+  const [performanceSubtype, setPerformanceSubtype] = useState("");
+  const [performanceSubtypeOther, setPerformanceSubtypeOther] = useState("");
   const [location, setLocation] = useState<SelectedLocation | null>(null);
   const [portfolioUrl, setPortfolioUrl] = useState("");
   const [workshopUrl, setWorkshopUrl] = useState("");
