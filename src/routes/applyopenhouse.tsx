@@ -422,24 +422,23 @@ function ApplyOpenHousePage() {
           </Field>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Approximate length" plain>
-              <Select value={approximateLength} onValueChange={setApproximateLength}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a length" />
-                </SelectTrigger>
-                <SelectContent>
-                  {LENGTH_OPTIONS.map((o) => (
-                    <SelectItem key={o.id} value={o.id}>
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field
-              label="What would you need?"
-              hint="A mic, DJ input, projector, small table, open floor, or nothing at all. Details can be worked out later."
-            >
+            {!isVendor && (
+              <Field label="Approximate length" plain>
+                <Select value={approximateLength} onValueChange={setApproximateLength}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a length" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LENGTH_OPTIONS.map((o) => (
+                      <SelectItem key={o.id} value={o.id}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            )}
+            <Field label={setupLabel} hint={setupHint}>
               <Textarea
                 value={setupNeeds}
                 onChange={(e) => setSetupNeeds(e.target.value)}
