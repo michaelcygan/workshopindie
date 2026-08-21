@@ -21,7 +21,14 @@ import { normalizeUrlOrKeep } from "@/lib/url-normalize";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { submitOpenHouseApplication } from "@/lib/open-house-applications.functions";
-import { LENGTH_OPTIONS, PROGRAM_TYPES, PROPOSAL_MIN, PROPOSAL_MAX } from "@/lib/open-house";
+import {
+  LENGTH_OPTIONS,
+  PARTNER_TYPES,
+  PERFORMANCE_SUBTYPES,
+  isVendorPartner,
+  PROPOSAL_MIN,
+  PROPOSAL_MAX,
+} from "@/lib/open-house";
 import { gtagEvent } from "@/lib/analytics/google";
 
 const CANONICAL = "https://workshopindie.com/applyopenhouse";
