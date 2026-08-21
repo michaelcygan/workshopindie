@@ -163,6 +163,19 @@ function ApplyOpenHousePage() {
 
   const cityLabel = location ? [location.name, location.sublabel].filter(Boolean).join(", ") : "";
 
+  const isPerformance = partnerType === "performance";
+  const isVendor = isVendorPartner(partnerType);
+  const proposalLabel = isVendor
+    ? "What would you bring to Open House?"
+    : "What would you like to bring to Open House?";
+  const proposalHint = isVendor
+    ? "What you'd sell, sample, show, or activate — and anything you'd bring to the room. A few sentences is plenty."
+    : "Describe the set, performance, talk, reading, screening, or demonstration. A few sentences is plenty.";
+  const setupLabel = isVendor ? "Space and power needs" : "What would you need?";
+  const setupHint = isVendor
+    ? "Table size, power, water, load-in — whatever you'd need on site. Details can be worked out later."
+    : "A mic, DJ input, projector, small table, open floor, or nothing at all. Details can be worked out later.";
+
   const proposalLength = proposal.trim().length;
   const proposalTooShort = proposalLength > 0 && proposalLength < PROPOSAL_MIN;
 
