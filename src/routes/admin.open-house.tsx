@@ -89,6 +89,15 @@ function AdminOpenHousePage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const message = useMutation({
+    mutationFn: (id: string) => messageFn({ data: { id } }),
+    onSuccess: (res) => {
+      const id = (res as { conversationId?: string })?.conversationId;
+      if (id) navigate({ to: "/dms/$conversationId", params: { conversationId: id } });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const counts = data?.counts ?? {};
   const stats = [
     { label: "Total", value: data?.total ?? 0 },
