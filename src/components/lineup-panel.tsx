@@ -61,6 +61,13 @@ export function LineupPanel({
     refetchInterval: 30_000,
   });
 
+  // Notes are private: only the author, the host and admins get them back.
+  const { data: notesData } = useQuery({
+    queryKey: ["lineup-notes", eventId, user?.id ?? "anon"],
+    queryFn: () => notesFn({ data: { event_id: eventId } }),
+    enabled: !!user,
+  });
+
   // Realtime
   useEffect(() => {
     const ch = supabase
