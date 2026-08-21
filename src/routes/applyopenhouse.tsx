@@ -188,8 +188,12 @@ function ApplyOpenHousePage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
-    if (!programType) {
+    if (!partnerType) {
       toast.error("Please choose what you'd like to do.");
+      return;
+    }
+    if (isPerformance && !performanceSubtype) {
+      toast.error("Please tell us what kind of performance.");
       return;
     }
     if (!cityLabel) {
