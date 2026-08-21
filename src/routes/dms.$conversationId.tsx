@@ -187,6 +187,10 @@ function DmsThread() {
       if (cancelled) return;
       setOther(prof as ProfileLite | null);
       setCollab(post ? { title: post.title, slug: post.slug } : null);
+      setOpenHouse(
+        !!(conv as { context_open_house_application_id?: string | null })
+          .context_open_house_application_id,
+      );
       setWorkshop(ws ? { title: ws.title ?? null, slug: ws.slug } : null);
       setWork(wk ? { title: wk.title, slug: wk.slug } : null);
       const cmRow = cm as { id: string; body: string; works: { slug: string } | null } | null;
