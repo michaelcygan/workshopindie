@@ -579,7 +579,7 @@ function ProfilePage() {
     collabs: openCollabs?.length ?? 0,
     blog: blogCount,
     // Only Skills with live public evidence count toward the public tab.
-    skills: skills.filter((s) => s.work).length,
+    skills: skills.filter((s) => s.works.length > 0).length,
     influences: influences.length,
     activity: activityCount,
     about: 1,
