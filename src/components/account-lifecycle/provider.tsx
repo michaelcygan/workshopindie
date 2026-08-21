@@ -6,6 +6,7 @@ import {
   getAccountLifecycle,
   ensureProfileRow,
   completeWelcome as completeWelcomeFn,
+  claimOpenHouseApplications,
 } from "@/lib/account-lifecycle.functions";
 import { confirmAdultAttestation } from "@/lib/profile-age.functions";
 import {
