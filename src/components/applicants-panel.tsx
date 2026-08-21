@@ -149,7 +149,7 @@ export function ApplicantsPanel({ postId }: Props) {
       counts.pitches > 0 ? "pitches" : counts.declined > 0 ? "declined" : null;
     if (next) setTab(next);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, tabTouched, counts.applicants, counts.pitches, counts.team, counts.declined]);
+  }, [data, tabTouched, counts.applicants, counts.pitches, counts.declined]);
 
 
 
