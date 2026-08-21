@@ -91,7 +91,11 @@ export function LineupPanel({
     })();
   }, [user, eventId, signUpFn, qc]);
 
-  const signups = useMemo(() => (data?.signups ?? []) as Signup[], [data]);
+  const rawSignups = useMemo(() => (data?.signups ?? []) as Omit<Signup, "note">[], [data]);
+  const signups = useMemo(
+    () => rawSignups.map((s) => ({ ...s, note: notesData?.notes?.[s.id] ?? null }) as Signup),
+    [rawSignups, notesData],
+  );
   const profiles = (data?.profiles ?? {}) as Record<string, Profile>;
   const ev = data?.event as { lineup_capacity: number | null; starts_at: string } | undefined;
 
