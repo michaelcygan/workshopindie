@@ -102,6 +102,25 @@ export function legacyProgramTypeLabel(id: string): string {
 /** @deprecated use partnerTypeLabel */
 export const programTypeLabel = partnerTypeLabel;
 
+/**
+ * Full human label for an application, folding the performance sub-type into
+ * the partner label: "Performance · DJ".
+ */
+export function applicationTypeLabel(app: {
+  partner_type?: string | null;
+  program_type?: string | null;
+  performance_subtype?: string | null;
+  performance_subtype_other?: string | null;
+}): string {
+  const base = partnerTypeLabel(app.partner_type || app.program_type || "");
+  if ((app.partner_type || app.program_type) !== "performance") return base;
+  const sub =
+    app.performance_subtype === "other"
+      ? app.performance_subtype_other || "Something else"
+      : performanceSubtypeLabel(app.performance_subtype ?? null);
+  return sub ? `${base} · ${sub}` : base;
+}
+
 export const LENGTH_OPTIONS = [
   { id: "under_15", label: "Under 15 minutes" },
   { id: "15_30", label: "15–30 minutes" },
