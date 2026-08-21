@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { MessageCircle, Link2, Video, Send, Users, Pencil, X, ExternalLink, Trash2, ListTodo } from "lucide-react";
+import { MessageCircle, Video, Send, Users, Pencil, X, ExternalLink, Trash2, ListTodo, FolderOpen, CalendarClock, UserMinus } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Link } from "@tanstack/react-router";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,8 +21,10 @@ import {
   deleteCollabMessage,
   getCollabWorkspaceSettings,
   setCollabMeetingUrl,
+  setCollabFilesUrl,
+  setCollabNextMeetingAt,
 } from "@/lib/collab-workspace.functions";
-import { listCollabMembers } from "@/lib/collab.functions";
+import { listCollabMembers, removeCollabMember } from "@/lib/collab.functions";
 import { CollabTasks, useCollabTaskCount } from "@/components/collab/collab-tasks";
 
 type Msg = {
@@ -61,7 +65,7 @@ export function CollabWorkspace({
 }) {
   const { user } = useAuth();
   const qc = useQueryClient();
-  const [tab, setTab] = useState<"chat" | "tasks" | "links">("chat");
+  const [tab, setTab] = useState<"chat" | "tasks" | "files">("chat");
   const taskCount = useCollabTaskCount(collabPostId);
 
   const membersFn = useServerFn(listCollabMembers);
@@ -70,6 +74,8 @@ export function CollabWorkspace({
   const delFn = useServerFn(deleteCollabMessage);
   const getSettingsFn = useServerFn(getCollabWorkspaceSettings);
   const setMeetingFn = useServerFn(setCollabMeetingUrl);
+  const setFilesFn = useServerFn(setCollabFilesUrl);
+  const setNextMeetingFn = useServerFn(setCollabNextMeetingAt);
 
   const membersQ = useQuery({
     queryKey: ["collab-members", collabPostId],
