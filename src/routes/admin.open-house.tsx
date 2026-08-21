@@ -66,8 +66,13 @@ function AdminOpenHousePage() {
   });
 
   const rows = useMemo(
-    () => (data?.rows ?? []).filter((r) => !filter || r.status === filter),
-    [data, filter],
+    () =>
+      (data?.rows ?? []).filter(
+        (r) =>
+          (!filter || r.status === filter) &&
+          (typeFilter === "all" || (r.partner_type || r.program_type) === typeFilter),
+      ),
+    [data, filter, typeFilter],
   );
   const selected: OpenHouseApplication | null =
     (data?.rows ?? []).find((r) => r.id === openId) ?? null;
