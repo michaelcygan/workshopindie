@@ -13,16 +13,19 @@ import {
 } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "sonner";
-import { Copy, ExternalLink } from "lucide-react";
+import { Copy, ExternalLink, MessageSquare } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 import {
   adminListOpenHouseApplications,
   adminUpdateOpenHouseApplication,
+  adminMessageOpenHouseApplicant,
 } from "@/lib/open-house-applications.functions";
 import {
   OPEN_HOUSE_STATUSES,
   OPEN_HOUSE_STATUS_LABELS,
+  PARTNER_TYPES,
+  applicationTypeLabel,
   lengthLabel,
-  programTypeLabel,
   type OpenHouseApplication,
   type OpenHouseStatus,
 } from "@/lib/open-house";
