@@ -48,9 +48,11 @@ export const getLineupForEvent = createServerFn({ method: "POST" })
     if (evErr) throw new Error(evErr.message);
     if (!ev) throw domainError("NOT_FOUND", "Event not found");
 
+    // `note` is deliberately not public: it's fetched separately by the note
+    // owner, the host or an admin via getLineupNotes.
     const { data: signups, error } = await supabase
       .from("event_lineup_signups")
-      .select("id,event_id,user_id,position,status,note,created_at")
+      .select("id,event_id,user_id,position,status,created_at")
       .eq("event_id", data.event_id)
       .neq("status", "released")
       .order("position", { ascending: true });
