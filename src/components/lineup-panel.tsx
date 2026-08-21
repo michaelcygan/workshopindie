@@ -138,6 +138,7 @@ export function LineupPanel({
     try {
       await updateFn({ data: { event_id: eventId, note: noteDraft.trim() || null } });
       setEditing(false);
+      qc.invalidateQueries({ queryKey: ["lineup-notes", eventId] });
       toast.success("Saved.");
     } catch (ex) { toast.error((ex as Error).message); }
   }
