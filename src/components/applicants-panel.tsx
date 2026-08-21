@@ -29,8 +29,8 @@ type Props = { postId: string };
 
 type Tab = "team" | "applicants" | "pitches" | "declined";
 
+// Team lives in the workspace header now — this panel is casting only.
 const TABS: { key: Tab; label: string }[] = [
-  { key: "team", label: "Team" },
   { key: "applicants", label: "Applicants" },
   { key: "pitches", label: "Suggestions" },
   { key: "declined", label: "Declined" },
@@ -146,7 +146,7 @@ export function ApplicantsPanel({ postId }: Props) {
     if (tabTouched || !data) return;
     if (counts.applicants > 0) return;
     const next: Tab | null =
-      counts.pitches > 0 ? "pitches" : counts.team > 0 ? "team" : counts.declined > 0 ? "declined" : null;
+      counts.pitches > 0 ? "pitches" : counts.declined > 0 ? "declined" : null;
     if (next) setTab(next);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, tabTouched, counts.applicants, counts.pitches, counts.team, counts.declined]);
@@ -225,7 +225,7 @@ export function ApplicantsPanel({ postId }: Props) {
       </div>
 
       <div className="mt-3 flex flex-wrap gap-1.5">
-        {TABS.map((t) => (
+        {TABS.filter((t) => t.key !== "declined" || counts.declined > 0).map((t) => (
           <button
             key={t.key}
             type="button"
