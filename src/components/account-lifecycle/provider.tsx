@@ -54,6 +54,7 @@ export function AccountLifecycleProvider({ children }: { children: ReactNode }) 
   const repairProfile = useServerFn(ensureProfileRow);
   const attestAdult = useServerFn(confirmAdultAttestation);
   const markWelcome = useServerFn(completeWelcomeFn);
+  const claimApplications = useServerFn(claimOpenHouseApplications);
 
   const [underage, setUnderage] = useState(false);
   const repairedFor = useRef<string | null>(null);
