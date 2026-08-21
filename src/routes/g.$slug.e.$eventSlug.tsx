@@ -211,6 +211,12 @@ function EventPage() {
     staleTime: 60_000,
   });
 
+  const { data: features } = useQuery({
+    queryKey: ["event-features", ev.id],
+    queryFn: () => listEventFeatures({ data: { eventId: ev.id } }),
+    staleTime: 60_000,
+  });
+
   // realtime: refresh on rsvp / check-in changes
   useEffect(() => {
     const ch = supabase
