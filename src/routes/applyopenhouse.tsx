@@ -469,13 +469,20 @@ function ApplyOpenHousePage() {
                 {prefilled ? " We filled in what we already know; edit anything that's off." : ""}
               </p>
             ) : (
-              <label className="flex items-start gap-3 text-sm text-ink-soft">
+              <label className="flex items-start gap-3 rounded-2xl border border-border bg-surface-2/40 p-3.5 text-sm text-ink-soft">
                 <Checkbox
                   checked={wantsAccount}
                   onCheckedChange={(v) => setWantsAccount(v === true)}
                   className="mt-0.5"
                 />
-                <span>Also create my Workshop account.</span>
+                <span>
+                  <span className="font-medium text-ink">Also create my Workshop account.</span>
+                  <span className="mt-1 block text-ink-muted">
+                    Having an account assists in your chances of booking — booking happens on
+                    platform, so we can message you directly and run a formal Workshop Open House
+                    booking process with you.
+                  </span>
+                </span>
               </label>
             )}
             <label className="flex items-start gap-3 text-sm text-ink-soft">
