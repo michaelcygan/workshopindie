@@ -214,7 +214,7 @@ function AdminOpenHousePage() {
                       <span className="block text-xs text-ink-muted">{r.contact_name}</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-ink-muted">{programTypeLabel(r.program_type)}</td>
+                  <td className="px-4 py-3 text-ink-muted">{applicationTypeLabel(r)}</td>
                   <td className="px-4 py-3 text-ink-muted">{r.city || "—"}</td>
                   <td className="px-4 py-3 text-ink-muted">
                     {new Date(r.created_at).toLocaleDateString()}
