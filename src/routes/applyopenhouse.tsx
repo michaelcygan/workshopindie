@@ -260,12 +260,12 @@ function ApplyOpenHousePage() {
         Workshop Open House
       </p>
       <h1 className="mt-2 font-display text-3xl leading-[1.05] text-ink md:text-4xl">
-        Apply to perform or present.
+        Apply to perform, present, or partner.
       </h1>
       <p className="mt-3 max-w-xl text-base text-ink-soft">
-        Workshop Open House is a gathering for people making things. Some editions include a band,
-        DJ set, performance, talk, reading, screening, or demonstration. Tell us what you'd like to
-        bring.
+        Workshop Open House is a gathering for people making things. Editions can include a
+        performance, listening party, screening, talk, workshop, art and food vendors, and brand
+        partners. Tell us what you'd bring — no account needed to apply.
       </p>
 
       {done ? (
