@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Clock, MapPin, DollarSign, ExternalLink, MessageCircle, Trash2, CheckCircle2, Sparkles, Scale, Share2, Users, Inbox, Archive, Pencil, LogOut, AlertTriangle, Eye, Pin, PinOff, ArrowLeft, MoreHorizontal } from "lucide-react";
+import { Clock, MapPin, DollarSign, ExternalLink, MessageCircle, Trash2, CheckCircle2, Sparkles, Scale, Share2, Users, Inbox, Archive, Pencil, LogOut, AlertTriangle, Eye, Pin, PinOff, ArrowLeft, MoreHorizontal, ChevronDown } from "lucide-react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { StateBadge } from "@/components/state-badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -735,7 +735,7 @@ function CollabDetail() {
                 {hostUser.headline && <div className="text-xs text-ink-muted">{hostUser.headline}</div>}
               </div>
             </Link>
-            {!isOwner && <MessageButton otherUserId={hostUser.id} contextCollabPostId={post.id} />}
+            {viewerRole === "public" && <MessageButton otherUserId={hostUser.id} contextCollabPostId={post.id} />}
           </div>
         )}
 
@@ -748,13 +748,95 @@ function CollabDetail() {
           <div className="prose prose-sm mt-8 max-w-none whitespace-pre-wrap text-ink">{post.description}</div>
         )}
 
+        {isOwner ? (
+          <RecruitingDisclosure
+            applicantCount={applicantCount}
+            suggestions={activity?.suggestions ?? 0}
+            shares={activity?.shares ?? 0}
+            recruitLabel={recruitmentLabel(recruit)}
+          >
+          {(roles.length > 0 || post.accepts_suggestions) && (
+            <section className="mt-10">
+              {roles.length > 0 && (
+                <>
+                  <div className="flex flex-wrap items-baseline gap-2">
+                    <h2 className="font-display text-2xl text-ink">Roles</h2>
+                    {viewerRole === "public" && acceptingNow && (
+                      <span className="text-xs text-ink-muted">Apply in one tap — no account needed.</span>
+                    )}
+                  </div>
+                  {isShipped ? (
+                    <p className="mt-3 text-sm text-ink-muted">
+                      Cast · {workCollabCount ?? roles.length} {((workCollabCount ?? roles.length) === 1) ? "collaborator" : "collaborators"}
+                    </p>
+                  ) : (
+                    <div className="mt-3 space-y-2">
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                      {roles.map((r: any) => {
+                        const interested = activity?.perRole?.[r.id] ?? 0;
+                        return (
+                          <div key={r.id} className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4">
+                            <div className="flex-1">
+                              <div className="flex flex-wrap items-baseline gap-2">
+                                <h3 className="font-medium text-ink">{r.role_name}</h3>
+                                <span className="text-xs text-ink-muted">×{r.quantity}</span>
+                                {isOwner && interested > 0 && (
+                                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                                    {interested} interested
+                                  </span>
+                                )}
+                              </div>
+                              {r.description && <p className="mt-1 text-sm text-ink-muted">{r.description}</p>}
+                            </div>
+                            {viewerRole === "public" && acceptingNow && (
+                              <Button size="sm" className="rounded-md gap-1" onClick={() => openContact(r.id)}>
+                                {post.contact_mode === "external_link" && user ? <><ExternalLink className="h-3.5 w-3.5" /> Reach out</> : <><MessageCircle className="h-3.5 w-3.5" /> Apply</>}
+                              </Button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {viewerRole === "public" && acceptingNow && (
+                <div className={cn("rounded-2xl border border-dashed border-border bg-surface/60 p-4", roles.length > 0 ? "mt-4" : "")}>
+                  <h3 className="font-medium text-ink">Suggest how you can help</h3>
+                  <p className="mt-1 text-sm text-ink-muted">
+                    Don't see a role that fits? Pitch what you'd bring — the organizer will read it.
+                  </p>
+                  <p className="mt-1 text-xs text-ink-muted">No account needed.</p>
+                  <div className="mt-3">
+                    <Button variant="outline" className="rounded-md gap-2" onClick={() => openContact(null)}>
+                      <MessageCircle className="h-4 w-4" /> Suggest a way to help
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {isOwner && (activity?.suggestions ?? 0) > 0 && (
+                <button
+                  type="button"
+                  onClick={() => focusCollabPanelTab("pitches")}
+                  className="mt-3 inline-flex items-center gap-1 rounded-full text-xs font-medium text-primary underline underline-offset-4 hover:opacity-80"
+                >
+                  {activity!.suggestions} open suggestion{activity!.suggestions === 1 ? "" : "s"} — review
+                </button>
+              )}
+            </section>
+          )}
+            <ApplicantsPanel postId={post.id} />
+          </RecruitingDisclosure>
+        ) : (
         {(roles.length > 0 || post.accepts_suggestions) && (
           <section className="mt-10">
             {roles.length > 0 && (
               <>
                 <div className="flex flex-wrap items-baseline gap-2">
                   <h2 className="font-display text-2xl text-ink">Roles</h2>
-                  {!isOwner && acceptingNow && (
+                  {viewerRole === "public" && acceptingNow && (
                     <span className="text-xs text-ink-muted">Apply in one tap — no account needed.</span>
                   )}
                 </div>
@@ -781,7 +863,7 @@ function CollabDetail() {
                             </div>
                             {r.description && <p className="mt-1 text-sm text-ink-muted">{r.description}</p>}
                           </div>
-                          {!isOwner && acceptingNow && (
+                          {viewerRole === "public" && acceptingNow && (
                             <Button size="sm" className="rounded-md gap-1" onClick={() => openContact(r.id)}>
                               {post.contact_mode === "external_link" && user ? <><ExternalLink className="h-3.5 w-3.5" /> Reach out</> : <><MessageCircle className="h-3.5 w-3.5" /> Apply</>}
                             </Button>
@@ -794,7 +876,7 @@ function CollabDetail() {
               </>
             )}
 
-            {!isOwner && acceptingNow && (
+            {viewerRole === "public" && acceptingNow && (
               <div className={cn("rounded-2xl border border-dashed border-border bg-surface/60 p-4", roles.length > 0 ? "mt-4" : "")}>
                 <h3 className="font-medium text-ink">Suggest how you can help</h3>
                 <p className="mt-1 text-sm text-ink-muted">
@@ -820,9 +902,7 @@ function CollabDetail() {
             )}
           </section>
         )}
-
-
-        {isOwner && <ApplicantsPanel postId={post.id} />}
+        )}
       </motion.div>
 
       <Dialog open={contactOpen} onOpenChange={setContactOpen}>
@@ -1013,3 +1093,52 @@ function PinCollabMenuItem({ collabId }: { collabId: string }) {
   );
 }
 
+
+
+/**
+ * Owner-only casting surface. Purely presentational: expanding or collapsing
+ * never changes visibility, `applications_open`, status or membership.
+ */
+function RecruitingDisclosure({
+  applicantCount,
+  suggestions,
+  shares,
+  recruitLabel,
+  children,
+}: {
+  applicantCount: number;
+  suggestions: number;
+  shares: number;
+  recruitLabel: string;
+  children: React.ReactNode;
+}) {
+  const waiting = applicantCount > 0 || suggestions > 0;
+  const [open, setOpen] = useState(waiting);
+  const summary = [
+    recruitLabel,
+    applicantCount > 0 ? `${applicantCount} applicant${applicantCount === 1 ? "" : "s"}` : null,
+    suggestions > 0 ? `${suggestions} suggestion${suggestions === 1 ? "" : "s"}` : null,
+    shares > 0 ? `${shares} share${shares === 1 ? "" : "s"}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  return (
+    <section className="mt-10 overflow-hidden rounded-xl border border-border bg-surface">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex min-h-[44px] w-full items-center gap-2 px-4 py-2 text-left transition hover:bg-surface-2"
+      >
+        <Users className="h-4 w-4 text-ink-muted" />
+        <span className="min-w-0 flex-1 truncate text-sm text-ink">
+          <span className="font-medium">Recruiting</span>
+          <span className="text-ink-muted"> · {summary}</span>
+        </span>
+        <ChevronDown className={cn("h-4 w-4 shrink-0 text-ink-muted transition", open && "rotate-180")} />
+      </button>
+      {open && <div className="border-t border-border p-4">{children}</div>}
+    </section>
+  );
+}
