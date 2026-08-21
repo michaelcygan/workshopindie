@@ -21,6 +21,8 @@ import { EventWhosHere } from "@/components/events/event-whos-here";
 import { updateEventSeriesFuture, cancelEventSeriesFuture } from "@/lib/group-events-admin.functions";
 import { EventLocationCard } from "@/components/event-location-card";
 import { EventRsvpBlock, type MyRsvp } from "@/components/event-rsvp-block";
+import { EventFeaturing } from "@/components/events/event-featuring";
+import { listEventFeatures } from "@/lib/events/event-features.functions";
 import { HackathonPanel } from "@/components/event/hackathon-panel";
 import { CoworkingBlock } from "@/components/events/coworking-block";
 import {
