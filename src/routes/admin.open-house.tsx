@@ -243,7 +243,7 @@ function AdminOpenHousePage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <StatusBadge status={selected.status} />
                   <span className="text-ink-muted">
-                    {programTypeLabel(selected.program_type)}
+                    {applicationTypeLabel(selected)}
                   </span>
                   {selected.approximate_length && (
                     <span className="text-ink-muted">
