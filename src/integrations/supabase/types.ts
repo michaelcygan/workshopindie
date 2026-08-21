@@ -10672,28 +10672,17 @@ export type Database = {
           viewer_vote: number
         }[]
       }
-      get_or_create_conversation:
-        | {
-            Args: {
-              _context_collab_post_id?: string
-              _context_comment_id?: string
-              _context_work_id?: string
-              _context_workshop_id?: string
-              _other: string
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              _context_collab_post_id?: string
-              _context_comment_id?: string
-              _context_open_house_application_id?: string
-              _context_work_id?: string
-              _context_workshop_id?: string
-              _other: string
-            }
-            Returns: string
-          }
+      get_or_create_conversation: {
+        Args: {
+          _context_collab_post_id?: string
+          _context_comment_id?: string
+          _context_open_house_application_id?: string
+          _context_work_id?: string
+          _context_workshop_id?: string
+          _other: string
+        }
+        Returns: string
+      }
       get_referral_stats: {
         Args: { _user_id: string }
         Returns: {
