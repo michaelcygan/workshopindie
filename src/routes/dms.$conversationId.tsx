@@ -160,7 +160,7 @@ function DmsThread() {
     (async () => {
       const { data: conv } = await supabase
         .from("conversations")
-        .select("id, user_a, user_b, context_collab_post_id, context_workshop_id, context_work_id, context_comment_id")
+        .select("id, user_a, user_b, context_collab_post_id, context_workshop_id, context_work_id, context_comment_id, context_open_house_application_id")
         .eq("id", conversationId)
         .maybeSingle();
       if (cancelled) return;
