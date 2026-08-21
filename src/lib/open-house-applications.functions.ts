@@ -118,7 +118,7 @@ export const submitOpenHouseApplication = createServerFn({ method: "POST" })
     parseFriendly(applicationSchema, d, {
       contactName: "Your name",
       email: "Email",
-      programType: "What you'd like to do",
+      partnerType: "What you'd like to do",
       city: "Where you're based",
       portfolioUrl: "Link to your work",
       proposal: "Your proposal",
