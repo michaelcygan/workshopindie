@@ -51,9 +51,12 @@ function StatusBadge({ status }: { status: OpenHouseStatus }) {
 
 function AdminOpenHousePage() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const listFn = useServerFn(adminListOpenHouseApplications);
   const updateFn = useServerFn(adminUpdateOpenHouseApplication);
+  const messageFn = useServerFn(adminMessageOpenHouseApplicant);
   const [filter, setFilter] = useState<OpenHouseStatus | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [openId, setOpenId] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
 
