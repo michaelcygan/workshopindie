@@ -310,20 +310,62 @@ function ApplyOpenHousePage() {
               />
             </Field>
             <Field label="What would you like to do?" required plain>
-              <Select value={programType} onValueChange={setProgramType}>
+              <Select
+                value={partnerType}
+                onValueChange={(v) => {
+                  setPartnerType(v);
+                  if (v !== "performance") {
+                    setPerformanceSubtype("");
+                    setPerformanceSubtypeOther("");
+                  }
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Choose one" />
                 </SelectTrigger>
                 <SelectContent>
-                  {PROGRAM_TYPES.map((o) => (
+                  {PARTNER_TYPES.map((o) => (
                     <SelectItem key={o.id} value={o.id}>
-                      {o.label}
+                      <span className="flex flex-col items-start">
+                        <span>{o.label}</span>
+                        <span className="text-xs text-ink-muted">{o.hint}</span>
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </Field>
           </div>
+
+          {isPerformance && (
+            <div className="grid gap-4 rounded-2xl border border-border bg-surface-2/40 p-4 md:grid-cols-2">
+              <Field label="What kind of performance?" required plain>
+                <Select value={performanceSubtype} onValueChange={setPerformanceSubtype}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="DJ, band, comedian…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PERFORMANCE_SUBTYPES.map((o) => (
+                      <SelectItem key={o.id} value={o.id}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              {performanceSubtype === "other" && (
+                <Field label="Tell us what kind">
+                  <Input
+                    value={performanceSubtypeOther}
+                    onChange={(e) => setPerformanceSubtypeOther(e.target.value)}
+                    maxLength={80}
+                    placeholder="Puppetry, magic, drag…"
+                  />
+                </Field>
+              )}
+            </div>
+          )}
+
 
           <Field label="Where are you based?" required plain>
             <GlobalLocationCombobox
