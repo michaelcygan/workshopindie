@@ -188,7 +188,8 @@ function CollabDetail() {
   const post = page?.access === "ok" ? page.post : null;
   // Server-decided role — recruiting UI never flashes for contributors.
   const viewerRole = page?.access === "ok" ? page.viewerRole : "public";
-  const isAcceptedContributor = viewerRole === "member";
+  const isAcceptedContributor: boolean = viewerRole === "member";
+  const isPublicVisitor: boolean = viewerRole === "public";
   const hasWorkspaceAccess = viewerRole === "owner" || viewerRole === "member";
 
   const { data: resultingWork } = useQuery({
@@ -226,7 +227,7 @@ function CollabDetail() {
   const { data: publicCounts } = useQuery({
     queryKey: ["collab-public-counts", post?.id],
     queryFn: () => fetchPublicCounts({ data: { collabPostId: post!.id } }),
-    enabled: !!post && viewerRole === "public" && !post?.archived_at && !post?.resulting_work_id,
+    enabled: !!post && isPublicVisitor && !post?.archived_at && !post?.resulting_work_id,
     staleTime: 60_000,
   });
 
@@ -627,7 +628,7 @@ function CollabDetail() {
 
 
         {/* Visitor signal (open state) */}
-        {viewerRole === "public" && !isArchived && !isShipped && (
+        {isPublicVisitor && !isArchived && !isShipped && (
           <p className="mb-3 text-xs text-ink-muted">
             {publicCounts && publicCounts.applicants > 0
               ? <>{publicCounts.applicants} on board so far · </>
@@ -735,7 +736,7 @@ function CollabDetail() {
                 {hostUser.headline && <div className="text-xs text-ink-muted">{hostUser.headline}</div>}
               </div>
             </Link>
-            {viewerRole === "public" && <MessageButton otherUserId={hostUser.id} contextCollabPostId={post.id} />}
+            {isPublicVisitor && <MessageButton otherUserId={hostUser.id} contextCollabPostId={post.id} />}
           </div>
         )}
 
@@ -761,7 +762,7 @@ function CollabDetail() {
                 <>
                   <div className="flex flex-wrap items-baseline gap-2">
                     <h2 className="font-display text-2xl text-ink">Roles</h2>
-                    {viewerRole === "public" && acceptingNow && (
+                    {isPublicVisitor && acceptingNow && (
                       <span className="text-xs text-ink-muted">Apply in one tap — no account needed.</span>
                     )}
                   </div>
@@ -788,7 +789,7 @@ function CollabDetail() {
                               </div>
                               {r.description && <p className="mt-1 text-sm text-ink-muted">{r.description}</p>}
                             </div>
-                            {viewerRole === "public" && acceptingNow && (
+                            {isPublicVisitor && acceptingNow && (
                               <Button size="sm" className="rounded-md gap-1" onClick={() => openContact(r.id)}>
                                 {post.contact_mode === "external_link" && user ? <><ExternalLink className="h-3.5 w-3.5" /> Reach out</> : <><MessageCircle className="h-3.5 w-3.5" /> Apply</>}
                               </Button>
@@ -801,7 +802,7 @@ function CollabDetail() {
                 </>
               )}
 
-              {viewerRole === "public" && acceptingNow && (
+              {isPublicVisitor && acceptingNow && (
                 <div className={cn("rounded-2xl border border-dashed border-border bg-surface/60 p-4", roles.length > 0 ? "mt-4" : "")}>
                   <h3 className="font-medium text-ink">Suggest how you can help</h3>
                   <p className="mt-1 text-sm text-ink-muted">
@@ -837,7 +838,7 @@ function CollabDetail() {
               <>
                 <div className="flex flex-wrap items-baseline gap-2">
                   <h2 className="font-display text-2xl text-ink">Roles</h2>
-                  {viewerRole === "public" && acceptingNow && (
+                  {isPublicVisitor && acceptingNow && (
                     <span className="text-xs text-ink-muted">Apply in one tap — no account needed.</span>
                   )}
                 </div>
@@ -864,7 +865,7 @@ function CollabDetail() {
                             </div>
                             {r.description && <p className="mt-1 text-sm text-ink-muted">{r.description}</p>}
                           </div>
-                          {viewerRole === "public" && acceptingNow && (
+                          {isPublicVisitor && acceptingNow && (
                             <Button size="sm" className="rounded-md gap-1" onClick={() => openContact(r.id)}>
                               {post.contact_mode === "external_link" && user ? <><ExternalLink className="h-3.5 w-3.5" /> Reach out</> : <><MessageCircle className="h-3.5 w-3.5" /> Apply</>}
                             </Button>
@@ -877,7 +878,7 @@ function CollabDetail() {
               </>
             )}
 
-            {viewerRole === "public" && acceptingNow && (
+            {isPublicVisitor && acceptingNow && (
               <div className={cn("rounded-2xl border border-dashed border-border bg-surface/60 p-4", roles.length > 0 ? "mt-4" : "")}>
                 <h3 className="font-medium text-ink">Suggest how you can help</h3>
                 <p className="mt-1 text-sm text-ink-muted">
