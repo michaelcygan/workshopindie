@@ -300,3 +300,48 @@ export const adminUpdateOpenHouseApplication = createServerFn({ method: "POST" }
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/**
+ * Opens (or reuses) a DM thread between the signed-in admin and the applicant's
+ * Workshop account, tagged with the application it came from. Applicants
+ * without an account are unreachable here by design — the panel surfaces their
+ * email instead.
+ */
+export const adminMessageOpenHouseApplicant = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await requireAdmin(context.supabase, context.userId);
+
+    const { data: app, error } = await supabaseAdmin
+      .from("open_house_applications")
+      .select("id, user_id")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!app) throw domainError("NOT_FOUND", "Application not found.");
+    if (!app.user_id) {
+      throw domainError(
+        "INVALID_INPUT",
+        "This applicant doesn't have a Workshop account yet — reach them by email.",
+      );
+    }
+    if (app.user_id === context.userId) {
+      throw domainError("INVALID_INPUT", "That's your own application.");
+    }
+
+    const { data: conversationId, error: rpcError } = await context.supabase.rpc(
+      "get_or_create_conversation",
+      {
+        _other: app.user_id,
+        _context_collab_post_id: null,
+        _context_workshop_id: null,
+        _context_work_id: null,
+        _context_comment_id: null,
+        _context_open_house_application_id: app.id,
+      } as never,
+    );
+    if (rpcError) throw new Error(rpcError.message);
+
+    return { conversationId: conversationId as unknown as string };
+  });
