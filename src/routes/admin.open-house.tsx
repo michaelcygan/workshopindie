@@ -29,6 +29,7 @@ import {
   type OpenHouseApplication,
   type OpenHouseStatus,
 } from "@/lib/open-house";
+import { OpenHouseBookingPanel } from "@/components/admin/open-house-booking";
 
 export const Route = createFileRoute("/admin/open-house")({
   component: AdminOpenHousePage,
