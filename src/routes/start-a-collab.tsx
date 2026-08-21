@@ -16,6 +16,7 @@ import { shareImageMeta } from "@/lib/og-image";
 import { useCollabDraftFlow } from "@/lib/collab/use-collab-draft-flow";
 
 
+const SITE = "https://www.workshopindie.com";
 const TITLE = "Post a Collab | Workshop";
 const DESCRIPTION =
   "Create a public call for collaboration, share it anywhere, and receive applications from people inside or outside Workshop.";

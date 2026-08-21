@@ -77,6 +77,7 @@ function DmsThread() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [other, setOther] = useState<ProfileLite | null>(null);
   const [collab, setCollab] = useState<{ title: string; slug: string } | null>(null);
+  const [openHouse, setOpenHouse] = useState(false);
   const [workshop, setWorkshop] = useState<{ title: string | null; slug: string } | null>(null);
   const [work, setWork] = useState<{ title: string; slug: string } | null>(null);
   const [comment, setComment] = useState<{ workSlug: string; snippet: string; commentId: string } | null>(null);
@@ -159,7 +160,7 @@ function DmsThread() {
     (async () => {
       const { data: conv } = await supabase
         .from("conversations")
-        .select("id, user_a, user_b, context_collab_post_id, context_workshop_id, context_work_id, context_comment_id")
+        .select("id, user_a, user_b, context_collab_post_id, context_workshop_id, context_work_id, context_comment_id, context_open_house_application_id")
         .eq("id", conversationId)
         .maybeSingle();
       if (cancelled) return;
@@ -186,6 +187,10 @@ function DmsThread() {
       if (cancelled) return;
       setOther(prof as ProfileLite | null);
       setCollab(post ? { title: post.title, slug: post.slug } : null);
+      setOpenHouse(
+        !!(conv as { context_open_house_application_id?: string | null })
+          .context_open_house_application_id,
+      );
       setWorkshop(ws ? { title: ws.title ?? null, slug: ws.slug } : null);
       setWork(wk ? { title: wk.title, slug: wk.slug } : null);
       const cmRow = cm as { id: string; body: string; works: { slug: string } | null } | null;
@@ -502,8 +507,17 @@ function DmsThread() {
             <p className="truncate text-xs text-ink-muted">@{other.username}</p>
           ) : null}
 
-          {(collab || workshop || work || comment) && (
+          {(collab || workshop || work || comment || openHouse) && (
             <div className="mt-1 flex flex-wrap gap-1">
+              {openHouse && (
+                <span
+                  className="inline-flex max-w-full items-center rounded-full bg-signal/10 px-2 py-0.5 text-[11px] text-signal"
+                  title="From an Open House application"
+                >
+                  <span className="truncate">From application to: Workshop Open House</span>
+                </span>
+              )}
+
               {collab && (
                 <Link
                   to="/collab/$slug"

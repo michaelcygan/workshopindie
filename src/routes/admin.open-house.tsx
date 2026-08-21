@@ -13,16 +13,19 @@ import {
 } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "sonner";
-import { Copy, ExternalLink } from "lucide-react";
+import { Copy, ExternalLink, MessageSquare } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 import {
   adminListOpenHouseApplications,
   adminUpdateOpenHouseApplication,
+  adminMessageOpenHouseApplicant,
 } from "@/lib/open-house-applications.functions";
 import {
   OPEN_HOUSE_STATUSES,
   OPEN_HOUSE_STATUS_LABELS,
+  PARTNER_TYPES,
+  applicationTypeLabel,
   lengthLabel,
-  programTypeLabel,
   type OpenHouseApplication,
   type OpenHouseStatus,
 } from "@/lib/open-house";
@@ -48,9 +51,12 @@ function StatusBadge({ status }: { status: OpenHouseStatus }) {
 
 function AdminOpenHousePage() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const listFn = useServerFn(adminListOpenHouseApplications);
   const updateFn = useServerFn(adminUpdateOpenHouseApplication);
+  const messageFn = useServerFn(adminMessageOpenHouseApplicant);
   const [filter, setFilter] = useState<OpenHouseStatus | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [openId, setOpenId] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
 
@@ -60,8 +66,13 @@ function AdminOpenHousePage() {
   });
 
   const rows = useMemo(
-    () => (data?.rows ?? []).filter((r) => !filter || r.status === filter),
-    [data, filter],
+    () =>
+      (data?.rows ?? []).filter(
+        (r) =>
+          (!filter || r.status === filter) &&
+          (typeFilter === "all" || (r.partner_type || r.program_type) === typeFilter),
+      ),
+    [data, filter, typeFilter],
   );
   const selected: OpenHouseApplication | null =
     (data?.rows ?? []).find((r) => r.id === openId) ?? null;
@@ -74,6 +85,15 @@ function AdminOpenHousePage() {
     }) => updateFn({ data: input }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin", "open-house-applications"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const message = useMutation({
+    mutationFn: (id: string) => messageFn({ data: { id } }),
+    onSuccess: (res) => {
+      const id = (res as { conversationId?: string })?.conversationId;
+      if (id) navigate({ to: "/dms/$conversationId", params: { conversationId: id } });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -136,6 +156,24 @@ function AdminOpenHousePage() {
         ))}
       </div>
 
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs uppercase tracking-wider text-ink-muted">Partner type</span>
+        <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <SelectTrigger className="h-9 w-56">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All types</SelectItem>
+            {PARTNER_TYPES.map((p) => (
+              <SelectItem key={p.id} value={p.id}>
+                {p.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+
       <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
         <table className="w-full min-w-[640px] text-sm">
           <thead className="bg-muted text-left text-xs uppercase tracking-wider text-ink-muted">
@@ -176,7 +214,7 @@ function AdminOpenHousePage() {
                       <span className="block text-xs text-ink-muted">{r.contact_name}</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-ink-muted">{programTypeLabel(r.program_type)}</td>
+                  <td className="px-4 py-3 text-ink-muted">{applicationTypeLabel(r)}</td>
                   <td className="px-4 py-3 text-ink-muted">{r.city || "—"}</td>
                   <td className="px-4 py-3 text-ink-muted">
                     {new Date(r.created_at).toLocaleDateString()}
@@ -205,7 +243,7 @@ function AdminOpenHousePage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <StatusBadge status={selected.status} />
                   <span className="text-ink-muted">
-                    {programTypeLabel(selected.program_type)}
+                    {applicationTypeLabel(selected)}
                   </span>
                   {selected.approximate_length && (
                     <span className="text-ink-muted">
@@ -269,6 +307,45 @@ function AdminOpenHousePage() {
                     Submitted {new Date(selected.created_at).toLocaleString()}
                   </p>
                 </div>
+
+                <div className="rounded-2xl border border-border bg-muted/40 p-3">
+                  {selected.user_id ? (
+                    <>
+                      <Button
+                        size="sm"
+                        className="gap-1.5"
+                        disabled={message.isPending}
+                        onClick={() => message.mutate(selected.id)}
+                      >
+                        <MessageSquare className="h-3.5 w-3.5" />
+                        {message.isPending ? "Opening…" : "Message applicant"}
+                      </Button>
+                      <p className="mt-2 text-xs text-ink-muted">
+                        Opens a DM tagged with this Open House application.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-ink">No account yet</p>
+                      <p className="mt-1 text-xs text-ink-muted">
+                        This applicant can't be DM'd until they create a Workshop account. Invite
+                        them by email.
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-2 h-7 gap-1.5 rounded-md"
+                        onClick={() => {
+                          navigator.clipboard.writeText(selected.email);
+                          toast.success("Email copied");
+                        }}
+                      >
+                        <Copy className="h-3.5 w-3.5" /> Copy email
+                      </Button>
+                    </>
+                  )}
+                </div>
+
 
                 <Section title="Proposal">{selected.proposal}</Section>
                 {selected.setup_needs && (

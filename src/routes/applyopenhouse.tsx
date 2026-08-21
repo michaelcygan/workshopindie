@@ -21,7 +21,14 @@ import { normalizeUrlOrKeep } from "@/lib/url-normalize";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { submitOpenHouseApplication } from "@/lib/open-house-applications.functions";
-import { LENGTH_OPTIONS, PROGRAM_TYPES, PROPOSAL_MIN, PROPOSAL_MAX } from "@/lib/open-house";
+import {
+  LENGTH_OPTIONS,
+  PARTNER_TYPES,
+  PERFORMANCE_SUBTYPES,
+  isVendorPartner,
+  PROPOSAL_MIN,
+  PROPOSAL_MAX,
+} from "@/lib/open-house";
 import { gtagEvent } from "@/lib/analytics/google";
 
 const CANONICAL = "https://workshopindie.com/applyopenhouse";
@@ -88,7 +95,9 @@ function ApplyOpenHousePage() {
   const [contactName, setContactName] = useState("");
   const [projectName, setProjectName] = useState("");
   const [email, setEmail] = useState("");
-  const [programType, setProgramType] = useState("");
+  const [partnerType, setPartnerType] = useState("");
+  const [performanceSubtype, setPerformanceSubtype] = useState("");
+  const [performanceSubtypeOther, setPerformanceSubtypeOther] = useState("");
   const [location, setLocation] = useState<SelectedLocation | null>(null);
   const [portfolioUrl, setPortfolioUrl] = useState("");
   const [workshopUrl, setWorkshopUrl] = useState("");
@@ -154,6 +163,19 @@ function ApplyOpenHousePage() {
 
   const cityLabel = location ? [location.name, location.sublabel].filter(Boolean).join(", ") : "";
 
+  const isPerformance = partnerType === "performance";
+  const isVendor = isVendorPartner(partnerType);
+  const proposalLabel = isVendor
+    ? "What would you bring to Open House?"
+    : "What would you like to bring to Open House?";
+  const proposalHint = isVendor
+    ? "What you'd sell, sample, show, or activate — and anything you'd bring to the room. A few sentences is plenty."
+    : "Describe the set, performance, talk, reading, screening, or demonstration. A few sentences is plenty.";
+  const setupLabel = isVendor ? "Space and power needs" : "What would you need?";
+  const setupHint = isVendor
+    ? "Table size, power, water, load-in — whatever you'd need on site. Details can be worked out later."
+    : "A mic, DJ input, projector, small table, open floor, or nothing at all. Details can be worked out later.";
+
   const proposalLength = proposal.trim().length;
   const proposalTooShort = proposalLength > 0 && proposalLength < PROPOSAL_MIN;
 
@@ -166,8 +188,12 @@ function ApplyOpenHousePage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
-    if (!programType) {
+    if (!partnerType) {
       toast.error("Please choose what you'd like to do.");
+      return;
+    }
+    if (isPerformance && !performanceSubtype) {
+      toast.error("Please tell us what kind of performance.");
       return;
     }
     if (!cityLabel) {
@@ -186,13 +212,16 @@ function ApplyOpenHousePage() {
           contactName: contactName.trim(),
           projectName: projectName.trim(),
           email: email.trim(),
-          programType,
+          partnerType,
+          performanceSubtype: isPerformance ? performanceSubtype || null : null,
+          performanceSubtypeOther:
+            isPerformance && performanceSubtype === "other" ? performanceSubtypeOther.trim() : "",
           city: cityLabel.slice(0, 160),
           cityId: location?.cityId ?? null,
           portfolioUrl: normalizeUrlOrKeep(portfolioUrl),
           workshopUrl: workshopUrl.trim(),
           proposal: proposal.trim(),
-          approximateLength: approximateLength || null,
+          approximateLength: isVendor ? null : approximateLength || null,
           setupNeeds: setupNeeds.trim(),
           marketingOptIn,
           wantsAccount: !user && wantsAccount,
@@ -231,12 +260,12 @@ function ApplyOpenHousePage() {
         Workshop Open House
       </p>
       <h1 className="mt-2 font-display text-3xl leading-[1.05] text-ink md:text-4xl">
-        Apply to perform or present.
+        Apply to perform, present, or partner.
       </h1>
       <p className="mt-3 max-w-xl text-base text-ink-soft">
-        Workshop Open House is a gathering for people making things. Some editions include a band,
-        DJ set, performance, talk, reading, screening, or demonstration. Tell us what you'd like to
-        bring.
+        Workshop Open House is a gathering for people making things. Editions can include a
+        performance, listening party, screening, talk, workshop, art and food vendors, and brand
+        partners. Tell us what you'd bring — no account needed to apply.
       </p>
 
       {done ? (
@@ -281,20 +310,62 @@ function ApplyOpenHousePage() {
               />
             </Field>
             <Field label="What would you like to do?" required plain>
-              <Select value={programType} onValueChange={setProgramType}>
+              <Select
+                value={partnerType}
+                onValueChange={(v) => {
+                  setPartnerType(v);
+                  if (v !== "performance") {
+                    setPerformanceSubtype("");
+                    setPerformanceSubtypeOther("");
+                  }
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Choose one" />
                 </SelectTrigger>
                 <SelectContent>
-                  {PROGRAM_TYPES.map((o) => (
+                  {PARTNER_TYPES.map((o) => (
                     <SelectItem key={o.id} value={o.id}>
-                      {o.label}
+                      <span className="flex flex-col items-start">
+                        <span>{o.label}</span>
+                        <span className="text-xs text-ink-muted">{o.hint}</span>
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </Field>
           </div>
+
+          {isPerformance && (
+            <div className="grid gap-4 rounded-2xl border border-border bg-surface-2/40 p-4 md:grid-cols-2">
+              <Field label="What kind of performance?" required plain>
+                <Select value={performanceSubtype} onValueChange={setPerformanceSubtype}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="DJ, band, comedian…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PERFORMANCE_SUBTYPES.map((o) => (
+                      <SelectItem key={o.id} value={o.id}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              {performanceSubtype === "other" && (
+                <Field label="Tell us what kind">
+                  <Input
+                    value={performanceSubtypeOther}
+                    onChange={(e) => setPerformanceSubtypeOther(e.target.value)}
+                    maxLength={80}
+                    placeholder="Puppetry, magic, drag…"
+                  />
+                </Field>
+              )}
+            </div>
+          )}
+
 
           <Field label="Where are you based?" required plain>
             <GlobalLocationCombobox
@@ -332,11 +403,7 @@ function ApplyOpenHousePage() {
             </Field>
           </div>
 
-          <Field
-            label="What would you like to bring to Open House?"
-            required
-            hint="Describe the set, performance, talk, reading, screening, or demonstration. A few sentences is plenty."
-          >
+          <Field label={proposalLabel} required hint={proposalHint}>
             <Textarea
               id="open-house-proposal"
               value={proposal}
@@ -355,24 +422,23 @@ function ApplyOpenHousePage() {
           </Field>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Approximate length" plain>
-              <Select value={approximateLength} onValueChange={setApproximateLength}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a length" />
-                </SelectTrigger>
-                <SelectContent>
-                  {LENGTH_OPTIONS.map((o) => (
-                    <SelectItem key={o.id} value={o.id}>
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field
-              label="What would you need?"
-              hint="A mic, DJ input, projector, small table, open floor, or nothing at all. Details can be worked out later."
-            >
+            {!isVendor && (
+              <Field label="Approximate length" plain>
+                <Select value={approximateLength} onValueChange={setApproximateLength}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a length" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LENGTH_OPTIONS.map((o) => (
+                      <SelectItem key={o.id} value={o.id}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            )}
+            <Field label={setupLabel} hint={setupHint}>
               <Textarea
                 value={setupNeeds}
                 onChange={(e) => setSetupNeeds(e.target.value)}
@@ -403,13 +469,20 @@ function ApplyOpenHousePage() {
                 {prefilled ? " We filled in what we already know; edit anything that's off." : ""}
               </p>
             ) : (
-              <label className="flex items-start gap-3 text-sm text-ink-soft">
+              <label className="flex items-start gap-3 rounded-2xl border border-border bg-surface-2/40 p-3.5 text-sm text-ink-soft">
                 <Checkbox
                   checked={wantsAccount}
                   onCheckedChange={(v) => setWantsAccount(v === true)}
                   className="mt-0.5"
                 />
-                <span>Also create my Workshop account.</span>
+                <span>
+                  <span className="font-medium text-ink">Also create my Workshop account.</span>
+                  <span className="mt-1 block text-ink-muted">
+                    Having an account assists in your chances of booking — booking happens on
+                    platform, so we can message you directly and run a formal Workshop Open House
+                    booking process with you.
+                  </span>
+                </span>
               </label>
             )}
             <label className="flex items-start gap-3 text-sm text-ink-soft">
