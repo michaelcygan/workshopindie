@@ -435,6 +435,9 @@ function EventPage() {
           </div>
         </div>
 
+        {/* Featuring — who this night is built around (optional) */}
+        <EventFeaturing features={features ?? []} />
+
         {/* Series admin strip */}
         {ev.series_key && <SeriesAdminStrip eventId={ev.id} seriesKey={ev.series_key} />}
 
