@@ -77,6 +77,7 @@ function DmsThread() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [other, setOther] = useState<ProfileLite | null>(null);
   const [collab, setCollab] = useState<{ title: string; slug: string } | null>(null);
+  const [openHouse, setOpenHouse] = useState(false);
   const [workshop, setWorkshop] = useState<{ title: string | null; slug: string } | null>(null);
   const [work, setWork] = useState<{ title: string; slug: string } | null>(null);
   const [comment, setComment] = useState<{ workSlug: string; snippet: string; commentId: string } | null>(null);
