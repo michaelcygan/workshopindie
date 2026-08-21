@@ -308,6 +308,45 @@ function AdminOpenHousePage() {
                   </p>
                 </div>
 
+                <div className="rounded-2xl border border-border bg-muted/40 p-3">
+                  {selected.user_id ? (
+                    <>
+                      <Button
+                        size="sm"
+                        className="gap-1.5"
+                        disabled={message.isPending}
+                        onClick={() => message.mutate(selected.id)}
+                      >
+                        <MessageSquare className="h-3.5 w-3.5" />
+                        {message.isPending ? "Opening…" : "Message applicant"}
+                      </Button>
+                      <p className="mt-2 text-xs text-ink-muted">
+                        Opens a DM tagged with this Open House application.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-ink">No account yet</p>
+                      <p className="mt-1 text-xs text-ink-muted">
+                        This applicant can't be DM'd until they create a Workshop account. Invite
+                        them by email.
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-2 h-7 gap-1.5 rounded-md"
+                        onClick={() => {
+                          navigator.clipboard.writeText(selected.email);
+                          toast.success("Email copied");
+                        }}
+                      >
+                        <Copy className="h-3.5 w-3.5" /> Copy email
+                      </Button>
+                    </>
+                  )}
+                </div>
+
+
                 <Section title="Proposal">{selected.proposal}</Section>
                 {selected.setup_needs && (
                   <Section title="Setup needs">{selected.setup_needs}</Section>
