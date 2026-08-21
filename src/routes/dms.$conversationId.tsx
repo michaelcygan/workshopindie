@@ -502,8 +502,17 @@ function DmsThread() {
             <p className="truncate text-xs text-ink-muted">@{other.username}</p>
           ) : null}
 
-          {(collab || workshop || work || comment) && (
+          {(collab || workshop || work || comment || openHouse) && (
             <div className="mt-1 flex flex-wrap gap-1">
+              {openHouse && (
+                <span
+                  className="inline-flex max-w-full items-center rounded-full bg-signal/10 px-2 py-0.5 text-[11px] text-signal"
+                  title="From an Open House application"
+                >
+                  <span className="truncate">From application to: Workshop Open House</span>
+                </span>
+              )}
+
               {collab && (
                 <Link
                   to="/collab/$slug"
