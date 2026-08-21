@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowDown, ArrowUp, Plus, Search, X } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowUp, Check, Plus, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +14,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useEligibleSkillWorks, useSkillMutations, useSkills } from "@/hooks/use-skills";
-import { MAX_SKILLS, SKILL_LABEL_MAX } from "@/lib/skills/normalize";
+import {
+  MAX_SKILLS,
+  MAX_SKILL_WORKS,
+  SKILL_DESCRIPTION_MAX,
+  SKILL_LABEL_MAX,
+} from "@/lib/skills/normalize";
 import type { EligibleWork, Skill } from "@/lib/skills/types";
 import { fieldLabel } from "@/lib/taxonomy";
 import { cn } from "@/lib/utils";
@@ -107,7 +113,7 @@ export function SkillsEditor({
         </div>
       ) : skills.length === 0 ? (
         <p className="text-sm text-ink-muted">
-          Nothing yet. Add a skill and choose the Work that shows it.
+          Nothing yet. Add a skill and choose the work that shows it.
         </p>
       ) : (
         <ul className="space-y-2">
@@ -142,12 +148,12 @@ export function SkillsEditor({
         works={eligible}
         suggestions={suggestions}
         busy={m.add.isPending || m.update.isPending}
-        onSubmit={(label, workId) => {
+        onSubmit={(label, description, workIds) => {
           const onError = (e: unknown) =>
             toast.error(e instanceof Error ? e.message : "Couldn't save that skill");
           if (editing) {
             m.update.mutate(
-              { id: editing.id, label, work_id: workId },
+              { id: editing.id, label, description, work_ids: workIds },
               {
                 onSuccess: () => {
                   toast.success("Skill updated");
@@ -159,7 +165,7 @@ export function SkillsEditor({
             );
           } else {
             m.add.mutate(
-              { label, work_id: workId },
+              { label, description, work_ids: workIds },
               {
                 onSuccess: () => {
                   toast.success("Skill added");
@@ -171,6 +177,28 @@ export function SkillsEditor({
           }
         }}
       />
+    </div>
+  );
+}
+
+function ThumbStack({ skill }: { skill: Skill }) {
+  const works = skill.works;
+  if (works.length === 0) {
+    return (
+      <div className="flex h-12 w-16 shrink-0 items-center justify-center rounded-md bg-surface-2 text-ink-muted">
+        <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+      </div>
+    );
+  }
+  const extra = works.length - 1;
+  return (
+    <div className="relative shrink-0">
+      <Thumb url={works[0].cover_url} title={works[0].title} />
+      {extra > 0 ? (
+        <span className="absolute -bottom-1 -right-1 rounded-full border border-border bg-surface px-1.5 text-[10px] font-medium text-ink-soft">
+          +{extra}
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -190,27 +218,31 @@ function SkillRow({
   onEdit: () => void;
   onRemove: () => void;
 }) {
-  const work = skill.work;
+  const works = skill.works;
   return (
     <li className="flex items-center gap-3 rounded-xl border border-border bg-surface p-2.5">
-      {work ? (
-        <Thumb url={work.cover_url} title={work.title} />
-      ) : (
-        <div className="flex h-12 w-16 shrink-0 items-center justify-center rounded-md bg-surface-2 text-ink-muted">
-          <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-        </div>
-      )}
+      <ThumbStack skill={skill} />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-ink">{skill.label}</p>
-        {work ? (
+        {skill.description ? (
+          <p className="truncate text-xs text-ink-soft">{skill.description}</p>
+        ) : null}
+        {works.length > 0 ? (
           <p className="truncate text-xs text-ink-muted">
-            Demonstrated in <span className="text-ink-soft">{work.title}</span> · {workContext(work)}
+            Demonstrated in <span className="text-ink-soft">{works[0].title}</span>
+            {works.length > 1 ? ` and ${works.length - 1} more` : ` · ${workContext(works[0])}`}
           </p>
         ) : (
           <p className="truncate text-xs text-ink-muted">
             This Work is no longer public. Relink or remove this skill.
           </p>
         )}
+        {works.length > 0 && skill.missing_count > 0 ? (
+          <p className="truncate text-xs text-ink-muted">
+            {skill.missing_count} linked {skill.missing_count === 1 ? "Work is" : "Works are"} no
+            longer public.
+          </p>
+        ) : null}
       </div>
       <div className="flex shrink-0 items-center gap-0.5">
         <Button
@@ -220,7 +252,7 @@ function SkillRow({
           className="rounded-md text-xs"
           onClick={onEdit}
         >
-          {work ? "Edit" : "Relink"}
+          {works.length > 0 ? "Edit" : "Relink"}
         </Button>
         <Button
           type="button"
@@ -274,10 +306,11 @@ function SkillDialog({
   works: EligibleWork[];
   suggestions: string[];
   busy: boolean;
-  onSubmit: (label: string, workId: string) => void;
+  onSubmit: (label: string, description: string | null, workIds: string[]) => void;
 }) {
   const [label, setLabel] = useState("");
-  const [workId, setWorkId] = useState<string | null>(null);
+  const [description, setDescription] = useState("");
+  const [workIds, setWorkIds] = useState<string[]>([]);
   const [term, setTerm] = useState("");
   const [seeded, setSeeded] = useState<string | null>(null);
 
@@ -286,7 +319,8 @@ function SkillDialog({
   if (seedKey !== seeded) {
     setSeeded(seedKey);
     setLabel(editing?.label ?? "");
-    setWorkId(editing?.work_id ?? null);
+    setDescription(editing?.description ?? "");
+    setWorkIds(editing ? editing.works.map((w) => w.id) : []);
     setTerm("");
   }
 
@@ -296,12 +330,21 @@ function SkillDialog({
     return works.filter((w) => w.title.toLowerCase().includes(q));
   }, [term, works]);
 
-  const chips = useMemo(
-    () => suggestions.filter(Boolean).slice(0, 8),
-    [suggestions],
-  );
+  const chips = useMemo(() => suggestions.filter(Boolean).slice(0, 8), [suggestions]);
 
-  const canSubmit = label.trim().length > 0 && !!workId && !busy;
+  const atWorkCap = workIds.length >= MAX_SKILL_WORKS;
+  const canSubmit = label.trim().length > 0 && workIds.length > 0 && !busy;
+
+  function toggleWork(id: string) {
+    setWorkIds((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id);
+      if (prev.length >= MAX_SKILL_WORKS) {
+        toast.error(`Link at most ${MAX_SKILL_WORKS} works.`);
+        return prev;
+      }
+      return [...prev, id];
+    });
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -309,7 +352,7 @@ function SkillDialog({
         <DialogHeader>
           <DialogTitle>{editing ? "Edit skill" : "Add skill"}</DialogTitle>
           <DialogDescription>
-            Name the skill, then choose the Work that demonstrates it.
+            Name the skill, add a short line about it, then choose the work that demonstrates it.
           </DialogDescription>
         </DialogHeader>
 
@@ -340,7 +383,29 @@ function SkillDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Demonstrated in</Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="skill-description">Description (optional)</Label>
+              <span className="text-[11px] text-ink-muted">
+                {description.length}/{SKILL_DESCRIPTION_MAX}
+              </span>
+            </div>
+            <Textarea
+              id="skill-description"
+              value={description}
+              rows={2}
+              maxLength={SKILL_DESCRIPTION_MAX}
+              placeholder="Trailer cutting for indie features and music docs."
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <Label>Demonstrated in</Label>
+              <span className="text-[11px] text-ink-muted">
+                {workIds.length}/{MAX_SKILL_WORKS} selected
+              </span>
+            </div>
             <div className="relative">
               <Search
                 className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-muted"
@@ -359,28 +424,36 @@ function SkillDialog({
                 <li className="px-1 py-2 text-sm text-ink-muted">No matching works.</li>
               ) : (
                 filtered.map((w) => {
-                  const selected = workId === w.id;
+                  const index = workIds.indexOf(w.id);
+                  const selected = index >= 0;
                   return (
                     <li key={w.id}>
                       <button
                         type="button"
-                        onClick={() => setWorkId(w.id)}
+                        onClick={() => toggleWork(w.id)}
                         aria-pressed={selected}
+                        disabled={!selected && atWorkCap}
                         className={cn(
                           "flex w-full items-center gap-3 rounded-lg border p-2 text-left transition",
-                          selected
-                            ? "border-ink bg-muted"
-                            : "border-border hover:bg-muted/60",
+                          selected ? "border-ink bg-muted" : "border-border hover:bg-muted/60",
+                          !selected && atWorkCap && "opacity-50",
                         )}
                       >
                         <Thumb url={w.cover_url} title={w.title} />
-                        <span className="min-w-0">
+                        <span className="min-w-0 flex-1">
                           <span className="block truncate text-sm text-ink">{w.title}</span>
                           <span className="block truncate text-xs text-ink-muted">
                             {workContext(w)}
                             {w.role_label ? ` · ${w.role_label}` : ""}
                           </span>
                         </span>
+                        {selected ? (
+                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ink text-[10px] font-medium text-surface">
+                            {index + 1}
+                          </span>
+                        ) : (
+                          <Check className="h-4 w-4 shrink-0 text-transparent" aria-hidden="true" />
+                        )}
                       </button>
                     </li>
                   );
@@ -397,7 +470,7 @@ function SkillDialog({
               type="button"
               className="rounded-md"
               disabled={!canSubmit}
-              onClick={() => onSubmit(label, workId!)}
+              onClick={() => onSubmit(label, description.trim() || null, workIds)}
             >
               {editing ? "Save skill" : "Add skill"}
             </Button>
