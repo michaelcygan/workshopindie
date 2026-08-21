@@ -160,9 +160,17 @@ export const submitOpenHouseApplication = createServerFn({ method: "POST" })
     }
 
     const { moderateOrThrow } = await import("@/lib/moderation/service.server");
-    for (const text of [data.contactName, data.projectName, data.proposal, data.setupNeeds]) {
+    for (const text of [
+      data.contactName,
+      data.projectName,
+      data.proposal,
+      data.setupNeeds,
+      data.performanceSubtypeOther,
+    ]) {
       await moderateOrThrow({ userId, surface: "open_house_application", text });
     }
+
+    const isPerformance = data.partnerType === "performance";
 
     const { data: inserted, error } = await supabaseAdmin
       .from("open_house_applications")
@@ -171,7 +179,14 @@ export const submitOpenHouseApplication = createServerFn({ method: "POST" })
         contact_name: data.contactName,
         project_name: data.projectName,
         email: data.email,
-        program_type: data.programType,
+        // Legacy column kept in sync so older reports keep working.
+        program_type: data.partnerType,
+        partner_type: data.partnerType,
+        performance_subtype: isPerformance ? data.performanceSubtype : null,
+        performance_subtype_other:
+          isPerformance && data.performanceSubtype === "other"
+            ? data.performanceSubtypeOther
+            : null,
         city: data.city,
         city_id: data.cityId,
         portfolio_url: portfolioUrl,
