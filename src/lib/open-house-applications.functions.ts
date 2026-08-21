@@ -11,7 +11,8 @@ import { parseFriendly } from "@/lib/zod-message";
 import {
   LENGTH_IDS,
   OPEN_HOUSE_STATUSES,
-  PROGRAM_TYPE_IDS,
+  PARTNER_TYPE_IDS,
+  PERFORMANCE_SUBTYPE_IDS,
   PROPOSAL_MAX,
   PROPOSAL_MIN,
   type OpenHouseApplication,
