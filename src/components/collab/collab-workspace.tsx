@@ -163,32 +163,41 @@ export function CollabWorkspace({
 
   const members = membersQ.data?.members ?? [];
   const meetingUrl = settingsQ.data?.meeting_url ?? null;
+  const filesUrl = settingsQ.data?.files_url ?? null;
+  const nextMeetingAt = settingsQ.data?.next_meeting_at ?? null;
+
+  const invalidateSettings = () =>
+    qc.invalidateQueries({ queryKey: ["collab-workspace-settings", collabPostId] });
 
   return (
     <section className="mt-6 overflow-hidden rounded-xl border border-border bg-surface">
       {/* Compact header */}
       <div className="flex flex-col gap-3 border-b border-border bg-muted/30 p-3 sm:flex-row sm:items-center sm:gap-4">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="inline-flex h-6 items-center gap-1 rounded-full bg-primary/10 px-2 text-[11px] font-medium text-primary">
-            <Users className="h-3 w-3" /> Collaborating
-          </span>
-          <div className="flex -space-x-2">
-            {members.slice(0, 5).map((m) => (
-              <Avatar key={m.id} className="h-6 w-6 ring-2 ring-surface">
-                <AvatarImage src={m.avatar_url ?? undefined} />
-                <AvatarFallback className="text-[10px]">{(m.display_name ?? m.username ?? "?").slice(0, 1)}</AvatarFallback>
-              </Avatar>
-            ))}
-          </div>
-          <span className="text-xs text-ink-muted">{members.length} member{members.length === 1 ? "" : "s"}</span>
-        </div>
-        <div className="sm:ml-auto flex items-center gap-2">
+        <TeamPopover
+          collabPostId={collabPostId}
+          members={members}
+          isOwner={isOwner}
+          onRemoved={() => {
+            qc.invalidateQueries({ queryKey: ["collab-members", collabPostId] });
+          }}
+        />
+        <div className="sm:ml-auto flex flex-wrap items-center gap-2">
+          <NextMeetingControl
+            nextMeetingAt={nextMeetingAt}
+            isOwner={isOwner}
+            onSave={(iso) =>
+              setNextMeetingFn({ data: { collabPostId, nextMeetingAt: iso } }).then(
+                invalidateSettings,
+                (e: Error) => toast.error(e.message),
+              )
+            }
+          />
           <MeetingControl
             meetingUrl={meetingUrl}
             isOwner={isOwner}
             onSave={(u) =>
               setMeetingFn({ data: { collabPostId, meetingUrl: u } }).then(
-                () => qc.invalidateQueries({ queryKey: ["collab-workspace-settings", collabPostId] }),
+                () => invalidateSettings(),
                 (e) => toast.error(e.message),
               )
             }
