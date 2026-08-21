@@ -1,5 +1,12 @@
 import { z } from "zod";
-import { MAX_SKILLS, SKILL_LABEL_MAX, cleanSkillLabel } from "@/lib/skills/normalize";
+import {
+  MAX_SKILLS,
+  MAX_SKILL_WORKS,
+  SKILL_DESCRIPTION_MAX,
+  SKILL_LABEL_MAX,
+  cleanSkillDescription,
+  cleanSkillLabel,
+} from "@/lib/skills/normalize";
 
 const labelSchema = z
   .string()
@@ -7,15 +14,32 @@ const labelSchema = z
   .refine((v) => v.length > 0, "Add a skill name.")
   .refine((v) => v.length <= SKILL_LABEL_MAX, `Keep it under ${SKILL_LABEL_MAX} characters.`);
 
+const descriptionSchema = z
+  .string()
+  .nullish()
+  .transform((v) => cleanSkillDescription(v))
+  .refine(
+    (v) => v === null || v.length <= SKILL_DESCRIPTION_MAX,
+    `Keep the description under ${SKILL_DESCRIPTION_MAX} characters.`,
+  );
+
+const workIdsSchema = z
+  .array(z.string().uuid())
+  .min(1, "Choose at least one Work that demonstrates this skill.")
+  .max(MAX_SKILL_WORKS, `Link at most ${MAX_SKILL_WORKS} works.`)
+  .transform((ids) => [...new Set(ids)]);
+
 export const addSkillSchema = z.object({
   label: labelSchema,
-  work_id: z.string().uuid("Choose a Work that demonstrates this skill."),
+  description: descriptionSchema,
+  work_ids: workIdsSchema,
 });
 
 export const updateSkillSchema = z.object({
   id: z.string().uuid(),
   label: labelSchema.optional(),
-  work_id: z.string().uuid().optional(),
+  description: descriptionSchema,
+  work_ids: workIdsSchema.optional(),
 });
 
 export const removeSkillSchema = z.object({ id: z.string().uuid() });
