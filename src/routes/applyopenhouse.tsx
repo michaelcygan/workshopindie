@@ -403,11 +403,7 @@ function ApplyOpenHousePage() {
             </Field>
           </div>
 
-          <Field
-            label="What would you like to bring to Open House?"
-            required
-            hint="Describe the set, performance, talk, reading, screening, or demonstration. A few sentences is plenty."
-          >
+          <Field label={proposalLabel} required hint={proposalHint}>
             <Textarea
               id="open-house-proposal"
               value={proposal}
