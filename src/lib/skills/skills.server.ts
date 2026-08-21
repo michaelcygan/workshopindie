@@ -2,12 +2,18 @@
  * Server-only Skill logic. Called from src/lib/skills.functions.ts handlers via
  * dynamic import so it never enters the client graph.
  *
- * Core rule: a Skill may only point at a Work the member is actually connected
+ * Core rule: a Skill may only point at Works the member is actually connected
  * to — created by them, or credited to them without hiding the credit.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { MAX_SKILLS, cleanSkillLabel, normalizeSkillLabel } from "@/lib/skills/normalize";
+import {
+  MAX_SKILLS,
+  MAX_SKILL_WORKS,
+  cleanSkillDescription,
+  cleanSkillLabel,
+  normalizeSkillLabel,
+} from "@/lib/skills/normalize";
 import type { AddSkillInput, UpdateSkillInput } from "@/lib/skills/schemas";
 import type { EligibleWork } from "@/lib/skills/types";
 
@@ -95,8 +101,17 @@ export async function assertEligibleWork(db: Db, userId: string, workId: string)
   }
 }
 
+async function assertEligibleWorks(db: Db, userId: string, workIds: string[]): Promise<void> {
+  if (workIds.length === 0) throw new Error("Choose at least one Work that demonstrates this skill.");
+  if (workIds.length > MAX_SKILL_WORKS) {
+    throw new Error(`Link at most ${MAX_SKILL_WORKS} works.`);
+  }
+  for (const id of workIds) await assertEligibleWork(db, userId, id);
+}
+
 function friendlyDbError(message: string): string {
   if (/at most 10 skills/i.test(message)) return `You can have at most ${MAX_SKILLS} skills.`;
+  if (/at most 5 works/i.test(message)) return `Link at most ${MAX_SKILL_WORKS} works.`;
   if (/uq_profile_skills_label/i.test(message)) return "You've already added that skill.";
   return message;
 }
@@ -111,8 +126,18 @@ async function nextPosition(db: Db, userId: string): Promise<number> {
   return (data?.[0]?.position ?? -1) + 1;
 }
 
+/** Replace a skill's evidence set, keeping the legacy work_id pointer in sync. */
+async function setSkillWorks(db: Db, skillId: string, workIds: string[]) {
+  const { error: delErr } = await db.from("profile_skill_works").delete().eq("skill_id", skillId);
+  if (delErr) throw new Error(friendlyDbError(delErr.message));
+
+  const rows = workIds.map((work_id, position) => ({ skill_id: skillId, work_id, position }));
+  const { error } = await db.from("profile_skill_works").insert(rows);
+  if (error) throw new Error(friendlyDbError(error.message));
+}
+
 export async function insertSkill(db: Db, userId: string, input: AddSkillInput) {
-  await assertEligibleWork(db, userId, input.work_id);
+  await assertEligibleWorks(db, userId, input.work_ids);
   const label = cleanSkillLabel(input.label);
   const { data, error } = await db
     .from("profile_skills")
@@ -120,27 +145,37 @@ export async function insertSkill(db: Db, userId: string, input: AddSkillInput) 
       profile_id: userId,
       label,
       normalized_label: normalizeSkillLabel(label),
-      work_id: input.work_id,
+      description: cleanSkillDescription(input.description),
+      work_id: input.work_ids[0],
       position: await nextPosition(db, userId),
     })
     .select("id")
     .single();
   if (error) throw new Error(friendlyDbError(error.message));
+
+  await setSkillWorks(db, data.id, input.work_ids);
   return { id: data.id };
 }
 
 export async function patchSkill(db: Db, userId: string, input: UpdateSkillInput) {
-  const patch: { label?: string; normalized_label?: string; work_id?: string } = {};
+  const patch: {
+    label?: string;
+    normalized_label?: string;
+    description?: string | null;
+    work_id?: string;
+  } = {};
+
   if (input.label !== undefined) {
     const label = cleanSkillLabel(input.label);
     patch.label = label;
     patch.normalized_label = normalizeSkillLabel(label);
   }
-  if (input.work_id !== undefined) {
-    await assertEligibleWork(db, userId, input.work_id);
-    patch.work_id = input.work_id;
+  patch.description = cleanSkillDescription(input.description);
+
+  if (input.work_ids !== undefined) {
+    await assertEligibleWorks(db, userId, input.work_ids);
+    patch.work_id = input.work_ids[0];
   }
-  if (Object.keys(patch).length === 0) return { ok: true };
 
   const { error } = await db
     .from("profile_skills")
@@ -148,6 +183,10 @@ export async function patchSkill(db: Db, userId: string, input: UpdateSkillInput
     .eq("id", input.id)
     .eq("profile_id", userId);
   if (error) throw new Error(friendlyDbError(error.message));
+
+  if (input.work_ids !== undefined) {
+    await setSkillWorks(db, input.id, input.work_ids);
+  }
   return { ok: true };
 }
 
