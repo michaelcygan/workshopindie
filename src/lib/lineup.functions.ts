@@ -48,9 +48,11 @@ export const getLineupForEvent = createServerFn({ method: "POST" })
     if (evErr) throw new Error(evErr.message);
     if (!ev) throw domainError("NOT_FOUND", "Event not found");
 
+    // `note` is deliberately not public: it's fetched separately by the note
+    // owner, the host or an admin via getLineupNotes.
     const { data: signups, error } = await supabase
       .from("event_lineup_signups")
-      .select("id,event_id,user_id,position,status,note,created_at")
+      .select("id,event_id,user_id,position,status,created_at")
       .eq("event_id", data.event_id)
       .neq("status", "released")
       .order("position", { ascending: true });
@@ -79,6 +81,25 @@ export const getLineupForEvent = createServerFn({ method: "POST" })
   });
 
 // ---- Mutations ----
+
+/**
+ * Notes are private to the person who wrote them, the event host and admins.
+ * Returns a map of signup id -> note for whatever the caller may see.
+ */
+export const getLineupNotes = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ event_id: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { data: rows, error } = await context.supabase.rpc("event_lineup_notes", {
+      _event_id: data.event_id,
+    });
+    if (error) throw new Error(error.message);
+    const notes: Record<string, string> = {};
+    for (const r of (rows ?? []) as Array<{ signup_id: string; note: string | null }>) {
+      if (r.note) notes[r.signup_id] = r.note;
+    }
+    return { notes };
+  });
 
 export const signUpForLineup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

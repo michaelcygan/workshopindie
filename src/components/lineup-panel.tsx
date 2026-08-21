@@ -11,7 +11,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  getLineupForEvent, signUpForLineup, releaseMyLineupSpot, updateMyLineupNote, hostRemoveFromLineup,
+  getLineupForEvent, getLineupNotes, signUpForLineup, releaseMyLineupSpot, updateMyLineupNote, hostRemoveFromLineup,
 } from "@/lib/lineup.functions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -46,6 +46,7 @@ export function LineupPanel({
   const { user } = useAuth();
   const qc = useQueryClient();
   const getFn = useServerFn(getLineupForEvent);
+  const notesFn = useServerFn(getLineupNotes);
   const signUpFn = useServerFn(signUpForLineup);
   const releaseFn = useServerFn(releaseMyLineupSpot);
   const updateFn = useServerFn(updateMyLineupNote);
@@ -61,12 +62,20 @@ export function LineupPanel({
     refetchInterval: 30_000,
   });
 
+  // Notes are private: only the author, the host and admins get them back.
+  const { data: notesData } = useQuery({
+    queryKey: ["lineup-notes", eventId, user?.id ?? "anon"],
+    queryFn: () => notesFn({ data: { event_id: eventId } }),
+    enabled: !!user,
+  });
+
   // Realtime
   useEffect(() => {
     const ch = supabase
       .channel(`lineup-${eventId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "event_lineup_signups", filter: `event_id=eq.${eventId}` }, () => {
         qc.invalidateQueries({ queryKey: ["lineup", eventId] });
+        qc.invalidateQueries({ queryKey: ["lineup-notes", eventId] });
       })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
@@ -84,6 +93,7 @@ export function LineupPanel({
         await signUpFn({ data: { event_id: eventId, note: null } });
         toast.success("You're on the list.");
         qc.invalidateQueries({ queryKey: ["lineup", eventId] });
+        qc.invalidateQueries({ queryKey: ["lineup-notes", eventId] });
       } catch (ex) {
         const msg = (ex as Error).message;
         if (!/already on this lineup/i.test(msg)) toast.error(msg);
@@ -91,7 +101,11 @@ export function LineupPanel({
     })();
   }, [user, eventId, signUpFn, qc]);
 
-  const signups = useMemo(() => (data?.signups ?? []) as Signup[], [data]);
+  const rawSignups = useMemo(() => (data?.signups ?? []) as Omit<Signup, "note">[], [data]);
+  const signups = useMemo(
+    () => rawSignups.map((s) => ({ ...s, note: notesData?.notes?.[s.id] ?? null }) as Signup),
+    [rawSignups, notesData],
+  );
   const profiles = (data?.profiles ?? {}) as Record<string, Profile>;
   const ev = data?.event as { lineup_capacity: number | null; starts_at: string } | undefined;
 
@@ -124,6 +138,7 @@ export function LineupPanel({
     try {
       await updateFn({ data: { event_id: eventId, note: noteDraft.trim() || null } });
       setEditing(false);
+      qc.invalidateQueries({ queryKey: ["lineup-notes", eventId] });
       toast.success("Saved.");
     } catch (ex) { toast.error((ex as Error).message); }
   }
