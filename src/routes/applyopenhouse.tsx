@@ -263,9 +263,10 @@ function ApplyOpenHousePage() {
         Apply to perform, present, or partner.
       </h1>
       <p className="mt-3 max-w-xl text-base text-ink-soft">
-        Workshop Open House is a gathering for people making things. Editions can include a
-        performance, listening party, screening, talk, workshop, art and food vendors, and brand
-        partners. Tell us what you'd bring — no account needed to apply.
+        Tell us what you'd bring — we'll put on the event. Workshop Open House is a gathering for
+        people making things, and we're building editions in your area. Editions can include
+        performances, listening parties, screenings, talks, workshops, art and food vendors, and
+        brand partners. No account needed to apply.
       </p>
 
       {done ? (
