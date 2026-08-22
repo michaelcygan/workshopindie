@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  isJoinPromptSuppressedPath,
+  isJoinPromptAllowedPath,
   JOIN_PROMPT_SNOOZE_MS,
   shouldShowJoinPrompt,
   snoozeUntil,
@@ -30,16 +30,39 @@ describe("shouldShowJoinPrompt", () => {
   });
 });
 
-describe("isJoinPromptSuppressedPath", () => {
-  it("suppresses auth and acquisition surfaces", () => {
-    for (const p of ["/login", "/signup", "/reset-password", "/auth/complete", "/start-a-collab", "/checkout/return"]) {
-      expect(isJoinPromptSuppressedPath(p)).toBe(true);
+describe("isJoinPromptAllowedPath", () => {
+  it("allows the homepage and Events surfaces", () => {
+    for (const p of [
+      "/",
+      "/events",
+      "/events/",
+      "/events/remote",
+      "/e/AB12CD",
+      "/g/chicago-film/e/open-house-may",
+    ]) {
+      expect(isJoinPromptAllowedPath(p)).toBe(true);
     }
   });
 
-  it("allows content surfaces", () => {
-    for (const p of ["/", "/blog", "/blog/some-post", "/groups", "/events"]) {
-      expect(isJoinPromptSuppressedPath(p)).toBe(false);
+  it("never advertises over profiles, works, or other content", () => {
+    for (const p of [
+      "/mikecygan",
+      "/works/king-of-the-lake",
+      "/blog",
+      "/blog/some-post",
+      "/groups",
+      "/g/chicago-film",
+      "/collab",
+      "/topics/editing",
+      "/gallery",
+    ]) {
+      expect(isJoinPromptAllowedPath(p)).toBe(false);
+    }
+  });
+
+  it("stays off auth and acquisition surfaces", () => {
+    for (const p of ["/login", "/signup", "/reset-password", "/auth/complete", "/start-a-collab", "/checkout/return"]) {
+      expect(isJoinPromptAllowedPath(p)).toBe(false);
     }
   });
 });

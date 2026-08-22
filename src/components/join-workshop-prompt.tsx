@@ -3,7 +3,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { SignupGateModal } from "@/components/signup-gate-modal";
 import {
-  isJoinPromptSuppressedPath,
+  isJoinPromptAllowedPath,
   readSnooze,
   shouldShowJoinPrompt,
   writeSnooze,
@@ -22,7 +22,7 @@ export function JoinWorkshopPrompt() {
   const [open, setOpen] = useState(false);
   const [done, setDone] = useState(false);
 
-  const eligible = !loading && !user && !done && !isJoinPromptSuppressedPath(pathname);
+  const eligible = !loading && !user && !done && isJoinPromptAllowedPath(pathname);
 
   useEffect(() => {
     if (!eligible || open) return;
