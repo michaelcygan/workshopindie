@@ -41,17 +41,16 @@ export function writeSnooze(now: number): void {
   }
 }
 
-const SUPPRESSED_EXACT = new Set([
-  "/login",
-  "/signup",
-  "/goodbye",
-  "/forgot-password",
-  "/reset-password",
-]);
+/**
+ * The prompt only appears where Workshop is introducing itself: the homepage
+ * and Events. Member profiles, Works, Blog, Groups and Collabs are never
+ * advertised over.
+ */
+const ALLOWED_PREFIXES = ["/events", "/e"];
 
-const SUPPRESSED_PREFIXES = ["/auth", "/checkout", "/start-a-collab", "/claim", "/redeem"];
-
-export function isJoinPromptSuppressedPath(pathname: string): boolean {
-  if (SUPPRESSED_EXACT.has(pathname)) return true;
-  return SUPPRESSED_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"));
+export function isJoinPromptAllowedPath(pathname: string): boolean {
+  const path = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+  if (path === "/" || path === "") return true;
+  if (/^\/g\/[^/]+\/e\/[^/]+$/.test(path)) return true;
+  return ALLOWED_PREFIXES.some((p) => path === p || path.startsWith(p + "/"));
 }
